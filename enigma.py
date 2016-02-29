@@ -6,18 +6,18 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Feb  4 18:44:49 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb 29 15:33:10 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
 #
-# (C) Copyright 2009-2015, Jim Randell, all rights reserved.
+# (C) Copyright 2009-2016, Jim Randell, all rights reserved.
 #
 ###############################################################################
 # -*- mode: Python; py-indent-offset: 2; -*-
 
 """
-A collection of useful code for solving Enigma (and other) puzzles.
+A collection of useful code for solving New Scientist Enigma (and similar) puzzles.
 
 The latest version is available at <http://www.magwag.plus.com/jim/enigma.html>.
 
@@ -55,6 +55,7 @@ first                 - return items from the start of an iterator
 flatten               - flatten a list of lists
 flattened             - fully flatten a nested structure
 gcd                   - greatest common divisor
+grid_adjacency        - adjacency matrix for an n x m grid
 hypot                 - calculate hypotenuse
 icount                - count the number of elements of an iterator that satisfy a predicate
 int2base              - convert an integer to a string in the specified base
@@ -116,7 +117,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-02-04"
+__version__ = "2016-02-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1426,6 +1427,55 @@ def flattened(s, n=None):
         yield j
     else:
       yield i
+
+
+# adjacency matrix for an n (columns) x m (rows) grid
+# entries are returned as lists in case you want to modify them before use
+def grid_adjacency(n, m, deltas=None, include_adjacent=True, include_diagonal=False):
+  """
+  this function generates the adjacency matrix for a grid with n
+  columns and m rows, represented by a linear array of size n*m
+
+  the element in the (i, j)th position in the grid is at index (i + n*j)
+  in the array
+
+  it returns an array, where the entry at index k is a list of indices
+  into the linear array that are adjacent to the square at index k.
+
+  the default behaviour is to treat the squares immediately N, S, E, W
+  of the target square as being adjacent, although this can be controlled
+  with the 'deltas' parameter, it can be specified as a list of (x, y)
+  deltas to use instead.
+
+  if 'deltas' is not specified the 'include_adjacent' and 'include_diagonal'
+  flags are used to specify which squares are adjacent to the target square.
+  'include_adjacent' includes the N, S, E, W squares
+  'include_diagonal' includes the NW, NE, SW, SE squares
+
+  >>> grid_adjacency(2, 2)
+  [[1, 2], [0, 3], [0, 3], [1, 2]]
+  >>> sorted(grid_adjacency(3, 3)[4])
+  [1, 3, 5, 7]
+  >>> sorted(grid_adjacency(3, 3, include_diagonal=True)[4])
+  [0, 1, 2, 3, 5, 6, 7, 8]
+  """
+  # if deltas aren't provided use standard deltas
+  if deltas is None:
+    deltas = list()
+    if include_adjacent: deltas.extend([(0, -1), (-1, 0), (1, 0), (0, 1)])
+    if include_diagonal: deltas.extend([(-1, -1), (1, -1), (-1, 1), (1, 1)])
+  # construct the adjacency matrix
+  t = n * m
+  r = [None] * t
+  for y in range(0, m):
+    for x in range(0, n):
+      s = list()
+      for (dx, dy) in deltas:
+        (x1, y1) = (x + dx, y + dy)
+        if not(x1 < 0 or y1 < 0 or x1 + 1 > n or y1 + 1 > m):
+          s.append(x1 + y1 * n)
+      r[x + y * n] = s
+  return r
 
 
 # cumulative sum
