@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb 29 15:33:10 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Mar  7 14:05:18 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -82,6 +82,7 @@ lcm                   - lowest common multiple
 mgcd                  - multiple gcd
 multiply              - the product of numbers in a sequence
 nconcat               - concatenate single digits into an integer
+number                - create an integer from digit groups
 P                     - permutations function (nPk)
 partitions            - partition a sequence of distinct values into tuples
 pi                    - float approximation to pi
@@ -117,7 +118,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-02-29"
+__version__ = "2016-03-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -252,12 +253,32 @@ def nconcat(*digits, **kw):
   12345
   >>> nconcat(13, 14, 10, 13, base=16)
   57005
+  >>> nconcat(123,456,789, base=1000)
+  123456789
   """
   # in Python3 [[ def nconcat(*digits, base=10): ]] is allowed instead
   base = kw.get('base', 10)
   return reduce(lambda a, b: a * base + b, digits, 0)
   # or: (slower, and only works with digits < 10)
   #return int(concat(*digits), base=base)
+
+
+def number(s, base=10, group=3, comma=','):
+  """
+  make an integer from a sequence of digit groups
+  
+  >>> number('123,456,789')
+  123456789
+  >>> number('100,000,001')
+  100000001
+  >>> number('-1,024')
+  -1024
+  >>> number('DEAD.BEEF', base=16, comma='.', group=4) == 0xdeadbeef
+  True
+  """
+  (groups, sign) = (list(base2int(x, base=base) for x in s.split(comma)), 1)
+  if groups[0] < 0: (groups[0], sign) = (-groups[0], -sign)
+  return sign * nconcat(*groups, base=base ** group)
 
 
 def split(x, fn=None):
@@ -1786,6 +1807,8 @@ def is_roman(x):
   except ValueError:
     return False
   return int2roman(i) == x
+
+
 
 
 # digits for use in converting bases
