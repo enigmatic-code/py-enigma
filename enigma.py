@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Mar  7 14:05:18 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Mar  8 11:52:31 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -82,7 +82,7 @@ lcm                   - lowest common multiple
 mgcd                  - multiple gcd
 multiply              - the product of numbers in a sequence
 nconcat               - concatenate single digits into an integer
-number                - create an integer from digit groups
+number                - create an integer from a string ignoring non-digits
 P                     - permutations function (nPk)
 partitions            - partition a sequence of distinct values into tuples
 pi                    - float approximation to pi
@@ -118,7 +118,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-03-07"
+__version__ = "2016-03-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -263,9 +263,9 @@ def nconcat(*digits, **kw):
   #return int(concat(*digits), base=base)
 
 
-def number(s, base=10, group=3, comma=','):
+def number(s, base=10):
   """
-  make an integer from a sequence of digit groups
+  make an integer from a string, ignoring non-digit characters
   
   >>> number('123,456,789')
   123456789
@@ -273,12 +273,10 @@ def number(s, base=10, group=3, comma=','):
   100000001
   >>> number('-1,024')
   -1024
-  >>> number('DEAD.BEEF', base=16, comma='.', group=4) == 0xdeadbeef
+  >>> number('DEAD.BEEF', base=16) == 0xdeadbeef
   True
   """
-  (groups, sign) = (list(base2int(x, base=base) for x in s.split(comma)), 1)
-  if groups[0] < 0: (groups[0], sign) = (-groups[0], -sign)
-  return sign * nconcat(*groups, base=base ** group)
+  return base2int(s, base=base, strip=True)
 
 
 def split(x, fn=None):
@@ -1843,7 +1841,7 @@ def int2base(i, base=10, digits=_digits):
     r = digits[n] + r
   return r
 
-def base2int(s, base=10, digits=_digits):
+def base2int(s, base=10, strip=False, digits=_digits):
   """
   convert a string representation of an integer in the specified base to an integer.
 
@@ -1860,15 +1858,18 @@ def base2int(s, base=10, digits=_digits):
   if s == digits[0]:
     return 0
   elif s.startswith('-'):
-    return -base2int(s[1:], base=base, digits=digits)
+    return -base2int(s[1:], base=base, strip=strip, digits=digits)
   i = 0
   for d in s:
-    i *= base
     try:
-      i += digits.index(d)
+      v = digits.index(d)
     except ValueError as e:
+      if strip: continue
       e.args = ("invalid digit for base {base}: {s}".format(base=base, s=s),)
       raise
+
+    i *= base
+    i += v
   return i
 
 
