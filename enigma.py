@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Mar  8 11:52:31 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Mar 17 14:23:03 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -118,7 +118,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-03-08"
+__version__ = "2016-03-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -255,6 +255,8 @@ def nconcat(*digits, **kw):
   57005
   >>> nconcat(123,456,789, base=1000)
   123456789
+  >>> nconcat(127,0,0,1, base=256)
+  2130706433
   """
   # in Python3 [[ def nconcat(*digits, base=10): ]] is allowed instead
   base = kw.get('base', 10)
@@ -746,7 +748,7 @@ def is_prime(n):
 prime = is_prime
 
 
-# Miller-Rabin primality test - code from Brian Gladman.
+# Miller-Rabin primality test - contributed by Brian Gladman
 def is_prime_mr(n, r=10):
   """
   Miller-Rabin primality test for <n>.
@@ -2037,6 +2039,13 @@ class Primes(object):
   """
   A prime sieve.
 
+  The 'array' parameter can be used to specify a list like class to implement
+  the sieve. Possible values for this are:
+
+  list - use standard Python list
+  bytearray - faster and uses less space (default)
+  bitarray - (if you have it) less space that bytearray, but more time than list
+
   >>> Primes(50).list()
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
   >>> primes = Primes(1000000)
@@ -2054,12 +2063,18 @@ class Primes(object):
   NOTE: if you make a large sieve it will use up lots of memory.
   """
 
-  def __init__(self, n):
+  def __init__(self, n, array=bytearray):
     """
     make a sieve of primes up to n
     """
-    self.sieve = []
+    # initial array
+    self.sieve = array()
+    # singleton arrays for True and False
+    self.T = array([1])
+    self.F = array([0])
+    # initial size of the sieve
     self.max = 0
+    # now extend it
     self.extend(n)
 
   def extend(self, n):
@@ -2071,7 +2086,7 @@ class Primes(object):
     s = self.sieve
     l = len(s) + 1
     h = (n - 1) // 2
-    s.extend([True] * (h - l + 1))
+    s.extend(self.T * (h - l + 1))
     r = isqrt(n)
     (i, j) = (0, 3)
     while j <= r:
@@ -2082,7 +2097,7 @@ class Primes(object):
           k = (l - a) // j
           m -= k
           a += j * k
-        s[a:h:j] = [False] * m
+        s[a:h:j] = self.F * m
       i += 1
       j += 2
     self.max = n
@@ -2112,6 +2127,7 @@ class Primes(object):
     h = (self.max - 1) // 2
     for i in range(l, h):
       if s[i]: yield 2 * i + 3
+    #printf("{b} bytes used", b=s.__sizeof__())
   
   # make this an iterable object
   __iter__ = generate
@@ -2126,17 +2142,17 @@ class Primes(object):
     if n == 2: return True
     (i, r) = divmod(n - 3, 2)
     if r: return False
-    return self.sieve[i]
+    return bool(self.sieve[i])
 
   prime = is_prime
 
   # allows use of "in"
   __contains__ = is_prime
 
-  # return primes in the range [a, b]
+  # return primes in the (inclusive) range [a, b]
   def range(self, a, b):
     """
-    return primes in the range [a, b].
+    return primes in the (inclusive) range [a, b].
     """
     for p in self.generate(a):
       if p > b: break
@@ -2199,7 +2215,7 @@ class PrimesGenerator(object):
   17000023
   """
 
-  def __init__(self, n, fn=lambda n: 2 * n):
+  def __init__(self, n, fn=lambda n: 2 * n, array=bytearray):
     """
     make a sieve of primes with an initial maximum of <n>.
 
@@ -2209,7 +2225,7 @@ class PrimesGenerator(object):
     the default function doubles the maximum at each expansion.
     """
     self.chunk = fn
-    self.primes = Primes(n)
+    self.primes = Primes(n, array=array)
 
   def extend(self, n):
     """
