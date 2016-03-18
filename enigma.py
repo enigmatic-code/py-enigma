@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Mar 17 14:23:03 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Mar 18 12:19:02 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2069,11 +2069,10 @@ class Primes(object):
     """
     # initial array
     self.sieve = array()
+    self.max = 0
     # singleton arrays for True and False
     self.T = array([1])
     self.F = array([0])
-    # initial size of the sieve
-    self.max = 0
     # now extend it
     self.extend(n)
 
@@ -2088,19 +2087,16 @@ class Primes(object):
     h = (n - 1) // 2
     s.extend(self.T * (h - l + 1))
     r = isqrt(n)
-    (i, j) = (0, 3)
-    while j <= r:
+    (i, p) = (0, 3)
+    while p <= r:
       if s[i]:
-        a = (j * j - 3) // 2
-        m = (h + j - a - 1) // j
-        if (a < l):
-          k = (l - a) // j
-          m -= k
-          a += j * k
-        s[a:h:j] = self.F * m
+        j = (p * p - 3) // 2
+        if j < l: j += p * ((l - j) // p)
+        s[j::p] = self.F * ((h - j - 1) // p + 1)
       i += 1
-      j += 2
+      p += 2
     self.max = n
+    #printf("{b} bytes used", b=s.__sizeof__())
 
 
   # return a list of primes (more space)
@@ -2127,7 +2123,6 @@ class Primes(object):
     h = (self.max - 1) // 2
     for i in range(l, h):
       if s[i]: yield 2 * i + 3
-    #printf("{b} bytes used", b=s.__sizeof__())
   
   # make this an iterable object
   __iter__ = generate
