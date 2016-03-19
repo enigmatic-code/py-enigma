@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 19 00:19:51 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 19 07:43:57 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2042,7 +2042,7 @@ _primes_chunk = lambda n: 2 * n
 _primes_size = 1024
 
 
-class PrimeSieveE2(object):
+class _PrimeSieveE2(object):
 
   """
   A prime sieve.
@@ -2054,9 +2054,9 @@ class PrimeSieveE2(object):
   bytearray - faster and uses less space (default)
   bitarray - (if you have it) less space that bytearray, but more time than list
 
-  >>> PrimeSieveE2(50).list()
+  >>> _PrimeSieveE2(50).list()
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
-  >>> primes = PrimeSieveE2(1000000)
+  >>> primes = _PrimeSieveE2(1000000)
   >>> primes.is_prime(10001)
   False
   >>> 10007 in primes
@@ -2104,7 +2104,7 @@ class PrimeSieveE2(object):
       i += 1
       p += 2
     self.max = n
-    #printf("[PrimeSieveE2: extended to {n}: {b} bytes used]", b=s.__sizeof__())
+    #printf("[_PrimeSieveE2: extended to {n}: {b} bytes used]", b=s.__sizeof__())
 
 
   # return a list of primes (more space)
@@ -2183,7 +2183,7 @@ class PrimeSieveE2(object):
 
 # an expandable version of the sieve
 
-class PrimeSieveE2X(PrimeSieveE2):
+class _PrimeSieveE2X(_PrimeSieveE2):
   """
   Make an expanding sieve of primes with an initial maximum of <n>.
 
@@ -2194,7 +2194,7 @@ class PrimeSieveE2X(PrimeSieveE2):
 
   To find the 1000th prime,
   (actually a list of length 1 starting with the 1000th prime):
-  >>> primes = PrimeSieveE2X(1000)
+  >>> primes = _PrimeSieveE2X(1000)
   >>> first(primes, 1, 999)
   [7919]
 
@@ -2227,7 +2227,7 @@ class PrimeSieveE2X(PrimeSieveE2):
     the default function doubles the maximum at each expansion.
     """
     self.chunk = fn
-    PrimeSieveE2.__init__(self, n, array=array)
+    _PrimeSieveE2.__init__(self, n, array=array)
 
   # expand the sieve up to n, or by the next chunk
   def extend(self, n=None):
@@ -2238,7 +2238,7 @@ class PrimeSieveE2X(PrimeSieveE2):
     function specified in __init__().
     """
     if n is None: n = self.chunk(self.max)
-    PrimeSieveE2.extend(self, n)
+    _PrimeSieveE2.extend(self, n)
 
   # for backwards compatability
   expand = extend
@@ -2252,7 +2252,7 @@ class PrimeSieveE2X(PrimeSieveE2):
     """    
     while True:
       # generate all primes in the sieve
-      for p in PrimeSieveE2.generate(self, start): yield p
+      for p in _PrimeSieveE2.generate(self, start): yield p
       start = self.max + 1
       # then expand the sieve
       self.expand()
@@ -2266,7 +2266,7 @@ class PrimeSieveE2X(PrimeSieveE2):
     primaility test - the sieve is expanded as necessary before testing.
     """
     self.extend(n)
-    return PrimeSieveE2.is_prime(self, n)
+    return _PrimeSieveE2.is_prime(self, n)
 
   # allows use of "in"
   __contains__ = is_prime
@@ -2279,7 +2279,7 @@ class PrimeSieveE2X(PrimeSieveE2):
     the sieve is expanded as necessary beforehand.
     """
     self.extend(b)
-    return PrimeSieveE2.range(self, a, b)
+    return _PrimeSieveE2.range(self, a, b)
 
   # expand the sieve as necessary
   def prime_factor(self, n):
@@ -2289,7 +2289,7 @@ class PrimeSieveE2X(PrimeSieveE2):
     the sieve is expanded as necessary beforehand.
     """
     self.extend(isqrt(n))
-    return PrimeSieveE2.prime_factor(self, n)
+    return _PrimeSieveE2.prime_factor(self, n)
   
 
 # create a suitable prime sieve
@@ -2350,13 +2350,13 @@ def Primes(n=None, expandable=False, array=_primes_array, fn=_primes_chunk):
   if n is None: (n, expandable) = (_primes_size, True)
   # return an appropriate object
   if expandable:
-    return PrimeSieveE2X(n, array=array, fn=fn)
+    return _PrimeSieveE2X(n, array=array, fn=fn)
   else:
-    return PrimeSieveE2(n, array=array)
+    return _PrimeSieveE2(n, array=array)
 
 # backwards compatability
-def PrimesGenerator(n=None, fn=_primes_chunk):
-  return Primes(n, expandable=True, fn=fn)
+def PrimesGenerator(n=None, array=_primes_array, fn=_primes_chunk):
+  return Primes(n, expandable=True, array=array, fn=fn)
 
 ###############################################################################
 
