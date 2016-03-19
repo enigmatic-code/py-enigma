@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Mar 18 12:19:02 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 19 00:19:51 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -118,7 +118,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-03-17"
+__version__ = "2016-03-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -459,7 +459,7 @@ def find(s, v):
   -1
 
   and on iterators in general (don't try this with a non-prime value)
-  >>> find(PrimesGenerator(1000), 10007)
+  >>> find(Primes(), 10007)
   1229
 
   Note that this function works by attempting to use the index() method
@@ -977,10 +977,13 @@ def isqrt(n):
   >>> isqrt(17)
   4
   """
-  a = n
+  try:
+    a = int(n ** 0.5 + 1e-6)
+  except OverflowError:
+    a = n
   while True:
     b = (a + n // a) // 2
-    if not(b < a): break
+    if a <= b: break
     a = b
   return a
 
@@ -2032,9 +2035,14 @@ class Accumulator(object):
 
 ###############################################################################
 
-# Prime Sieve
+# Prime Sieves
 
-class Primes(object):
+_primes_array = bytearray
+_primes_chunk = lambda n: 2 * n
+_primes_size = 1024
+
+
+class PrimeSieveE2(object):
 
   """
   A prime sieve.
@@ -2046,14 +2054,12 @@ class Primes(object):
   bytearray - faster and uses less space (default)
   bitarray - (if you have it) less space that bytearray, but more time than list
 
-  >>> Primes(50).list()
+  >>> PrimeSieveE2(50).list()
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
-  >>> primes = Primes(1000000)
+  >>> primes = PrimeSieveE2(1000000)
   >>> primes.is_prime(10001)
   False
   >>> 10007 in primes
-  True
-  >>> sum(primes.generate()) == 37550402023
   True
   >>> sum(primes) == 37550402023
   True
@@ -2063,7 +2069,9 @@ class Primes(object):
   NOTE: if you make a large sieve it will use up lots of memory.
   """
 
-  def __init__(self, n, array=bytearray):
+  # width 2 prime sieve
+
+  def __init__(self, n, array=_primes_array):
     """
     make a sieve of primes up to n
     """
@@ -2096,42 +2104,49 @@ class Primes(object):
       i += 1
       p += 2
     self.max = n
-    #printf("{b} bytes used", b=s.__sizeof__())
+    #printf("[PrimeSieveE2: extended to {n}: {b} bytes used]", b=s.__sizeof__())
 
 
   # return a list of primes (more space)
   def list(self):
     """
     return a list of primes in the sieve (in numerical order).
-    (This will require more memory than generate()).
+
+    (this will require more memory than generate()).
     """
+    if self.max < 2: return []
     s = self.sieve
     r = list(2 * i + 3 for (i, f) in enumerate(s) if f)
-    if self.max > 1: r.insert(0, 2)
+    r.insert(0, 2)
     return r
 
   # return a generator (less space)
-  def generate(self, start=0):
+  def generate(self, start=0, end=None):
     """
     generate all primes in the sieve (in numerical order).
-    (This will require less memory than list())
+
+    (this will require less memory than list())
     """
+    if end is None: end = self.max
+    if start < 3 and end > 1: yield 2
     s = self.sieve
-    # return each prime
-    if self.max > 1 and start < 3: yield 2
     l = (0 if start < 4 else (start // 2) - 1)
-    h = (self.max - 1) // 2
+    h = (end - 1) // 2
     for i in range(l, h):
       if s[i]: yield 2 * i + 3
   
   # make this an iterable object
   __iter__ = generate
 
+  # range(a, b) - generate primes in the (inclusive) range [a, b] - is the same as generate now
+  range = generate
+
   # prime test (may throw IndexError if n is too large)
   def is_prime(self, n):
     """
     check to see if the number is a prime.
-    (May throw IndexError for numbers larger than the sieve).
+
+    (may throw IndexError for numbers larger than the sieve).
     """
     if n < 2: return False
     if n == 2: return True
@@ -2143,15 +2158,6 @@ class Primes(object):
 
   # allows use of "in"
   __contains__ = is_prime
-
-  # return primes in the (inclusive) range [a, b]
-  def range(self, a, b):
-    """
-    return primes in the (inclusive) range [a, b].
-    """
-    for p in self.generate(a):
-      if p > b: break
-      yield p
 
   # generate prime factors of <n>
   def prime_factor(self, n):
@@ -2175,42 +2181,43 @@ class Primes(object):
         if e > 0: yield (p, e)
 
 
-# construct an unbounded sequence of primes, extending it in chunks
+# an expandable version of the sieve
 
-class PrimesGenerator(object):
+class PrimeSieveE2X(PrimeSieveE2):
   """
   Make an expanding sieve of primes with an initial maximum of <n>.
 
-  When the sieve is expanded the function <fn> is used to calculate the new maximum,
-  based on the previous maximum.
+  When the sieve is expanded the function <fn> is used to calculate
+  the new maximum, based on the previous maximum.
 
   The default function doubles the maximum at each expansion.
 
-  e.g. to find the 1000th prime (actually a list of length 1 starting with the 1000th prime)
-  >>> primes = PrimesGenerator(1000, lambda n: 2 * n)
+  To find the 1000th prime,
+  (actually a list of length 1 starting with the 1000th prime):
+  >>> primes = PrimeSieveE2X(1000)
   >>> first(primes, 1, 999)
   [7919]
 
-  we can then find the one millionth prime and the generator will expand as necessary
+  We can then find the one millionth prime and the generator will
+  expand as necessary:
   >>> first(primes, 1, 999999)
   [15485863]
 
-  we can see what the current maximum number considered is:
-  >>> primes.max()
+  We can see what the current maximum number considered is:
+  >>> primes.max
   16384000
 
-  and can test for primality up to this value:
+  And can test for primality up to this value:
   >>> 1000003 in primes
   True
 
-  the is_prime() method will automatically extend the sieve up to (at least) n
+  The sieve will automatically expand as it is used:
   >>> primes.is_prime(17000023)
   True
-  >>> primes.max()
+  >>> primes.max
   17000023
   """
-
-  def __init__(self, n, fn=lambda n: 2 * n, array=bytearray):
+  def __init__(self, n, array=_primes_array, fn=_primes_chunk):
     """
     make a sieve of primes with an initial maximum of <n>.
 
@@ -2220,67 +2227,136 @@ class PrimesGenerator(object):
     the default function doubles the maximum at each expansion.
     """
     self.chunk = fn
-    self.primes = Primes(n, array=array)
+    PrimeSieveE2.__init__(self, n, array=array)
 
-  def extend(self, n):
+  # expand the sieve up to n, or by the next chunk
+  def extend(self, n=None):
     """
-    extend the generator to include primes up to (at least) n.
-    """
-    self.primes.extend(n)
+    extend the sieve to include primes up to (at least) n.
 
-  def max(self):
+    if n is not specified that sieve will be expanded according to the
+    function specified in __init__().
     """
-    return the current maximum limit on primes generated.
-    """
-    return self.primes.max
+    if n is None: n = self.chunk(self.max)
+    PrimeSieveE2.extend(self, n)
 
-  def expand(self):
-    """
-    expand the generator to include the next chunk of primes.
-    """
-    self.extend(self.chunk(self.max()))
+  # for backwards compatability
+  expand = extend
 
-  # generate all primes
-  def __iter__(self):
+  # generate all primes, a chunk at a time
+  def generate(self, start=0):
     """
-    generate all primes, expanding the list as necessary.
+    generate primes without limit, expanding the sieve as necessary.
 
-    eventually the list of primes will consume all available memory.
-    """
-
-    # start with 2
-    yield 2
-
-    # and use the sieve for the rest
-    l = 0
-    s = self.primes.sieve
+    eventually the sieve will consume all available memory.
+    """    
     while True:
-      h = len(s)
-
-      # generate primes from sieve indices [l, h)
-      for i in range(l, h):
-        if s[i]:
-          yield 2 * i + 3
-
-      # expand the sieve
+      # generate all primes in the sieve
+      for p in PrimeSieveE2.generate(self, start): yield p
+      start = self.max + 1
+      # then expand the sieve
       self.expand()
-      # and start from the previous high point
-      l = h
 
-  # test for primes (may throw IndexError if n is too large)
-  # (call self.extend(n) first if you want to make sure it isn't)
-  def __contains__(self, n):
-    """
-    primality test, which will work for primes up to the current maximum.
-    """
-    return n in self.primes
+  # make this an iterable object  
+  __iter__ = generate
 
+  # expand the sieve as necessary
   def is_prime(self, n):
     """
-    primality test, which expands the sieve before testing
+    primaility test - the sieve is expanded as necessary before testing.
     """
     self.extend(n)
-    return n in self.primes
+    return PrimeSieveE2.is_prime(self, n)
+
+  # allows use of "in"
+  __contains__ = is_prime
+
+  # expand the sieve as necessary
+  def range(self, a, b):
+    """
+    generate primes in the (inclusive) range [a, b].
+
+    the sieve is expanded as necessary beforehand.
+    """
+    self.extend(b)
+    return PrimeSieveE2.range(self, a, b)
+
+  # expand the sieve as necessary
+  def prime_factor(self, n):
+    """
+    generate (<prime>, <exponent>) pairs in the prime factorisation of positive integer <n>.
+
+    the sieve is expanded as necessary beforehand.
+    """
+    self.extend(isqrt(n))
+    return PrimeSieveE2.prime_factor(self, n)
+  
+
+# create a suitable prime sieve
+def Primes(n=None, expandable=False, array=_primes_array, fn=_primes_chunk):
+  """
+  Return a suitable prime sieve object.
+
+  n - initial limit of the sieve (the sieve contains primes up to n)
+  expandable - should the sieve expand as necessary
+  array - list implelementation to use
+  fn - function used to increase the limit on expanding sieves
+
+  If we are interested in a limited collection of primes, we can do this:
+
+  >>> primes = Primes(50)
+  >>> primes.list()
+  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
+  >>> sum(primes)
+  328
+  >>> 39 in primes
+  False
+
+  The collection can be extended manually to a new upper limit:
+
+  >>> primes.extend(100)
+  >>> sum(primes)
+  1060
+  >>> 97 in primes
+  True
+
+  but it doesn't automatically expand.
+
+  If we want an automatically expanding version, we can set the
+  'expandable' flag to True.
+
+  >>> primes = Primes(50, expandable=True)
+
+  We can find out the current size and contents of the sieve:
+  >>> primes.max
+  50
+  >>> primes.list()
+  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
+
+  But if we use it as a generator it will expand indefiniately, so we
+  can only sum a restricted range:
+  >>> sum(primes.range(0, 100))
+  1060
+
+  If you don't know how many primes you'll need you can just use
+  Primes() and get an expandable sieve with primes up to 1024, and the
+  limit will double each time the sieve is expanded.
+
+  So, to sum the first 1000 primes:
+  >>> sum(first(Primes(), 1000))
+  3682913
+  """
+  # if n is None then make it expandable by default
+  if n is None: (n, expandable) = (_primes_size, True)
+  # return an appropriate object
+  if expandable:
+    return PrimeSieveE2X(n, array=array, fn=fn)
+  else:
+    return PrimeSieveE2(n, array=array)
+
+# backwards compatability
+def PrimesGenerator(n=None, fn=_primes_chunk):
+  return Primes(n, expandable=True, fn=fn)
 
 ###############################################################################
 
