@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 19 07:43:57 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Mar 20 07:35:59 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -118,7 +118,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-03-18"
+__version__ = "2016-03-20" # spring equinox
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2042,7 +2042,7 @@ _primes_chunk = lambda n: 2 * n
 _primes_size = 1024
 
 
-class _PrimeSieveE2(object):
+class _PrimeSieveE6(object):
 
   """
   A prime sieve.
@@ -2054,9 +2054,9 @@ class _PrimeSieveE2(object):
   bytearray - faster and uses less space (default)
   bitarray - (if you have it) less space that bytearray, but more time than list
 
-  >>> _PrimeSieveE2(50).list()
+  >>> _PrimeSieveE6(50).list()
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
-  >>> primes = _PrimeSieveE2(1000000)
+  >>> primes = _PrimeSieveE6(1000000)
   >>> primes.is_prime(10001)
   False
   >>> 10007 in primes
@@ -2069,20 +2069,31 @@ class _PrimeSieveE2(object):
   NOTE: if you make a large sieve it will use up lots of memory.
   """
 
-  # width 2 prime sieve
+  # a width 6 prime sieve
+  #
+  # the sieve itself represents numbers with a residue of 1 and 5 modulo 6
+  #
+  # i:  0   1   | 2   3  |  4   5  |  6   7  |  8   9  | 10  11 | ...
+  # p:  1   5   | 7  11  | 13  17  | 19  23  | 25  29  | 31  35 | ...
+  #
+  # i->p = (3 * i) + (i & 1) + 1
+  # p->i = p // 3
+  #
+  # to check numbers up to (but not including) n we need a sieve of size: (n // 3) + (n % 6 == 2)
 
   def __init__(self, n, array=_primes_array):
     """
     make a sieve of primes up to n
     """
-    # initial array
-    self.sieve = array()
-    self.max = 0
-    # singleton arrays for True and False
+    # initial sieve
+    self.sieve = array([0])
+    self.max = 1
+    # singleton arrays for True and False values
     self.T = array([1])
     self.F = array([0])
-    # now extend it
+    # now extend the sieve to the required size
     self.extend(n)
+
 
   def extend(self, n):
     """
@@ -2090,22 +2101,32 @@ class _PrimeSieveE2(object):
     """
     if not(n > self.max): return
 
+    # extend the sieve to the right size
     s = self.sieve
     l = len(s) + 1
-    h = (n - 1) // 2
+    h = ((n + 1) // 3) + (n % 6 == 1)
     s.extend(self.T * (h - l + 1))
-    r = isqrt(n)
-    (i, p) = (0, 3)
-    while p <= r:
-      if s[i]:
-        j = (p * p - 3) // 2
-        if j < l: j += p * ((l - j) // p)
-        s[j::p] = self.F * ((h - j - 1) // p + 1)
-      i += 1
-      p += 2
-    self.max = n
-    #printf("[_PrimeSieveE2: extended to {n}: {b} bytes used]", b=s.__sizeof__())
 
+    # remove multiples of primes p from indices l to h
+    for i in irange(1, isqrt(n) // 3):
+      if s[i]:
+        odd = (i & 1)
+        p = (i * 3) + odd + 1
+        k = 2 * p
+        # 6p increments starting from p^2
+        j = (p * p) // 3
+        if j < l: j += k * ((l - j) // k)
+        s[j::k] = self.F * ((h - j - 1) // k + 1)
+        #printf("eliminating {p} {ns}", ns=tuple((z * 3) + (z & 1) + 1 for z in irange(j, h-1, step=k)))
+        # 6p increments from the next residue
+        q = p + (2 if odd else 4)
+        j = (p * q) // 3
+        if j < l: j += k * ((l - j) // k)
+        s[j::k] = self.F * ((h - j - 1) // k + 1)
+        #printf("eliminating {p} {ns}", ns=tuple((z * 3) + (z & 1) + 1 for z in irange(j, h-1, step=k)))
+
+    self.max = n
+    #printf("[_PrimeSieveE6: extended to {n}: {b} bytes used]", b=s.__sizeof__())
 
   # return a list of primes (more space)
   def list(self):
@@ -2114,11 +2135,7 @@ class _PrimeSieveE2(object):
 
     (this will require more memory than generate()).
     """
-    if self.max < 2: return []
-    s = self.sieve
-    r = list(2 * i + 3 for (i, f) in enumerate(s) if f)
-    r.insert(0, 2)
-    return r
+    return list(_PrimeSieveE6.generate(self))
 
   # return a generator (less space)
   def generate(self, start=0, end=None):
@@ -2129,12 +2146,11 @@ class _PrimeSieveE2(object):
     """
     if end is None: end = self.max
     if start < 3 and end > 1: yield 2
+    if start < 4 and end > 2: yield 3
     s = self.sieve
-    l = (0 if start < 4 else (start // 2) - 1)
-    h = (end - 1) // 2
-    for i in range(l, h):
-      if s[i]: yield 2 * i + 3
-  
+    for i in range(start // 3, (end + 1) // 3):
+      if s[i]: yield (i * 3) + (i & 1) + 1
+
   # make this an iterable object
   __iter__ = generate
 
@@ -2147,12 +2163,12 @@ class _PrimeSieveE2(object):
     check to see if the number is a prime.
 
     (may throw IndexError for numbers larger than the sieve).
-    """
-    if n < 2: return False
-    if n == 2: return True
-    (i, r) = divmod(n - 3, 2)
-    if r: return False
-    return bool(self.sieve[i])
+    """    
+    if n < 2: return False # 0, 1 -> F
+    if n < 4: return True # 2, 3 -> T
+    (i, r) = divmod(n, 6)
+    if r != 1 and r != 5: return False # (n % 6) != (1, 5) -> F
+    return bool(self.sieve[n // 3])
 
   prime = is_prime
 
@@ -2183,7 +2199,7 @@ class _PrimeSieveE2(object):
 
 # an expandable version of the sieve
 
-class _PrimeSieveE2X(_PrimeSieveE2):
+class _PrimeSieveE6X(_PrimeSieveE6):
   """
   Make an expanding sieve of primes with an initial maximum of <n>.
 
@@ -2194,7 +2210,7 @@ class _PrimeSieveE2X(_PrimeSieveE2):
 
   To find the 1000th prime,
   (actually a list of length 1 starting with the 1000th prime):
-  >>> primes = _PrimeSieveE2X(1000)
+  >>> primes = _PrimeSieveE6X(1000)
   >>> first(primes, 1, 999)
   [7919]
 
@@ -2226,8 +2242,8 @@ class _PrimeSieveE2X(_PrimeSieveE2):
 
     the default function doubles the maximum at each expansion.
     """
-    self.chunk = fn
-    _PrimeSieveE2.__init__(self, n, array=array)
+    self.chunk = fn    
+    _PrimeSieveE6.__init__(self, n, array=array)
 
   # expand the sieve up to n, or by the next chunk
   def extend(self, n=None):
@@ -2238,7 +2254,7 @@ class _PrimeSieveE2X(_PrimeSieveE2):
     function specified in __init__().
     """
     if n is None: n = self.chunk(self.max)
-    _PrimeSieveE2.extend(self, n)
+    _PrimeSieveE6.extend(self, n)
 
   # for backwards compatability
   expand = extend
@@ -2251,13 +2267,13 @@ class _PrimeSieveE2X(_PrimeSieveE2):
     eventually the sieve will consume all available memory.
     """    
     while True:
-      # generate all primes in the sieve
-      for p in _PrimeSieveE2.generate(self, start): yield p
+      # generate all primes currently in the sieve
+      for p in _PrimeSieveE6.generate(self, start): yield p
       start = self.max + 1
       # then expand the sieve
       self.expand()
 
-  # make this an iterable object  
+  # make this an iterable object
   __iter__ = generate
 
   # expand the sieve as necessary
@@ -2266,7 +2282,7 @@ class _PrimeSieveE2X(_PrimeSieveE2):
     primaility test - the sieve is expanded as necessary before testing.
     """
     self.extend(n)
-    return _PrimeSieveE2.is_prime(self, n)
+    return _PrimeSieveE6.is_prime(self, n)
 
   # allows use of "in"
   __contains__ = is_prime
@@ -2279,17 +2295,12 @@ class _PrimeSieveE2X(_PrimeSieveE2):
     the sieve is expanded as necessary beforehand.
     """
     self.extend(b)
-    return _PrimeSieveE2.range(self, a, b)
+    return _PrimeSieveE6.range(self, a, b)
 
   # expand the sieve as necessary
   def prime_factor(self, n):
-    """
-    generate (<prime>, <exponent>) pairs in the prime factorisation of positive integer <n>.
-
-    the sieve is expanded as necessary beforehand.
-    """
     self.extend(isqrt(n))
-    return _PrimeSieveE2.prime_factor(self, n)
+    return _PrimeSieveE6.prime_factor(self, n)
   
 
 # create a suitable prime sieve
@@ -2350,9 +2361,9 @@ def Primes(n=None, expandable=False, array=_primes_array, fn=_primes_chunk):
   if n is None: (n, expandable) = (_primes_size, True)
   # return an appropriate object
   if expandable:
-    return _PrimeSieveE2X(n, array=array, fn=fn)
+    return _PrimeSieveE6X(n, array=array, fn=fn)
   else:
-    return _PrimeSieveE2(n, array=array)
+    return _PrimeSieveE6(n, array=array)
 
 # backwards compatability
 def PrimesGenerator(n=None, array=_primes_array, fn=_primes_chunk):
