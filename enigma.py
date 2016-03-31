@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Mar 20 07:35:59 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Mar 31 18:38:46 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -118,7 +118,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-03-20" # spring equinox
+__version__ = "2016-03-31"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -977,6 +977,7 @@ def isqrt(n):
   >>> isqrt(17)
   4
   """
+  if n == 0: return 0
   try:
     a = int(n ** 0.5 + 1e-6)
   except OverflowError:
@@ -2113,12 +2114,12 @@ class _PrimeSieveE6(object):
         odd = (i & 1)
         p = (i * 3) + odd + 1
         k = 2 * p
-        # 6p increments starting from p^2
+        # remove multiples of p starting from p^2
         j = (p * p) // 3
         if j < l: j += k * ((l - j) // k)
         s[j::k] = self.F * ((h - j - 1) // k + 1)
         #printf("eliminating {p} {ns}", ns=tuple((z * 3) + (z & 1) + 1 for z in irange(j, h-1, step=k)))
-        # 6p increments from the next residue
+        # remove multiples with the other residue
         q = p + (2 if odd else 4)
         j = (p * q) // 3
         if j < l: j += k * ((l - j) // k)
