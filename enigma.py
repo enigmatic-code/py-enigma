@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Mar 31 18:38:46 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Apr  4 10:36:27 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -118,7 +118,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-03-31"
+__version__ = "2016-04-04"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2687,7 +2687,7 @@ class SubstitutedSum(object):
     run the SubstitutedSum solver with the specified command line arguments.
 
     e.g. Enigma 327 <https://enigmaticcode.wordpress.com/2016/01/08/enigma-327-it-all-adds-up/>
-    % python enigma.py SubstitutedSum KBKGEQD GAGEEYQ ADKGEDY EXYAAEE
+    % python enigma.py SubstitutedSum 'KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE'
     [solving KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE ...]
     A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5 / 1912803 + 2428850 + 4312835 = 8654488
 
@@ -2701,7 +2701,7 @@ class SubstitutedSum(object):
     confused by digits that are represented by letters in bases >10).
 
     e.g. Enigma 1663 <https://enigmaticcode.wordpress.com/2011/12/04/enigma-1663-flintoffs-farewell/>
-    % python enigma.py SubstitutedSum --base=11 FAREWELL FREDALO FLINTOFF
+    % python enigma.py SubstitutedSum --base=11 'FAREWELL + FREDALO = FLINTOFF'
     [solving FAREWELL + FREDALO = FLINTOFF ...]
     A=1 D=10 E=7 F=6 I=0 L=8 N=4 O=9 R=5 T=2 W=3 / 61573788 + 657A189 = 68042966
     A=1 D=3 E=7 F=6 I=0 L=8 N=4 O=9 R=5 T=2 W=10 / 6157A788 + 6573189 = 68042966
@@ -2714,7 +2714,7 @@ class SubstitutedSum(object):
     There can be multiple --assign options.
 
     e.g. Enigma 1361 <https://enigmaticcode.wordpress.com/2013/02/20/enigma-1361-enigma-variation/>
-    % python enigma.py SubstitutedSum --assign=O,0 ELGAR ENIGMA NIMROD
+    % python enigma.py SubstitutedSum --assign=O,0 'ELGAR + ENIGMA = NIMROD'
     [solving ELGAR + ENIGMA = NIMROD ...]
     A=3 D=2 E=7 G=4 I=5 L=1 M=6 N=8 O=0 R=9 / 71439 + 785463 = 856902
 
@@ -2726,7 +2726,7 @@ class SubstitutedSum(object):
     have specified a --base=<n> option)
 
     e.g. Enigma 1272 <https://enigmaticcode.wordpress.com/2014/12/09/enigma-1272-jonny-wilkinson/>
-    % python enigma.py SubstitutedSum --digits=0,1,2,3,4,5,6,7,8 WILKI NSON JONNY
+    % python enigma.py SubstitutedSum --digits=0,1,2,3,4,5,6,7,8 'WILKI + NSON = JONNY'
     [solving WILKI + NSON = JONNY ...]
     I=8 J=5 K=0 L=6 N=3 O=2 S=7 W=4 Y=1 / 48608 + 3723 = 52331
     I=8 J=5 K=0 L=7 N=3 O=2 S=6 W=4 Y=1 / 48708 + 3623 = 52331
@@ -2743,7 +2743,7 @@ class SubstitutedSum(object):
     not allowed. If you want to allow them you can give a "--invalid=0," option.
 
     Enigma 171 <https://enigmaticcode.wordpress.com/2014/02/23/enigma-171-addition-digits-all-wrong/>
-    % python enigma.py SubstitutedSum -i0,016 -i1,1 -i3,3 -i5,5 -i6,6 -i7,7 -i8,8 -i9,9 1939 1079 6856
+    % python enigma.py SubstitutedSum -i0,016 -i1,1 -i3,3 -i5,5 -i6,6 -i7,7 -i8,8 -i9,9 '1939 + 1079 = 6856'
     [solving 1939 + 1079 = 6856 ...]
     0=1 1=2 3=6 5=0 6=4 7=3 8=9 9=7 / 2767 + 2137 = 4904
 
@@ -3187,7 +3187,7 @@ class SubstitutedDivision(object):
     run the SubstitutedDivision solver with the specified command line arguments.
 
     e.g. for Enigma 309: (note use of # to denote the empty string)
-    % python enigma.py SubstitutedDivision 'h????? / ?? = m?gh' 'h?? + g?? = ??' '??? + ky? = ?' '?g + m? = x' 'x? + ?? = #'
+    % python enigma.py SubstitutedDivision 'h????? / ?? = m?gh' 'h?? - g?? = ??' '??? - ky? = ?' '?g - m? = x' 'x? - ?? = #'
     [solving h????? / ?? = m?gh, [('h??', 'g??', '??'), ('???', 'ky?', '?'), ('?g', 'm?', 'x'), ('x?', '??', '')] ...]
     202616 / 43 = 4712 rem 0 [g=1 h=2 k=3 m=4 x=8 y=0] [202 - 172 = 30, 306 - 301 = 5, 51 - 43 = 8, 86 - 86 = 0]
 
@@ -3199,14 +3199,14 @@ class SubstitutedDivision(object):
 
     # check command line usage
     if len(args) < 2:
-      printf("usage: {cls.__name__} '<a> / <b> = <c>' '<x> + <y> = <z>' ...")
+      printf("usage: {cls.__name__} '<a> / <b> = <c>' '[<x> - <y> = <z>] | [<y> <z>]' ...")
       return -1
 
     # extract the terms and result
     import re
     (a, b, c) = re.split(r'[\s\/\=]+', args[0])
     # intermediate sums: empty string is denoted by '#', empty intermediate is denoted by ''
-    intermediates = list(map((lambda x: (None if x == [''] else x)), (re.split(r'[\s\+\=\#]+', x) for x in args[1:])))
+    intermediates = list(map((lambda x: (None if x == [''] else x)), (re.split(r'[\s\-\=\#]+', x) for x in args[1:])))
     printf("[solving {a} / {b} = {c}, {intermediates} ...]", intermediates=list(None if x is None else tuple(x) for x in intermediates))
 
     # call the solver
@@ -3855,7 +3855,7 @@ enigma.py has the following command-line usage:
 
       For example, Enigma 327 can be solved using:
 
-      % python enigma.py SubstitutedSum KBKGEQD GAGEEYQ ADKGEDY EXYAAEE
+      % python enigma.py SubstitutedSum 'KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE'
       [solving KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE ...]
       A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5 / 1912803 + 2428850 + 4312835 = 8654488
 
