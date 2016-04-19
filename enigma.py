@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Apr  4 10:36:27 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr 19 11:21:40 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -118,7 +118,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-04-04"
+__version__ = "2016-04-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -324,7 +324,7 @@ def diff(a, b, fn=None):
   >>> join(diff('newhampshire', 'wham'))
   'nepsire'
   """
-  return tuple(x for x in a if x not in set(b))
+  return tuple(x for x in a if x not in b)
 
 
 # recipe itertools documentation
@@ -2928,6 +2928,7 @@ class SubstitutedDivision(object):
     # update a map consistently with (key, value) pairs
     # an updated mapping will be returned, or None
     def update(d, kvs):
+      cow = True # copy on write flag for d
       for (k, v) in kvs:
         # check v is an allowable digit
         if v not in digits: return None
@@ -2941,7 +2942,9 @@ class SubstitutedDivision(object):
           # both k and v should be new values in the map
           if v in d.values(): return None
           # update the map
-          d = d.copy()
+          if cow:
+            d = d.copy()
+            cow = False
           d[k] = v
       return d
 
@@ -3540,6 +3543,204 @@ class Football(object):
     """
     return tuple(('x' if s is None else 'ldw'[compare(s[0], s[1]) + 1]) for s in ss)
 
+
+  # solver for a table with substituted values
+
+  def _substituted_table(self, table, n, teams, matches, d, vs):
+    # are we done?
+    if not teams:
+      yield (matches, d)
+      return
+
+    # check a row of the table (used by the Football.substituted_table() solver)
+    # a (possibly) updated value for d is returned
+    # t - team to check (int index)
+    # d - assignments of letters to numbers (dict)
+    # r - table row to check (as a dict)
+    # table - columns in the substituted table (dict)
+    # vs - allowable values
+    def check_row(t, d, r, table, vs):
+      cow = True # copy on write flag for d
+      for (k, v) in r.items():
+        # extract the corresponding letter
+        x = table.get(k, None)
+        if x is None: continue
+        x = x[t]
+        # and match it
+        if x == '?': continue
+        if x in d:
+          # is this letter assigned to a different number?
+          if d[x] != v: return None
+        else:
+          # is this a valid value?
+          if not(v in vs): return None
+          # is this number already assigned to a different letter?
+          if v in d.values(): return None
+          # assign the new value
+          if cow:
+            d = dict(d)
+            cow = False
+          d[x] = v
+      # return the (possibly updated) mapping
+      return d
+
+
+    # deal with team t
+    t = teams[0]
+
+    # matches for team t
+    ms = list((x, t) for x in range(0, t)) + list((t, x) for x in range(t + 1, n))
+    # and the matches remaining
+    rs = diff(ms, matches)
+
+    if not rs:
+      # there are no remaining matches to choose
+      # compute the row in the table for team t
+      r = self.table((matches[m] for m in ms), (m.index(t) for m in ms))
+      # check the output of the table
+      d1 = check_row(t, d, r._asdict(), table, vs)
+      if d1:
+        # there were no mismatches, solve for the remaining teams
+        for z in self._substituted_table(table, n, teams[1:], matches, d1, vs): yield z
+      return
+
+    # choose outcomes for each remaining match
+    for s in self.games(repeat=len(rs)):
+      matches1 = dict(matches)
+      for (k, v) in zip(rs, s): matches1[k] = v
+      # compute the row in the table for team t
+      r = self.table((matches1[m] for m in ms), (m.index(t) for m in ms))
+      # check the output of the table
+      d1 = check_row(t, d, r._asdict(), table, vs)
+      if d1:
+        # there were no mismatches, solve for the remaining teams
+        for z in self._substituted_table(table, n, teams[1:], matches1, d1, vs): yield z
+
+  # solve a substituted table problem
+  def substituted_table(self, table, teams=None, matches=None, d=None, vs=None):
+    """
+    solve a substituted table football problem where numbers in the
+    table have been substituted for letters.
+    
+    generates pairs (<matches>, <d>) where <matches> is a dict() of
+    match outcomes indexed by team indices, so the value at (<i>, <j>)
+    is the outcome for the match between the teams with indices <i>
+    and <j> in the table. <d> is dict() mapping letters used in the
+    table to their corresponding integer values.
+
+    table - a dict() mapping the column names to the substituted
+    values in the columns of the table. '?' represents an empty cell
+    in the table. columns need not be specified if they have no
+    non-empty values.
+
+    teams - a sequence of indices speficying the order the teams will
+    be processed in. if no order is specified a heuristic order will
+    be chosen.
+
+    matches - a dictionary of known match outcomes. usually this is
+    the empty dictionary.
+
+    d - a dictionary mapping known letters to numbers. usually this is
+    empty.
+
+    vs - allowable values in the table. if not specified single digits
+    will be used.
+    """
+    n = max(len(x) for x in table.values())
+    if teams is None:
+      # choose an order to process the teams in
+      rows = tuple(zip(*(table.values())))
+      teams = sorted(range(0, n), key=lambda i: (rows[i].count('?'), len(set(rows[i]))))
+    if matches is None: matches = dict()
+    if d is None: d = dict()
+    if vs is None: vs = list(irange(0, 9))
+    for z in self._substituted_table(table, n, teams, matches, d, vs): yield z
+
+
+  def _substituted_table_goals(self, gf, ga, matches, d, teams, scores):
+    # are we done?
+    if not teams:
+      yield scores
+      return
+
+    # deal with team t
+    t = teams[0]
+
+    # matches for team t
+    ms = list(m for m in matches.keys() if t in m)
+    # matches remaining to be scored
+    rs = diff(ms, scores)
+    if not rs:
+      # check the values
+      (f, a) = football.goals(list(scores[m] for m in ms), list(m.index(t) for m in ms))
+      if f == d[gf[t]] and a == d[ga[t]]:
+        for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores): yield z
+      return
+
+    # matches we already have scores for
+    sms = list(m for m in ms if m in scores)
+    # find possible scores for each remaining match
+    for s in self.scores(list(matches[m] for m in rs), list(m.index(t) for m in rs), d[gf[t]], d[ga[t]], list(scores[m] for m in sms), list(m.index(t) for m in sms)):
+      scores2 = dict(scores)
+      for (m, z) in zip(rs, s): scores2[m] = z
+      for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores2): yield z
+
+  # gf, ga - goals for, goals against
+  # matches - match outcomes
+  # teams - order teams are processed in
+  # scores - score lines
+  def substituted_table_goals(self, gf, ga, matches, d=None, teams=None, scores=None):
+    """
+    determine the scores in matches from a substituted table football problem.
+
+    generates dicts <scores>, which give possible score lines for the
+    matches in <matches> (if a match is specified as 'x' (unplayed) a
+    score of None is returned).
+
+    gf, ga - goals for, goals against columns in the table. specified
+    as symbols that index into the dict() <d> to give the actual
+    values.
+
+    matches - the match outcomes. usually this will be the result of a
+    call to substituted_table().
+
+    teams - the order the teams are processed in.
+
+    scores - known scores. usually this is empty.
+    """
+    if d is None: d = dict((str(i), i) for i in irange(0, 9))
+    if teams is None: teams = list(range(0, len(gf)))
+    if scores is None: scores = dict()
+    for z in self._substituted_table_goals(gf, ga, matches, d, teams, scores): yield z
+
+
+  def output_matches(self, matches, scores=None, teams=None, d=None, start=None, end=''):
+    """
+    output a collection of matches.
+
+    matches - dict() of match outcomes. usually the result of a call
+    to substituted_table().
+    
+    scores - dict() of scores in the matches. usually the result of a
+    call to substituted_table_goals().
+
+    teams - labels to use for the teams (rather than the row indices).
+
+    d - dict() of symbol to value assigments to ouput.
+
+    start, end - delimeters to use before and after the matches are
+    output.
+    """
+    if start is not None: printf("{start}")
+    for k in sorted(matches.keys()):
+      m = matches[k]
+      s = ((join(scores[k], sep='-') if scores.get(k, None) else '---') if scores else '')
+      if teams: k = tuple(teams[t] for t in k)
+      k=join(k, sep=' vs ')
+      printf("{k} = ({m}) {s}")
+    if d is not None:
+      printf("{d}", d=join((join((k, d[k]), sep='=') for k in sorted(d.keys())), sep=' '))
+    if end is not None: printf("{end}")
 
 ###############################################################################
 
