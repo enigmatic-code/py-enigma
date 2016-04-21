@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr 19 11:21:40 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Apr 21 22:31:51 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -118,7 +118,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-04-19"
+__version__ = "2016-04-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3672,7 +3672,7 @@ class Football(object):
     rs = diff(ms, scores)
     if not rs:
       # check the values
-      (f, a) = football.goals(list(scores[m] for m in ms), list(m.index(t) for m in ms))
+      (f, a) = self.goals(list(scores[m] for m in ms), list(m.index(t) for m in ms))
       if f == d[gf[t]] and a == d[ga[t]]:
         for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores): yield z
       return
