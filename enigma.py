@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Apr 21 22:31:51 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Apr 30 09:17:47 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -118,7 +118,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-04-21"
+__version__ = "2016-04-30"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1351,6 +1351,7 @@ def _sprintf(fmt, vs, kw):
     vs = vs.copy()
     for (k, v) in kw.items():
       vs[k] = v
+  # in Python3 [[ fmt.format_map(vs) ]] might be better
   return fmt.format(**vs)
 
 
@@ -2661,7 +2662,7 @@ class SubstitutedSum(object):
     """
     return join((digits[l2d[c]] if c in l2d else c) for c in text)
 
-  def solution(self, l2d):
+  def output_solution(self, l2d):
     """
     given a solution to the substituted sum output the assignment of letters
     to digits and the sum with digits substituted for letters.
@@ -2673,12 +2674,14 @@ class SubstitutedSum(object):
       self.substitute(l2d, self.text)
     )
 
+  solution = output_solution
+
   def go(self, fn=None):
     """
     find all solutions (matching the filter <fn>) and output them.
     """
     for s in self.solve(fn):
-      self.solution(s)
+      self.output_solution(s)
 
   # class method to call from the command line
   @classmethod
@@ -3164,7 +3167,7 @@ class SubstitutedDivision(object):
     return join((digits[s.d[c]] if c in s.d else c) for c in text)
   
   # output the solution
-  def solution(self, s):
+  def output_solution(self, s):
     """
     output a solution in the form:
 
@@ -3175,13 +3178,15 @@ class SubstitutedDivision(object):
            d=join((k + '=' + str(d[k]) for k in sorted(d.keys())), sep=' '),
            intermediates=join((sprintf("{x} - {y} = {z}") for (x, y, z) in self.solution_intermediates(s)), sep=', '))
 
+  solution = output_solution
+
   # find all solutions and output them
   def go(self, fn=None):
     """
     find all solutions (matching filter function <fn>) and output them.
     """
     for s in self.solve(fn):
-      self.solution(s)
+      self.output_solution(s)
 
   # class method to call from the command line
   @classmethod
