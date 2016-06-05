@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Apr 30 09:17:47 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun  5 08:34:11 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -82,6 +82,7 @@ lcm                   - lowest common multiple
 mgcd                  - multiple gcd
 multiply              - the product of numbers in a sequence
 nconcat               - concatenate single digits into an integer
+nsplit                - split a number into single digits
 number                - create an integer from a string ignoring non-digits
 P                     - permutations function (nPk)
 partitions            - partition a sequence of distinct values into tuples
@@ -118,7 +119,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-04-30"
+__version__ = "2016-06-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -263,6 +264,26 @@ def nconcat(*digits, **kw):
   return reduce(lambda a, b: a * base + b, digits, 0)
   # or: (slower, and only works with digits < 10)
   #return int(concat(*digits), base=base)
+
+def nsplit(n, base=10):
+  """
+  split a number into digits (using base <base> representation)
+
+  >>> nsplit(12345)
+  (1, 2, 3, 4, 5)
+  >>> nsplit(57005, base=16)
+  (13, 14, 10, 13)
+  >>> nsplit(123456789, base=1000)
+  (123, 456, 789)
+  >>> nsplit(2130706433, base=256)
+  (127, 0, 0, 1)
+  """
+  ds = list()
+  while True:
+    (n, r) = divmod(n, base)
+    ds.insert(0, r)
+    if n == 0: break
+  return tuple(ds)
 
 
 def number(s, base=10):
