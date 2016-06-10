@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun  5 08:34:11 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun 10 15:11:34 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -82,6 +82,7 @@ lcm                   - lowest common multiple
 mgcd                  - multiple gcd
 multiply              - the product of numbers in a sequence
 nconcat               - concatenate single digits into an integer
+nreverse              - reverse the digits in a number
 nsplit                - split a number into single digits
 number                - create an integer from a string ignoring non-digits
 P                     - permutations function (nPk)
@@ -119,7 +120,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-06-05"
+__version__ = "2016-06-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -285,6 +286,20 @@ def nsplit(n, base=10):
     if n == 0: break
   return tuple(ds)
 
+
+def nreverse(n, base=10):
+  """
+  reverse a number (using base <base> representation)
+
+  >>> nreverse(12345)
+  54321
+  >>> nreverse(-12345)
+  -54321
+  >>> hex(nreverse(0xedacaf, base=16))
+  '0xfacade'
+  """
+  (s, n) = ((-1, -n) if n < 0 else (1, n))
+  return s * nconcat(*(nsplit(n, base=base)[::-1]), base=base)
 
 def number(s, base=10):
   """
