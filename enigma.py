@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun 10 15:11:34 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jun 14 11:50:23 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -82,8 +82,8 @@ lcm                   - lowest common multiple
 mgcd                  - multiple gcd
 multiply              - the product of numbers in a sequence
 nconcat               - concatenate single digits into an integer
-nreverse              - reverse the digits in a number
-nsplit                - split a number into single digits
+nreverse              - reverse the digits in an integer
+nsplit                - split an integer into single digits
 number                - create an integer from a string ignoring non-digits
 P                     - permutations function (nPk)
 partitions            - partition a sequence of distinct values into tuples
@@ -99,7 +99,7 @@ sprintf               - interpolate variables into a string
 sqrt                  - the (positive) square root of a number
 subseqs               - sub-sequences of an iterable
 substituted_sum       - a solver for substituted sums
-T                     - T(n) is the nth triangular number
+T, tri                - T(n) is the nth triangular number
 tau                   - tau(n) is the number of divisors of n
 timed                 - decorator for timing functions
 timer                 - a Timer object
@@ -113,6 +113,7 @@ Football              - a class for solving football league table puzzles
 MagicSquare           - a class for solving magic squares
 Primes                - a class for creating prime sieves
 SubstitutedDivision   - a class for solving substituted long division sums
+SubstitutedExpression - a class for solving general substituted expression problems
 SubstitutedSum        - a class for solving substituted addition sums
 Timer                 - a class for measuring elapsed timings
 """
@@ -120,7 +121,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-06-10"
+__version__ = "2016-06-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -268,7 +269,7 @@ def nconcat(*digits, **kw):
 
 def nsplit(n, base=10):
   """
-  split a number into digits (using base <base> representation)
+  split an integer into digits (using base <base> representation)
 
   >>> nsplit(12345)
   (1, 2, 3, 4, 5)
@@ -289,17 +290,20 @@ def nsplit(n, base=10):
 
 def nreverse(n, base=10):
   """
-  reverse a number (using base <base> representation)
+  reverse an integer (using base <base> representation)
 
   >>> nreverse(12345)
   54321
   >>> nreverse(-12345)
   -54321
-  >>> hex(nreverse(0xedacaf, base=16))
-  '0xfacade'
+  >>> nreverse(0xedacaf, base=16) == 0xfacade
+  True
+  >>> nreverse(100)
+  1
   """
   (s, n) = ((-1, -n) if n < 0 else (1, n))
   return s * nconcat(*(nsplit(n, base=base)[::-1]), base=base)
+
 
 def number(s, base=10):
   """
@@ -1037,6 +1041,8 @@ def T(n):
   5050
   """
   return n * (n + 1) // 2
+
+tri = T
 
 
 def trirt(x):
@@ -2646,12 +2652,12 @@ class SubstitutedSum(object):
     result - the result of the sum
     text - a textual form of the sum (e.g. "<term1> + <term2> = <result>")
 
-  Enigma 21: "Solve: BPPDQPC + PRPDQBD = XVDWTRC"
+  e.g. Enigma 21: "Solve: BPPDQPC + PRPDQBD = XVDWTRC"
   <https://enigmaticcode.wordpress.com/2012/12/23/enigma-21-addition-letters-for-digits/>
   >>> SubstitutedSum(['BPPDQPC', 'PRPDQBD'], 'XVDWTRC').go()
   B=3 C=7 D=0 P=5 Q=6 R=8 T=2 V=4 W=1 X=9 / 3550657 + 5850630 = 9401287
 
-  Enigma 63: "Solve: LBRLQQR + LBBBESL + LBRERQR + LBBBEVR = BBEKVMGL"
+  e.g. Enigma 63: "Solve: LBRLQQR + LBBBESL + LBRERQR + LBBBEVR = BBEKVMGL"
   <https://enigmaticcode.wordpress.com/2013/01/08/enigma-63-addition-letters-for-digits/>
   >>> SubstitutedSum(['LBRLQQR', 'LBBBESL', 'LBRERQR', 'LBBBEVR'], 'BBEKVMGL').go()
   B=3 E=2 G=5 K=7 L=8 M=9 Q=4 R=0 S=1 V=6 / 8308440 + 8333218 + 8302040 + 8333260 = 33276958
@@ -2684,7 +2690,7 @@ class SubstitutedSum(object):
     """
     generate solutions to the substituted addition sum puzzle.
 
-    solutions are returned as a dict assigning letters to digits. 
+    solutions are returned as a dictionary assigning letters to digits. 
     """
     if fn is None: fn = lambda x: True
     for r in substituted_sum(self.terms, self.result, digits=self.digits, l2d=self.l2d, d2i=self.d2i, base=self.base):
@@ -2803,12 +2809,12 @@ class SubstitutedSum(object):
     ), sep="\n")
 
     # process options (--<key>[=<value>] or -<k><v>)
-    opt = { 'base': 10, 'digits': None, 'l2d': dict(), 'd2i': None }
+    opt = { 'l2d': dict(), 'd2i': None }
     while args and args[0].startswith('-'):
       arg = args.pop(0)
       try:
         if arg.startswith('--'):
-          (k, v) = arg.lstrip('-').split('=', 1)
+          (k, _, v) = arg.lstrip('-').partition('=')
         else:
           (k, v) = (arg[1], arg[2:])
         if k == 'h' or k == 'help':
@@ -2816,7 +2822,7 @@ class SubstitutedSum(object):
           return -1
         elif k == 'b' or k == 'base':
           # --base=<n> (or -b)
-          opt[k] = int(v)
+          opt['base'] = int(v)
         elif k == 'a' or k == 'assign':
           # --assign=<letter>,<digit> (or -a)
           (l, d) = v.split(',', 1)
@@ -3257,6 +3263,258 @@ class SubstitutedDivision(object):
     cls(a, b, c, intermediates).go()
     return 0
 
+###############################################################################
+
+# Generic Substituted Expression Solver
+
+# TODO: solve a collection of expressions, either in the specified order,
+# or heuristically, by choosing whichever has the fewest remaining symbols
+# left to find.
+
+class SubstitutedExpression(object):
+  """
+  A solver for Python expressions with letters substituted for numbers.
+
+  It takes a Python expression and then tries all possible ways off assigning
+  symbols (by default the capital letters) in it to digits and returns those
+  assigments which result in the expression having a True value.
+
+  While this is slower than the specialised solvers, like SubstitutedSum(),
+  it does allow for more general expressions to be evaluated.
+
+  e.g. Enigma 1530: "Solve: TOM x 13 = DALEY"
+  <https://enigmaticcode.wordpress.com/2012/07/09/enigma-1530-tom-daley/>
+  >>> SubstitutedExpression('TOM * 13 == DALEY').go(first=True)
+  [solving for 8 symbols: ADELMOTY]
+  TOM * 13 == DALEY
+  796 * 13 == 10348 / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
+
+  See SubstitutedExpression.command_line() for more examples.
+  """
+
+  def __init__(self, expr, symbols=None, digits=None, l2d=None, d2i=None, base=10):
+    """
+    create a substituted expression puzzle.
+
+    expr - the expression
+
+    The following parameters are optional:
+    base - the number base to operate in (default: 10)
+    symbols - the symbols to substituted in the expression (default: upper case letters)
+    digits - the digits to be substituted in (default: determined from base)
+    l2d - initial map of symbols to digits (default: all symbols unassigned)
+    d2i - map of digits to invalid letter assigmnents (default: leading digits cannot be 0)
+
+    If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
+    """
+    self.expr = expr
+    self.symbols = symbols
+    self.digits = digits
+    self.l2d = l2d
+    self.d2i = d2i
+    self.base = base
+
+  def solve(self, verbose=False):
+    """
+    generate solutions to the substituted expression problem.
+
+    solutions are returned as a dictionary assigning symbols to digits.
+
+    verbose - if set to True solutions are output as they are found.
+    """
+    expr = self.expr
+    symbols = self.symbols
+    digits = self.digits
+    l2d = self.l2d
+    d2i = self.d2i
+    base = self.base
+
+    # mapping of letters to digits
+    if l2d is None:
+      l2d = dict()
+
+    # digits
+    if digits is None:
+      digits = irange(0, base - 1)
+    digits = set(digits).difference(l2d.values())
+
+    # the symbols to replace
+    if symbols is None:
+      symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  
+    # find the words in the expression
+    import re
+
+    words = list()
+
+    def word(m):
+      w = m.group(0)
+      i = find(words, w)
+      if i == -1:
+        i = len(words)
+        words.append(w)
+      return '_' + str(i)
+
+    # find the words, and replace them with placeholders
+    t = re.sub('[' + symbols + ']+', word, expr)
+
+    # symbols to be replaced
+    syms = join(sorted(set(join(words)).difference(l2d.keys())))
+    n = len(syms)
+
+    # invalid assignments
+    if d2i is None:
+      d2i = dict()
+      d2i[0] = join(sorted(set(w[0] for w in words if len(w) > 1)))
+
+    # turn the parameterised expression into an executable function
+    try:
+      fn = eval('lambda ' + join((join(('_', i)) for (i, _) in enumerate(words)), sep=', ') + ': ' + t)
+    except SyntaxError:
+      printf("syntax error in expression: {expr}")
+      return
+
+    if verbose:
+      printf("[solving for {n} symbols: {syms}]")
+      printf("{expr}")
+    # generate suitable permutations of the digits
+    for p in itertools.permutations(digits, n):
+
+      # create the map from symbols to values
+      l2d.update(zip(syms, p))
+
+      # check for invalid digit assignments
+      if any(v in d2i and k in d2i[v] for (k, v) in l2d.items()): continue
+
+      # map the words to numbers
+      args = list(nconcat(*(l2d[x] for x in w), base=base) for w in words)
+
+      try:
+        r = fn(*args)
+      except ArithmeticError:
+        continue
+
+      if r:
+        if verbose:
+          # output the original expression with words replaced by numbers (in the appropriate base)
+          v = dict(zip(words, args))
+          t = re.sub('[' + symbols + ']+', (lambda m: int2base(v[m.group(0)], base)), expr)
+          printf("{t} / {l2d}", l2d=join((join((k, '=', l2d[k])) for k in sorted(l2d.keys())), sep=" "))
+        # return the letters to digits mapping
+        yield l2d
+
+  def go(self, first=False):
+    """
+    find solutions to the substituted expression problem and output them.
+
+    first - if set to True will stop after the first solution is output
+    """
+    for s in self.solve(verbose=True):
+      if first: break
+
+
+  # class method to call from the command line
+  @classmethod
+  def command_line(cls, args):
+    """
+    run the SubstitutedExpression solver with the specified command
+    line arguments.
+
+    we can solve substituted sum problems (although using
+    SubstitutedSum would be faster)
+
+    e.g. Enigma 327 <https://enigmaticcode.wordpress.com/2016/01/08/enigma-327-it-all-adds-up/>
+    % python enigma.py SubstitutedExpression 'KBKGEQD + GAGEEYQ + ADKGEDY == EXYAAEE'
+    [solving for 9 symbols: ABDEGKQXY]
+    KBKGEQD + GAGEEYQ + ADKGEDY == EXYAAEE
+    1912803 + 2428850 + 4312835 == 8654488 / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
+
+    but we can also use SubstitutedExpression to solve problems that
+    don't have a specialsed solver.
+
+    e.g. Sunday Times Teaser 2803
+    % python enigma.py SubstitutedExpression '(AB * CDE == FGHIJ) and (AB + CD + EF + GH + IJ == CCC)'
+    [solving for 10 symbols: ABCDEFGHIJ]
+    (AB * CDE == FGHIJ) and (AB + CD + EF + GH + IJ == CCC)
+    (52 * 367 == 19084) and (52 + 36 + 71 + 90 + 84 == 333) / A=5 B=2 C=3 D=6 E=7 F=1 G=9 H=0 I=8 J=4
+
+    e.g. Sunday Times Teaser 2796
+    % python enigma.py SubstitutedExpression --invalid=0,SGD '(SAINT + GEORGE == DRAGON) and (E % 2 == 0)'
+    [solving for 10 symbols: ADEGINORST]
+    (SAINT + GEORGE == DRAGON) and (E % 2 == 0)
+    (72415 + 860386 == 932801) and (6 % 2 == 0) / A=2 D=9 E=6 G=8 I=4 N=1 O=0 R=3 S=7 T=5
+
+    we also have access to any of the routines defined in enigma.py:
+
+    e.g. Enigma 1180 <https://enigmaticcode.wordpress.com/2016/02/15/enigma-1180-anomalies/>
+    % python enigma.py SubstitutedExpression 'all([SEVEN - THREE == FOUR, is_prime(SEVEN), is_prime(FOUR), is_prime(RUOF), is_square(TEN)])'
+    [solving for 10 symbols: EFHNORSTUV]
+    all([SEVEN - THREE == FOUR, is_prime(SEVEN), is_prime(FOUR), is_prime(RUOF), is_square(TEN)])
+    all([62129 - 58722 == 3407, is_prime(62129), is_prime(3407), is_prime(7043), is_square(529)]) / E=2 F=3 H=8 N=9 O=4 R=7 S=6 T=5 U=0 V=1
+    """
+
+    usage = join((
+      sprintf("usage: {cls.__name__} [<opts>] <expression>"),
+      "options:",
+      "  --symbols=<string> (or -s<string>) = symbols to replace with digits",
+      "  --base=<n> (or -b<n>) = set base",
+      "  --assign=<letter>,<digit> (or -a<l>,<d>) = assign digit to letter",
+      "  --digits=<digit>,<digit>,... (or -d<d>,<d>,...) = available digits",
+      "  --invalid=<digit>,<letters> (or -i<d>,<ls>) = invalid digit to letter assignments",
+      "  --first (or -1) = stop after the first solution",
+      "  --help (or -h) = show command-line usage",
+    ), sep="\n")
+
+    # process options
+    opt = { 'l2d': dict(), 'd2i': None }
+    first = False
+    while args and args[0].startswith('-'):
+      arg = args.pop(0)
+      try:
+        if arg.startswith('--'):
+          (k, _, v) = arg.lstrip('-').partition('=')
+        else:
+          (k, v) = (arg[1], arg[2:])
+        if k == 'h' or k == 'help':
+          print(usage)
+          return -1
+        elif k == 's' or k == 'symbols':
+          # --symbols=<string> (or -s)
+          opt['symbols'] = v
+        elif k == 'b' or k == 'base':
+          # --base=<n> (or -b)
+          opt['base'] = int(v)
+        elif k == 'a' or k == 'assign':
+          # --assign=<letter>,<digit> (or -a)
+          (l, d) = v.split(',', 1)
+          opt['l2d'][l] = int(d)
+        elif k == 'd' or k == 'digits':
+          # --digits=<digit>,<digit>,... (or -d)
+          ds = v.split(',')
+          opt['digits'] = tuple(int(d) for d in ds)
+        elif k == 'i' or k == 'invalid':
+          # --invalid=<digit>,<letters> (or -i)
+          if opt['d2i'] is None: opt['d2i'] = dict()
+          (d, s) = v.split(',', 1)
+          opt['d2i'][int(d)] = s
+        elif k == '1' or k == 'first':
+          first = (int(v) if v else True)
+        else:
+          raise ValueError
+      except:
+        printf("{cls.__name__}: invalid option: {arg}")
+        return -1
+
+    # check command line usage
+    if not args or len(args) > 1:
+      print(usage)
+      return -1
+    
+    expr = args[0]
+
+    # call the solver
+    cls(expr, **opt).go(first=first)
+    return 0
 
 ###############################################################################
 
@@ -4093,7 +4351,7 @@ enigma.py has the following command-line usage:
 
   python enigma.py <class> <args> ...
 
-    Supported solvers are: SubstitutedSum, SubstitutedDivision.
+    Supported solvers are: SubstitutedSum, SubstitutedDivision, SubstitutedExpression.
 
       For example, Enigma 327 can be solved using:
 
