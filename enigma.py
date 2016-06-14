@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jun 14 11:50:23 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jun 14 12:12:32 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1079,7 +1079,7 @@ def digrt(n):
 
   >>> digrt(123456789)
   9
-  >>> digrt(sum((1, 2, 3, 4, 5, 6, 7, 8, 9)))
+  >>> digrt(sum([1, 2, 3, 4, 5, 6, 7, 8, 9]))
   9
   >>> digrt(factorial(100))
   9
@@ -1100,8 +1100,8 @@ def repdigit(n, d=1, base=10):
   777777
   >>> repdigit(6, 7, base=16)
   7829367
-  >>> hex(repdigit(6, 7, base=16))
-  '0x777777'
+  >>> repdigit(6, 7, base=16) == 0x777777
+  True
   """
   assert 0 <= d < base
   return d * (base ** n - 1) // (base - 1)
@@ -4373,11 +4373,14 @@ if __name__ == "__main__":
   if len(sys.argv) > 1:
     (cmd, args, r) = (sys.argv[1], sys.argv[2:], -1)
     if cmd[0] != '-':
-      try:
-        r = vars()[cmd].command_line(args)
-      except AttributeError:
-        printf("{cmd}: command_line() not implemented")
-      sys.exit(r)
+      fn = vars().get(cmd)
+      if fn:
+        fn = getattr(fn, 'command_line')
+        if fn:
+          sys.exit(fn(args))
+
+      printf("enigma.py: {cmd}.command_line() not implemented")
+      sys.exit(-1)
     
   # identify the version number
   #print('[python version ' + sys.version.replace("\n", " ") + ']')
