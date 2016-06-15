@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 15 19:15:14 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 15 21:38:03 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -108,7 +108,7 @@ tuples                - generate overlapping tuples from a sequence
 uniq                  - unique elements of an iterator
 
 Accumulator           - a class for accumulating values
-Alphametics           - an alias for SubstitutedExpression
+Alphametic            - an alias for SubstitutedExpression
 CrossFigure           - a class for solving cross figure puzzles
 Football              - a class for solving football league table puzzles
 MagicSquare           - a class for solving magic squares
@@ -3646,7 +3646,7 @@ class SubstitutedExpression(object):
     cls(args, **opt).go(reorder=reorder, first=first, verbose=verbose)
     return 0
 
-Alphametics = SubstitutedExpression
+Alphametic = SubstitutedExpression
 
 ###############################################################################
 
@@ -4486,7 +4486,7 @@ enigma.py has the following command-line usage:
     Supported solvers are:
       SubstitutedSum
       SubstitutedDivision
-      SubstitutedExpression / Alphametics
+      SubstitutedExpression / Alphametic
 
     For example, Enigma 327 can be solved using:
 
