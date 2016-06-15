@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 15 16:05:34 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 15 19:15:14 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3588,13 +3588,14 @@ class SubstitutedExpression(object):
       "  --digits=<digit>,<digit>,... (or -d<d>,<d>,...) = available digits",
       "  --invalid=<digit>,<letters> (or -i<d>,<ls>) = invalid digit to letter assignments",
       "  --first (or -1) = stop after the first solution",
+      "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
       "  --verbose[=<n>] (or -v[<n>]) = verbosity (0 = off, 1 = solutions, 2 = more)",
       "  --help (or -h) = show command-line usage",
     ), sep="\n")
 
     # process options
     opt = { 'l2d': dict(), 'd2i': None }
-    (first, verbose) = (False, 1)
+    (verbose, first, reorder) = (1, False, True)
     while args and args[0].startswith('-'):
       arg = args.pop(0)
       try:
@@ -3628,6 +3629,8 @@ class SubstitutedExpression(object):
           first = (int(v) if v else True)
         elif k == 'v' or k == 'verbose':
           verbose = (int(v) if v else 1)
+        elif k == 'r' or k == 'reorder':
+          reorder = (int(v) if v else 0)
         else:
           raise ValueError
       except:
@@ -3640,7 +3643,7 @@ class SubstitutedExpression(object):
       return -1
     
     # call the solver
-    cls(args, **opt).go(first=first, verbose=verbose)
+    cls(args, **opt).go(reorder=reorder, first=first, verbose=verbose)
     return 0
 
 Alphametics = SubstitutedExpression
