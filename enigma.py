@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 15 15:58:51 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 15 16:05:34 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3420,9 +3420,8 @@ class SubstitutedExpression(object):
   e.g. Enigma 1530: "Solve: TOM x 13 = DALEY"
   <https://enigmaticcode.wordpress.com/2012/07/09/enigma-1530-tom-daley/>
   >>> SubstitutedExpression('TOM * 13 == DALEY').go(first=True)
-  [solving for 8 symbols: ADELMOTY]
-  TOM * 13 == DALEY
-  796 * 13 == 10348 / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
+  (TOM * 13 == DALEY)
+  (796 * 13 == 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
 
   See SubstitutedExpression.command_line() for more examples.
   """
@@ -3556,32 +3555,28 @@ class SubstitutedExpression(object):
 
     e.g. Enigma 327 <https://enigmaticcode.wordpress.com/2016/01/08/enigma-327-it-all-adds-up/>
     % python enigma.py SubstitutedExpression 'KBKGEQD + GAGEEYQ + ADKGEDY == EXYAAEE'
-    [solving for 9 symbols: ABDEGKQXY]
-    KBKGEQD + GAGEEYQ + ADKGEDY == EXYAAEE
-    1912803 + 2428850 + 4312835 == 8654488 / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
+    (KBKGEQD + GAGEEYQ + ADKGEDY == EXYAAEE)
+    (1912803 + 2428850 + 4312835 == 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
     but we can also use SubstitutedExpression to solve problems that
     don't have a specialsed solver.
 
     e.g. Sunday Times Teaser 2803
-    % python enigma.py SubstitutedExpression '(AB * CDE == FGHIJ) and (AB + CD + EF + GH + IJ == CCC)'
-    [solving for 10 symbols: ABCDEFGHIJ]
-    (AB * CDE == FGHIJ) and (AB + CD + EF + GH + IJ == CCC)
-    (52 * 367 == 19084) and (52 + 36 + 71 + 90 + 84 == 333) / A=5 B=2 C=3 D=6 E=7 F=1 G=9 H=0 I=8 J=4
+    % python enigma.py SubstitutedExpression 'AB * CDE == FGHIJ' 'AB + CD + EF + GH + IJ == CCC'
+    (AB * CDE == FGHIJ) (AB + CD + EF + GH + IJ == CCC)
+    (52 * 367 == 19084) (52 + 36 + 71 + 90 + 84 == 333) / A=5 B=2 C=3 D=6 E=7 F=1 G=9 H=0 I=8 J=4
 
     e.g. Sunday Times Teaser 2796
-    % python enigma.py SubstitutedExpression --invalid=0,SGD '(SAINT + GEORGE == DRAGON) and (E % 2 == 0)'
-    [solving for 10 symbols: ADEGINORST]
-    (SAINT + GEORGE == DRAGON) and (E % 2 == 0)
-    (72415 + 860386 == 932801) and (6 % 2 == 0) / A=2 D=9 E=6 G=8 I=4 N=1 O=0 R=3 S=7 T=5
+    % python enigma.py SubstitutedExpression --invalid=0,SGD 'SAINT + GEORGE == DRAGON' 'E % 2 == 0'
+    (SAINT + GEORGE == DRAGON) (E % 2 == 0)
+    (72415 + 860386 == 932801) (6 % 2 == 0) / A=2 D=9 E=6 G=8 I=4 N=1 O=0 R=3 S=7 T=5
 
     we also have access to any of the routines defined in enigma.py:
 
     e.g. Enigma 1180 <https://enigmaticcode.wordpress.com/2016/02/15/enigma-1180-anomalies/>
-    % python enigma.py SubstitutedExpression 'all([SEVEN - THREE == FOUR, is_prime(SEVEN), is_prime(FOUR), is_prime(RUOF), is_square(TEN)])'
-    [solving for 10 symbols: EFHNORSTUV]
-    all([SEVEN - THREE == FOUR, is_prime(SEVEN), is_prime(FOUR), is_prime(RUOF), is_square(TEN)])
-    all([62129 - 58722 == 3407, is_prime(62129), is_prime(3407), is_prime(7043), is_square(529)]) / E=2 F=3 H=8 N=9 O=4 R=7 S=6 T=5 U=0 V=1
+    % python enigma.py SubstitutedExpression 'SEVEN - THREE == FOUR' 'is_prime(SEVEN)' 'is_prime(FOUR)' 'is_prime(RUOF)' 'is_square(TEN)'
+    (SEVEN - THREE == FOUR) (is_prime(SEVEN)) (is_prime(FOUR)) (is_prime(RUOF)) (is_square(TEN))
+    (62129 - 58722 == 3407) (is_prime(62129)) (is_prime(3407)) (is_prime(7043)) (is_square(529)) / E=2 F=3 H=8 N=9 O=4 R=7 S=6 T=5 U=0 V=1
     """
 
     usage = join((
