@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 15 21:38:03 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun 16 08:19:57 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2733,7 +2733,7 @@ class SubstitutedSum(object):
     run the SubstitutedSum solver with the specified command line arguments.
 
     e.g. Enigma 327 <https://enigmaticcode.wordpress.com/2016/01/08/enigma-327-it-all-adds-up/>
-    % python enigma.py SubstitutedSum 'KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE'
+    % python enigma.py SubstitutedSum "KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE"
     [solving KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE ...]
     A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5 / 1912803 + 2428850 + 4312835 = 8654488
 
@@ -2747,7 +2747,7 @@ class SubstitutedSum(object):
     confused by digits that are represented by letters in bases >10).
 
     e.g. Enigma 1663 <https://enigmaticcode.wordpress.com/2011/12/04/enigma-1663-flintoffs-farewell/>
-    % python enigma.py SubstitutedSum --base=11 'FAREWELL + FREDALO = FLINTOFF'
+    % python enigma.py SubstitutedSum --base=11 "FAREWELL + FREDALO = FLINTOFF"
     [solving FAREWELL + FREDALO = FLINTOFF ...]
     A=1 D=10 E=7 F=6 I=0 L=8 N=4 O=9 R=5 T=2 W=3 / 61573788 + 657A189 = 68042966
     A=1 D=3 E=7 F=6 I=0 L=8 N=4 O=9 R=5 T=2 W=10 / 6157A788 + 6573189 = 68042966
@@ -2760,7 +2760,7 @@ class SubstitutedSum(object):
     There can be multiple --assign options.
 
     e.g. Enigma 1361 <https://enigmaticcode.wordpress.com/2013/02/20/enigma-1361-enigma-variation/>
-    % python enigma.py SubstitutedSum --assign=O,0 'ELGAR + ENIGMA = NIMROD'
+    % python enigma.py SubstitutedSum --assign=O,0 "ELGAR + ENIGMA = NIMROD"
     [solving ELGAR + ENIGMA = NIMROD ...]
     A=3 D=2 E=7 G=4 I=5 L=1 M=6 N=8 O=0 R=9 / 71439 + 785463 = 856902
 
@@ -2772,7 +2772,7 @@ class SubstitutedSum(object):
     have specified a --base=<n> option)
 
     e.g. Enigma 1272 <https://enigmaticcode.wordpress.com/2014/12/09/enigma-1272-jonny-wilkinson/>
-    % python enigma.py SubstitutedSum --digits=0,1,2,3,4,5,6,7,8 'WILKI + NSON = JONNY'
+    % python enigma.py SubstitutedSum --digits=0,1,2,3,4,5,6,7,8 "WILKI + NSON = JONNY"
     [solving WILKI + NSON = JONNY ...]
     I=8 J=5 K=0 L=6 N=3 O=2 S=7 W=4 Y=1 / 48608 + 3723 = 52331
     I=8 J=5 K=0 L=7 N=3 O=2 S=6 W=4 Y=1 / 48708 + 3623 = 52331
@@ -2789,7 +2789,7 @@ class SubstitutedSum(object):
     not allowed. If you want to allow them you can give a "--invalid=0," option.
 
     Enigma 171 <https://enigmaticcode.wordpress.com/2014/02/23/enigma-171-addition-digits-all-wrong/>
-    % python enigma.py SubstitutedSum -i0,016 -i1,1 -i3,3 -i5,5 -i6,6 -i7,7 -i8,8 -i9,9 '1939 + 1079 = 6856'
+    % python enigma.py SubstitutedSum -i0,016 -i1,1 -i3,3 -i5,5 -i6,6 -i7,7 -i8,8 -i9,9 "1939 + 1079 = 6856"
     [solving 1939 + 1079 = 6856 ...]
     0=1 1=2 3=6 5=0 6=4 7=3 8=9 9=7 / 2767 + 2137 = 4904
 
@@ -3238,12 +3238,12 @@ class SubstitutedDivision(object):
     run the SubstitutedDivision solver with the specified command line arguments.
 
     e.g. for Enigma 309: (note use of # to denote the empty string)
-    % python enigma.py SubstitutedDivision 'h????? / ?? = m?gh' 'h?? - g?? = ??' '??? - ky? = ?' '?g - m? = x' 'x? - ?? = #'
+    % python enigma.py SubstitutedDivision "h????? / ?? = m?gh" "h?? - g?? = ??" "??? - ky? = ?" "?g - m? = x" "x? - ?? = #"
     [solving h????? / ?? = m?gh, [('h??', 'g??', '??'), ('???', 'ky?', '?'), ('?g', 'm?', 'x'), ('x?', '??', '')] ...]
     202616 / 43 = 4712 rem 0 [g=1 h=2 k=3 m=4 x=8 y=0] [202 - 172 = 30, 306 - 301 = 5, 51 - 43 = 8, 86 - 86 = 0]
 
     e.g for Enigma 440: (note use of empty argument for missing intermediate)
-    % python enigma.py SubstitutedDivision '????? ?x ??x' '?? ?' '' '??x #'
+    % python enigma.py SubstitutedDivision "????? ?x ??x" "?? ?" "" "??x #"
     [solving ????? / ?x = ??x, [('??', '?'), None, ('??x', '')] ...]
     10176 / 96 = 106 rem 0 [x=6] [101 - 96 = 5, 576 - 576 = 0]    
     """
@@ -3267,10 +3267,6 @@ class SubstitutedDivision(object):
 ###############################################################################
 
 # Generic Substituted Expression Solver
-
-# TODO: solve a collection of expressions, either in the specified order,
-# or heuristically, by choosing whichever has the fewest remaining symbols
-# left to find.
 
 _SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -3554,7 +3550,7 @@ class SubstitutedExpression(object):
     SubstitutedSum would be faster)
 
     e.g. Enigma 327 <https://enigmaticcode.wordpress.com/2016/01/08/enigma-327-it-all-adds-up/>
-    % python enigma.py SubstitutedExpression 'KBKGEQD + GAGEEYQ + ADKGEDY == EXYAAEE'
+    % python enigma.py SubstitutedExpression "KBKGEQD + GAGEEYQ + ADKGEDY == EXYAAEE"
     (KBKGEQD + GAGEEYQ + ADKGEDY == EXYAAEE)
     (1912803 + 2428850 + 4312835 == 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
@@ -3562,19 +3558,19 @@ class SubstitutedExpression(object):
     don't have a specialsed solver.
 
     e.g. Sunday Times Teaser 2803
-    % python enigma.py SubstitutedExpression 'AB * CDE == FGHIJ' 'AB + CD + EF + GH + IJ == CCC'
+    % python enigma.py SubstitutedExpression "AB * CDE == FGHIJ" "AB + CD + EF + GH + IJ == CCC"
     (AB * CDE == FGHIJ) (AB + CD + EF + GH + IJ == CCC)
     (52 * 367 == 19084) (52 + 36 + 71 + 90 + 84 == 333) / A=5 B=2 C=3 D=6 E=7 F=1 G=9 H=0 I=8 J=4
 
     e.g. Sunday Times Teaser 2796
-    % python enigma.py SubstitutedExpression --invalid=0,SGD 'SAINT + GEORGE == DRAGON' 'E % 2 == 0'
+    % python enigma.py SubstitutedExpression --invalid=0,SGD "SAINT + GEORGE == DRAGON" "E % 2 == 0"
     (SAINT + GEORGE == DRAGON) (E % 2 == 0)
     (72415 + 860386 == 932801) (6 % 2 == 0) / A=2 D=9 E=6 G=8 I=4 N=1 O=0 R=3 S=7 T=5
 
     we also have access to any of the routines defined in enigma.py:
 
     e.g. Enigma 1180 <https://enigmaticcode.wordpress.com/2016/02/15/enigma-1180-anomalies/>
-    % python enigma.py SubstitutedExpression 'SEVEN - THREE == FOUR' 'is_prime(SEVEN)' 'is_prime(FOUR)' 'is_prime(RUOF)' 'is_square(TEN)'
+    % python enigma.py SubstitutedExpression "SEVEN - THREE == FOUR" "is_prime(SEVEN)" "is_prime(FOUR)" "is_prime(RUOF)" "is_square(TEN)"
     (SEVEN - THREE == FOUR) (is_prime(SEVEN)) (is_prime(FOUR)) (is_prime(RUOF)) (is_square(TEN))
     (62129 - 58722 == 3407) (is_prime(62129)) (is_prime(3407)) (is_prime(7043)) (is_square(529)) / E=2 F=3 H=8 N=9 O=4 R=7 S=6 T=5 U=0 V=1
     """
@@ -4490,19 +4486,19 @@ enigma.py has the following command-line usage:
 
     For example, Enigma 327 can be solved using:
 
-    % python enigma.py SubstitutedSum 'KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE'
+    % python enigma.py SubstitutedSum "KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE"
     [solving KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE ...]
     A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5 / 1912803 + 2428850 + 4312835 = 8654488
 
     Enigma 440 can be solved using:
       
-    % python enigma.py SubstitutedDivision '????? ?x ??x' '?? ?' '' '??x #'
+    % python enigma.py SubstitutedDivision "????? ?x ??x" "?? ?" "" "??x #"
     [solving ????? / ?x = ??x, [('??', '?'), None, ('??x', '')] ...]
     10176 / 96 = 106 rem 0 [x=6] [101 - 96 = 5, 576 - 576 = 0]
 
     Enigma 1530 can be solved using:
 
-    % python enigma.py SubstitutedExpression 'TOM * 13 == DALEY'
+    % python enigma.py SubstitutedExpression "TOM * 13 == DALEY"
     [solving for 8 symbols: ADELMOTY]
     TOM * 13 == DALEY
     796 * 13 == 10348 / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
