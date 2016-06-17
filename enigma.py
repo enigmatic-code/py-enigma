@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun 16 08:19:57 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun 17 13:40:37 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -122,7 +122,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-06-15"
+__version__ = "2016-06-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2804,7 +2804,7 @@ class SubstitutedSum(object):
       "options:",
       "  --base=<n> (or -b<n>) = set base",
       "  --assign=<letter>,<digit> (or -a<l>,<d>) = assign digit to letter",
-      "  --digits=<digit>,<digit>,... (or -d<d>,<d>,...) = available digits",
+      "  --digits=<digit>,... or <digit>-<digit> (or -d...) = available digits",
       "  --invalid=<digit>,<letters> (or -i<d>,<ls>) = invalid digit to letter assignments",
       "  --help (or -h) = show command-line usage",
     ), sep="\n")
@@ -2829,9 +2829,13 @@ class SubstitutedSum(object):
           (l, d) = v.split(',', 1)
           opt['l2d'][l] = int(d)
         elif k == 'd' or k == 'digits':
-          # --digits=<digit>,<digit>,<digit>,... (or -d)
-          ds = v.split(',')
-          opt['digits'] = tuple(int(d) for d in ds)
+          # --digits=<digit>,... or <digit>-<digit> (or -d)
+          if '-' in v:
+            (a, _, b) = v.partition('-')
+            opt['digits'] = irange(int(a), int(b))
+          else:
+            ds = v.split(',')
+            opt['digits'] = tuple(int(d) for d in ds)
         elif k == 'i' or k == 'invalid':
           # --invalid=<digit>,<letters> (or -i)
           if opt['d2i'] is None: opt['d2i'] = dict()
@@ -3238,12 +3242,12 @@ class SubstitutedDivision(object):
     run the SubstitutedDivision solver with the specified command line arguments.
 
     e.g. for Enigma 309: (note use of # to denote the empty string)
-    % python enigma.py SubstitutedDivision "h????? / ?? = m?gh" "h?? - g?? = ??" "??? - ky? = ?" "?g - m? = x" "x? - ?? = #"
+    % python enigma.py SubstitutedDivision 'h????? / ?? = m?gh' 'h?? - g?? = ??' '??? - ky? = ?' '?g - m? = x' 'x? - ?? = #'
     [solving h????? / ?? = m?gh, [('h??', 'g??', '??'), ('???', 'ky?', '?'), ('?g', 'm?', 'x'), ('x?', '??', '')] ...]
     202616 / 43 = 4712 rem 0 [g=1 h=2 k=3 m=4 x=8 y=0] [202 - 172 = 30, 306 - 301 = 5, 51 - 43 = 8, 86 - 86 = 0]
 
     e.g for Enigma 440: (note use of empty argument for missing intermediate)
-    % python enigma.py SubstitutedDivision "????? ?x ??x" "?? ?" "" "??x #"
+    % python enigma.py SubstitutedDivision '????? ?x ??x' '?? ?' '' '??x #'
     [solving ????? / ?x = ??x, [('??', '?'), None, ('??x', '')] ...]
     10176 / 96 = 106 rem 0 [x=6] [101 - 96 = 5, 576 - 576 = 0]    
     """
@@ -3270,7 +3274,7 @@ class SubstitutedDivision(object):
 
 _SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-def replace_words(s, symbols, fn):
+def _replace_words(s, symbols, fn):
   import re
   f = lambda m: fn(m.group(0))
   return re.sub('[' + symbols + ']+', f, s)
@@ -3295,7 +3299,7 @@ class _SubstitutedExpression(object):
       return '(_' + int2base(i) + ')'
 
     # find the words, and replace them with placeholders
-    t = replace_words(expr, symbols, word)
+    t = _replace_words(expr, symbols, word)
 
     # mapping of letters to digits
     if l2d is None:
@@ -3318,8 +3322,7 @@ class _SubstitutedExpression(object):
     try:
       fn = eval('lambda ' + join(('_' + int2base(i) for (i, _) in enumerate(words)), sep=', ') + ': ' + t)
     except SyntaxError:
-      printf("syntax error in expression: {expr}")
-      return
+      raise SyntaxError("syntax error in expression: " + expr)
   
     self.expr = expr
     self.base = base
@@ -3380,7 +3383,7 @@ class _SubstitutedExpression(object):
     # [2] the symbol to digit mapping (in order)
     printf(
       "{t} / {s}",
-      t=replace_words(self.expr, self.symbols, (lambda w: int2base(nconcat(*(s[x] for x in w), base=self.base), self.base))),
+      t=_replace_words(self.expr, self.symbols, (lambda w: int2base(nconcat(*(s[x] for x in w), base=self.base), self.base))),
       s=join((k + '=' + int2base(s[k]) for k in sorted(s.keys())), sep=' ')
     )
 
@@ -3413,7 +3416,7 @@ class SubstitutedExpression(object):
   While this is slower than the specialised solvers, like SubstitutedSum(),
   it does allow for more general expressions to be evaluated.
 
-  e.g. Enigma 1530: "Solve: TOM x 13 = DALEY"
+  e.g. Enigma 1530: \"Solve: TOM x 13 = DALEY\"
   <https://enigmaticcode.wordpress.com/2012/07/09/enigma-1530-tom-daley/>
   >>> SubstitutedExpression('TOM * 13 == DALEY').go(first=True)
   (TOM * 13 == DALEY)
@@ -3446,6 +3449,9 @@ class SubstitutedExpression(object):
     if isinstance(expr, basestring):
       expr = [expr]
 
+    # output template
+    template = join(('(' + x + ')' for x in expr), ' ')
+
     # the symbols to replace
     if symbols is None:
       symbols = _SYMBOLS
@@ -3454,8 +3460,19 @@ class SubstitutedExpression(object):
     if l2d is None:
       l2d = dict()
 
-    # output template
-    template = join(('(' + x + ')' for x in expr), ' ')
+    # available digits
+    if digits is None:
+      digits = irange(0, base - 1)
+    digits = set(digits).difference(l2d.values())
+
+    # invalid digits
+    if d2i is None:
+      d2i = dict()
+
+      # analyse all the words in all the template
+      words = set()
+      _replace_words(template, symbols, (lambda w: words.add(w)))
+      d2i[0] = join(uniq(w[0] for w in words if len(w) > 1))
   
     self.expr = expr
     self.base = base
@@ -3478,8 +3495,10 @@ class SubstitutedExpression(object):
 
     expr = self.expr
     base = self.base
+    digits = self.digits
     symbols = self.symbols
     l2d = self.l2d
+    d2i = self.d2i
     template = self.template
     
     # determine the symbols in each expression
@@ -3502,6 +3521,9 @@ class SubstitutedExpression(object):
       syms = list(syms[i] for i in s)
 
     if verbose > 1:
+      # output information
+      printf("[base={base}, digits={digits}, symbols=\"{symbols}\"]")
+      printf("[l2d={l2d}, d2i={d2i}]")
       # output the solving strategy
       ss = list()
       d = set(l2d.keys())
@@ -3514,7 +3536,7 @@ class SubstitutedExpression(object):
       print(template)
 
     # solve the expressions
-    for s in _substituted_expression_solve(expr, self.base, symbols, self.digits, l2d, self.d2i):
+    for s in _substituted_expression_solve(expr, base, symbols, digits, l2d, d2i):
       if verbose > 0:
         self.output_solution(s)
       yield s
@@ -3525,7 +3547,7 @@ class SubstitutedExpression(object):
     # [2] the symbol to digit mapping (in order)
     printf(
       "{t} / {s}",
-      t=replace_words(self.template, self.symbols, (lambda w: int2base(nconcat(*(s[x] for x in w), base=self.base), self.base))),
+      t=_replace_words(self.template, self.symbols, (lambda w: int2base(nconcat(*(s[x] for x in w), base=self.base), self.base))),
       s=join((k + '=' + int2base(s[k]) for k in sorted(s.keys())), sep=' ')
     )
 
@@ -3581,7 +3603,7 @@ class SubstitutedExpression(object):
       "  --symbols=<string> (or -s<string>) = symbols to replace with digits",
       "  --base=<n> (or -b<n>) = set base",
       "  --assign=<letter>,<digit> (or -a<l>,<d>) = assign digit to letter",
-      "  --digits=<digit>,<digit>,... (or -d<d>,<d>,...) = available digits",
+      "  --digits=<digit>,... or --digits=<digit>-<digit> (or -d...) = available digits",
       "  --invalid=<digit>,<letters> (or -i<d>,<ls>) = invalid digit to letter assignments",
       "  --first (or -1) = stop after the first solution",
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
@@ -3590,8 +3612,8 @@ class SubstitutedExpression(object):
     ), sep="\n")
 
     # process options
-    opt = { 'l2d': dict(), 'd2i': None }
-    (verbose, first, reorder) = (1, False, True)
+    opt = { 'l2d': dict(), 'd2i': None } # SubstitutedExpression() args
+    kw = { 'verbose': 1, 'first': False, 'reorder': True } # SubstitutedExpression.go() args
     while args and args[0].startswith('-'):
       arg = args.pop(0)
       try:
@@ -3613,20 +3635,24 @@ class SubstitutedExpression(object):
           (l, d) = v.split(',', 1)
           opt['l2d'][l] = int(d)
         elif k == 'd' or k == 'digits':
-          # --digits=<digit>,<digit>,... (or -d)
-          ds = v.split(',')
-          opt['digits'] = tuple(int(d) for d in ds)
+          # --digits=<digit>,... or <digit>-<digit> (or -d)
+          if '-' in v:
+            (a, _, b) = v.partition('-')
+            opt['digits'] = irange(int(a), int(b))
+          else:
+            ds = v.split(',')
+            opt['digits'] = tuple(int(d) for d in ds)
         elif k == 'i' or k == 'invalid':
           # --invalid=<digit>,<letters> (or -i)
           if opt['d2i'] is None: opt['d2i'] = dict()
           (d, s) = v.split(',', 1)
           opt['d2i'][int(d)] = s
         elif k == '1' or k == 'first':
-          first = (int(v) if v else True)
+          kw['first'] = (int(v) if v else True)
         elif k == 'v' or k == 'verbose':
-          verbose = (int(v) if v else 1)
+          kw['verbose'] = (int(v) if v else 1)
         elif k == 'r' or k == 'reorder':
-          reorder = (int(v) if v else 0)
+          kw['reorder'] = (int(v) if v else 0)
         else:
           raise ValueError
       except:
@@ -3639,9 +3665,10 @@ class SubstitutedExpression(object):
       return -1
     
     # call the solver
-    cls(args, **opt).go(reorder=reorder, first=first, verbose=verbose)
+    cls(args, **opt).go(**kw)
     return 0
 
+# an alias to save typing
 Alphametic = SubstitutedExpression
 
 ###############################################################################
