@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun 17 13:40:37 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jun 18 09:47:25 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2664,7 +2664,7 @@ class SubstitutedSum(object):
   B=3 E=2 G=5 K=7 L=8 M=9 Q=4 R=0 S=1 V=6 / 8308440 + 8333218 + 8302040 + 8333260 = 33276958
   """
   
-  def __init__(self, terms, result, digits=None, l2d=None, d2i=None, base=10):
+  def __init__(self, terms, result, base=10, digits=None, l2d=None, d2i=None):
     """
     create a substituted addition sum puzzle.
 
@@ -2679,13 +2679,17 @@ class SubstitutedSum(object):
 
     If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
     """
+
+    text = join(terms, sep=' + ') + ' = ' + result
+
     self.terms = terms
+    self.base = base
     self.result = result
     self.digits = digits
     self.l2d = l2d
     self.d2i = d2i
-    self.base = base
-    self.text = join(terms, sep=' + ') + ' = ' + result
+
+    self.text = text
 
   def solve(self, fn=None):
     """
@@ -2694,7 +2698,7 @@ class SubstitutedSum(object):
     solutions are returned as a dictionary assigning letters to digits. 
     """
     if fn is None: fn = lambda x: True
-    for r in substituted_sum(self.terms, self.result, digits=self.digits, l2d=self.l2d, d2i=self.d2i, base=self.base):
+    for r in substituted_sum(self.terms, self.result, base=self.base, digits=self.digits, l2d=self.l2d, d2i=self.d2i):
       if fn(r):
         yield r
 
@@ -2725,6 +2729,22 @@ class SubstitutedSum(object):
     """
     for s in self.solve(fn):
       self.output_solution(s)
+
+  # class method to chain multiple sums together
+  @classmethod
+  def chain(cls, sums, base=10, digits=None, l2d=None, d2i=None):
+    """
+    sums are specified as a sequence of: (<term>, <term>, ..., <result>)
+    """
+    # are we done?
+    if not sums:
+      yield l2d
+    else:
+      # solve the first sum
+      s = sums[0]
+      for r in cls(s[:-1], s[-1], base=base, digits=digits, l2d=l2d, d2i=d2i).solve():
+        # and recursively solve the rest
+        for x in cls.chain(sums[1:], base=base, digits=digits, l2d=r, d2i=d2i): yield x
 
   # class method to call from the command line
   @classmethod
@@ -3391,18 +3411,16 @@ class _SubstitutedExpression(object):
     for s in self.solve(verbose=True):
       if first: break
 
-
-# solve a collection of several simultaneous expressions
-
-def _substituted_expression_solve(expr, base, symbols, digits, l2d, d2i):
-  # are we done?
-  if not expr:
-    yield l2d
-  else:
-    # solve the first expression
-    for s in _SubstitutedExpression(expr[0], base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i).solve():
-      # and recursively solve the rest
-      for x in _substituted_expression_solve(expr[1:], base, symbols, digits, s, d2i): yield x
+  @classmethod
+  def chain(cls, exprs, base=10, symbols=None, digits=None, l2d=None, d2i=None):
+    # are we done?
+    if not exprs:
+      yield l2d
+    else:
+      # solve the first expression
+      for s in cls(exprs[0], base, symbols, digits, l2d, d2i).solve():
+        # and recursively solve the rest
+        for x in cls.chain(exprs[1:], base=base, symbols=symbols, digits=digits, l2d=s, d2i=d2i): yield x
 
 
 class SubstitutedExpression(object):
@@ -3432,7 +3450,7 @@ class SubstitutedExpression(object):
     expr - the expression
 
     expr can be a string (for a single expression), or a sequence of
-    strings to consider multiple expressions, all of which much be
+    strings (to consider multiple expressions), all of which much be
     satisfied.
 
     The following parameters are optional:
@@ -3536,7 +3554,7 @@ class SubstitutedExpression(object):
       print(template)
 
     # solve the expressions
-    for s in _substituted_expression_solve(expr, base, symbols, digits, l2d, d2i):
+    for s in _SubstitutedExpression.chain(expr, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i):
       if verbose > 0:
         self.output_solution(s)
       yield s
@@ -3544,7 +3562,7 @@ class SubstitutedExpression(object):
   def output_solution(self, s):
     # output:
     # [1] the original expression with words replaced by numbers (in the appropriate base) /
-    # [2] the symbol to digit mapping (in order)
+    # [2] the symbol to (base 10) digit mapping (in symbol order)
     printf(
       "{t} / {s}",
       t=_replace_words(self.template, self.symbols, (lambda w: int2base(nconcat(*(s[x] for x in w), base=self.base), self.base))),
