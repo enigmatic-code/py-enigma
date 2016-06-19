@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 19 21:11:55 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 19 22:41:17 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2910,7 +2910,7 @@ def _replace_words(s, symbols, fn):
 # <d> is a map of symbols to digit values
 # <base>
 # <symbols>
-def _match(v, r, d, base=10):
+def _match(v, r, d, base=10, d2i={}):
 
   # is the value an integer?
   if not isinstance(v, basestring):
@@ -2933,6 +2933,7 @@ def _match(v, r, d, base=10):
       # value is a new symbol, so check the corresponding digit doesn't have an entry
       if rx in d.values(): return None
       # update the map
+      if rx in d2i and vx in d2i[rx]: return None
       d[vx] = rx
 
   # return the updated dictionary
@@ -3058,7 +3059,7 @@ class _SubstitutedExpression(object):
         continue
 
       # attempt to match the value to the result
-      s = _match(value, r, l2d, base=base)
+      s = _match(value, r, l2d, base=base, d2i=d2i)
       if s is not None:
         if verbose > 0: self.output_solution(s)
         # return the letters to digits mapping
