@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jun 18 11:18:57 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 19 21:11:55 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -122,7 +122,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-06-18"
+__version__ = "2016-06-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2742,6 +2742,8 @@ class SubstitutedSum(object):
   @classmethod
   def chain(cls, sums, base=10, digits=None, l2d=None, d2i=None):
     """
+    solve a sequence of substituted sum problems.
+    
     sums are specified as a sequence of: (<term>, <term>, ..., <result>)
     """
     # are we done?
@@ -2828,7 +2830,7 @@ class SubstitutedSum(object):
     """
 
     usage = join((
-      sprintf("usage: {cls.__name__} [<opts>] <term> <term> ... <result>"),
+      sprintf("usage: {cls.__name__} [<opts>] \"<term> <term> ... <result>\""),
       "options:",
       "  --base=<n> (or -b<n>) = set base",
       "  --assign=<letter>,<digit> (or -a<l>,<d>) = assign digit to letter",
@@ -2894,6 +2896,8 @@ class SubstitutedSum(object):
 
 # Generic Substituted Expression Solver
 
+# TODO: think about negative values
+
 _SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def _replace_words(s, symbols, fn):
@@ -2901,14 +2905,70 @@ def _replace_words(s, symbols, fn):
   f = lambda m: fn(m.group(0))
   return re.sub('[' + symbols + ']+', f, s)
 
+# match value <v> (may be an int or a string)
+# to the integer result <r>
+# <d> is a map of symbols to digit values
+# <base>
+# <symbols>
+def _match(v, r, d, base=10):
+
+  # is the value an integer?
+  if not isinstance(v, basestring):
+    return (dict(d) if v == r else None)
+
+  # split the result into digit values
+  if r < 0: return None # reject negative values (TODO: check)
+  r = nsplit(r, base=base)
+
+  # the value should have the same number of characters
+  if len(v) != len(r): return None
+
+  # consider characters from the value and digits from the result
+  d = dict(d)
+  for (vx, rx) in zip(v, r):
+    if vx in d:
+      # value is an existing symbol in the map, so check they are the same
+      if d[vx] != rx: return None
+    else:
+      # value is a new symbol, so check the corresponding digit doesn't have an entry
+      if rx in d.values(): return None
+      # update the map
+      d[vx] = rx
+
+  # return the updated dictionary
+  return d
+
 # an Alphametic solver
 class _SubstitutedExpression(object):
 
-  def __init__(self, expr, base=10, symbols=None, digits=None, l2d=None, d2i=None):
+  def __init__(self, expr, value=None, base=10, symbols=None, digits=None, l2d=None, d2i=None):
 
     # the symbols to replace
     if symbols is None:
       symbols = _SYMBOLS
+
+    # output template
+    template = expr
+
+    # the value we are looking for
+    if not value:
+      # if value is None or '', we are looking for a True value
+      value = 1
+    elif isinstance(value, basestring):
+      # if value is a string, make sure it is a valid word, or a integer literal
+      if all(x in symbols for x in value):
+        # value is a word
+        template += ' = ' + value
+      else:
+        # this will fail if not presented with an integer literal
+        # TODO: we could maybe treat this as expr = "... == <value>" instead
+        try:
+          value = base2int(value, base=base)
+        except ValueError:
+          raise SyntaxError("syntax error in expression: \"" + expr + ' = ' + value + "\"")
+    if not isinstance(value, basestring):
+      # if value is an integer, use the appropriate template in the base
+      template += ' = ' + int2base(value, base=base)
 
     # find the words in the expression
     words = list()
@@ -2944,15 +3004,17 @@ class _SubstitutedExpression(object):
     try:
       fn = eval('lambda ' + join(('_' + int2base(i) for (i, _) in enumerate(words)), sep=', ') + ': ' + t)
     except SyntaxError:
-      raise SyntaxError("syntax error in expression: " + expr)
-  
+      raise SyntaxError("syntax error in expression: \"" + expr + "\"")
+
     self.expr = expr
+    self.value = value
     self.base = base
     self.symbols = symbols
     self.digits = digits
     self.l2d = l2d
     self.d2i = d2i
 
+    self.template = template
     self._words = words
     self._syms = syms
     self._fn = fn
@@ -2960,21 +3022,22 @@ class _SubstitutedExpression(object):
 
   def solve(self, verbose=0):
     expr = self.expr
+    value = self.value
     digits = self.digits
     l2d = self.l2d
     d2i = self.d2i
     base = self.base
     symbols = self.symbols
 
+    template = self.template
     syms = self._syms
     fn = self._fn
     words = self._words
 
     n = len(syms)
 
-    if verbose > 0:
-      printf("[solving for {n} symbols: {syms}]")
-      printf("{expr}")
+    if verbose > 1: printf("[solving for {n} symbols: {syms}]")
+    if verbose > 0: printf("{template}")
 
     # generate suitable permutations of the digits
     for p in itertools.permutations(digits, n):
@@ -2988,16 +3051,18 @@ class _SubstitutedExpression(object):
       # map the words to numbers
       args = list(nconcat(*(l2d[x] for x in w), base=base) for w in words)
 
+      # compute the result of the substituted expression
       try:
         r = fn(*args)
       except ArithmeticError:
         continue
 
-      if r:
-        if verbose > 0:
-          self.output_solution(l2d)
+      # attempt to match the value to the result
+      s = _match(value, r, l2d, base=base)
+      if s is not None:
+        if verbose > 0: self.output_solution(s)
         # return the letters to digits mapping
-        yield dict(l2d)
+        yield s
 
   def output_solution(self, s):
     # output:
@@ -3005,12 +3070,12 @@ class _SubstitutedExpression(object):
     # [2] the symbol to digit mapping (in order)
     printf(
       "{t} / {s}",
-      t=_replace_words(self.expr, self.symbols, (lambda w: int2base(nconcat(*(s[x] for x in w), base=self.base), self.base))),
+      t=_replace_words(self.template, self.symbols, (lambda w: int2base(nconcat(*(s[x] for x in w), base=self.base), self.base))),
       s=join((k + '=' + int2base(s[k]) for k in sorted(s.keys())), sep=' ')
     )
 
-  def go(self, first=False):
-    for s in self.solve(verbose=1):
+  def go(self, first=False, verbose=1):
+    for s in self.solve(verbose=verbose):
       if first: break
 
   @classmethod
@@ -3023,7 +3088,8 @@ class _SubstitutedExpression(object):
       yield l2d
     else:
       # solve the first expression
-      for s in cls(exprs[0], base, symbols, digits, l2d, d2i).solve():
+      (expr, value) = exprs[0]
+      for s in cls(expr, value, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i).solve():
         # and recursively solve the rest
         for x in cls.chain(exprs[1:], base=base, symbols=symbols, digits=digits, l2d=s, d2i=d2i): yield x
 
@@ -3041,9 +3107,9 @@ class SubstitutedExpression(object):
 
   e.g. Enigma 1530: \"Solve: TOM x 13 = DALEY\"
   <https://enigmaticcode.wordpress.com/2012/07/09/enigma-1530-tom-daley/>
-  >>> SubstitutedExpression('TOM * 13 == DALEY').go(first=True)
-  (TOM * 13 == DALEY)
-  (796 * 13 == 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
+  >>> SubstitutedExpression('TOM * 13 = DALEY').go()
+  (TOM * 13 = DALEY)
+  (796 * 13 = 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
 
   See SubstitutedExpression.command_line() for more examples.
   """
@@ -3057,6 +3123,12 @@ class SubstitutedExpression(object):
     expr can be a string (for a single expression), or a sequence of
     strings (to consider multiple expressions), all of which much be
     satisfied.
+
+    A single expression is of the form:
+
+      "<expr>" or "<expr> = <value>"
+
+    where value is a valid "word" (sequence of symbols), or an integer value.
 
     The following parameters are optional:
     base - the number base to operate in (default: 10)
@@ -3123,25 +3195,38 @@ class SubstitutedExpression(object):
     l2d = self.l2d
     d2i = self.d2i
     template = self.template
-    
-    # determine the symbols in each expression
+
     import re
+
+    # first split the strings into (<expr>, <value>) pairs
+    (exprs, xs, vs)  = (list(), list(), list())
+    for x in expr:
+      v = ''
+      if '==' not in x and '=' in x:
+        (x, v) = re.split(r'\s*=\s*', x)
+      exprs.append((('bool(' + x + ')', v) if not v else (x, v)))
+      xs.append(set(re.findall('[' + symbols + ']', x)))
+      vs.append(set(re.findall('[' + symbols + ']', v)))
+
+    # determine the symbols in each expression
     syms = list(set(re.findall('[' + symbols + ']', x)).difference(l2d.keys()) for x in expr)
 
     # reorder the expressions into a more appropriate order
     if reorder:
       # at each stage chose the expression with the fewest unassigned symbols
       d = set(l2d.keys())
-      (s, r) = ([], list(i for (i, _) in enumerate(syms)))
-      fn = lambda i: len(syms[i].difference(d))
+      (s, r) = (list(), list(i for (i, _) in enumerate(syms)))
+      fn = lambda i: (len(xs[i].difference(d)), -len(vs[i].difference(d, xs[i])))
       while r:
         i = min(r, key=fn)
         s.append(i)
-        d.update(syms[i])
+        d.update(xs[i], vs[i])
         r.remove(i)
       # update the lists
       expr = list(expr[i] for i in s)
-      syms = list(syms[i] for i in s)
+      exprs = list(exprs[i] for i in s)
+      xs = list(xs[i] for i in s)
+      vs = list(vs[i] for i in s)
 
     if verbose > 1:
       # output information
@@ -3150,18 +3235,16 @@ class SubstitutedExpression(object):
       # output the solving strategy
       ss = list()
       d = set(l2d.keys())
-      for (i, s) in enumerate(syms):
-        ss.append(sprintf("({x}) [{n}]", x=expr[i], n=len(s.difference(d))))
-        d.update(s)
+      for (i, x) in enumerate(xs):
+        ss.append(sprintf("({e}) [{n}+{m}]", e=expr[i], n=len(x.difference(d)), m=len(vs[i].difference(d, x))))
+        d.update(x, vs[i])
       printf("[strategy: {ss}]", ss=join(ss, sep=' -> '))
 
-    if verbose > 0:
-      print(template)
+    if verbose > 0: printf("{template}")
 
     # solve the expressions
-    for s in _SubstitutedExpression.chain(expr, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i):
-      if verbose > 0:
-        self.output_solution(s)
+    for s in _SubstitutedExpression.chain(exprs, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i):
+      if verbose > 0: self.output_solution(s)
       yield s
 
   def output_solution(self, s):
@@ -3195,27 +3278,27 @@ class SubstitutedExpression(object):
     SubstitutedSum would be faster)
 
     e.g. Enigma 327 <https://enigmaticcode.wordpress.com/2016/01/08/enigma-327-it-all-adds-up/>
-    % python enigma.py SubstitutedExpression "KBKGEQD + GAGEEYQ + ADKGEDY == EXYAAEE"
-    (KBKGEQD + GAGEEYQ + ADKGEDY == EXYAAEE)
-    (1912803 + 2428850 + 4312835 == 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
+    % python enigma.py SubstitutedExpression "KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE"
+    (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
+    (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
     but we can also use SubstitutedExpression to solve problems that
     don't have a specialsed solver.
 
     e.g. Sunday Times Teaser 2803
-    % python enigma.py SubstitutedExpression "AB * CDE == FGHIJ" "AB + CD + EF + GH + IJ == CCC"
-    (AB * CDE == FGHIJ) (AB + CD + EF + GH + IJ == CCC)
-    (52 * 367 == 19084) (52 + 36 + 71 + 90 + 84 == 333) / A=5 B=2 C=3 D=6 E=7 F=1 G=9 H=0 I=8 J=4
+    % python enigma.py SubstitutedExpression "AB * CDE = FGHIJ" "AB + CD + EF + GH + IJ = CCC"
+    (AB * CDE = FGHIJ) (AB + CD + EF + GH + IJ = CCC)
+    (52 * 367 = 19084) (52 + 36 + 71 + 90 + 84 = 333) / A=5 B=2 C=3 D=6 E=7 F=1 G=9 H=0 I=8 J=4
 
     e.g. Sunday Times Teaser 2796
-    % python enigma.py SubstitutedExpression --invalid=0,SGD "SAINT + GEORGE == DRAGON" "E % 2 == 0"
-    (SAINT + GEORGE == DRAGON) (E % 2 == 0)
-    (72415 + 860386 == 932801) (6 % 2 == 0) / A=2 D=9 E=6 G=8 I=4 N=1 O=0 R=3 S=7 T=5
+    % python enigma.py SubstitutedExpression "SAINT + GEORGE = DRAGON" "E % 2 = 0"
+    (SAINT + GEORGE = DRAGON) (E % 2 = 0)
+    (72415 + 860386 = 932801) (6 % 2 = 0) / A=2 D=9 E=6 G=8 I=4 N=1 O=0 R=3 S=7 T=5
 
     we also have access to any of the routines defined in enigma.py:
 
     e.g. Enigma 1180 <https://enigmaticcode.wordpress.com/2016/02/15/enigma-1180-anomalies/>
-    % python enigma.py SubstitutedExpression "SEVEN - THREE == FOUR" "is_prime(SEVEN)" "is_prime(FOUR)" "is_prime(RUOF)" "is_square(TEN)"
+    % python enigma.py SubstitutedExpression "SEVEN - THREE = FOUR" "is_prime(SEVEN)" "is_prime(FOUR)" "is_prime(RUOF)" "is_square(TEN)"
     (SEVEN - THREE == FOUR) (is_prime(SEVEN)) (is_prime(FOUR)) (is_prime(RUOF)) (is_square(TEN))
     (62129 - 58722 == 3407) (is_prime(62129)) (is_prime(3407)) (is_prime(7043)) (is_square(529)) / E=2 F=3 H=8 N=9 O=4 R=7 S=6 T=5 U=0 V=1
     """
