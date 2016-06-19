@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 19 22:41:17 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 19 23:38:44 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2756,6 +2756,16 @@ class SubstitutedSum(object):
         # and recursively solve the rest
         for x in cls.chain(sums[1:], base=base, digits=digits, l2d=r, d2i=d2i): yield x
 
+  @classmethod
+  def chain_go(cls, sums, base=10, digits=None, l2d=None, d2i=None):
+    template = join(('(' + join(s[:-1], sep=' + ') + ' = ' + s[-1] + ')' for s in sums), sep=' ')
+    printf("{template}")
+    for s in cls.chain(sums, base=base, digits=digits, l2d=l2d, d2i=d2i):
+      printf("{t} / {s}",
+        t=join((_digits[s[x]] if x in s else x) for x in template),
+        s=join((k + '=' + str(s[k]) for k in sorted(s.keys())), sep= ' ')
+      )
+
   # class method to call from the command line
   @classmethod
   def command_line(cls, args):
@@ -2764,8 +2774,8 @@ class SubstitutedSum(object):
 
     e.g. Enigma 327 <https://enigmaticcode.wordpress.com/2016/01/08/enigma-327-it-all-adds-up/>
     % python enigma.py SubstitutedSum "KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE"
-    KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE
-    1912803 + 2428850 + 4312835 = 8654488 / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
+    (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
+    (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
 
     Optional parameters:
@@ -2778,9 +2788,9 @@ class SubstitutedSum(object):
 
     e.g. Enigma 1663 <https://enigmaticcode.wordpress.com/2011/12/04/enigma-1663-flintoffs-farewell/>
     % python enigma.py SubstitutedSum --base=11 "FAREWELL + FREDALO = FLINTOFF"
-    FAREWELL + FREDALO = FLINTOFF
-    61573788 + 657A189 = 68042966 / A=1 D=10 E=7 F=6 I=0 L=8 N=4 O=9 R=5 T=2 W=3
-    6157A788 + 6573189 = 68042966 / A=1 D=3 E=7 F=6 I=0 L=8 N=4 O=9 R=5 T=2 W=10    
+    (FAREWELL + FREDALO = FLINTOFF)
+    (61573788 + 657A189 = 68042966) / A=1 D=10 E=7 F=6 I=0 L=8 N=4 O=9 R=5 T=2 W=3
+    (6157A788 + 6573189 = 68042966) / A=1 D=3 E=7 F=6 I=0 L=8 N=4 O=9 R=5 T=2 W=10    
 
 
     --assign=<letter>,<digit> (or -a<l>,<d>)
@@ -2791,8 +2801,8 @@ class SubstitutedSum(object):
 
     e.g. Enigma 1361 <https://enigmaticcode.wordpress.com/2013/02/20/enigma-1361-enigma-variation/>
     % python enigma.py SubstitutedSum --assign=O,0 "ELGAR + ENIGMA = NIMROD"
-    ELGAR + ENIGMA = NIMROD
-    71439 + 785463 = 856902 / A=3 D=2 E=7 G=4 I=5 L=1 M=6 N=8 O=0 R=9    
+    (ELGAR + ENIGMA = NIMROD)
+    (71439 + 785463 = 856902) / A=3 D=2 E=7 G=4 I=5 L=1 M=6 N=8 O=0 R=9    
 
     
     --digits=<digit>,<digit>,... (or -d<d>,<d>,...)
@@ -2803,9 +2813,9 @@ class SubstitutedSum(object):
 
     e.g. Enigma 1272 <https://enigmaticcode.wordpress.com/2014/12/09/enigma-1272-jonny-wilkinson/>
     % python enigma.py SubstitutedSum --digits=0,1,2,3,4,5,6,7,8 "WILKI + NSON = JONNY"
-    WILKI + NSON = JONNY
-    48608 + 3723 = 52331 / I=8 J=5 K=0 L=6 N=3 O=2 S=7 W=4 Y=1
-    48708 + 3623 = 52331 / I=8 J=5 K=0 L=7 N=3 O=2 S=6 W=4 Y=1    
+    (WILKI + NSON = JONNY)
+    (48608 + 3723 = 52331) / I=8 J=5 K=0 L=6 N=3 O=2 S=7 W=4 Y=1
+    (48708 + 3623 = 52331) / I=8 J=5 K=0 L=7 N=3 O=2 S=6 W=4 Y=1    
 
 
     --invalid=<digit>,<letters> (or -i<d>,<ls>)
@@ -2820,8 +2830,8 @@ class SubstitutedSum(object):
 
     Enigma 171 <https://enigmaticcode.wordpress.com/2014/02/23/enigma-171-addition-digits-all-wrong/>
     % python enigma.py SubstitutedSum -i0,016 -i1,1 -i3,3 -i5,5 -i6,6 -i7,7 -i8,8 -i9,9 "1939 + 1079 = 6856"
-    1939 + 1079 = 6856
-    2767 + 2137 = 4904 / 0=1 1=2 3=6 5=0 6=4 7=3 8=9 9=7    
+    (1939 + 1079 = 6856)
+    (2767 + 2137 = 4904) / 0=1 1=2 3=6 5=0 6=4 7=3 8=9 9=7    
 
 
     --help (or -h)
@@ -2830,7 +2840,7 @@ class SubstitutedSum(object):
     """
 
     usage = join((
-      sprintf("usage: {cls.__name__} [<opts>] \"<term> <term> ... <result>\""),
+      sprintf("usage: {cls.__name__} [<opts>] \"<term> + <term> + ... = <result>\" ..."),
       "options:",
       "  --base=<n> (or -b<n>) = set base",
       "  --assign=<letter>,<digit> (or -a<l>,<d>) = assign digit to letter",
@@ -2878,18 +2888,16 @@ class SubstitutedSum(object):
         return -1
 
     # check command line usage
-    if len(args) != 1:
+    if not args:
       print(usage)
       return -1
 
-    # extract the terms and result
+    # extract the sums
     import re
-    args = re.split(r'[\s\+\=]+', args[0])
-    result = args.pop()
-    #printf("[solving {terms} = {result} ...]", terms=join(args, sep=' + '))
+    sums = list(re.split(r'[\s\+\=]+', arg) for arg in args)
 
     # call the solver
-    cls(args, result, **opt).go()
+    cls.chain_go(sums, **opt)
     return 0
 
 ###############################################################################
