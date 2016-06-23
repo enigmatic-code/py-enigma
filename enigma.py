@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 19 23:38:44 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun 23 12:19:55 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -122,7 +122,7 @@ Timer                 - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-06-19"
+__version__ = "2016-06-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2842,7 +2842,7 @@ class SubstitutedSum(object):
     usage = join((
       sprintf("usage: {cls.__name__} [<opts>] \"<term> + <term> + ... = <result>\" ..."),
       "options:",
-      "  --base=<n> (or -b<n>) = set base",
+      "  --base=<n> (or -b<n>) = set base to <n>",
       "  --assign=<letter>,<digit> (or -a<l>,<d>) = assign digit to letter",
       "  --digits=<digit>,... or <digit>-<digit> (or -d...) = available digits",
       "  --invalid=<digit>,<letters> (or -i<d>,<ls>) = invalid digit to letter assignments",
@@ -2916,9 +2916,10 @@ def _replace_words(s, symbols, fn):
 # match value <v> (may be an int or a string)
 # to the integer result <r>
 # <d> is a map of symbols to digit values
-# <base>
-# <symbols>
-def _match(v, r, d, base=10, d2i={}):
+# <digits> allowable digits
+# <base> base we are working in
+# <d2i> map of digits to invalid values
+def _match(v, r, d, digits, base=10, d2i={}):
 
   # is the value an integer?
   if not isinstance(v, basestring):
@@ -2938,10 +2939,9 @@ def _match(v, r, d, base=10, d2i={}):
       # value is an existing symbol in the map, so check they are the same
       if d[vx] != rx: return None
     else:
-      # value is a new symbol, so check the corresponding digit doesn't have an entry
-      if rx in d.values(): return None
+      # value is a new symbol, so check rx is an allowable digit and doesn't already have an entry
+      if (rx in d.values()) or (rx not in digits) or (rx in d2i and vx in d2i[rx]): return None
       # update the map
-      if rx in d2i and vx in d2i[rx]: return None
       d[vx] = rx
 
   # return the updated dictionary
@@ -3067,7 +3067,7 @@ class _SubstitutedExpression(object):
         continue
 
       # attempt to match the value to the result
-      s = _match(value, r, l2d, base=base, d2i=d2i)
+      s = _match(value, r, l2d, digits, base=base, d2i=d2i)
       if s is not None:
         if verbose > 0: self.output_solution(s)
         # return the letters to digits mapping
@@ -3249,7 +3249,8 @@ class SubstitutedExpression(object):
         d.update(x, vs[i])
       printf("[strategy: {ss}]", ss=join(ss, sep=' -> '))
 
-    if verbose > 0: printf("{template}")
+    if verbose > 0:
+      printf("{template}")
 
     # solve the expressions
     for s in _SubstitutedExpression.chain(exprs, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i):
@@ -3272,9 +3273,16 @@ class SubstitutedExpression(object):
 
     first - if set to True will stop after the first solution is output
     """
+    if verbose > 2:
+      # measure internal time
+      t = Timer()
+      t.start()
+
     for s in self.solve(reorder=reorder, verbose=verbose):
       if first: break
-
+      
+    if verbose > 2:
+      t.stop()
 
   # class method to call from the command line
   @classmethod
@@ -3316,7 +3324,7 @@ class SubstitutedExpression(object):
       sprintf("usage: {cls.__name__} [<opts>] <expression> [<expression> ...]"),
       "options:",
       "  --symbols=<string> (or -s<string>) = symbols to replace with digits",
-      "  --base=<n> (or -b<n>) = set base",
+      "  --base=<n> (or -b<n>) = set base to <n>",
       "  --assign=<letter>,<digit> (or -a<l>,<d>) = assign digit to letter",
       "  --digits=<digit>,... or --digits=<digit>-<digit> (or -d...) = available digits",
       "  --invalid=<digit>,<letters> (or -i<d>,<ls>) = invalid digit to letter assignments",
