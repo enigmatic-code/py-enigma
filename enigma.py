@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jun 25 16:57:49 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jun 25 18:10:16 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3009,10 +3009,11 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   if l2d is None:
     l2d = dict()
 
-  # allowable digits
+  # allowable digits (and invalid digits)
   if digits is None:
     digits = irange(0, base - 1)
   digits = set(digits).difference(l2d.values())
+  idigits = set(irange(0, base - 1)).difference(digits)
 
   # find words in all exprs
   words = re.findall('[' + symbols + ']+', template)
@@ -3131,9 +3132,8 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
           # check it is different from existing symbols
           check = join(('_' + y + ' != ' + '_' + x for x in done), sep=' and ')
           # and also check any invalid values for this symbol
-          for (s, v) in invalid:
-            if y == s:
-              check += ' and ' + '_' + y + ' != ' + str(v)
+          for v in idigits.union(v for (s, v) in invalid if y == s):
+            check += ' and ' + '_' + y + ' != ' + str(v)
           # and check x == 0 for the final value
           if j == -1:
             check += ' and x == 0'
