@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jun 25 18:10:16 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jun 25 20:00:17 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3152,9 +3152,8 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       _ += indent
 
   # yield solutions as dictionaries
-  ss = join(sorted(done))
-  vs = join(('_' + s for s in ss), sep=", ")
-  prog += sprintf("{_}yield dict(zip(\"{ss}\", [{vs}]))\n")
+  d = join((("'" + s + "': _" + s) for s in sorted(done)), sep=', ')
+  prog += sprintf("{_}yield {{ {d} }}\n")
 
   if verbose > 2:
     printf("-- [code language=\"python\"] --\n{prog}\n-- [/code] --")
