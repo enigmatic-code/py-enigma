@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jun 25 16:15:54 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jun 25 16:57:49 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3154,16 +3154,22 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   # yield solutions as dictionaries
   ss = join(sorted(done))
   vs = join(('_' + s for s in ss), sep=", ")
-  prog += sprintf("{_}yield dict(zip(\"{ss}\", [{vs}]))")
+  prog += sprintf("{_}yield dict(zip(\"{ss}\", [{vs}]))\n")
 
   if verbose > 2:
     printf("-- [code language=\"python\"] --\n{prog}\n-- [/code] --")
 
   # compile the solver
-  ns = {}
-  exec(prog, None, ns)
-  solve = ns['solve']
-  
+  # a bit of jiggery pokery to make this work in several Python versions
+  # older Python barfs on:
+  #   ns = dict()
+  #   eval(prog, None, ns)
+  #   solve = ns['solve']
+  global _substituted_expression_solver
+  code = compile(prog + "global _substituted_expression_solver\n_substituted_expression_solver = solve", '<string>', 'exec')
+  eval(code)
+  solve = _substituted_expression_solver
+
   # and run it
   for s in solve():
     if verbose > 0:
