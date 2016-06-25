@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jun 25 20:00:17 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jun 25 20:17:27 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3111,7 +3111,10 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
         m *= base
       return '(' + join(r, sep=' + ') + ')'
     x = _replace_words(expr, symbols, (lambda w: expand(w, base)))
-    prog += sprintf("{_}x = {x}\n")
+    prog += sprintf("{_}try:\n")
+    prog += sprintf("{_}  x = {x}\n")
+    prog += sprintf("{_}except ArithmeticError:\n")
+    prog += sprintf("{_}  continue\n")
 
     # check the value
     if isinstance(value, basestring):
