@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jun 25 20:17:27 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun 27 10:55:57 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -124,7 +124,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-06-25"
+__version__ = "2016-06-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2907,6 +2907,10 @@ class SubstitutedSum(object):
 # Generic Substituted Expression Solver
 
 # TODO: think about negative values
+#
+# TODO: we could calculate the values of words as we go along,
+# so: S, E, N, D, (calculate SEND), M, O, R, (calculate MORE)
+# instead of: S, E, N, D, M, O, R, (calculate SEND + MORE)
 
 _SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -3112,8 +3116,8 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       return '(' + join(r, sep=' + ') + ')'
     x = _replace_words(expr, symbols, (lambda w: expand(w, base)))
     prog += sprintf("{_}try:\n")
-    prog += sprintf("{_}  x = {x}\n")
-    prog += sprintf("{_}except ArithmeticError:\n")
+    prog += sprintf("{_}  x = int({x})\n")
+    prog += sprintf("{_}except:\n") # maybe: "except ArithmeticError"
     prog += sprintf("{_}  continue\n")
 
     # check the value
