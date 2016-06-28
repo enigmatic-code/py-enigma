@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun 27 10:55:57 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jun 28 12:42:41 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -124,7 +124,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-06-26"
+__version__ = "2016-06-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3034,6 +3034,14 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
         if len(w) > 1:
           invalid.add((w[0], 0))
 
+  # but for the rest of the time we are only interested
+  # in words in the <exprs> (not the <values>)
+  words = set()
+  for (x, v) in exprs:
+    for w in re.findall('[' + symbols + ']+', x):
+      if len(w) > 1:
+        words.add(w)
+
   # find the symbols in the (<expr>, <value>) pairs
   # xs = symbols in <expr>
   # vs = symbols in <value>
@@ -3077,6 +3085,14 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   if verbose > 0:
     printf("{template}")
 
+  def expand(w, base):
+    (m, r) = (1, list())
+    for x in w[::-1]:
+      s = ('_' + x if m == 1 else concat('_', x, '*', m))
+      r.append(s)
+      m *= base
+    return join(r, sep=' + ')
+
   # generate the program
   (prog, _, indent) = ('', '', '  ')
 
@@ -3094,6 +3110,8 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   for ((expr, value), xsyms, vsyms) in zip(exprs, xs, vs):
 
     # deal with each symbol in <expr>
+    # TODO: we could consider these in an order that makes words
+    # in <words> as soon as possible
     for s in xsyms:
       if s in done: continue
       # allowable digits for s
@@ -3105,16 +3123,13 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
         prog += sprintf("{_}if {check}:\n")
         _ += indent
       done.add(s)
+      # look for words which can now be made
+      for w in words:
+        if s in w and all(x in done for x in w):
+          prog += sprintf("{_}_{w} = {x}\n", x=expand(w, base))
 
     # calculate the expression
-    def expand(w, base):
-      (m, r) = (1, list())
-      for x in w[::-1]:
-        s = ('_' + x if m == 1 else concat('_', x, '*', m))
-        r.append(s)
-        m *= base
-      return '(' + join(r, sep=' + ') + ')'
-    x = _replace_words(expr, symbols, (lambda w: expand(w, base)))
+    x = _replace_words(expr, symbols, (lambda w: '_' + w ))
     prog += sprintf("{_}try:\n")
     prog += sprintf("{_}  x = int({x})\n")
     prog += sprintf("{_}except:\n") # maybe: "except ArithmeticError"
@@ -3147,6 +3162,10 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
           prog += sprintf("{_}if {check}:\n")
           _ += indent
           done.add(y)
+          # look for words which can now be made
+          for w in words:
+            if y in w and all(x in done for x in w):
+              prog += sprintf("{_}_{w} = {x}\n", x=expand(w, base))
 
     elif value is None:
       # look for a True value
