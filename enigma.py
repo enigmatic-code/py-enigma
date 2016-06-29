@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 29 13:43:40 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 29 13:52:23 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -4668,7 +4668,7 @@ enigma.py has the following command-line usage:
 
     Enigma 440 can be solved using:
       
-    % python enigma.py SubstitutedDivision "????? ?x ??x" "?? ?" "" "??x #"
+    % python enigma.py SubstitutedDivision '????? ?x ??x' '?? ?' '' '??x #'
     [solving ????? / ?x = ??x, [('??', '?'), None, ('??x', '')] ...]
     10176 / 96 = 106 rem 0 [x=6] [101 - 96 = 5, 576 - 576 = 0]
 
@@ -4679,7 +4679,7 @@ enigma.py has the following command-line usage:
     TOM * 13 == DALEY
     796 * 13 == 10348 / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
 
-""".format(version=__version__, python='2.7.11', python3='3.5.1')
+""".format(version=__version__, python='2.7.12', python3='3.5.2')
 
 if __name__ == "__main__":
 
