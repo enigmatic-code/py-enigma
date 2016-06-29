@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jun 28 12:42:41 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 29 13:43:40 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -124,7 +124,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-06-28"
+__version__ = "2016-06-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3129,7 +3129,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
           prog += sprintf("{_}_{w} = {x}\n", x=expand(w, base))
 
     # calculate the expression
-    x = _replace_words(expr, symbols, (lambda w: '_' + w ))
+    x = _replace_words(expr, symbols, (lambda w: '(' + '_' + w + ')'))
     prog += sprintf("{_}try:\n")
     prog += sprintf("{_}  x = int({x})\n")
     prog += sprintf("{_}except:\n") # maybe: "except ArithmeticError"
@@ -3141,26 +3141,30 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       for (j, y) in enumerate(value[::-1], start=-len(value)):
         if y in done:
           # this is a symbol with an assigned value
-          prog += sprintf("{_}(x, y) = divmod(x, {base})\n")
+          prog += sprintf("{_}y = x % {base}\n")
           # check the value
-          if j == -1:
-            prog += sprintf("{_}if y == _{y} and x == 0:\n")
-          else:
-            prog += sprintf("{_}if y == _{y}:\n")
+          prog += sprintf("{_}if y == _{y}:\n")
           _ += indent
+          prog += sprintf("{_}x //= {base}\n")          
+          # and check x == 0 for the final value
+          if j == -1:
+            prog += sprintf("{_}if x == 0:\n")
+            _ += indent
         else:
           # this is a new symbol...
-          prog += sprintf("{_}(x, _{y}) = divmod(x, {base})\n")
+          prog += sprintf("{_}_{y} = x % {base}\n")
           # check it is different from existing symbols
           check = join(('_' + y + ' != ' + '_' + x for x in done), sep=' and ')
           # and also check any invalid values for this symbol
           for v in idigits.union(v for (s, v) in invalid if y == s):
             check += ' and ' + '_' + y + ' != ' + str(v)
-          # and check x == 0 for the final value
-          if j == -1:
-            check += ' and x == 0'
           prog += sprintf("{_}if {check}:\n")
           _ += indent
+          prog += sprintf("{_}x //= {base}\n")          
+          # and check x == 0 for the final value
+          if j == -1:
+            prog += sprintf("{_}if x == 0:\n")
+            _ += indent
           done.add(y)
           # look for words which can now be made
           for w in words:
