@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 29 13:52:23 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul  3 08:24:36 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -124,7 +124,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-06-29"
+__version__ = "2016-07-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2908,9 +2908,7 @@ class SubstitutedSum(object):
 
 # TODO: think about negative values
 #
-# TODO: we could calculate the values of words as we go along,
-# so: S, E, N, D, (calculate SEND), M, O, R, (calculate MORE)
-# instead of: S, E, N, D, M, O, R, (calculate SEND + MORE)
+# TODO: consider ordering the symbols, so we can calculate words sooner.
 
 _SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -2920,7 +2918,7 @@ def _replace_words(s, symbols, fn):
   f = lambda m: fn(m.group(0))
   return re.sub('[' + symbols + ']+', f, s)
 
-def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, d2i=None, process=1, reorder=1, verbose=0):
+def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, d2i=None, distinct=1, process=1, reorder=1, verbose=0):
   """
   A solver for substituted expressions.
 
@@ -2942,12 +2940,19 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
 
   The following parameters are optional:
   base - the number base to operate in (default: 10)
+
   symbols - the symbols to substitute in the expressions (default: upper case letters)
+
   digits - the digits to be substituted in (default: determined from the base)
+
   l2d - initial map of symbols to digits (default: all symbols unassigned)
+
   d2i - map of digits to invalid latter assignments (default: leading digits cannot be 0)
 
   If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
+
+  distinct - if a True value, then different symbols stand for different digits,
+  otherwise more than one symbol can stand for the same digit (default: 1)
 
   process - if a True value, exprs will be processed from a simple string
   (or sequence of strings) to acceptable input values.
@@ -3082,9 +3087,6 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       d.update(x, vs[i])
     printf("[strategy: {ss}]", ss=join(ss, sep=' -> '))
 
-  if verbose > 0:
-    printf("{template}")
-
   def expand(w, base):
     (m, r) = (1, list())
     for x in w[::-1]:
@@ -3118,7 +3120,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       ds = list(digits.difference(d for (x, d) in invalid if x == s))
       prog += sprintf("{_}for _{s} in {ds}:\n")
       _ += indent
-      if done:
+      if done and distinct:
         check = join(('_' + s + ' != ' + '_' + x for x in done), sep=' and ')
         prog += sprintf("{_}if {check}:\n")
         _ += indent
@@ -3132,7 +3134,9 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
     x = _replace_words(expr, symbols, (lambda w: '(' + '_' + w + ')'))
     prog += sprintf("{_}try:\n")
     prog += sprintf("{_}  x = int({x})\n")
-    prog += sprintf("{_}except:\n") # maybe: "except ArithmeticError"
+    prog += sprintf("{_}except NameError:\n") # catch undefined functions
+    prog += sprintf("{_}  raise\n")
+    prog += sprintf("{_}except:\n") # maybe "except (ArithmeticError, ValueError)"
     prog += sprintf("{_}  continue\n")
 
     # check the value
@@ -3153,13 +3157,18 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
         else:
           # this is a new symbol...
           prog += sprintf("{_}_{y} = x % {base}\n")
+          check = list()
           # check it is different from existing symbols
-          check = join(('_' + y + ' != ' + '_' + x for x in done), sep=' and ')
-          # and also check any invalid values for this symbol
+          if distinct:
+            #check = join(('_' + y + ' != ' + '_' + x for x in done), sep=' and ')
+            check.extend(('_' + y + ' != ' + '_' + x for x in done))
+          # check any invalid values for this symbol
           for v in idigits.union(v for (s, v) in invalid if y == s):
-            check += ' and ' + '_' + y + ' != ' + str(v)
-          prog += sprintf("{_}if {check}:\n")
-          _ += indent
+            check.append('_' + y + ' != ' + str(v))
+          if check:
+            check = join(check, sep=' and ')
+            prog += sprintf("{_}if {check}:\n")
+            _ += indent
           prog += sprintf("{_}x //= {base}\n")          
           # and check x == 0 for the final value
           if j == -1:
@@ -3200,6 +3209,8 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   solve = _substituted_expression_solver
 
   # and run it
+  if verbose > 0:
+    printf("{template}")
   for s in solve():
     if verbose > 0:
       # output:
@@ -3234,7 +3245,7 @@ class SubstitutedExpression(object):
   See SubstitutedExpression.command_line() for more examples.
   """
 
-  def __init__(self, expr, base=10, symbols=None, digits=None, l2d=None, d2i=None):
+  def __init__(self, expr, base=10, symbols=None, digits=None, l2d=None, d2i=None, distinct=1):
     """
     create a substituted expression puzzle.
 
@@ -3254,6 +3265,7 @@ class SubstitutedExpression(object):
     digits - the digits to be substituted in (default: determined from base)
     l2d - initial map of symbols to digits (default: all symbols unassigned)
     d2i - map of digits to invalid letter assigmnents (default: leading digits cannot be 0)
+    distinct - flag, if set symbols are assigned to different digits (default: 1)
 
     If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
     """
@@ -3263,6 +3275,7 @@ class SubstitutedExpression(object):
     self.digits = digits
     self.l2d = l2d
     self.d2i = d2i
+    self.distinct = distinct
 
 
   def solve(self, reorder=1, verbose=0):
@@ -3281,8 +3294,9 @@ class SubstitutedExpression(object):
     symbols = self.symbols
     l2d = self.l2d
     d2i = self.d2i
+    distinct = self.distinct
 
-    for s in substituted_expression(expr, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i, process=1, reorder=reorder, verbose=verbose):
+    for s in substituted_expression(expr, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i, distinct=distinct, process=1, reorder=reorder, verbose=verbose):
       yield s
 
 
@@ -3348,6 +3362,7 @@ class SubstitutedExpression(object):
       "  --assign=<letter>,<digit> (or -a<l>,<d>) = assign digit to letter",
       "  --digits=<digit>,... or --digits=<digit>-<digit> (or -d...) = available digits",
       "  --invalid=<digit>,<letters> (or -i<d>,<ls>) = invalid digit to letter assignments",
+      "  --distinct=<n> (or -D<n>) = symbols stand for different digits (0 = off, 1 = on)",
       "  --first (or -1) = stop after the first solution",
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
       "  --verbose[=<n>] (or -v[<n>]) = verbosity (0 = off, 1 = solutions, 2+ = more)",
@@ -3390,6 +3405,8 @@ class SubstitutedExpression(object):
           if opt['d2i'] is None: opt['d2i'] = dict()
           (d, s) = v.split(',', 1)
           opt['d2i'][int(d)] = s
+        elif k == 'D' or k == 'distinct':
+          opt['distinct'] = (int(v) if v else 1)
         elif k == '1' or k == 'first':
           kw['first'] = (int(v) if v else True)
         elif k == 'v' or k == 'verbose':
