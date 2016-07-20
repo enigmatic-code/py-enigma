@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 20 14:14:28 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 20 15:38:00 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -23,82 +23,83 @@ The latest version is available at <http://www.magwag.plus.com/jim/enigma.html>.
 
 Currently this module provides the following functions and classes:
 
-alphametic            - an alias for substituted_expression()
-base2int              - convert a string in the specified base to an integer
-C                     - combinatorial function (nCk)
-cached                - decorator for caching functions
-cbrt                  - the (real) cube root of a number
-chunk                 - go through an iterable in chunks
-compare               - comparator function
-concat                - concatenate a list of values into a string
-coprime_pairs         - generate coprime pairs
-cslice                - cumulative slices of an array
-csum                  - cumulative sum
-diff                  - sequence difference
-digrt                 - the digital root of a number
-divc                  - ceiling division
-divf                  - floor division
-divisor_pairs         - generate pairs of divisors of a number
-divisor               - generate the divisors of a number
-divisors              - the divisors of a number
-egcd                  - extended gcd
-factor                - the prime factorisation of a number
-factorial             - factorial function
-farey                 - generate Farey sequences of coprime pairs
-filter2               - partition an iterator into values that satisfy a predicate, and those that do not
-filter_unique         - partition an iterator into values that are unique, and those that are not
-find                  - find the index of an object in an iterable
-find_max              - find the maximum value of a function
-find_min              - find the minimum value of a function
-find_value            - find where a function has a specified value
-find_zero             - find where a function is zero
-first                 - return items from the start of an iterator
-flatten               - flatten a list of lists
-flattened             - fully flatten a nested structure
-gcd                   - greatest common divisor
-grid_adjacency        - adjacency matrix for an n x m grid
-hypot                 - calculate hypotenuse
-icount                - count the number of elements of an iterator that satisfy a predicate
-int2base              - convert an integer to a string in the specified base
-int2roman             - convert an integer to a Roman Numeral
-int2words             - convert an integer to equivalent English words
-intc                  - ceiling conversion of float to int
-intf                  - floor conversion of float to int
-invmod                - multiplicative inverse of n modulo m
-ipartitions           - partition a sequence with repeated values by index
-irange                - inclusive range iterator
-is_cube               - check a number is a perfect cube
-is_distinct           - check a value is distinct from other values
-is_duplicate          - check to see if value (as a string) contains duplicate characters
-is_pairwise_distinct  - check all arguments are distinct
-is_power              - check a number is a perfect power
-is_prime              - simple prime test
-is_prime_mr           - Miller-Rabin fast prime test
-is_roman              - check a Roman Numeral is valid
-is_square             - check a number is a perfect square
-is_triangular         - check a number is a triangular number
-isqrt                 - intf(sqrt(x))
-join                  - concatenate strings
-lcm                   - lowest common multiple
-mgcd                  - multiple gcd
-multiply              - the product of numbers in a sequence
-nconcat               - concatenate single digits into an integer
-nreverse              - reverse the digits in an integer
-nsplit                - split an integer into single digits
-number                - create an integer from a string ignoring non-digits
-P                     - permutations function (nPk)
-partitions            - partition a sequence of distinct values into tuples
-pi                    - float approximation to pi
-powerset              - the powerset of an iterator
-prime_factor          - generate terms in the prime factorisation of a number
-printf                - print with interpolated variables
-recurring             - decimal representation of fractions
-repdigit              - number consisting of repeated digits
-roman2int             - convert a Roman Numeral to an integer
-split                 - split a value into characters
-sprintf               - interpolate variables into a string
-sqrt                  - the (positive) square root of a number
-subseqs               - sub-sequences of an iterable
+alphametic             - an alias for substituted_expression()
+base2int               - convert a string in the specified base to an integer
+C                      - combinatorial function (nCk)
+cached                 - decorator for caching functions
+cbrt                   - the (real) cube root of a number
+chunk                  - go through an iterable in chunks
+compare                - comparator function
+concat                 - concatenate a list of values into a string
+coprime_pairs          - generate coprime pairs
+cslice                 - cumulative slices of an array
+csum                   - cumulative sum
+diff                   - sequence difference
+digrt                  - the digital root of a number
+divc                   - ceiling division
+divf                   - floor division
+divisor_pairs          - generate pairs of divisors of a number
+divisor                - generate the divisors of a number
+divisors               - the divisors of a number
+egcd                   - extended gcd
+factor                 - the prime factorisation of a number
+factorial              - factorial function
+farey                  - generate Farey sequences of coprime pairs
+filter2                - partition an iterator into values that satisfy a predicate, and those that do not
+filter_unique          - partition an iterator into values that are unique, and those that are not
+find                   - find the index of an object in an iterable
+find_max               - find the maximum value of a function
+find_min               - find the minimum value of a function
+find_value             - find where a function has a specified value
+find_zero              - find where a function is zero
+first                  - return items from the start of an iterator
+flatten                - flatten a list of lists
+flattened              - fully flatten a nested structure
+gcd                    - greatest common divisor
+grid_adjacency         - adjacency matrix for an n x m grid
+hypot                  - calculate hypotenuse
+icount                 - count the number of elements of an iterator that satisfy a predicate
+int2base               - convert an integer to a string in the specified base
+int2roman              - convert an integer to a Roman Numeral
+int2words              - convert an integer to equivalent English words
+intc                   - ceiling conversion of float to int
+intf                   - floor conversion of float to int
+invmod                 - multiplicative inverse of n modulo m
+ipartitions            - partition a sequence with repeated values by index
+irange                 - inclusive range iterator
+is_cube                - check a number is a perfect cube
+is_distinct            - check a value is distinct from other values
+is_duplicate           - check to see if value (as a string) contains duplicate characters
+is_pairwise_distinct   - check all arguments are distinct
+is_power               - check a number is a perfect power
+is_prime               - simple prime test
+is_prime_mr            - Miller-Rabin fast prime test
+is_roman               - check a Roman Numeral is valid
+is_square              - check a number is a perfect square
+is_triangular          - check a number is a triangular number
+isqrt                  - intf(sqrt(x))
+join                   - concatenate strings
+lcm                    - lowest common multiple
+mgcd                   - multiple gcd
+multiply               - the product of numbers in a sequence
+nconcat                - concatenate single digits into an integer
+nreverse               - reverse the digits in an integer
+nsplit                 - split an integer into single digits
+number                 - create an integer from a string ignoring non-digits
+P                      - permutations function (nPk)
+partitions             - partition a sequence of distinct values into tuples
+pi                     - float approximation to pi
+powerset               - the powerset of an iterator
+prime_factor           - generate terms in the prime factorisation of a number
+printf                 - print with interpolated variables
+recurring              - decimal representation of fractions
+repdigit               - number consisting of repeated digits
+roman2int              - convert a Roman Numeral to an integer
+split                  - split a value into characters
+sprintf                - interpolate variables into a string
+sqrt                   - the (positive) square root of a number
+subseqs                - sub-sequences of an iterable
+substitute             - substitute symbols for digits in text
 substituted_expression - a substituted expression (Alphametic) solver
 substituted_sum        - a solver for substituted sums
 T, tri                 - T(n) is the nth triangular number
@@ -2614,6 +2615,19 @@ def _substituted_sum(terms, result, digits, l2d, d2i, n, carry=0, base=10):
     for r in _substituted_sum(terms, result, digits.difference(allocated), _l2d, d2i, n, c, base):
       yield r
 
+def substitute(s2d, text, digits=_DIGITS):
+  """
+  given a symbol-to-digit mapping <s2d> and some text <text>, return
+  the text with the digits (as defined by the sequence <digits>)
+  substituted for the symbols.
+
+  characters in the text that don't occur in the mapping are unaltered.
+
+  >>> substitute(dict(zip('DEMNORSY', (7, 5, 1, 6, 0, 8, 9, 2))), "SEND + MORE = MONEY")
+  '9567 + 1085 = 10652'
+  """
+  return join((digits[s2d[x]] if x in s2d else x) for x in text)
+
 # friendly interface to the substituted sum solver
 def substituted_sum(terms, result, digits=None, l2d=None, d2i=None, base=10):
   """
@@ -2717,16 +2731,16 @@ class SubstitutedSum(object):
     given a solution to the substituted sum and some text return the text with
     letters substituted for digits.
     """
-    return join((digits[s[c]] if c in s else c) for c in text)
+    return substitute(s, text, digits=digits)
 
-  def output_solution(self, s):
+  def output_solution(self, s, digits=_DIGITS):
     """
     given a solution to the substituted sum output the assignment of letters
     to digits and the sum with digits substituted for letters.
     """
     printf("{t} / {s}",
       # print the sum with digits substituted in
-      t=self.substitute(s, self.text),
+      t=substitute(s, self.text, digits=digits),
       # output the assignments in letter order
       s=join((k + '=' + str(s[k]) for k in sorted(s.keys())), sep=' ')
     )
@@ -3032,7 +3046,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
 
   # invalid (<symbol>, <digit>) assignments
   invalid = set()
-  if d2i:
+  if d2i is not None:
     for (d, ss) in d2i.items():
       invalid.update((s, d) for s in ss)
   else:
@@ -3325,7 +3339,7 @@ class SubstitutedExpression(object):
     given a solution to the substituted expression sum and some text,
     return the text with the letters substituted for digits.
     """
-    return join((digits[s[c]] if c in s else c) for c in text)
+    return substitute(s, text, digits=digits)
 
 
   # class method to call from the command line
@@ -3790,7 +3804,7 @@ class SubstitutedDivision(object):
     given a solution to the substituted division sum and some text,
     return the text with the letters substituted for digits.
     """
-    return join((digits[s.d[c]] if c in s.d else c) for c in text)
+    return substitute(s, text, digits=digits)
   
   # output the solution
   def output_solution(self, s):
