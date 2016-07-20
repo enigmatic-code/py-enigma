@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul  3 08:24:36 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 20 14:14:28 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -124,7 +124,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-07-01"
+__version__ = "2016-07-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2909,6 +2909,9 @@ class SubstitutedSum(object):
 # TODO: think about negative values
 #
 # TODO: consider ordering the symbols, so we can calculate words sooner.
+#
+# TODO: consider allowing a "wildcard" character, for symbols that can
+# take on any available digit (but not allow leading zeros). [E1579]
 
 _SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -3316,6 +3319,13 @@ class SubstitutedExpression(object):
       
     if verbose > 2:
       t.stop()
+
+  def substitute(self, s, text, digits=_DIGITS):
+    """
+    given a solution to the substituted expression sum and some text,
+    return the text with the letters substituted for digits.
+    """
+    return join((digits[s[c]] if c in s else c) for c in text)
 
 
   # class method to call from the command line
