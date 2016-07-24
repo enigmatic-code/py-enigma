@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 20 15:38:00 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 24 10:57:17 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1246,7 +1246,7 @@ def lcm(a, b):
   >>> lcm(5, 7)
   35
   """
-  return (a * b) // gcd(a, b)
+  return (a // gcd(a, b)) * b
 
 
 # Extended Euclidean Algorithm
@@ -1740,7 +1740,7 @@ def find_zero(f, a, b, t=1e-9, ft=1e-6):
   >>> r = find_zero(lambda x: x ** 2 - 4, 0.0, 10.0)
   >>> round(r.v, 6)
   2.0
-  >>> r = find_zero(lambda x: x ** 2 + 4, 0.0, 10.0)
+  >>> r = find_zero(lambda x: x ** 2 + 4, 0.0, 10.0) # doctest: +IGNORE_EXCEPTION_DETAIL
   Traceback (most recent call last):
     ...
   AssertionError: Value not found
@@ -2931,6 +2931,9 @@ _SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 import re
 
+def _find_words(s, symbols, r='+'):
+  return re.findall('[' + symbols + ']' + r, s)
+
 def _replace_words(s, symbols, fn):
   f = lambda m: fn(m.group(0))
   return re.sub('[' + symbols + ']+', f, s)
@@ -3042,7 +3045,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   idigits = set(irange(0, base - 1)).difference(digits)
 
   # find words in all exprs
-  words = re.findall('[' + symbols + ']+', template)
+  words = _find_words(template, symbols)
 
   # invalid (<symbol>, <digit>) assignments
   invalid = set()
@@ -3060,7 +3063,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   # in words in the <exprs> (not the <values>)
   words = set()
   for (x, v) in exprs:
-    for w in re.findall('[' + symbols + ']+', x):
+    for w in _find_words(x, symbols):
       if len(w) > 1:
         words.add(w)
 
@@ -3069,8 +3072,8 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   # vs = symbols in <value>
   (xs, vs)  = (list(), list())
   for (x, v) in exprs:
-    xs.append(set(re.findall('[' + symbols + ']', x)))
-    vs.append(set() if (v is None or not isinstance(v, basestring)) else set(re.findall('[' + symbols + ']', v)))
+    xs.append(set(_find_words(x, symbols, r='')))
+    vs.append(set() if (v is None or not isinstance(v, basestring)) else set(_find_words(v, symbols, r='')))
 
   # determine the symbols in each expression
   syms = list(x.union(v) for (x, v) in zip(xs, vs))
@@ -3126,7 +3129,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
     done.add(s)
 
   # deal with each <expr>,<value> pair
-  for ((expr, value), xsyms, vsyms) in zip(exprs, xs, vs):
+  for ((expr, val), xsyms, vsyms) in zip(exprs, xs, vs):
 
     # deal with each symbol in <expr>
     # TODO: we could consider these in an order that makes words
@@ -3157,9 +3160,9 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
     prog += sprintf("{_}  continue\n")
 
     # check the value
-    if isinstance(value, basestring):
+    if isinstance(val, basestring):
       # this is a literal word
-      for (j, y) in enumerate(value[::-1], start=-len(value)):
+      for (j, y) in enumerate(val[::-1], start=-len(val)):
         if y in done:
           # this is a symbol with an assigned value
           prog += sprintf("{_}y = x % {base}\n")
@@ -3197,14 +3200,14 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
             if y in w and all(x in done for x in w):
               prog += sprintf("{_}_{w} = {x}\n", x=expand(w, base))
 
-    elif value is None:
+    elif val is None:
       # look for a True value
       prog += sprintf("{_}if x:\n")
       _ += indent
 
     else:
       # it's an integer
-      prog += sprintf("{_}if x == {value}:\n")
+      prog += sprintf("{_}if x == {val}:\n")
       _ += indent
 
   # yield solutions as dictionaries
@@ -3235,7 +3238,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       # {s} = the mapping of symbols to digits (in base 10)
       printf("{t} / {s}",
         t=join((_DIGITS[s[x]] if x in s else x) for x in template),
-        s=join(((k + '=' + int2base(s[k], base=10)) for k in sorted(s.keys())), sep=' ')
+        s=join(((k + '=' + int2base(s[k], base=10)) for k in sorted(s.keys())), sep=' '),
       )
     yield s
 
@@ -3295,7 +3298,7 @@ class SubstitutedExpression(object):
     self.distinct = distinct
 
 
-  def solve(self, reorder=1, verbose=0):
+def solve(self, reorder=1, verbose=0):
     """
     generate solutions to the substituted expression problem.
 
@@ -4716,9 +4719,8 @@ enigma.py has the following command-line usage:
     Enigma 1530 can be solved using:
 
     % python enigma.py SubstitutedExpression "TOM * 13 == DALEY"
-    [solving for 8 symbols: ADELMOTY]
-    TOM * 13 == DALEY
-    796 * 13 == 10348 / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
+    (TOM * 13 == DALEY)
+    (796 * 13 == 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
 
 """.format(version=__version__, python='2.7.12', python3='3.5.2')
 
