@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 24 10:57:17 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 24 10:58:28 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3298,7 +3298,7 @@ class SubstitutedExpression(object):
     self.distinct = distinct
 
 
-def solve(self, reorder=1, verbose=0):
+  def solve(self, reorder=1, verbose=0):
     """
     generate solutions to the substituted expression problem.
 
