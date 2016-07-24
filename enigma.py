@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 24 10:59:09 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 24 13:47:48 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -125,7 +125,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-07-23"
+__version__ = "2016-07-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2938,7 +2938,7 @@ def _replace_words(s, symbols, fn):
   f = lambda m: fn(m.group(0))
   return re.sub('[' + symbols + ']+', f, s)
 
-def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, d2i=None, distinct=1, process=1, reorder=1, verbose=0):
+def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1, process=1, reorder=1, verbose=0):
   """
   A solver for substituted expressions.
 
@@ -2971,6 +2971,9 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
 
   If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
 
+  answer - an expression that will be substituted and evaluated and returned along
+  with the symbol mappings (default: None)
+
   distinct - if a True value, then different symbols stand for different digits,
   otherwise more than one symbol can stand for the same digit (default: 1)
 
@@ -2983,9 +2986,18 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
 
   Solutions are returned as a dict() of <symbol> to <digit> mappings.
 
-  >>> all(substituted_expression('TOM * 13 = DALEY', verbose=1))
+  If the "answer" parameter is set then the its value will also be returned as the
+  pair (<dict>, <answer>).
+
+  >>> all(substituted_expression("TOM * 13 = DALEY", verbose=1))
   (TOM * 13 = DALEY)
   (796 * 13 = 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
+  True
+
+  >>> all(substituted_expression(["is_prime(TWO)", "is_square(FOUR)", "is_cube(EIGHT)"], answer="EIGHT", verbose=1))
+  (is_prime(TWO)) (is_square(FOUR)) (is_cube(EIGHT))
+  (is_prime(503)) (is_square(1369)) (is_cube(42875)) / E=4 F=1 G=8 H=7 I=2 O=3 R=9 T=5 U=6 W=0 / 42875
+  (is_prime(509)) (is_square(1936)) (is_cube(42875)) / E=4 F=1 G=8 H=7 I=2 O=9 R=6 T=5 U=3 W=0 / 42875
   True
   """
 
@@ -3180,7 +3192,6 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
           check = list()
           # check it is different from existing symbols
           if distinct:
-            #check = join(('_' + y + ' != ' + '_' + x for x in done), sep=' and ')
             check.extend(('_' + y + ' != ' + '_' + x for x in done))
           # check any invalid values for this symbol
           for v in idigits.union(v for (s, v) in invalid if y == s):
@@ -3212,7 +3223,17 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
 
   # yield solutions as dictionaries
   d = join((("'" + s + "': _" + s) for s in sorted(done)), sep=', ')
-  prog += sprintf("{_}yield {{ {d} }}\n")
+  if answer:
+    # make sure all words in the answer are defined
+    for w in set(_find_words(answer, symbols)):
+      if w not in words:
+        prog += sprintf("{_}_{w} = {x}\n", x=expand(w, base))
+    # compute the answer
+    r=_replace_words(answer, symbols, (lambda w: '(' + '_' + w + ')'))
+    prog += sprintf("{_}r = {r}\n")
+    prog += sprintf("{_}yield ({{ {d} }}, r)\n")
+  else:
+    prog += sprintf("{_}yield {{ {d} }}\n")
 
   if verbose > 2:
     printf("-- [code language=\"python\"] --\n{prog}\n-- [/code] --")
@@ -3231,16 +3252,19 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   # and run it
   if verbose > 0:
     printf("{template}")
-  for s in solve():
+  for r in solve():
     if verbose > 0:
+      (s, ans) = (r if answer else (r, None))
       # output:
       # {t} = the original expressions with digits (in base <base>) substituted for symbols
       # {s} = the mapping of symbols to digits (in base 10)
-      printf("{t} / {s}",
+      # {ans} = the value of the "answer" expression (if any)
+      printf("{t} / {s}{ans}",
         t=join((_DIGITS[s[x]] if x in s else x) for x in template),
         s=join(((k + '=' + int2base(s[k], base=10)) for k in sorted(s.keys())), sep=' '),
+        ans=(' / ' + str(ans) if answer else '')
       )
-    yield s
+    yield r
 
 alphametic = substituted_expression
 
@@ -3261,11 +3285,13 @@ class SubstitutedExpression(object):
   >>> SubstitutedExpression('TOM * 13 = DALEY').go()
   (TOM * 13 = DALEY)
   (796 * 13 = 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
+  [1 solutions]
+  1
 
   See SubstitutedExpression.command_line() for more examples.
   """
 
-  def __init__(self, expr, base=10, symbols=None, digits=None, l2d=None, d2i=None, distinct=1):
+  def __init__(self, expr, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1):
     """
     create a substituted expression puzzle.
 
@@ -3295,6 +3321,7 @@ class SubstitutedExpression(object):
     self.digits = digits
     self.l2d = l2d
     self.d2i = d2i
+    self.answer = answer
     self.distinct = distinct
 
 
@@ -3314,9 +3341,10 @@ class SubstitutedExpression(object):
     symbols = self.symbols
     l2d = self.l2d
     d2i = self.d2i
+    answer = self.answer
     distinct = self.distinct
 
-    for s in substituted_expression(expr, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i, distinct=distinct, process=1, reorder=reorder, verbose=verbose):
+    for s in substituted_expression(expr, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i, answer=answer, distinct=distinct, process=1, reorder=reorder, verbose=verbose):
       yield s
 
 
@@ -3325,17 +3353,39 @@ class SubstitutedExpression(object):
     find solutions to the substituted expression problem and output them.
 
     first - if set to True will stop after the first solution is output
+
+    returns the number of solutions found, but if the "answer" parameter
+    was set during init() returns a collections.Counter() object counting
+    the number of times each answer occurs.
     """
+    # collect answers (either total number or collected by "answer")
+    answer = self.answer
+    r = (collections.Counter() if answer else 0)
+
     if verbose > 2:
       # measure internal time
       t = Timer()
       t.start()
 
     for s in self.solve(reorder=reorder, verbose=verbose):
+      if answer:
+        r[s[1]] += 1
+      else:
+        r += 1
       if first: break
       
     if verbose > 2:
       t.stop()
+
+    if verbose > 0:
+      if answer:
+        # report the answer counts
+        for (k, v) in r.most_common():
+          printf("{answer} = {k} [{v} solutions]")
+      else:
+        printf("[{r} solutions]")
+
+    return r
 
   def substitute(self, s, text, digits=_DIGITS):
     """
@@ -3359,26 +3409,30 @@ class SubstitutedExpression(object):
     % python enigma.py SubstitutedExpression "KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE"
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
+    [1 solutions]
 
     but we can also use SubstitutedExpression to solve problems that
     don't have a specialsed solver.
 
     e.g. Sunday Times Teaser 2803
-    % python enigma.py SubstitutedExpression "AB * CDE = FGHIJ" "AB + CD + EF + GH + IJ = CCC"
+    % python enigma.py SubstitutedExpression --answer="ABCDEFGHIJ" "AB * CDE = FGHIJ" "AB + CD + EF + GH + IJ = CCC"
     (AB * CDE = FGHIJ) (AB + CD + EF + GH + IJ = CCC)
-    (52 * 367 = 19084) (52 + 36 + 71 + 90 + 84 = 333) / A=5 B=2 C=3 D=6 E=7 F=1 G=9 H=0 I=8 J=4
+    (52 * 367 = 19084) (52 + 36 + 71 + 90 + 84 = 333) / A=5 B=2 C=3 D=6 E=7 F=1 G=9 H=0 I=8 J=4 / 5236719084
+    ABCDEFGHIJ = 5236719084 [1 solutions]
 
     e.g. Sunday Times Teaser 2796
-    % python enigma.py SubstitutedExpression "SAINT + GEORGE = DRAGON" "E % 2 = 0"
+    % python enigma.py SubstitutedExpression --answer="DRAGON" "SAINT + GEORGE = DRAGON" "E % 2 = 0"
     (SAINT + GEORGE = DRAGON) (E % 2 = 0)
-    (72415 + 860386 = 932801) (6 % 2 = 0) / A=2 D=9 E=6 G=8 I=4 N=1 O=0 R=3 S=7 T=5
+    (72415 + 860386 = 932801) (6 % 2 = 0) / A=2 D=9 E=6 G=8 I=4 N=1 O=0 R=3 S=7 T=5 / 932801
+    DRAGON = 932801 [1 solutions]
 
     we also have access to any of the routines defined in enigma.py:
 
     e.g. Enigma 1180 <https://enigmaticcode.wordpress.com/2016/02/15/enigma-1180-anomalies/>
-    % python enigma.py SubstitutedExpression "SEVEN - THREE = FOUR" "is_prime(SEVEN)" "is_prime(FOUR)" "is_prime(RUOF)" "is_square(TEN)"
-    (SEVEN - THREE == FOUR) (is_prime(SEVEN)) (is_prime(FOUR)) (is_prime(RUOF)) (is_square(TEN))
-    (62129 - 58722 == 3407) (is_prime(62129)) (is_prime(3407)) (is_prime(7043)) (is_square(529)) / E=2 F=3 H=8 N=9 O=4 R=7 S=6 T=5 U=0 V=1
+    % python enigma.py SubstitutedExpression --answer="(FOUR, TEN)" "SEVEN - THREE = FOUR" "is_prime(SEVEN)" "is_prime(FOUR)" "is_prime(RUOF)" "is_square(TEN)"
+    (SEVEN - THREE = FOUR) (is_prime(SEVEN)) (is_prime(FOUR)) (is_prime(RUOF)) (is_square(TEN))
+    (62129 - 58722 = 3407) (is_prime(62129)) (is_prime(3407)) (is_prime(7043)) (is_square(529)) / E=2 F=3 H=8 N=9 O=4 R=7 S=6 T=5 U=0 V=1 / (3407, 529)
+    (FOUR, TEN) = (3407, 529) [1 solutions]
     """
 
     usage = join((
@@ -3389,6 +3443,7 @@ class SubstitutedExpression(object):
       "  --assign=<letter>,<digit> (or -a<l>,<d>) = assign digit to letter",
       "  --digits=<digit>,... or --digits=<digit>-<digit> (or -d...) = available digits",
       "  --invalid=<digit>,<letters> (or -i<d>,<ls>) = invalid digit to letter assignments",
+      "  --answer=<expr> (or -A<expr>) = count answers according to <expr>",
       "  --distinct=<n> (or -D<n>) = symbols stand for different digits (0 = off, 1 = on)",
       "  --first (or -1) = stop after the first solution",
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
@@ -3434,6 +3489,8 @@ class SubstitutedExpression(object):
           opt['d2i'][int(d)] = s
         elif k == 'D' or k == 'distinct':
           opt['distinct'] = (int(v) if v else 1)
+        elif k == 'A' or k == 'answer':
+          opt['answer'] = v
         elif k == '1' or k == 'first':
           kw['first'] = (int(v) if v else True)
         elif k == 'v' or k == 'verbose':
@@ -4721,6 +4778,7 @@ enigma.py has the following command-line usage:
     % python enigma.py SubstitutedExpression "TOM * 13 == DALEY"
     (TOM * 13 == DALEY)
     (796 * 13 == 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
+    [1 solutions]
 
 """.format(version=__version__, python='2.7.12', python3='3.5.2')
 
