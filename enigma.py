@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 24 13:47:48 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 27 15:06:29 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -109,6 +109,7 @@ timer                  - a Timer object
 trirt                  - the (positive) triangular root of a number
 tuples                 - generate overlapping tuples from a sequence
 uniq                   - unique elements of an iterator
+update                 - return an updated copy of an object
 
 Accumulator            - a class for accumulating values
 Alphametic             - an alias for SubstitutedExpression
@@ -125,7 +126,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-07-24"
+__version__ = "2016-07-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1391,6 +1392,10 @@ def recurring(a, b, recur=False, base=10):
         # add to the digit string
         s += int2base(d, base)
 
+# printf / sprintf variable interpolation
+#
+# in Python v3.6 we are getting f"..." strings which can do this job
+# (see also the "say" module)
 
 def _sprintf(fmt, vs, kw):
   if kw:
@@ -1500,6 +1505,33 @@ def flattened(s, depth=None):
     else:
       yield i
 
+# return a copy of object s, but with value <v> at index <k> for (k, v) in ps
+def update(s, ps=()):
+  """
+  create an updated version of object <s> which is the same as <s> except
+  that the value and index <k> is <v> for the pairs (<k>, <v>) in <ps>.
+
+  >>> update([0, 1, 2, 3], [(2, 'foo')])
+  [0, 1, 'foo', 3]
+
+  >>> update({ 'a': 1, 'b': 2, 'c': 3 }, zip('bc', (4, 9))) == { 'a': 1, 'b': 4, 'c': 9 }
+  True
+  """
+  try:
+    # use copy() method if available
+    s = s.copy()
+  except AttributeError:
+    # otherwise create a new object initialised from the old one
+    s = type(s)(s)
+  try:
+    # use update() method if available
+    s.update(ps)
+  except AttributeError:
+    # overwise update the pairs individually
+    for (k, v) in ps:
+      s[k] = v
+  # return the new object
+  return s
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
@@ -2595,8 +2627,7 @@ def _substituted_sum(terms, result, digits, l2d, d2i, n, carry=0, base=10):
   u = list(uniq(t[n] for t in terms if t[n] not in l2d))
   # and allocate them from the remaining digits
   for ds in itertools.permutations(digits, len(u)):
-    _l2d = l2d.copy()
-    _l2d.update(zip(u, ds))
+    _l2d = update(l2d, zip(u, ds))
     # sum the column
     (c, r) = divmod(sum(_l2d[t[n]] for t in terms) + carry, base)
     # is the result what we expect?
@@ -3285,7 +3316,7 @@ class SubstitutedExpression(object):
   >>> SubstitutedExpression('TOM * 13 = DALEY').go()
   (TOM * 13 = DALEY)
   (796 * 13 = 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
-  [1 solutions]
+  [1 solution]
   1
 
   See SubstitutedExpression.command_line() for more examples.
@@ -3381,9 +3412,9 @@ class SubstitutedExpression(object):
       if answer:
         # report the answer counts
         for (k, v) in r.most_common():
-          printf("{answer} = {k} [{v} solutions]")
+          printf("{answer} = {k} [{v} solution{s}]", s=('' if v == 1 else 's'))
       else:
-        printf("[{r} solutions]")
+        printf("[{r} solution{s}]", s=('' if r == 1 else 's'))
 
     return r
 
@@ -3409,7 +3440,7 @@ class SubstitutedExpression(object):
     % python enigma.py SubstitutedExpression "KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE"
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
-    [1 solutions]
+    [1 solution]
 
     but we can also use SubstitutedExpression to solve problems that
     don't have a specialsed solver.
@@ -3418,13 +3449,13 @@ class SubstitutedExpression(object):
     % python enigma.py SubstitutedExpression --answer="ABCDEFGHIJ" "AB * CDE = FGHIJ" "AB + CD + EF + GH + IJ = CCC"
     (AB * CDE = FGHIJ) (AB + CD + EF + GH + IJ = CCC)
     (52 * 367 = 19084) (52 + 36 + 71 + 90 + 84 = 333) / A=5 B=2 C=3 D=6 E=7 F=1 G=9 H=0 I=8 J=4 / 5236719084
-    ABCDEFGHIJ = 5236719084 [1 solutions]
+    ABCDEFGHIJ = 5236719084 [1 solution]
 
     e.g. Sunday Times Teaser 2796
     % python enigma.py SubstitutedExpression --answer="DRAGON" "SAINT + GEORGE = DRAGON" "E % 2 = 0"
     (SAINT + GEORGE = DRAGON) (E % 2 = 0)
     (72415 + 860386 = 932801) (6 % 2 = 0) / A=2 D=9 E=6 G=8 I=4 N=1 O=0 R=3 S=7 T=5 / 932801
-    DRAGON = 932801 [1 solutions]
+    DRAGON = 932801 [1 solution]
 
     we also have access to any of the routines defined in enigma.py:
 
@@ -3432,7 +3463,7 @@ class SubstitutedExpression(object):
     % python enigma.py SubstitutedExpression --answer="(FOUR, TEN)" "SEVEN - THREE = FOUR" "is_prime(SEVEN)" "is_prime(FOUR)" "is_prime(RUOF)" "is_square(TEN)"
     (SEVEN - THREE = FOUR) (is_prime(SEVEN)) (is_prime(FOUR)) (is_prime(RUOF)) (is_square(TEN))
     (62129 - 58722 = 3407) (is_prime(62129)) (is_prime(3407)) (is_prime(7043)) (is_square(529)) / E=2 F=3 H=8 N=9 O=4 R=7 S=6 T=5 U=0 V=1 / (3407, 529)
-    (FOUR, TEN) = (3407, 529) [1 solutions]
+    (FOUR, TEN) = (3407, 529) [1 solution]
     """
 
     usage = join((
@@ -3462,16 +3493,17 @@ class SubstitutedExpression(object):
         else:
           (k, v) = (arg[1], arg[2:])
         if k == 'h' or k == 'help':
+          # --help (or -h)
           print(usage)
           return -1
         elif k == 's' or k == 'symbols':
-          # --symbols=<string> (or -s)
+          # --symbols=<string> (or -s<string>)
           opt['symbols'] = v
         elif k == 'b' or k == 'base':
           # --base=<n> (or -b)
           opt['base'] = int(v)
         elif k == 'a' or k == 'assign':
-          # --assign=<letter>,<digit> (or -a)
+          # --assign=<letter>,<digit> (or -a<letter>,<digit>)
           (l, d) = v.split(',', 1)
           opt['l2d'][l] = int(d)
         elif k == 'd' or k == 'digits':
@@ -3630,7 +3662,7 @@ class SubstitutedDivision(object):
 
     # update a map consistently with (key, value) pairs
     # an updated mapping will be returned, or None
-    def update(d, kvs):
+    def _update(d, kvs):
       cow = True # copy on write flag for d
       for (k, v) in kvs:
         # check v is an allowable digit
@@ -3661,7 +3693,7 @@ class SubstitutedDivision(object):
       # they should be the same length
       if len(s) != len(ns): return None
       # try to update the map
-      return update(d, zip(s, ns))
+      return _update(d, zip(s, ns))
 
     # match multiple (<s>, <n>) pairs
     def match_numbers(d, *args):
@@ -3687,7 +3719,7 @@ class SubstitutedDivision(object):
         else:
           for x in digits:
             if not(slz and x == 0):
-              d2 = update(d, [(s, x)])
+              d2 = _update(d, [(s, x)])
               if d2:
                 yield (x, d2)
       else:
@@ -3736,7 +3768,7 @@ class SubstitutedDivision(object):
             if d2 is None: continue
             # and the rest
             for (x, d3) in generate_multiples(ms[1:], n, d2):
-              d4 = (d3 if m == wildcard else update(d3, [(m, i)]))
+              d4 = (d3 if m == wildcard else _update(d3, [(m, i)]))
               if d4 is not None:
                 yield ([i] + x, d4)
 
@@ -3894,31 +3926,64 @@ class SubstitutedDivision(object):
     """
     run the SubstitutedDivision solver with the specified command line arguments.
 
-    e.g. for Enigma 309: (note use of # to denote the empty string)
-    % python enigma.py SubstitutedDivision 'h????? / ?? = m?gh' 'h?? - g?? = ??' '??? - ky? = ?' '?g - m? = x' 'x? - ?? = #'
+    e.g. for Enigma 309: (note use of 0 in the final intermediate)
+    % python enigma.py SubstitutedDivision "h????? / ?? = m?gh" "h?? - g?? = ??" "??? - ky? = ?" "?g - m? = x" "x? - ?? = 0"
     [solving h????? / ?? = m?gh, [('h??', 'g??', '??'), ('???', 'ky?', '?'), ('?g', 'm?', 'x'), ('x?', '??', '')] ...]
     202616 / 43 = 4712 rem 0 [g=1 h=2 k=3 m=4 x=8 y=0] [202 - 172 = 30, 306 - 301 = 5, 51 - 43 = 8, 86 - 86 = 0]
 
     e.g for Enigma 440: (note use of empty argument for missing intermediate)
-    % python enigma.py SubstitutedDivision '????? ?x ??x' '?? ?' '' '??x #'
+    % python enigma.py SubstitutedDivision "????? / ?x = ??x" "?? ?" "" "??x 0"
     [solving ????? / ?x = ??x, [('??', '?'), None, ('??x', '')] ...]
     10176 / 96 = 106 rem 0 [x=6] [101 - 96 = 5, 576 - 576 = 0]    
     """
 
+    usage = join((
+      sprintf("usage: {cls.__name__} [<opts>] \"<a> / <b> = <c>\" \"[<x> - <y> = <z>] | [<y> <z>]\" ..."),
+      "options:",
+      "  --assign=<symbol>,<digit> (or -a<s>,<d>) = assign digit to symbol",
+      "  --wildcard=<symbol> (or -w<s>) = use <symbol> for wildcard (default: \"?\")",
+      "  --help (or -h) = show command-line usage",
+    ), sep="\n")
+
+    # process options
+    opt = { 'mapping': dict(), 'wildcard': '?' } # SubstitutedDivision() args
+    while args and args[0].startswith('-'):
+      arg = args.pop(0)
+      try:
+        if arg.startswith('--'):
+          (k, _, v) = arg.lstrip('-').partition('=')
+        else:
+          (k, v) = (arg[1], arg[2:])
+        if k == 'h' or k == 'help':
+          # --help (or -h)
+          print(usage)
+          return -1
+        elif k == 'a' or k == 'assign':
+          # --assign=<letter>,<digit> (or -a<letter>,<digit>)
+          (s, d) = v.split(',', 1)
+          opt['mapping'][s] = int(d)
+        elif k == 'w' or k == 'wildcard':
+          opt['wildcard'] = v
+        else:
+          raise ValueError
+      except:
+        printf("{cls.__name__}: invalid option: {arg}")
+        return -1
+
     # check command line usage
     if len(args) < 2:
-      printf("usage: {cls.__name__} '<a> / <b> = <c>' '[<x> - <y> = <z>] | [<y> <z>]' ...")
+      print(usage)
       return -1
 
     # extract the terms and result
     import re
     (a, b, c) = re.split(r'[\s\/\=]+', args[0])
-    # intermediate sums: empty string is denoted by '#', empty intermediate is denoted by ''
-    intermediates = list(map((lambda x: (None if x == [''] else x)), (re.split(r'[\s\-\=\#]+', x) for x in args[1:])))
+    # intermediate sums: empty string is denoted by '0' or '#', empty intermediate is denoted by ''
+    intermediates = list(map((lambda x: (None if x == [''] else x)), (re.split(r'[\s\-\=\#0]+', x) for x in args[1:])))
     printf("[solving {a} / {b} = {c}, {intermediates} ...]", intermediates=list(None if x is None else tuple(x) for x in intermediates))
 
     # call the solver
-    cls(a, b, c, intermediates).go()
+    cls(a, b, c, intermediates, **opt).go()
     return 0
 
 ###############################################################################
@@ -4020,12 +4085,6 @@ class CrossFigure(object):
       if all(a in ('?', b) for (a, b) in zip(t, n)):
         yield n
 
-  def update(self, g, t, n):
-    g = list(g)
-    for (i, d) in zip(t, n):
-      g[i] = d
-    return g
-
   # the solver
   def solve(self, grid=None, seen=None):
     if grid is None: grid = self.grid
@@ -4049,7 +4108,7 @@ class CrossFigure(object):
       (n, t, ans, cs) = min(ts)
       # and fill it out
       for n in self.match(t, cs):
-        grid2 = self.update(grid, ans, n)
+        grid2 = update(grid, zip(ans, n))
         if self._check_distinct(grid2):
           for x in self.solve(grid2, seen):
             yield x
@@ -4769,7 +4828,7 @@ enigma.py has the following command-line usage:
 
     Enigma 440 can be solved using:
       
-    % python enigma.py SubstitutedDivision '????? ?x ??x' '?? ?' '' '??x #'
+    % python enigma.py SubstitutedDivision "????? / ?x = ??x" "??? - ?? = ?" "" "??? - ??x = 0"
     [solving ????? / ?x = ??x, [('??', '?'), None, ('??x', '')] ...]
     10176 / 96 = 106 rem 0 [x=6] [101 - 96 = 5, 576 - 576 = 0]
 
@@ -4778,7 +4837,7 @@ enigma.py has the following command-line usage:
     % python enigma.py SubstitutedExpression "TOM * 13 == DALEY"
     (TOM * 13 == DALEY)
     (796 * 13 == 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
-    [1 solutions]
+    [1 solution]
 
 """.format(version=__version__, python='2.7.12', python3='3.5.2')
 
