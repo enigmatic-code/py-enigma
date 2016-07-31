@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 27 15:06:29 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 31 14:17:33 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -126,7 +126,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-07-27"
+__version__ = "2016-07-31"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2956,7 +2956,7 @@ class SubstitutedSum(object):
 # TODO: consider ordering the symbols, so we can calculate words sooner.
 #
 # TODO: consider allowing a "wildcard" character, for symbols that can
-# take on any available digit (but not allow leading zeros). [E1579]
+# take on any available digit (but still not allow leading zeros). [E1579]
 
 _SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -3005,8 +3005,8 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   answer - an expression that will be substituted and evaluated and returned along
   with the symbol mappings (default: None)
 
-  distinct - if a True value, then different symbols stand for different digits,
-  otherwise more than one symbol can stand for the same digit (default: 1)
+  distinct - specify which symbols should have distinct values.
+  shortcuts: 1 = all symbols, 0 = no symbols (default: 1)
 
   process - if a True value, exprs will be processed from a simple string
   (or sequence of strings) to acceptable input values.
@@ -3121,7 +3121,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   # determine the symbols in each expression
   syms = list(x.union(v) for (x, v) in zip(xs, vs))
 
-  # reorder the expressions into a more appropriate order
+  # reorder the expressions into a more appropriate evaluation order
   if reorder:
     # at each stage chose the expression with the fewest unassigned symbols
     d = set(l2d.keys())
@@ -3140,7 +3140,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
 
   if verbose > 1:
     # output information
-    printf("[base={base}, digits={digits}, symbols=\"{symbols}\"]")
+    printf("[base={base}, digits={digits}, symbols={symbols!r}, distinct={distinct!r}]")
     printf("[l2d={l2d}, d2i={d2i}]")
     # output the solving strategy
     ss = list()
@@ -3150,7 +3150,11 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       d.update(x, vs[i])
     printf("[strategy: {ss}]", ss=join(ss, sep=' -> '))
 
-  def expand(w, base):
+  # sort out distinct=0,1
+  if type(distinct) is int:
+    distinct = (symbols if distinct else '')
+
+  def _word(w, base):
     (m, r) = (1, list())
     for x in w[::-1]:
       s = ('_' + x if m == 1 else concat('_', x, '*', m))
@@ -3183,15 +3187,16 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       ds = list(digits.difference(d for (x, d) in invalid if x == s))
       prog += sprintf("{_}for _{s} in {ds}:\n")
       _ += indent
-      if done and distinct:
-        check = join(('_' + s + ' != ' + '_' + x for x in done), sep=' and ')
-        prog += sprintf("{_}if {check}:\n")
-        _ += indent
+      if done and s in distinct:
+        check = join(('_' + s + ' != ' + '_' + x for x in done if x in distinct), sep=' and ')
+        if check:
+          prog += sprintf("{_}if {check}:\n")
+          _ += indent
       done.add(s)
       # look for words which can now be made
       for w in words:
         if s in w and all(x in done for x in w):
-          prog += sprintf("{_}_{w} = {x}\n", x=expand(w, base))
+          prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
 
     # calculate the expression
     x = _replace_words(expr, symbols, (lambda w: '(' + '_' + w + ')'))
@@ -3222,8 +3227,8 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
           prog += sprintf("{_}_{y} = x % {base}\n")
           check = list()
           # check it is different from existing symbols
-          if distinct:
-            check.extend(('_' + y + ' != ' + '_' + x for x in done))
+          if y in distinct:
+            check.extend(('_' + y + ' != ' + '_' + x for x in done if x in distinct))
           # check any invalid values for this symbol
           for v in idigits.union(v for (s, v) in invalid if y == s):
             check.append('_' + y + ' != ' + str(v))
@@ -3240,7 +3245,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
           # look for words which can now be made
           for w in words:
             if y in w and all(x in done for x in w):
-              prog += sprintf("{_}_{w} = {x}\n", x=expand(w, base))
+              prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
 
     elif val is None:
       # look for a True value
@@ -3258,7 +3263,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
     # make sure all words in the answer are defined
     for w in set(_find_words(answer, symbols)):
       if w not in words:
-        prog += sprintf("{_}_{w} = {x}\n", x=expand(w, base))
+        prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
     # compute the answer
     r=_replace_words(answer, symbols, (lambda w: '(' + '_' + w + ')'))
     prog += sprintf("{_}r = {r}\n")
@@ -3342,7 +3347,7 @@ class SubstitutedExpression(object):
     digits - the digits to be substituted in (default: determined from base)
     l2d - initial map of symbols to digits (default: all symbols unassigned)
     d2i - map of digits to invalid letter assigmnents (default: leading digits cannot be 0)
-    distinct - flag, if set symbols are assigned to different digits (default: 1)
+    distinct - symbols which should have distinct values (1 = all, 0 = none) (default: 1)
 
     If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
     """
@@ -3475,7 +3480,7 @@ class SubstitutedExpression(object):
       "  --digits=<digit>,... or --digits=<digit>-<digit> (or -d...) = available digits",
       "  --invalid=<digit>,<letters> (or -i<d>,<ls>) = invalid digit to letter assignments",
       "  --answer=<expr> (or -A<expr>) = count answers according to <expr>",
-      "  --distinct=<n> (or -D<n>) = symbols stand for different digits (0 = off, 1 = on)",
+      "  --distinct=<string> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
       "  --first (or -1) = stop after the first solution",
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
       "  --verbose[=<n>] (or -v[<n>]) = verbosity (0 = off, 1 = solutions, 2+ = more)",
@@ -3520,7 +3525,8 @@ class SubstitutedExpression(object):
           (d, s) = v.split(',', 1)
           opt['d2i'][int(d)] = s
         elif k == 'D' or k == 'distinct':
-          opt['distinct'] = (int(v) if v else 1)
+          if v == '0' or v == '1': v = int(v)
+          opt['distinct'] = v
         elif k == 'A' or k == 'answer':
           opt['answer'] = v
         elif k == '1' or k == 'first':
