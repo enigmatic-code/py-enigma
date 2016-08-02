@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 31 14:17:33 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Aug  2 11:27:37 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -126,7 +126,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-07-31"
+__version__ = "2016-08-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2865,7 +2865,7 @@ class SubstitutedSum(object):
     (48708 + 3623 = 52331) / I=8 J=5 K=0 L=7 N=3 O=2 S=6 W=4 Y=1    
 
 
-    --invalid=<digit>,<letters> (or -i<d>,<ls>)
+    --invalid=<digits>,<letters> (or -i<ds>,<ls>)
 
     Specify letters that cannot be assigned to a digit.
 
@@ -2892,7 +2892,7 @@ class SubstitutedSum(object):
       "  --base=<n> (or -b<n>) = set base to <n>",
       "  --assign=<letter>,<digit> (or -a<l>,<d>) = assign digit to letter",
       "  --digits=<digit>,... or <digit>-<digit> (or -d...) = available digits",
-      "  --invalid=<digit>,<letters> (or -i<d>,<ls>) = invalid digit to letter assignments",
+      "  --invalid=<digits>,<letters> (or -i<ds>,<ls>) = invalid digit to letter assignments",
       "  --help (or -h) = show command-line usage",
     ), sep="\n")
 
@@ -2924,10 +2924,11 @@ class SubstitutedSum(object):
             ds = v.split(',')
             opt['digits'] = tuple(int(d) for d in ds)
         elif k == 'i' or k == 'invalid':
-          # --invalid=<digit>,<letters> (or -i)
+          # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
           if opt['d2i'] is None: opt['d2i'] = dict()
           (d, s) = v.split(',', 1)
-          opt['d2i'][int(d)] = s
+          for i in d:
+            opt['d2i'][int(i)] = s
         else:
           raise ValueError
       except:
@@ -3478,7 +3479,7 @@ class SubstitutedExpression(object):
       "  --base=<n> (or -b<n>) = set base to <n>",
       "  --assign=<letter>,<digit> (or -a<l>,<d>) = assign digit to letter",
       "  --digits=<digit>,... or --digits=<digit>-<digit> (or -d...) = available digits",
-      "  --invalid=<digit>,<letters> (or -i<d>,<ls>) = invalid digit to letter assignments",
+      "  --invalid=<digits>,<letters> (or -i<ds>,<ls>) = invalid digit to letter assignments",
       "  --answer=<expr> (or -A<expr>) = count answers according to <expr>",
       "  --distinct=<string> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
       "  --first (or -1) = stop after the first solution",
@@ -3520,10 +3521,11 @@ class SubstitutedExpression(object):
             ds = v.split(',')
             opt['digits'] = tuple(int(d) for d in ds)
         elif k == 'i' or k == 'invalid':
-          # --invalid=<digit>,<letters> (or -i)
+          # --invalid=<digit>,<letters> (or -i<ds>,<ls>)
           if opt['d2i'] is None: opt['d2i'] = dict()
           (d, s) = v.split(',', 1)
-          opt['d2i'][int(d)] = s
+          for i in d:
+            opt['d2i'][int(i)] = s
         elif k == 'D' or k == 'distinct':
           if v == '0' or v == '1': v = int(v)
           opt['distinct'] = v
