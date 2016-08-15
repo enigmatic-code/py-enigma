@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Aug  2 11:27:37 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Aug 15 13:33:50 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -126,7 +126,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-08-02"
+__version__ = "2016-08-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -306,8 +306,10 @@ def nreverse(n, base=10):
   >>> nreverse(100)
   1
   """
-  (s, n) = ((-1, -n) if n < 0 else (1, n))
-  return s * nconcat(*(nsplit(n, base=base)[::-1]), base=base)
+  if n < 0:
+    return -nreverse(-n, base=base)
+  else:
+    return nconcat(*(reversed(nsplit(n, base=base))), base=base)
 
 
 def number(s, base=10):
@@ -674,7 +676,7 @@ def prime_factor(n):
         e += 1
         n = d
       if e > 0: yield (i, e)
-      i += ds[j % 2]
+      i += ds[j & 1]
       if j == 1: ds = (2, 4)
       j += 1
     # anything left is prime
@@ -2970,7 +2972,7 @@ def _replace_words(s, symbols, fn):
   f = lambda m: fn(m.group(0))
   return re.sub('[' + symbols + ']+', f, s)
 
-def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1, process=1, reorder=1, verbose=0):
+def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1, process=1, reorder=1, env=None, verbose=0):
   """
   A solver for substituted expressions.
 
@@ -3179,6 +3181,8 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   # deal with each <expr>,<value> pair
   for ((expr, val), xsyms, vsyms) in zip(exprs, xs, vs):
 
+    in_loop = False
+
     # deal with each symbol in <expr>
     # TODO: we could consider these in an order that makes words
     # in <words> as soon as possible
@@ -3186,6 +3190,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       if s in done: continue
       # allowable digits for s
       ds = list(digits.difference(d for (x, d) in invalid if x == s))
+      in_loop = True
       prog += sprintf("{_}for _{s} in {ds}:\n")
       _ += indent
       if done and s in distinct:
@@ -3206,7 +3211,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
     prog += sprintf("{_}except NameError:\n") # catch undefined functions
     prog += sprintf("{_}  raise\n")
     prog += sprintf("{_}except:\n") # maybe "except (ArithmeticError, ValueError)"
-    prog += sprintf("{_}  continue\n")
+    prog += sprintf("{_}  {skip}\n", skip=('continue' if in_loop else 'pass'))
 
     # check the value
     if isinstance(val, basestring):
@@ -3281,10 +3286,11 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   #   ns = dict()
   #   eval(prog, None, ns)
   #   solve = ns['solve']
-  global _substituted_expression_solver
   code = compile(prog + "global _substituted_expression_solver\n_substituted_expression_solver = solve", '<string>', 'exec')
-  eval(code)
-  solve = _substituted_expression_solver
+  if not env: env = dict()
+  gs = update(globals(), env)
+  eval(code, gs)
+  solve = gs['_substituted_expression_solver']
 
   # and run it
   if verbose > 0:
@@ -3328,7 +3334,7 @@ class SubstitutedExpression(object):
   See SubstitutedExpression.command_line() for more examples.
   """
 
-  def __init__(self, expr, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1):
+  def __init__(self, expr, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1, env=None):
     """
     create a substituted expression puzzle.
 
@@ -3349,6 +3355,7 @@ class SubstitutedExpression(object):
     l2d - initial map of symbols to digits (default: all symbols unassigned)
     d2i - map of digits to invalid letter assigmnents (default: leading digits cannot be 0)
     distinct - symbols which should have distinct values (1 = all, 0 = none) (default: 1)
+    env - additional environment for evaluation (default: None)
 
     If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
     """
@@ -3360,7 +3367,7 @@ class SubstitutedExpression(object):
     self.d2i = d2i
     self.answer = answer
     self.distinct = distinct
-
+    self.env = env
 
   def solve(self, reorder=1, verbose=0):
     """
@@ -3380,8 +3387,9 @@ class SubstitutedExpression(object):
     d2i = self.d2i
     answer = self.answer
     distinct = self.distinct
+    env = self.env
 
-    for s in substituted_expression(expr, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i, answer=answer, distinct=distinct, process=1, reorder=reorder, verbose=verbose):
+    for s in substituted_expression(expr, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i, answer=answer, distinct=distinct, process=1, reorder=reorder, env=env, verbose=verbose):
       yield s
 
 
