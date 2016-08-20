@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Aug 15 13:33:50 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug 19 09:01:16 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -126,7 +126,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-08-14"
+__version__ = "2016-08-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3286,9 +3286,9 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   #   ns = dict()
   #   eval(prog, None, ns)
   #   solve = ns['solve']
-  code = compile(prog + "global _substituted_expression_solver\n_substituted_expression_solver = solve", '<string>', 'exec')
   if not env: env = dict()
   gs = update(globals(), env)
+  code = compile(prog + "global _substituted_expression_solver\n_substituted_expression_solver = solve", '<string>', 'exec')
   eval(code, gs)
   solve = gs['_substituted_expression_solver']
 
@@ -4490,6 +4490,9 @@ class Football(object):
     if d is None: d = dict((str(i), i) for i in irange(0, 9))
     if teams is None: teams = list(range(0, len(gf)))
     if scores is None: scores = dict()
+    # fill out unplayed matches
+    for (k, v) in matches.items():
+      if v == 'x': scores[k] = None
     for z in self._substituted_table_goals(gf, ga, matches, d, teams, scores): yield z
 
 
