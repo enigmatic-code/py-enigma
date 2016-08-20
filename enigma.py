@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug 20 15:38:06 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Aug 20 16:23:15 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -4880,7 +4880,7 @@ if __name__ == "__main__":
     
   # identify the version number
   #print('[python version ' + sys.version.replace("\n", " ") + ']')
-  printf('[enigma.py version {__version__} (Python {v[0]}.{v[1]}.{v[2]})]', v=sys.version_info)
+  printf('[enigma.py version {__version__} (Python {v})]', v=sys.version.split(None, 1)[0])
 
   # parse arguments
   args = dict((arg[1], arg[2:]) for arg in sys.argv[1:] if len(arg) > 1 and arg[0] == '-')
