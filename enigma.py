@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug 19 09:01:16 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Aug 20 15:38:06 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -126,7 +126,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-08-19"
+__version__ = "2016-08-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -683,11 +683,14 @@ def prime_factor(n):
     if n > 1: yield (n, 1)
 
 # maybe should be called factors() or factorise()
-def factor(n):
+def factor(n, fn=prime_factor):
   """
   return a list of the prime factors of positive integer <n>.
 
   for integers less than 1, None is returned.
+
+  The <fn> parameter is used to generate the prime factors of the
+  number. (Defaults to using prime_factor()).
 
   >>> factor(101)
   [101]
@@ -700,7 +703,7 @@ def factor(n):
   """
   if n < 1: return None
   factors = []
-  for (p, e) in prime_factor(n):
+  for (p, e) in fn(n):
     factors.extend([p] * e)
   return factors
 
@@ -3178,10 +3181,10 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
     prog += sprintf("{_}_{s} = {d}\n")
     done.add(s)
 
+  in_loop = False
+
   # deal with each <expr>,<value> pair
   for ((expr, val), xsyms, vsyms) in zip(exprs, xs, vs):
-
-    in_loop = False
 
     # deal with each symbol in <expr>
     # TODO: we could consider these in an order that makes words
