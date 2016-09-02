@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug 20 16:23:15 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Sep  2 08:40:01 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -109,6 +109,7 @@ timer                  - a Timer object
 trirt                  - the (positive) triangular root of a number
 tuples                 - generate overlapping tuples from a sequence
 uniq                   - unique elements of an iterator
+unpack                 - return a function that unpacks its arguments
 update                 - return an updated copy of an object
 
 Accumulator            - a class for accumulating values
@@ -126,7 +127,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-08-20"
+__version__ = "2016-09-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -438,6 +439,21 @@ def filter_unique(s, f=identity, g=identity):
   for (k, v) in u.items():
     (r1 if len(v) == 1 else r2).extend(r[k])
   return (r1, r2)
+
+
+def unpack(fn):
+  """
+  Turn a function that takes named parameters into
+  a function that takes a tuple.
+
+  This can be used to work around the removal of parameter
+  unpacking in Python 3 (PEP 3113).
+
+  >>> fn = lambda x, y: is_square(x ** 2 + y ** 2)
+  >>> list(filter(unpack(fn), [(1, 2), (2, 3), (3, 4), (4, 5)]))
+  [(3, 4)]
+  """
+  return lambda args: fn(*args)
 
 
 # count the number of occurrences of a predicate in an iterator
@@ -1514,7 +1530,7 @@ def flattened(s, depth=None):
 def update(s, ps=()):
   """
   create an updated version of object <s> which is the same as <s> except
-  that the value and index <k> is <v> for the pairs (<k>, <v>) in <ps>.
+  that the value at index <k> is <v> for the pairs (<k>, <v>) in <ps>.
 
   >>> update([0, 1, 2, 3], [(2, 'foo')])
   [0, 1, 'foo', 3]
