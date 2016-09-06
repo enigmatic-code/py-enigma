@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Sep  2 08:40:01 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep  6 11:11:51 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -127,7 +127,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-09-02"
+__version__ = "2016-09-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2532,12 +2532,12 @@ class MagicSquare(object):
       l = tuple(range(n))
       for i in range(n):
         # row
-        lines.append(tuple(i*n + j for j in l))
+        lines.append(tuple(i * n + j for j in l))
         # column
-        lines.append(tuple(i + j*n for j in l))
+        lines.append(tuple(i + j * n for j in l))
       # diagonals
-      lines.append(tuple(j*(n+1) for j in l))
-      lines.append(tuple((j+1)*(n-1) for j in l))
+      lines.append(tuple(j * (n + 1) for j in l))
+      lines.append(tuple((j + 1) * (n - 1) for j in l))
 
     self.n = n
     self.s = s
@@ -4730,6 +4730,37 @@ timer = Timer(auto_start=False)
 
 ###############################################################################
 
+# parse a run file (which uses a shell-like syntax)
+
+import shlex
+
+def _parsefile(path, *args):
+
+  with open(path, 'r') as f:
+    # parse the file removing whitespace, comments, quotes
+    lexer = shlex.shlex(f, posix=1)
+    lexer.whitespace_split = True
+    words = list(lexer)
+    cmd = words.pop(0)
+    # if there are any additional args, insert them
+    # options after options, args after args
+    if args:
+      i = first(i for (i, w) in enumerate(words) if not w.startswith('-'))
+      if not i:
+        words.extend(args)
+      else:
+        i = i[0]
+        for w in args:
+          if w.startswith('-'):
+            words.insert(i, w)
+            i += 1
+          else:
+            words.append(w)
+          
+  return (cmd, words)
+
+###############################################################################
+
 # check for updates to enigma.py
 # check = only check the current version
 # download = always download the latest version
@@ -4883,8 +4914,12 @@ if __name__ == "__main__":
 
   # allow solvers to run from the command line: python enigma.py <class> <args> ...
   if len(sys.argv) > 1:
-    (cmd, args, r) = (sys.argv[1], sys.argv[2:], -1)
-    if cmd[0] != '-':
+    (cmd, args) = (sys.argv[1], sys.argv[2:])
+    # an alternative way to run a solver is to use -r <file>
+    if cmd == '-r' or cmd == '--run':
+      (cmd, args) = _parsefile(*args)
+    # solver does not start with a hyphen
+    if not cmd.startswith('-'):
       fn = vars().get(cmd)
       if fn:
         fn = getattr(fn, 'command_line')
@@ -4893,7 +4928,8 @@ if __name__ == "__main__":
 
       printf("enigma.py: {cmd}.command_line() not implemented")
       sys.exit(-1)
-    
+
+
   # identify the version number
   #print('[python version ' + sys.version.replace("\n", " ") + ']')
   printf('[enigma.py version {__version__} (Python {v})]', v=sys.version.split(None, 1)[0])
@@ -4901,15 +4937,17 @@ if __name__ == "__main__":
   # parse arguments
   args = dict((arg[1], arg[2:]) for arg in sys.argv[1:] if len(arg) > 1 and arg[0] == '-')
 
-  # help
+  # -h => help
   if 'h' in args:
     print('command line arguments:')
     print('  <class> <args> = run command_line(<args>) method on class')
+    print('  -r <file> [<args>] = run the solver specified in <file>')
     print('  -t[v] = run tests [v = verbose]')
     print('  -u[cd] = check for updates [c = only check, d = always download]')
     print('  -h = this help')
 
-  # run tests
+  # -t => run tests
+  # -tv => in verbose mode
   if 't' in args:
     import doctest
     doctest.testmod(verbose=('v' in args['t']))
