@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Sep  6 11:11:51 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep  6 22:18:01 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -4741,21 +4741,18 @@ def _parsefile(path, *args):
     lexer = shlex.shlex(f, posix=1)
     lexer.whitespace_split = True
     words = list(lexer)
-    cmd = words.pop(0)
-    # if there are any additional args, insert them
-    # options after options, args after args
-    if args:
-      i = first(i for (i, w) in enumerate(words) if not w.startswith('-'))
-      if not i:
-        words.extend(args)
-      else:
-        i = i[0]
-        for w in args:
-          if w.startswith('-'):
-            words.insert(i, w)
-            i += 1
-          else:
-            words.append(w)
+
+  cmd = words.pop(0)
+
+  def divide(s, fn=lambda s: s.startswith('-')):
+    for (i, x) in enumerate(s):
+      if not fn(x):
+        return (s[:i], s[i:])
+    return (s, [])
+
+  # insert any extra args
+  if args:
+    words = list(flattened(zip(divide(words), divide(args)), depth=2))
           
   return (cmd, words)
 
@@ -4912,12 +4909,22 @@ enigma.py has the following command-line usage:
 
 if __name__ == "__main__":
 
-  # allow solvers to run from the command line: python enigma.py <class> <args> ...
+  import os
+
+  # allow solvers to run from the command line:
+  #   % python enigma.py <class> <args> ...
+  # or put all the arguments into a file and use:
+  #   % python enigma.py -r <file> <additional-args>
+  #   % python enigma.py --run <file> <additional-args>
+  #   % python enigma.py <file> <additional-args>
   if len(sys.argv) > 1:
     (cmd, args) = (sys.argv[1], sys.argv[2:])
-    # an alternative way to run a solver is to use -r <file>
+    # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
     if cmd == '-r' or cmd == '--run':
       (cmd, args) = _parsefile(*args)
+    # or just "<file> <additional-args>"
+    elif os.path.isfile(cmd):
+      (cmd, args) = _parsefile(cmd, *args)
     # solver does not start with a hyphen
     if not cmd.startswith('-'):
       fn = vars().get(cmd)
@@ -4941,7 +4948,7 @@ if __name__ == "__main__":
   if 'h' in args:
     print('command line arguments:')
     print('  <class> <args> = run command_line(<args>) method on class')
-    print('  -r <file> [<args>] = run the solver specified in <file>')
+    print('  [-r | --run] <file> [<additional-args>] = run the solver and args specified in <file>')
     print('  -t[v] = run tests [v = verbose]')
     print('  -u[cd] = check for updates [c = only check, d = always download]')
     print('  -h = this help')
