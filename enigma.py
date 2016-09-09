@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep  8 08:45:34 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Sep  9 14:29:14 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -127,7 +127,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-09-08"
+__version__ = "2016-09-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -809,7 +809,9 @@ def is_prime(n):
   False
 
   """
-  return n > 1 and len(factor(n)) == 1
+  for (p, e) in prime_factor(n):
+    return (e == 1 and p == n)
+  return False
 
 prime = is_prime
 
