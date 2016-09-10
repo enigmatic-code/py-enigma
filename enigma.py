@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Sep  9 14:29:14 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Sep 10 11:50:56 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -682,7 +682,7 @@ def prime_factor(n):
   if n > 1:
     i = 2
     # generate a list of deltas: 1, 2, then 2, 4, repeatedly
-    ds = (1, 2)
+    (ds, js) = ((1, 2, 2, 4), (1, 2, 3, 2))
     j = 0
     while i * i <= n:
       e = 0
@@ -692,9 +692,8 @@ def prime_factor(n):
         e += 1
         n = d
       if e > 0: yield (i, e)
-      i += ds[j & 1]
-      if j == 1: ds = (2, 4)
-      j += 1
+      i += ds[j]
+      j = js[j]
     # anything left is prime
     if n > 1: yield (n, 1)
 
@@ -810,7 +809,7 @@ def is_prime(n):
 
   """
   for (p, e) in prime_factor(n):
-    return (e == 1 and p == n)
+    return p == n
   return False
 
 prime = is_prime
