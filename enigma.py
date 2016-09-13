@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Sep 10 11:50:56 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep 13 16:09:12 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -127,7 +127,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-09-09"
+__version__ = "2016-09-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2999,7 +2999,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   exprs - the expression(s) to solve.
 
   an expression is either an (<expr>, <value>) pair or a string of the
-  form "<expr>" or "<expr> = <value>".
+  form "<expr>" or "<expr> = <value>" (spaces _not_ optional).
 
   <expr> is a string containing a Python expression that will have symbols
   substituted with digits before evaluation.
@@ -3075,7 +3075,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
     for expr in exprs:
       if isinstance(expr, basestring):
         # expression is a single string, turn it into an (<expr>, <value>) pair
-        (v, s) = ('', re.split(r'(?<=\w)\s*=\s*(?=\w)', expr))
+        (v, s) = ('', re.split(r'\s+=\s+', expr))
         if len(s) == 2:
           (expr, v) = s
         if not v:
