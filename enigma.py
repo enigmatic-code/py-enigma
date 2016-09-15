@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 15 12:40:28 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 15 13:39:47 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -23,6 +23,7 @@ The latest version is available at <http://www.magwag.plus.com/jim/enigma.html>.
 
 Currently this module provides the following functions and classes:
 
+argv                   - command line arguments (= sys.argv[1:])
 alphametic             - an alias for substituted_expression()
 base2int               - convert a string in the specified base to an integer
 C                      - combinatorial function (nCk)
@@ -132,6 +133,9 @@ __version__ = "2016-09-15"
 __credits__ = """Brian Gladman, contributor"""
 
 import sys
+
+# command line arguments
+argv = sys.argv[1:]
 
 import operator
 import math
@@ -4919,8 +4923,8 @@ if __name__ == "__main__":
   #   % python enigma.py -r <file> <additional-args>
   #   % python enigma.py --run <file> <additional-args>
   #   % python enigma.py <file> <additional-args>
-  if len(sys.argv) > 1:
-    (cmd, args) = (sys.argv[1], sys.argv[2:])
+  if argv:
+    (cmd, args) = (argv[0], argv[1:])
     # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
     if cmd == '-r' or cmd == '--run':
       (cmd, args) = _parsefile(*args)
@@ -4944,7 +4948,7 @@ if __name__ == "__main__":
   printf('[enigma.py version {__version__} (Python {v})]', v=sys.version.split(None, 1)[0])
 
   # parse arguments
-  args = dict((arg[1], arg[2:]) for arg in sys.argv[1:] if len(arg) > 1 and arg[0] == '-')
+  args = dict((arg[1], arg[2:]) for arg in argv if len(arg) > 1 and arg[0] == '-')
 
   # -h => help
   if 'h' in args:
