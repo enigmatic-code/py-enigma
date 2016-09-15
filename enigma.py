@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Sep 13 16:09:12 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 15 12:40:28 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -127,7 +127,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-09-13"
+__version__ = "2016-09-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -954,7 +954,7 @@ def is_power(n, m):
   # initial guess
   try:
     # make a sneaky close guess for non-huge numbers
-    a = int(n ** (1.0 / float(m)))
+    a = int(n ** (1.0000000001 / float(m)))
   except OverflowError:
     # default initial guess
     a = 1
@@ -992,15 +992,15 @@ def is_square(n):
   >>> is_square(0)
   0
   """
-  if n == 0: return 0
   if n < 0: return None
+  if n < 2: return n
   # early rejection: check <square> mod <some value> against a precomputed cache
   # e.g. <square> mod 80 = 0, 1, 4, 9, 16, 20, 25, 36, 41, 49, 64, 65 (rejects 88% of numbers)
   if _is_square_reject[n % _is_square_mod]: return None
   # make an initial guess
   try:
     # make a sneaky close guess for non-huge numbers
-    a = int(n ** 0.5)
+    a = int(n ** 0.500000001)
   except OverflowError:
     # default initial guess
     a = 1
@@ -1044,9 +1044,10 @@ def isqrt(n):
   >>> isqrt(17)
   4
   """
-  if n == 0: return 0
+  if n < 0: return None
+  if n < 4: return int(n > 0)
   try:
-    a = int(n ** 0.5 + 1e-6)
+    a = int(n ** 0.500000001)
   except OverflowError:
     a = n
   while True:
