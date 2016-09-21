@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 15 13:39:47 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep 21 13:09:46 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -23,8 +23,8 @@ The latest version is available at <http://www.magwag.plus.com/jim/enigma.html>.
 
 Currently this module provides the following functions and classes:
 
-argv                   - command line arguments (= sys.argv[1:])
 alphametic             - an alias for substituted_expression()
+argv                   - command line arguments (= sys.argv[1:])
 base2int               - convert a string in the specified base to an integer
 C                      - combinatorial function (nCk)
 cached                 - decorator for caching functions
@@ -128,7 +128,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-09-15"
+__version__ = "2016-09-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1420,17 +1420,34 @@ def recurring(a, b, recur=False, base=10):
         s += int2base(d, base)
 
 # printf / sprintf variable interpolation
-#
-# in Python v3.6 we are getting f"..." strings which can do this job
 # (see also the "say" module)
 
-def _sprintf(fmt, vs, kw):
-  if kw:
-    vs = vs.copy()
-    for (k, v) in kw.items():
-      vs[k] = v
-  # in Python3 [[ fmt.format_map(vs) ]] might be better
-  return fmt.format(**vs)
+# in Python v3.6 we are getting f"..." strings which can do this job
+if sys.version_info[0:2] > (3, 5):
+
+  # NOTE: you lose the ability to do this:
+  #
+  # printf("... {d[x]} ...", d={ 'x': 42 })  ->  "... 42 ..."
+  #
+  # instead you have to do this:
+  #
+  # printf("... {d['x']} ...", d={ 'x': 42 })  ->  "... 42 ..."
+  #
+  # but you gain the ability to use arbitrary expressions:
+  #
+  # printf("... {a} + {b} = {a + b} ...", a=2, b=3)  ->  "... 2 + 3 = 5 ..."
+
+  def _sprintf(fmt, vs, kw):
+    locals().update(vs)
+    if kw: locals().update(kw)
+    return eval('f' + repr(fmt))
+
+else:
+
+  def _sprintf(fmt, vs, kw):
+    if kw: vs = update(vs, kw)
+    # in Python3 [[ fmt.format_map(vs) ]] might be better
+    return fmt.format(**vs)
 
 
 # print with variables interpolated into the format string
@@ -1451,13 +1468,18 @@ def printf(fmt='', **kw):
   """
   print format string <fmt> with interpolated variables and keyword arguments.
 
+  the final newline can be supressed by ending the string with '\'.
+
   >>> (a, b, c) = (1, 2, 3)
   >>> printf("a={a} b={b} c={c}")
   a=1 b=2 c=3
   >>> printf("a={a} b={b} c={c}", c=42)
   a=1 b=2 c=42
   """
-  print(_sprintf(fmt, sys._getframe(1).f_locals, kw))
+  s = _sprintf(fmt, sys._getframe(1).f_locals, kw)
+  d = dict()
+  if s.endswith('\\'): (s, d['end']) = (s[:-1], '')
+  print(s, **d)
 
 
 # useful as a decorator for caching functions (@cached).
@@ -2261,7 +2283,7 @@ class _PrimeSieveE6(object):
   # make this an iterable object
   __iter__ = generate
 
-  # range(a, b) - generate primes in the (inclusive) range [a, b] - is the same as generate now
+  # range(a, b) - generate primes in the (inclusive) range [a, b] - is the same as generate() now
   range = generate
 
   # prime test (may throw IndexError if n is too large)
@@ -2285,10 +2307,14 @@ class _PrimeSieveE6(object):
   # generate prime factors of <n>
   def prime_factor(self, n):
     """
-    generate (<prime>, <exponent>) pairs in the prime factorisation of positive integer <n>.
+    generate (<prime>, <exponent>) pairs in the prime factorisation of
+    positive integer <n>.
 
-    Note: This will only consider primes up to the limit of the sieve, this is a complete
-    factorisation for <n> up to the square of the limit of the sieve.
+
+    Note: This will only consider primes up to the limit of the sieve,
+    this is a complete factorisation for <n> up to the square of the
+    limit of the sieve.
+
     """
     # maybe should be: n < 1
     #if n < 0: raise ValueError("can only factorise positive integers")
@@ -2344,8 +2370,8 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     """
     make a sieve of primes with an initial maximum of <n>.
 
-    when the sieve is expanded the function <fn> is used to calculate the new maximum,
-    based on the previous maximum.
+    when the sieve is expanded the function <fn> is used to calculate
+    the new maximum, based on the previous maximum.
 
     the default function doubles the maximum at each expansion.
     """
@@ -2386,7 +2412,8 @@ class _PrimeSieveE6X(_PrimeSieveE6):
   # expand the sieve as necessary
   def is_prime(self, n):
     """
-    primaility test - the sieve is expanded as necessary before testing.
+    primaility test - the sieve is expanded as necessary before
+    testing.
     """
     self.extend(n)
     return _PrimeSieveE6.is_prime(self, n)
@@ -2420,7 +2447,8 @@ def Primes(n=None, expandable=False, array=_primes_array, fn=_primes_chunk):
   array - list implelementation to use
   fn - function used to increase the limit on expanding sieves
 
-  If we are interested in a limited collection of primes, we can do this:
+  If we are interested in a limited collection of primes, we can do
+  this:
 
   >>> primes = Primes(50)
   >>> primes.list()
