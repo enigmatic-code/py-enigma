@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep 21 13:09:46 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Sep 25 14:47:30 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -39,8 +39,8 @@ diff                   - sequence difference
 digrt                  - the digital root of a number
 divc                   - ceiling division
 divf                   - floor division
-divisor_pairs          - generate pairs of divisors of a number
 divisor                - generate the divisors of a number
+divisor_pairs          - generate pairs of divisors of a number
 divisors               - the divisors of a number
 egcd                   - extended gcd
 factor                 - the prime factorisation of a number
@@ -128,7 +128,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-09-21"
+__version__ = "2016-09-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1422,33 +1422,33 @@ def recurring(a, b, recur=False, base=10):
 # printf / sprintf variable interpolation
 # (see also the "say" module)
 
+# this works in all version of Python
+def __sprintf(fmt, vs, kw):
+  if kw: vs = update(vs, kw)
+  # in Python3 [[ fmt.format_map(vs) ]] might be better
+  return fmt.format(**vs)
+
 # in Python v3.6 we are getting f"..." strings which can do this job
-if sys.version_info[0:2] > (3, 5):
 
-  # NOTE: you lose the ability to do this:
-  #
-  # printf("... {d[x]} ...", d={ 'x': 42 })  ->  "... 42 ..."
-  #
-  # instead you have to do this:
-  #
-  # printf("... {d['x']} ...", d={ 'x': 42 })  ->  "... 42 ..."
-  #
-  # but you gain the ability to use arbitrary expressions:
-  #
-  # printf("... {a} + {b} = {a + b} ...", a=2, b=3)  ->  "... 2 + 3 = 5 ..."
+# NOTE: you lose the ability to do this:
+#
+# printf("... {d[x]} ...", d={ 'x': 42 })  ->  "... 42 ..."
+#
+# instead you have to do this:
+#
+# printf("... {d['x']} ...", d={ 'x': 42 })  ->  "... 42 ..."
+#
+# but you gain the ability to use arbitrary expressions:
+#
+# printf("... {a} + {b} = {a + b} ...", a=2, b=3)  ->  "... 2 + 3 = 5 ..."
 
-  def _sprintf(fmt, vs, kw):
-    locals().update(vs)
-    if kw: locals().update(kw)
-    return eval('f' + repr(fmt))
+def __sprintf36(fmt, vs, kw):
+  locals().update(vs)
+  if kw: locals().update(kw)
+  return eval('f' + repr(fmt))
 
-else:
-
-  def _sprintf(fmt, vs, kw):
-    if kw: vs = update(vs, kw)
-    # in Python3 [[ fmt.format_map(vs) ]] might be better
-    return fmt.format(**vs)
-
+# in Python 3.6 (currently in beta) try the new version
+_sprintf = (__sprintf36 if sys.version_info[0:2] > (3, 5) else __sprintf)
 
 # print with variables interpolated into the format string
 def sprintf(fmt='', **kw):
@@ -4906,6 +4906,7 @@ enigma.py has the following command-line usage:
       [enigma.py version {version} (Python {python})]
       command line arguments:
         <class> <args> = run command_line(<args>) method on class
+        [-r | --run] <file> [<additional-args>] = run the solver and args specified in <file>
         -t[v] = run tests [v = verbose]
         -u[cd] = check for updates [c = only check, d = always download]
         -h = this help
@@ -4923,8 +4924,8 @@ enigma.py has the following command-line usage:
     For example, Enigma 327 can be solved using:
 
     % python enigma.py SubstitutedSum "KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE"
-    [solving KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE ...]
-    A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5 / 1912803 + 2428850 + 4312835 = 8654488
+    (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
+    (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
     Enigma 440 can be solved using:
       
@@ -4938,6 +4939,13 @@ enigma.py has the following command-line usage:
     (TOM * 13 == DALEY)
     (796 * 13 == 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
     [1 solution]
+
+    Alternatively the arguments to enigma.py can be placed in a text file
+    and then executed with the --run / -r command, for example:
+
+    % python enigma.py --run enigma327.run 
+    (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
+    (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
 """.format(version=__version__, python='2.7.12', python3='3.5.2')
 
