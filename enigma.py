@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Sep 25 14:47:30 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Oct  1 15:19:49 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -94,6 +94,7 @@ powerset               - the powerset of an iterator
 prime_factor           - generate terms in the prime factorisation of a number
 printf                 - print with interpolated variables
 recurring              - decimal representation of fractions
+repeat                 - repeatedly apply a function to a value
 repdigit               - number consisting of repeated digits
 roman2int              - convert a Roman Numeral to an integer
 split                  - split a value into characters
@@ -128,7 +129,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-09-25"
+__version__ = "2016-10-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -262,7 +263,12 @@ def nconcat(*digits, **kw):
   """
   return an integer consisting of the concatenation of the list <digits> of digits
 
+  the digits can be specified as individual arguments, or as a single argument
+  constisting of a sequence of digits.
+
   >>> nconcat(1, 2, 3, 4, 5)
+  12345
+  >>> nconcat([1, 2, 3, 4, 5])
   12345
   >>> nconcat(13, 14, 10, 13, base=16)
   57005
@@ -273,6 +279,13 @@ def nconcat(*digits, **kw):
   """
   # in Python3 [[ def nconcat(*digits, base=10): ]] is allowed instead
   base = kw.get('base', 10)
+  if len(digits) == 1:
+    try:
+      return reduce(lambda a, b: a * base + b, digits[0], 0)
+    except TypeError:
+      pass
+    except:
+      raise
   return reduce(lambda a, b: a * base + b, digits, 0)
   # or: (slower, and only works with digits < 10)
   #return int(concat(*digits), base=base)
@@ -613,6 +626,17 @@ def first(i, count=1, skip=0):
   """
   return list(itertools.islice(i, skip, skip + count))
 
+
+def repeat(fn, v=0):
+  """
+  generate repeated applications of function <fn> to value <v>.
+
+  >>> first(repeat(lambda x: x + 1), 10)
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  """
+  while True:
+    yield v
+    v = fn(v)
 
 def uniq(i, fn=None):
   """
@@ -1751,7 +1775,7 @@ def gss_minimiser(f, a, b, t=1e-9, m=None):
   R = 0.5 * (sqrt(5.0) - 1.0)
   C = 1.0 - R
   (x1, x2) = (R * a + C * b, C * a + R * b)
-  (f1, f2) = fn(x1), fn(x2)
+  (f1, f2) = (fn(x1), fn(x2))
   while b - a > t:
     if f1 > f2:
       (a, x1, f1) = (x1, x2, f2)
