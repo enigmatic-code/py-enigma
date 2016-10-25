@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Oct  1 15:19:49 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Oct 25 10:17:09 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -129,7 +129,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-10-01"
+__version__ = "2016-10-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -327,7 +327,7 @@ def nreverse(n, base=10):
   if n < 0:
     return -nreverse(-n, base=base)
   else:
-    return nconcat(*(reversed(nsplit(n, base=base))), base=base)
+    return nconcat(reversed(nsplit(n, base=base)), base=base)
 
 
 def number(s, base=10):
@@ -380,7 +380,7 @@ def chunk(s, n=2):
     yield s
 
 
-def diff(a, b, fn=None):
+def diff(a, b):
   """
   return the subsequence of <a> that excludes elements in <b>.
 
@@ -1442,6 +1442,21 @@ def recurring(a, b, recur=False, base=10):
       if not(d == a == 0):
         # add to the digit string
         s += int2base(d, base)
+
+
+# command line arguments
+def arg(v, n, fn=identity, argv=argv):
+  """
+  if command line argument <n> is specified return fn(argv[n])
+  otherwise return default value <v>
+
+  >>> arg(42, 0, int, ['56'])
+  56
+  >>> arg(42, 1, int, ['56'])
+  42
+  """
+  return (fn(argv[n]) if len(argv) > n else v)
+
 
 # printf / sprintf variable interpolation
 # (see also the "say" module)
@@ -2580,8 +2595,8 @@ class MagicSquare(object):
     rows, n columns and 2 diagonals should sum to the magic value).
     """
     n2 = n * n
-    if numbers is None:
-      numbers = set(range(1, n2 + 1))
+    if numbers is None: numbers = irange(1, n2)
+    numbers = set(numbers)
     s = sum(numbers) // n
 
     # make the magic lines
@@ -3381,7 +3396,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       # {ans} = the value of the "answer" expression (if any)
       printf("{t} / {s}{ans}",
         t=join((_DIGITS[s[x]] if x in s else x) for x in template),
-        s=join(((k + '=' + int2base(s[k], base=10)) for k in sorted(s.keys())), sep=' '),
+        s=join(((k + '=' + int2base(s[k], base=10)) for k in symbols if k in s), sep=' '),
         ans=(' / ' + str(ans) if answer else '')
       )
     yield r
@@ -3949,7 +3964,7 @@ class SubstitutedDivision(object):
       # find multiples of the divisor that match
       for (cd, d2) in generate_multiples(ms, b, d1):
         # the result (c) is now defined
-        c = nconcat(*cd, base=base)
+        c = nconcat(cd, base=base)
 
         # find possible remainders (r)
         for (r, d3) in generate_numbers(zs[-1], d2):
