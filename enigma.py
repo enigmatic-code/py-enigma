@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Oct 25 10:17:09 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Nov 20 13:32:23 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -25,6 +25,7 @@ Currently this module provides the following functions and classes:
 
 alphametic             - an alias for substituted_expression()
 argv                   - command line arguments (= sys.argv[1:])
+arg                    - extract command line arguments
 base2int               - convert a string in the specified base to an integer
 C                      - combinatorial function (nCk)
 cached                 - decorator for caching functions
@@ -117,6 +118,7 @@ update                 - return an updated copy of an object
 Accumulator            - a class for accumulating values
 Alphametic             - an alias for SubstitutedExpression
 CrossFigure            - a class for solving cross figure puzzles
+Delay                  - a class for the delayed evaluation of a function
 Football               - a class for solving football league table puzzles
 MagicSquare            - a class for solving magic squares
 Primes                 - a class for creating prime sieves
@@ -129,7 +131,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-10-25"
+__version__ = "2016-11-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -274,7 +276,7 @@ def nconcat(*digits, **kw):
   57005
   >>> nconcat(123,456,789, base=1000)
   123456789
-  >>> nconcat(127,0,0,1, base=256)
+  >>> nconcat([127, 0, 0, 1], base=256)
   2130706433
   """
   # in Python3 [[ def nconcat(*digits, base=10): ]] is allowed instead
@@ -1129,7 +1131,7 @@ def is_triangular(n):
   return (i if i * (i + 1) == n * 2 else None)
 
 
-def digrt(n):
+def digrt(n, base=10):
   """
   return the digital root of positive integer <n>.
 
@@ -1140,7 +1142,7 @@ def digrt(n):
   >>> digrt(factorial(100))
   9
   """
-  return (0 if n == 0 else int(1 + (n - 1) % 9))
+  return (0 if n == 0 else int(1 + (n - 1) % (base - 1)))
 
 
 def repdigit(n, d=1, base=10):
@@ -1468,7 +1470,7 @@ def __sprintf(fmt, vs, kw):
   return fmt.format(**vs)
 
 # in Python v3.6 we are getting f"..." strings which can do this job
-
+#
 # NOTE: you lose the ability to do this:
 #
 # printf("... {d[x]} ...", d={ 'x': 42 })  ->  "... 42 ..."
@@ -2144,6 +2146,34 @@ def __int2words(n, scale='short', sep='', hyphen=' '):
 ###############################################################################
 
 # specialised classes:
+
+###############################################################################
+
+# Delayed Evaluation
+
+# delayed evaluation (see also lazypy)
+class Delay(object):
+
+  def __init__(self, fn, *args, **kw):
+    self.fn = fn
+    self.args = args
+    self.kw = kw
+    self.evaluated = False
+
+  def evaluate(self):
+    self.value = self.fn(*(self.args), **(self.kw))
+    self.evaluated = True
+    return self.value
+
+  def reset(self):
+    del self.value
+    self.evaluated = False
+
+  def __getattr__(self, key):
+    if key == 'value':
+      return self.evaluate()
+    else:
+      raise AttributeError
 
 ###############################################################################
 
@@ -3179,7 +3209,9 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   # allowable digits (and invalid digits)
   if digits is None:
     digits = irange(0, base - 1)
-  digits = set(digits).difference(l2d.values())
+  digits = set(digits)
+  if distinct == 1:
+    digits = digits.difference(l2d.values())
   idigits = set(irange(0, base - 1)).difference(digits)
 
   # find words in all exprs
