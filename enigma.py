@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Nov 20 13:32:23 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Nov 22 19:07:34 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -82,6 +82,7 @@ is_triangular          - check a number is a triangular number
 isqrt                  - intf(sqrt(x))
 join                   - concatenate strings
 lcm                    - lowest common multiple
+M                      - multichoose function (nMk)
 mgcd                   - multiple gcd
 multiply               - the product of numbers in a sequence
 nconcat                - concatenate single digits into an integer
@@ -131,7 +132,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-11-20"
+__version__ = "2016-11-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1385,6 +1386,9 @@ def P(n, k):
   """
   permutations functions: n P k.
 
+  the number of ordered k-length selections from n elements
+  (elements can only be used once).
+
   >>> P(10, 3)
   720
   """
@@ -1398,6 +1402,9 @@ def C(n, k):
   """
   combinatorial function: n C k.
 
+  the number of unordered k-length selections from n elements
+  (elements can only be used once).
+
   >>> C(10, 3)
   120
   """
@@ -1406,6 +1413,18 @@ def C(n, k):
   else:
     return math.factorial(n) // math.factorial(k) // math.factorial(n - k)
 
+
+def M(n, k):
+  """
+  multichoose function: n M k.
+
+  the number of unordered k-length selections from n elements where
+  elements may be repeated.
+
+  >>> M(10, 3)
+  220
+  """
+  return C(n + k - 1, k)
 
 
 def recurring(a, b, recur=False, base=10):
