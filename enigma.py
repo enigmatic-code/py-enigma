@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Nov 22 19:07:34 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Nov 29 09:31:11 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -132,7 +132,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-11-22"
+__version__ = "2016-11-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1555,6 +1555,7 @@ def cached(f):
       return c[k]
     except KeyError:
       r = c[k] = f(*k)
+      #printf("[{f.__name__}: {k} -> {r}]")
       return r
   return _cached
 
@@ -2249,6 +2250,126 @@ class Accumulator(object):
     self.accumulate(v)
     if self.value == (v if t is None else t): self.data = data
 
+
+###############################################################################
+
+# Routines for dealing with polynomials
+
+# represent polynomial a + bx + cx^2 + dx^3 + ... as:
+#
+#   [a, b, c, d, ...]
+#
+# so the polynomial can be reconstructed as:
+#
+#   sum(c * pow(x, i) for (i, x) in enumerate(poly))
+#
+
+# make a polynomial from (exponent, coefficient) pairs
+# (we can use enumerate() to reverse the process)
+def poly_new(ps, p=None):
+  if p is None: p = []
+  for (e, c) in ps:
+    if c == 0: continue
+    x = e + 1 - len(p)
+    if x > 0: p.extend([0] * x)
+    p[e] += c
+  return poly_trim(p)
+
+# remove extraneous zero coefficients
+def poly_trim(p):
+  while p and p[-1] == 0: p.pop()
+  return p
+
+# we can multiply two polynomials
+def poly_mul(p, q):
+  return poly_new(
+    ((i + j, a * b) for (i, a) in enumerate(p) for (j, b) in enumerate(q)),
+    [0] * (len(p) + len(q) - 1)
+  )
+
+poly_zero = [0]
+poly_unit = [1]
+
+# and multiply any number of polynomials
+def poly_multiply(*ps):
+  r = poly_unit
+  for p in ps:
+    r = poly_mul(r, p)
+  return r
+
+# and raise a polynomial to a (positive) integer power
+def poly_pow(p, n):
+  r = poly_unit
+  while n > 0:
+    (n, m) = divmod(n, 2)
+    if m: r = poly_mul(r, p)
+    if n: p = poly_mul(p, p)
+  return r
+
+# add two polynomials
+def poly_add(p, q):
+  return poly_new(enumerate(p), list(q))
+
+# add any number of polynomials
+def poly_sum(*ps):
+  r = poly_zero
+  for p in ps:
+    r = poly_add(r, p)
+  return r
+
+# map a function over the coefficients of a polynomial
+def poly_map(p, fn):
+  return poly_trim(list(fn(x) for x in p))
+
+# negate a polynomial
+def poly_neg(p):
+  return list(-c for c in p)
+
+# subtract two polynomials
+def poly_sub(p, q):
+  return poly_add(p, poly_neg(q))
+
+# evaluate a polynomial
+def poly_value(p, x):
+  v = 0
+  for n in reversed(p):
+    v *= x
+    v += n
+  return v
+
+# wrap the whole lot up in a class
+
+class Polynomial(object):
+
+  def __init__(self, p):
+    self.p = list(p)
+
+  def __repr__(self):
+    return self.__class__.__name__ + repr(self.p)
+
+  def __add__(self, other):
+    return Polynomial(poly_add(self.p, other.p))
+
+  def __mul__(self, other):
+    return Polynomial(poly_mul(self.p, other.p))
+
+  def __neg__(self):
+    return Polynomial(poly_neg(self.p))
+
+  def __pow__(self, n):
+    return Polynomial(poly_pow(self.p, n))
+
+  def __sub__(self, other):
+    return Polynomial(poly_sub(self.p, other.p))
+
+  def __len__(self):
+    return len(self.p)
+
+  def __getitem__(self, i):
+    return self.p[i]
+
+  def __call__(self, x):
+    return poly_value(self.p, x)
 
 ###############################################################################
 
