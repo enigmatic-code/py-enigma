@@ -1,7 +1,7 @@
 # py-engima
 
 A Python library of useful routines for solving Enigma puzzles as
-published in New Scientist.
+published in New Scientist magazine (1979 - 2013).
 
 See:
 
