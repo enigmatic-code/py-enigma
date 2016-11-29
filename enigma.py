@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Nov 29 09:31:11 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Nov 29 12:45:39 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -92,6 +92,7 @@ number                 - create an integer from a string ignoring non-digits
 P                      - permutations function (nPk)
 partitions             - partition a sequence of distinct values into tuples
 pi                     - float approximation to pi
+poly_*                 - routines manilpulating polynomials, wrapped as Polynomial
 powerset               - the powerset of an iterator
 prime_factor           - generate terms in the prime factorisation of a number
 printf                 - print with interpolated variables
@@ -122,6 +123,7 @@ CrossFigure            - a class for solving cross figure puzzles
 Delay                  - a class for the delayed evaluation of a function
 Football               - a class for solving football league table puzzles
 MagicSquare            - a class for solving magic squares
+Polynomial             - a class for manipulating Polynomials
 Primes                 - a class for creating prime sieves
 SubstitutedDivision    - a class for solving substituted long division sums
 SubstitutedExpression  - a class for solving general substituted expression (Alphametic) problems
@@ -2339,37 +2341,40 @@ def poly_value(p, x):
 
 # wrap the whole lot up in a class
 
-class Polynomial(object):
-
-  def __init__(self, p):
-    self.p = list(p)
+class Polynomial(list):
 
   def __repr__(self):
-    return self.__class__.__name__ + repr(self.p)
+    return self.__class__.__name__ + list.__repr__(self)
 
   def __add__(self, other):
-    return Polynomial(poly_add(self.p, other.p))
+    return self.__class__(poly_add(self, other))
 
   def __mul__(self, other):
-    return Polynomial(poly_mul(self.p, other.p))
+    return self.__class__(poly_mul(self, other))
 
   def __neg__(self):
-    return Polynomial(poly_neg(self.p))
+    return self.__class__(poly_neg(self))
 
   def __pow__(self, n):
-    return Polynomial(poly_pow(self.p, n))
+    return self.__class__(poly_pow(self, n))
 
   def __sub__(self, other):
-    return Polynomial(poly_sub(self.p, other.p))
-
-  def __len__(self):
-    return len(self.p)
-
-  def __getitem__(self, i):
-    return self.p[i]
+    return self.__class__(poly_sub(self, other))
 
   def __call__(self, x):
-    return poly_value(self.p, x)
+    return poly_value(self, x)
+
+  @classmethod
+  def new(self, ps):
+    return self(poly_new(ps))
+
+  @classmethod
+  def unit(self):
+    return self(poly_unit)
+
+  @classmethod
+  def zero(self):
+    return self(poly_zero)
 
 ###############################################################################
 
