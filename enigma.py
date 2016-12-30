@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Nov 29 12:45:39 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Dec 30 09:44:10 2016 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -134,7 +134,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-11-29"
+__version__ = "2016-12-30"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -172,7 +172,7 @@ sqrt = math.sqrt
 # like cmp() in Python 2, but results are always -1, 0, +1.
 def compare(a, b):
   """
-  return -1 if a < b, 0 if a == b and +1 if b < a.
+  return -1 if a < b, 0 if a == b and +1 if a > b.
 
   >>> compare(42, 0)
   1
@@ -620,7 +620,7 @@ def partitions(s, n, pad=False, value=None, distinct=None):
     for p in fn(s, n): yield p
 
 
-def first(i, count=1, skip=0):
+def first(i, count=1, skip=0, fn=list):
   """
   return the first <count> items in iterator <i> (skipping the initial
   <skip> items) as a list.
@@ -629,7 +629,8 @@ def first(i, count=1, skip=0):
   >>> first((n for n in itertools.count(1) if is_prime(n)), count=10)
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
   """
-  return list(itertools.islice(i, skip, skip + count))
+  r = itertools.islice(i, skip, skip + count)
+  return (r if fn is None else fn(r))
 
 
 def repeat(fn, v=0):
@@ -1505,9 +1506,8 @@ def __sprintf(fmt, vs, kw):
 # printf("... {a} + {b} = {a + b} ...", a=2, b=3)  ->  "... 2 + 3 = 5 ..."
 
 def __sprintf36(fmt, vs, kw):
-  locals().update(vs)
-  if kw: locals().update(kw)
-  return eval('f' + repr(fmt))
+  if kw: vs.update(kw)
+  return eval('f' + repr(fmt), vs)
 
 # in Python 3.6 (currently in beta) try the new version
 _sprintf = (__sprintf36 if sys.version_info[0:2] > (3, 5) else __sprintf)
@@ -2338,6 +2338,7 @@ def poly_value(p, x):
     v *= x
     v += n
   return v
+
 
 # wrap the whole lot up in a class
 
@@ -3574,7 +3575,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       printf("{t} / {s}{ans}",
         t=join((_DIGITS[s[x]] if x in s else x) for x in template),
         s=join(((k + '=' + int2base(s[k], base=10)) for k in symbols if k in s), sep=' '),
-        ans=(' / ' + str(ans) if answer else '')
+        ans=(' / ' + str(ans) if answer is not None else '')
       )
     yield r
 
@@ -5163,7 +5164,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.12', python3='3.5.2')
+""".format(version=__version__, python='2.7.13', python3='3.5.2')
 
 if __name__ == "__main__":
 
