@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Dec 30 09:44:10 2016 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jan  9 12:00:23 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -134,7 +134,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2016-12-30"
+__version__ = "2017-01-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -261,6 +261,13 @@ def concat(*args, **kw):
   '1,2,3,4,5'
   """
   sep = kw.get('sep', '')
+  if len(args) == 1:
+    try:
+      return join((str(x) for x in args[0]), sep)
+    except TypeError:
+      pass
+    except:
+      raise
   return join((str(x) for x in args), sep)
 
 
@@ -1506,7 +1513,7 @@ def __sprintf(fmt, vs, kw):
 # printf("... {a} + {b} = {a + b} ...", a=2, b=3)  ->  "... 2 + 3 = 5 ..."
 
 def __sprintf36(fmt, vs, kw):
-  if kw: vs.update(kw)
+  if kw: vs = update(vs, kw)
   return eval('f' + repr(fmt), vs)
 
 # in Python 3.6 (currently in beta) try the new version
@@ -1794,7 +1801,7 @@ class Record(object):
   def __iter__(self):
     d = self.__dict__
     for k in sorted(d.keys()):
-      yield k, d[k]
+      yield (k, d[k])
 
   def __repr__(self):
     return self.__class__.__name__ + '(' + join((k + '=' + repr(v) for (k, v) in self), sep=', ') + ')'
@@ -3427,13 +3434,13 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   if type(distinct) is int:
     distinct = (symbols if distinct else '')
 
+  # return an expression that evaluates word <w> in base <base>
   def _word(w, base):
-    (m, r) = (1, list())
+    (m, d) = (1, dict())
     for x in w[::-1]:
-      s = ('_' + x if m == 1 else concat('_', x, '*', m))
-      r.append(s)
+      d[x] = d.get(x, 0) + m
       m *= base
-    return join(r, sep=' + ')
+    return join((concat(('_', k) + (() if v == 1 else ('*', v))) for (k, v) in d.items()), sep=' + ')
 
   # generate the program
   (prog, _, indent) = ('', '', '  ')
@@ -4978,6 +4985,187 @@ def timed(f):
 
 # create a default timer
 timer = Timer(auto_start=False)
+
+###############################################################################
+
+# namespace
+
+# an even simpler form of the 'Record' (or 'types.SimpleNamespace') class
+# to make sub-namespaces within the module
+#
+# (I don't think this is very Pythonic, but it works)
+
+class namespace(object):
+
+  def __init__(self, name, vs):
+    self.__name = name
+    self.__dict__.update(**vs)
+
+  def __repr__(self):
+    return '<namespace ' + repr(self.__name) + '>'
+
+###############################################################################
+
+# NOTE: template_system is in testing, interface may change
+
+# template system problems
+
+def __template_system():
+
+  # find values that match a system of template sequences
+  def solve(templates, values=None):
+    """
+    Solve a template system. [See Enigma 307, Enigma 357]
+
+    The values returned are sequence of strings, that match the given
+    template sequence.
+
+    The template sequence is a sequence of templates, and each item in
+    the sequence is itself a sequence of strings. Every string in the
+    returned values can be matched to one of the elements of each the
+    templates, with no values needing to share a template string. But
+    note that the matching of values to templates does not have occur
+    in the order that the individual template strings are specified.
+
+    When values are matched templates the '?' character represents a
+    wildcard that can be matched to any character.
+
+    So the pair of values:
+      ('AB', 'AC')
+
+    will match the following templates (the ordering of the individual
+    templates doesn't matter):
+      ('A?', '?C') matches as ('AB', 'AC')
+      ('A?', '?B') matches as ('AC', 'AB')
+
+    So we can solve this pair of templates as follows:
+    >>> list(sorted(x) for x in template_system.solve([('A?', '?C'), ('A?', '?B')]))
+    [['AB', 'AC']]
+
+    Note that if values are not fully determined by the template system
+    then wildcard characters may be present in the returned values.
+    """
+
+    # first some useful functions:
+
+    # combine strings <s1> and <s2> (of equal length) using wildcard <w>
+    def combine(s1, s2, w='?'):
+      s = ''
+      # consider each pair of characters
+      # ? ? -> ?
+      # x ? -> x
+      # ? x -> x
+      # x x -> x
+      # x y -> FAIL
+      for (a, b) in zip(s1, s2):
+        if a == b or b == w:
+          s += a
+        elif a == w:
+          s += b
+        else:
+          return None
+      return s
+
+
+    # match a sequence of values <vs> to the sequence of templates <ts> (in some order)
+    def match(vs, ts, r=[]):
+      # are we done?
+      if not ts:
+        yield (r if not vs else r + list(vs))
+      else:
+        # match the first template to a value
+        t = ts[0]
+        for (i, vi) in enumerate(vs):
+          v = combine(vi, t)
+          if v is None: continue
+          # and try to match the remaining values to the remaining templates
+          for x in match(vs[:i] + vs[i + 1:], ts[1:], r + [v]): yield x
+
+
+    # generate values matching <vs> that also match all template sequences <ts>
+    def generate(vs, ts):
+      # are we done?
+      if not ts:
+        yield vs
+      else:
+        # find values that match the first template
+        for s in match(vs, ts[0]):
+          # and then try to match the remaining templates
+          for x in generate(s, ts[1:]): yield x
+
+
+    # if no values are provided use the longest template
+    if values == None:
+      (i, values) = max(enumerate(templates), key=lambda v: len(v[1]))
+      templates = templates[:i] + templates[i + 1:]
+
+    # now we can solve the system of templates
+    # (in Python 3 we can use "yield from"
+    for z in generate(values, templates): yield z
+
+  # return the namespace
+  return locals()
+
+
+template_system = namespace('template_system', __template_system())
+
+###############################################################################
+
+# NOTE: grouping is in testing, interface may change
+
+# grouping problems
+
+def __grouping():
+
+  # group the lists of elements in <vs> into groups (one element from each list)
+  # such that the values in the groups satisfy the selection function <fn>
+  def groups(vs, fn=None, s=[]):
+    # are we done?
+    if not vs[0]:
+      yield s
+    else:
+      # otherwise choose the next group to go with category 0
+      for v in itertools.product(*(enumerate(x) for x in vs[1:])):
+        # find indices and elements of the other categories
+        (js, t) = zip(*v)
+        # the full group is
+        group = (vs[0][0],) + t
+        # check the group
+        if fn(*group):
+          # solve for the remaining elements (can use "yield from" in Python 3)
+          for z in groups([vs[0][1:]] + [x[:j] + x[j + 1:] for (x, j) in zip(vs[1:], js)], fn, s + [group]): yield z
+
+  # output a grouping
+  def output_groups(gs, sep=", ", end=""):
+    for g in gs:
+      print(sep.join(g))
+    print(end)
+
+  # output all groupings
+  def solve(vs, fn, sep=", ", end=""):
+    for gs in groups(vs, fn):
+      output_groups(gs, sep, end)
+
+
+  # useful selection functions
+
+  # return the set of letters in a string
+  def letters(s):
+    return set(x for x in s.lower() if x.isalpha())
+
+  # return a check function that checks each pair of values shares exactly <k> letters
+  def share_letters(k):
+    fn = ((lambda x: x == k) if type(k) is int else k)
+    # check each pair of values shares exactly <k> different letters
+    def check(*vs):
+      return all(fn(len(letters(a).intersection(letters(b)))) for (a, b) in itertools.combinations(vs, 2))
+    return check
+
+  # return the namespace
+  return locals()
+
+
+grouping = namespace('grouping', __grouping())
 
 ###############################################################################
 
