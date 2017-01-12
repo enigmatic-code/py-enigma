@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan  9 12:00:23 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jan 12 12:05:25 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -134,7 +134,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-01-06"
+__version__ = "2017-01-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2275,13 +2275,13 @@ class Accumulator(object):
 
 # make a polynomial from (exponent, coefficient) pairs
 # (we can use enumerate() to reverse the process)
-def poly_new(ps, p=None):
+def poly_from_pairs(ps, p=None):
   if p is None: p = []
   for (e, c) in ps:
-    if c == 0: continue
-    x = e + 1 - len(p)
-    if x > 0: p.extend([0] * x)
-    p[e] += c
+    if c != 0:
+      x = e + 1 - len(p)
+      if x > 0: p.extend([0] * x)
+      p[e] += c
   return poly_trim(p)
 
 # remove extraneous zero coefficients
@@ -2291,7 +2291,7 @@ def poly_trim(p):
 
 # we can multiply two polynomials
 def poly_mul(p, q):
-  return poly_new(
+  return poly_from_pairs(
     ((i + j, a * b) for (i, a) in enumerate(p) for (j, b) in enumerate(q)),
     [0] * (len(p) + len(q) - 1)
   )
@@ -2317,7 +2317,7 @@ def poly_pow(p, n):
 
 # add two polynomials
 def poly_add(p, q):
-  return poly_new(enumerate(p), list(q))
+  return poly_from_pairs(enumerate(p), list(q))
 
 # add any number of polynomials
 def poly_sum(*ps):
@@ -2372,9 +2372,14 @@ class Polynomial(list):
   def __call__(self, x):
     return poly_value(self, x)
 
+  def to_pairs(self):
+    for p in enumerate(self):
+      if p[1] != 0:
+        yield p
+
   @classmethod
-  def new(self, ps):
-    return self(poly_new(ps))
+  def from_pairs(self, ps):
+    return self(poly_from_pairs(ps))
 
   @classmethod
   def unit(self):
@@ -2415,7 +2420,7 @@ class _PrimeSieveE6(object):
   >>> sum(primes) == 37550402023
   True
   >>> list(primes.range(2, 47))
-  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
+  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43]
 
   NOTE: if you make a large sieve it will use up lots of memory.
   """
@@ -2428,7 +2433,7 @@ class _PrimeSieveE6(object):
   # p:  1   5   | 7  11  | 13  17  | 19  23  | 25  29  | 31  35 | ...
   #
   # i->p = (3 * i) + (i & 1) + 1
-  # p->i = p // 3
+  # p->i = p // 3 (or in general: p->i = (p + 1) // 3 - (p % 6 == 5))
   #
   # to check numbers up to (but not including) n we need a sieve of size: (n // 3) + (n % 6 == 2)
 
@@ -2493,13 +2498,17 @@ class _PrimeSieveE6(object):
     """
     generate all primes in the sieve (in numerical order).
 
+    the range of primes can be restricted to starting at <start>
+    and ending at <end> (primes less than <end> will be returned)
+
     (this will require less memory than list())
     """
     if end is None: end = self.max
     if start < 3 and end > 1: yield 2
     if start < 4 and end > 2: yield 3
     s = self.sieve
-    for i in range(start // 3, (end + 1) // 3):
+    # generate primes from <start> up to (but not including) <end>
+    for i in range((start + 1) // 3 - (start % 6 == 5), (end + 1) // 3 - (end % 6 == 5)):
       if s[i]: yield (i * 3) + (i & 1) + 1
 
   # make this an iterable object
@@ -5352,7 +5361,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.13', python3='3.5.2')
+""".format(version=__version__, python='2.7.13', python3='3.6.0')
 
 if __name__ == "__main__":
 
