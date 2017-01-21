@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jan 12 12:05:25 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jan 21 12:56:23 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -134,7 +134,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-01-12"
+__version__ = "2017-01-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2504,8 +2504,8 @@ class _PrimeSieveE6(object):
     (this will require less memory than list())
     """
     if end is None: end = self.max
-    if start < 3 and end > 1: yield 2
-    if start < 4 and end > 2: yield 3
+    if start < 3 and end > 2: yield 2
+    if start < 4 and end > 3: yield 3
     s = self.sieve
     # generate primes from <start> up to (but not including) <end>
     for i in range((start + 1) // 3 - (start % 6 == 5), (end + 1) // 3 - (end % 6 == 5)):
