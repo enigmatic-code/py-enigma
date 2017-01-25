@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jan 21 12:56:23 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jan 25 10:04:37 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -134,7 +134,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-01-21"
+__version__ = "2017-01-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1766,7 +1766,7 @@ def tuples(s, n=2):
 # subseqs: generate the subsequences of an iterator
 def subseqs(iterable, min_size=0, max_size=None):
   """
-  generate the sub-sequences of an iterable.
+  generate the subsequences of an iterable.
   min_size and max_size can be used to limit the length of the sub-sequences.
 
   >>> list(subseqs((1, 2, 3)))
@@ -2514,7 +2514,7 @@ class _PrimeSieveE6(object):
   # make this an iterable object
   __iter__ = generate
 
-  # range(a, b) - generate primes in the (inclusive) range [a, b] - is the same as generate() now
+  # range(a, b) - generate primes in the range [a, b) - is the same as generate() now
   range = generate
 
   # prime test (may throw IndexError if n is too large)
@@ -2653,7 +2653,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
   __contains__ = is_prime
 
   # expand the sieve as necessary
-  def range(self, a, b):
+  def range(self, a=0, b=None):
     """
     generate primes in the (inclusive) range [a, b].
 
@@ -3554,7 +3554,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   if answer:
     # make sure all words in the answer are defined
     for w in set(_find_words(answer, symbols)):
-      if w not in words:
+      if len(w) > 1 and w not in words:
         prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
     # compute the answer
     r=_replace_words(answer, symbols, (lambda w: '(' + '_' + w + ')'))
