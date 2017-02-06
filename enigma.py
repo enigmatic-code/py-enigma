@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jan 25 10:04:37 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb  6 09:39:59 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -134,7 +134,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-01-25"
+__version__ = "2017-02-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3413,6 +3413,8 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   # reorder the expressions into a more appropriate evaluation order
   if reorder:
     # at each stage chose the expression with the fewest unassigned symbols
+    # TODO: consider making a map of symbol -> possibilities then choosing the expression
+    # with the fewest possibilities (multiplied up from all symbols in the expression)
     d = set(l2d.keys())
     (s, r) = (list(), list(i for (i, _) in enumerate(syms)))
     fn = lambda i: (len(xs[i].difference(d)), -len(vs[i].difference(d, xs[i])))
@@ -4279,9 +4281,15 @@ class SubstitutedDivision(object):
 
     # extract the terms and result
     import re
+
+    # intermediate sums: empty result is denoted by '0' or '#', empty intermediate is denoted by ''
+    def intermediate(x):
+      if x == ['']: return None
+      if x[-1] in ('0', '#'): x[-1] = ''
+      return x
+
     (a, b, c) = re.split(r'[\s\/\=]+', args[0])
-    # intermediate sums: empty string is denoted by '0' or '#', empty intermediate is denoted by ''
-    intermediates = list(map((lambda x: (None if x == [''] else x)), (re.split(r'[\s\-\=\#0]+', x) for x in args[1:])))
+    intermediates = list(map(intermediate, (re.split(r'[\s\-\=]+', x) for x in args[1:])))
     printf("[solving {a} / {b} = {c}, {intermediates} ...]", intermediates=list(None if x is None else tuple(x) for x in intermediates))
 
     # call the solver
