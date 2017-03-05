@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb  6 09:39:59 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Mar  5 09:05:04 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -134,7 +134,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-02-06"
+__version__ = "2017-03-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1476,6 +1476,7 @@ def recurring(a, b, recur=False, base=10):
 
 
 # command line arguments
+# might have been better to use: arg(n, fn=identity, default=None, argv=argv)
 def arg(v, n, fn=identity, argv=argv):
   """
   if command line argument <n> is specified return fn(argv[n])
@@ -2560,6 +2561,16 @@ class _PrimeSieveE6(object):
           n = d
         if e > 0: yield (p, e)
 
+  # return a list of the factors of n
+  def factor(self, n):
+    """
+    return a list of the prime factors of positive integer <n>.
+
+    Note: This will only consider primes up to the limit of the sieve,
+    this is a complete factorisation for <n> up to the square of the
+    limit of the sieve.    
+    """
+    return factor(n, fn=self.prime_factor)
 
 # an expandable version of the sieve
 
@@ -3604,7 +3615,7 @@ class SubstitutedExpression(object):
   """
   A solver for Python expressions with letters substituted for numbers.
 
-  It takes a Python expression and then tries all possible ways off assigning
+  It takes a Python expression and then tries all possible ways of assigning
   symbols (by default the capital letters) in it to digits and returns those
   assigments which result in the expression having a True value.
 
@@ -4282,7 +4293,9 @@ class SubstitutedDivision(object):
     # extract the terms and result
     import re
 
-    # intermediate sums: empty result is denoted by '0' or '#', empty intermediate is denoted by ''
+    # intermediate sums:
+    # - an empty result is denoted by '0' or '#' (be careful if using '0' as a symbol)
+    # - an empty intermediate is denoted by ''
     def intermediate(x):
       if x == ['']: return None
       if x[-1] in ('0', '#'): x[-1] = ''
