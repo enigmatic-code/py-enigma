@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Mar  5 09:05:04 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Mar 10 15:21:38 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -615,7 +615,7 @@ def partitions(s, n, pad=False, value=None, distinct=None):
   """
   if not isinstance(s, (tuple, list, str)): s = tuple(s)
   d, r = divmod(len(s), n)
-  if r > 0:
+  if r != 0:
     if not pad: raise ValueError("invalid sequence length {l} for {n}-tuples".format(l=len(s), n=n))
     s = tuple(s) + (value,) * (n - r)
   if d == 0 or (d == 1 and r == 0):
@@ -2556,7 +2556,7 @@ class _PrimeSieveE6(object):
         e = 0
         while True:
           (d, r) = divmod(n, p)
-          if r > 0: break
+          if r != 0: break
           e += 1
           n = d
         if e > 0: yield (p, e)
