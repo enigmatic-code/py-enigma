@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 18 10:06:06 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 18 10:07:38 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3324,9 +3324,9 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   True
 
   >>> all(substituted_expression(["is_prime(TWO)", "is_square(FOUR)", "is_cube(EIGHT)"], answer="EIGHT", verbose=1))
-  (is_prime(TWO)) (is_square(FOUR)) (is_cube(EIGHT))
-  (is_prime(503)) (is_square(1369)) (is_cube(42875)) / E=4 F=1 G=8 H=7 I=2 O=3 R=9 T=5 U=6 W=0 / 42875
-  (is_prime(509)) (is_square(1936)) (is_cube(42875)) / E=4 F=1 G=8 H=7 I=2 O=9 R=6 T=5 U=3 W=0 / 42875
+  (is_prime(TWO)) (is_square(FOUR)) (is_cube(EIGHT)) (EIGHT)
+  (is_prime(503)) (is_square(1369)) (is_cube(42875)) (42875) / E=4 F=1 G=8 H=7 I=2 O=3 R=9 T=5 U=6 W=0
+  (is_prime(509)) (is_square(1936)) (is_cube(42875)) (42875) / E=4 F=1 G=8 H=7 I=2 O=9 R=6 T=5 U=3 W=0
   True
   """
 
