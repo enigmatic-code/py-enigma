@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Mar 10 15:21:38 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 18 10:06:06 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -134,7 +134,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-03-05"
+__version__ = "2017-03-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3364,16 +3364,29 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
         xs.append(expr)
     exprs = xs
 
-  # output template (which we keep in input order)
+  # make the output template (which is kept in input order)
+  # and also categorise the expressions to (<expr>, <value>, <cat>), where <cat> is:
+  # 0 = answer (<value> = None)
+  # 1 = expression with no value, we look for a true (<value> = None)
+  # 2 = extression with an integer value, we do a direct comparison (<value> = int)
+  # 3 = expression with string value, we look to assign/check symbols (<value> = str)
   ts = list()
+  xs = list()
   for (x, v) in exprs:
     if v is None:
       ts.append(x)
+      xs.append((x, v, 1))
     elif isinstance(v, basestring):
       ts.append(x + ' = ' + v)
+      xs.append((x, v, 3))
     else:
       ts.append(x + ' = ' + int2base(v, base=base))
+      xs.append((x, v, 2))
+  if answer:
+    ts.append(answer)
+    xs.append((answer, None, 0))
   template = join(('(' + t + ')' for t in ts), sep=' ')
+  exprs = xs
 
   # initial mapping of symbols to digits
   if l2d is None:
@@ -3405,7 +3418,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   # but for the rest of the time we are only interested
   # in words in the <exprs> (not the <values>)
   words = set()
-  for (x, v) in exprs:
+  for (x, v, k) in exprs:
     for w in _find_words(x, symbols):
       if len(w) > 1:
         words.add(w)
@@ -3414,7 +3427,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   # xs = symbols in <expr>
   # vs = symbols in <value>
   (xs, vs)  = (list(), list())
-  for (x, v) in exprs:
+  for (x, v, k) in exprs:
     xs.append(set(_find_words(x, symbols, r='')))
     vs.append(set() if (v is None or not isinstance(v, basestring)) else set(_find_words(v, symbols, r='')))
 
@@ -3480,7 +3493,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   in_loop = False
 
   # deal with each <expr>,<value> pair
-  for ((expr, val), xsyms, vsyms) in zip(exprs, xs, vs):
+  for ((expr, val, k), xsyms, vsyms) in zip(exprs, xs, vs):
 
     # deal with each symbol in <expr>
     # TODO: we could consider these in an order that makes words
@@ -3504,16 +3517,17 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
           prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
 
     # calculate the expression
-    x = _replace_words(expr, symbols, (lambda w: '(' + '_' + w + ')'))
-    prog += sprintf("{_}try:\n")
-    prog += sprintf("{_}  x = int({x})\n")
-    prog += sprintf("{_}except NameError:\n") # catch undefined functions
-    prog += sprintf("{_}  raise\n")
-    prog += sprintf("{_}except:\n") # maybe "except (ArithmeticError, ValueError)"
-    prog += sprintf("{_}  {skip}\n", skip=('continue' if in_loop else 'pass'))
+    if k != 0: # (but not for the answer expression)
+      x = _replace_words(expr, symbols, (lambda w: '(' + '_' + w + ')'))
+      prog += sprintf("{_}try:\n")
+      prog += sprintf("{_}  x = int({x})\n")
+      prog += sprintf("{_}except NameError:\n") # catch undefined functions
+      prog += sprintf("{_}  raise\n")
+      prog += sprintf("{_}except:\n") # maybe "except (ArithmeticError, ValueError)"
+      prog += sprintf("{_}  {skip}\n", skip=('continue' if in_loop else 'pass'))
 
     # check the value
-    if isinstance(val, basestring):
+    if k == 3:
       # this is a literal word
       for (j, y) in enumerate(val[::-1], start=-len(val)):
         if y in done:
@@ -3552,23 +3566,19 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
             if y in w and all(x in done for x in w):
               prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
 
-    elif val is None:
+    elif k == 1:
       # look for a True value
       prog += sprintf("{_}if x:\n")
       _ += indent
 
-    else:
-      # it's an integer
+    elif k == 2:
+      # it's a comparable value
       prog += sprintf("{_}if x == {val}:\n")
       _ += indent
 
   # yield solutions as dictionaries
   d = join((("'" + s + "': _" + s) for s in sorted(done)), sep=', ')
   if answer:
-    # make sure all words in the answer are defined
-    for w in set(_find_words(answer, symbols)):
-      if len(w) > 1 and w not in words:
-        prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
     # compute the answer
     r=_replace_words(answer, symbols, (lambda w: '(' + '_' + w + ')'))
     prog += sprintf("{_}r = {r}\n")
@@ -3596,15 +3606,13 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
     printf("{template}")
   for r in solve():
     if verbose > 0:
-      (s, ans) = (r if answer else (r, None))
+      d = (r[0] if answer else r)
       # output:
       # {t} = the original expressions with digits (in base <base>) substituted for symbols
       # {s} = the mapping of symbols to digits (in base 10)
-      # {ans} = the value of the "answer" expression (if any)
-      printf("{t} / {s}{ans}",
-        t=join((_DIGITS[s[x]] if x in s else x) for x in template),
-        s=join(((k + '=' + int2base(s[k], base=10)) for k in symbols if k in s), sep=' '),
-        ans=(' / ' + str(ans) if answer is not None else '')
+      printf("{t} / {s}",
+        t=join((_DIGITS[d[x]] if x in d else x) for x in template),
+        s=join(((k + '=' + int2base(d[k], base=10)) for k in symbols if k in d), sep=' '),
       )
     yield r
 
@@ -4623,11 +4631,13 @@ class Football(object):
     return (f, a)
 
   # compute outcomes based on scores
-  def outcomes(self, ss):
+  def outcomes(self, ss, ts=None):
     """
     return a sequence of outcomes ('x', 'w', 'd', 'l') for a sequence of scores.
     """
-    return tuple(('x' if s is None else 'ldw'[compare(s[0], s[1]) + 1]) for s in ss)
+    if ts is None: ts = [0] * len(ss)
+    return tuple(('x' if s is None else 'ldw'[compare(s[0 ^ t], s[1 ^ t]) + 1]) for (s, t) in zip(ss, ts))
+
 
 
   # solver for a table with substituted values
