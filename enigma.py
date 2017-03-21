@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 18 10:07:38 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Mar 21 08:20:49 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -134,7 +134,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-03-18"
+__version__ = "2017-03-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3441,7 +3441,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
     # with the fewest possibilities (multiplied up from all symbols in the expression)
     d = set(l2d.keys())
     (s, r) = (list(), list(i for (i, _) in enumerate(syms)))
-    fn = lambda i: (len(xs[i].difference(d)), -len(vs[i].difference(d, xs[i])))
+    fn = lambda i: (exprs[i][2] == 0, len(xs[i].difference(d)), -len(vs[i].difference(d, xs[i])))
     while r:
       i = min(r, key=fn)
       s.append(i)
