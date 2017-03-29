@@ -6,12 +6,12 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Mar 21 08:20:49 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 29 13:19:40 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
 #
-# (C) Copyright 2009-2016, Jim Randell, all rights reserved.
+# (c) Copyright 2009-2017, Jim Randell, all rights reserved.
 #
 ###############################################################################
 # -*- mode: Python; py-indent-offset: 2; -*-
@@ -134,7 +134,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-03-21"
+__version__ = "2017-03-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -248,10 +248,12 @@ def join(s, sep=''):
 
 def concat(*args, **kw):
   """
-  return a string consisting of the concatenation of the elements of the sequence <args>.
-  the elements will be converted to strings (using str(x)) before concatenation.
+  return a string consisting of the concatenation of the elements of
+  the sequence <args>. the elements will be converted to strings
+  (using str(x)) before concatenation.
 
-  you can use it instead of str.join() to join non-string lists by specifying a 'sep' argument.
+  you can use it instead of str.join() to join non-string lists by
+  specifying a 'sep' argument.
 
   >>> concat('h', 'e', 'l', 'l', 'o')
   'hello'
@@ -273,10 +275,11 @@ def concat(*args, **kw):
 
 def nconcat(*digits, **kw):
   """
-  return an integer consisting of the concatenation of the list <digits> of digits
+  return an integer consisting of the concatenation of the list
+  <digits> of digits
 
-  the digits can be specified as individual arguments, or as a single argument
-  constisting of a sequence of digits.
+  the digits can be specified as individual arguments, or as a single
+  argument constisting of a sequence of digits.
 
   >>> nconcat(1, 2, 3, 4, 5)
   12345
@@ -472,11 +475,11 @@ def filter_unique(s, f=identity, g=identity):
 
 def unpack(fn):
   """
-  Turn a function that takes named parameters into
-  a function that takes a tuple.
+  Turn a function that takes named parameters into a function that
+  takes a tuple.
 
-  This can be used to work around the removal of parameter
-  unpacking in Python 3 (PEP 3113).
+  This can be used to work around the removal of parameter unpacking
+  in Python 3 (PEP 3113).
 
   >>> fn = lambda x, y: is_square(x ** 2 + y ** 2)
   >>> list(filter(unpack(fn), [(1, 2), (2, 3), (3, 4), (4, 5)]))
@@ -1499,7 +1502,7 @@ def __sprintf(fmt, vs, kw):
   # in Python3 [[ fmt.format_map(vs) ]] might be better
   return fmt.format(**vs)
 
-# in Python v3.6 we are getting f"..." strings which can do this job
+# in Python v3.6.x we are getting f"..." strings which can do this job
 #
 # NOTE: you lose the ability to do this:
 #
@@ -1517,7 +1520,7 @@ def __sprintf36(fmt, vs, kw):
   if kw: vs = update(vs, kw)
   return eval('f' + repr(fmt), vs)
 
-# in Python 3.6 (currently in beta) try the new version
+# in Python 3.6.x try the new version
 _sprintf = (__sprintf36 if sys.version_info[0:2] > (3, 5) else __sprintf)
 
 # print with variables interpolated into the format string
@@ -3304,6 +3307,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   with the symbol mappings (default: None)
 
   distinct - specify which symbols should have distinct values.
+  can be a sequence of sets of symbols which are distinct amongst each set
   shortcuts: 1 = all symbols, 0 = no symbols (default: 1)
 
   process - if a True value, exprs will be processed from a simple string
@@ -3468,6 +3472,16 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   # sort out distinct=0,1
   if type(distinct) is int:
     distinct = (symbols if distinct else '')
+  # distinct should be a sequence (probably of strings)
+  if isinstance(distinct, basestring):
+    distinct = [distinct]
+  # turn distinct into a dict mapping <symbol> -> <excluded symbols>
+  if type(distinct) is not dict:
+    d = dict()
+    for ss in distinct:
+      for s in ss:
+        d[s] = tuple(x for x in ss if x != s)
+    distinct = d
 
   # return an expression that evaluates word <w> in base <base>
   def _word(w, base):
@@ -3506,7 +3520,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       prog += sprintf("{_}for _{s} in {ds}:\n")
       _ += indent
       if done and s in distinct:
-        check = join(('_' + s + ' != ' + '_' + x for x in done if x in distinct), sep=' and ')
+        check = join((('_' + s + ' != ' + '_' + x) for x in distinct[s] if x in done), sep=' and ')
         if check:
           prog += sprintf("{_}if {check}:\n")
           _ += indent
@@ -3547,7 +3561,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
           check = list()
           # check it is different from existing symbols
           if y in distinct:
-            check.extend(('_' + y + ' != ' + '_' + x for x in done if x in distinct))
+            check.extend((('_' + y + ' != ' + '_' + x) for x in distinct[y] if x in done))
           # check any invalid values for this symbol
           for v in idigits.union(v for (s, v) in invalid if y == s):
             check.append('_' + y + ' != ' + str(v))
@@ -3842,7 +3856,10 @@ class SubstitutedExpression(object):
           for i in d:
             opt['d2i'][int(i)] = s
         elif k == 'D' or k == 'distinct':
-          if v == '0' or v == '1': v = int(v)
+          if v == '0' or v == '1':
+            v = int(v)
+          else:
+            v = v.split(',')
           opt['distinct'] = v
         elif k == 'A' or k == 'answer':
           opt['answer'] = v
@@ -5392,7 +5409,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.13', python3='3.6.0')
+""".format(version=__version__, python='2.7.13', python3='3.6.1')
 
 if __name__ == "__main__":
 
