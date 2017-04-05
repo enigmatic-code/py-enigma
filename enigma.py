@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 29 13:19:40 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Apr  5 13:26:15 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -617,7 +617,7 @@ def partitions(s, n, pad=False, value=None, distinct=None):
   [((1, 2), (3, 4)), ((1, 3), (2, 4)), ((1, 4), (2, 3))]
   """
   if not isinstance(s, (tuple, list, str)): s = tuple(s)
-  d, r = divmod(len(s), n)
+  (d, r) = divmod(len(s), n)
   if r != 0:
     if not pad: raise ValueError("invalid sequence length {l} for {n}-tuples".format(l=len(s), n=n))
     s = tuple(s) + (value,) * (n - r)
@@ -977,7 +977,7 @@ def coprime_pairs(n=None, order=False):
 # if you want to allow n to be 0 you should check: [[ power(n, m) is not None ]]
 def is_power(n, m):
   """
-  check positive integer <n> is a perfect power of positive integer <m>.
+  check positive integer <n> is a perfect <m>th power of some integer.
 
   if <n> is a perfect <m>th power, returns the integer <m>th root.
   if <n> is not a perfect <m>th power, returns None.
