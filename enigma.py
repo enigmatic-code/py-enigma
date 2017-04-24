@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Apr 24 13:39:51 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Apr 24 13:43:57 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -73,8 +73,8 @@ is_cube                - check a number is a perfect cube
 is_distinct            - check a value is distinct from other values
 is_duplicate           - check to see if value (as a string) contains duplicate characters
 is_pairwise_distinct   - check all arguments are distinct
-is_power               - check if a number is n^k for some n
-is_power_of            - check if a number is k^n for some n
+is_power               - check if n = i^k for some integer i
+is_power_of            - check if n = k^i for some integer i
 is_prime               - simple prime test
 is_prime_mr            - Miller-Rabin fast prime test
 is_roman               - check a Roman Numeral is valid
