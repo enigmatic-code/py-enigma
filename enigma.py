@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Apr  5 13:28:25 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Apr 22 22:13:30 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -134,7 +134,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-04-04"
+__version__ = "2017-04-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -222,6 +222,23 @@ def is_pairwise_distinct(*args):
   #return True
 
 pairwise_distinct = is_pairwise_distinct
+
+def all_same(*args):
+  """
+  check all arguments have the same value
+
+  >>> all_same(1, 2, 3)
+  False
+
+  >>> all_same(1, 1, 1, 1, 1, 1)
+  True
+
+  >>> all_same()
+  False
+  """
+  return len(set(args)) == 1
+
+all_different = is_pairwise_distinct
 
 # I would prefer join() to be a method of sequences: s.join(sep='')
 # but for now we define a utility function
@@ -358,7 +375,7 @@ def number(s, base=10):
   >>> number('DEAD.BEEF', base=16) == 0xdeadbeef
   True
   """
-  return base2int(s, base=base, strip=True)
+  return base2int(s, base=base, strip=1)
 
 
 def split(x, fn=None):
@@ -478,8 +495,8 @@ def unpack(fn):
   Turn a function that takes named parameters into a function that
   takes a tuple.
 
-  This can be used to work around the removal of parameter unpacking
-  in Python 3 (PEP 3113).
+  To some extent this can be used to work around the removal of
+  parameter unpacking in Python 3 (PEP 3113).
 
   >>> fn = lambda x, y: is_square(x ** 2 + y ** 2)
   >>> list(filter(unpack(fn), [(1, 2), (2, 3), (3, 4), (4, 5)]))
@@ -602,7 +619,7 @@ def ipartitions(s, n):
     yield tuple(tuple(s[i] for i in x) for x in p)
 
 
-def partitions(s, n, pad=False, value=None, distinct=None):
+def partitions(s, n, pad=0, value=None, distinct=None):
   """
   partition a sequence <s> into subsequences of length <n>.
 
@@ -925,7 +942,7 @@ def farey(n):
     (a, b, c, d) = (c, d, k * c - a, k * d - b)
     yield (a, b)
 
-def coprime_pairs(n=None, order=False):
+def coprime_pairs(n=None, order=0):
   """
   generate coprime pairs (a, b) with 0 < a < b <= n.
 
@@ -1073,6 +1090,31 @@ def is_cube(n):
 power = is_power
 cube = is_cube
 square = is_square
+
+
+def is_power_of(k, n):
+  """
+  check <n> is a power of <k>.
+
+  returns <m> such that pow(k, m) = n or None.
+
+  >>> is_power_of(2, 128)
+  7
+  >>> is_power_of(2, 1)
+  0
+  >>> is_power_of(2, 0) is None
+  True
+  >>> is_power_of(0, 0)
+  1
+  """
+  if n == 0: return (1 if k == 0 else None)
+  m = 0
+  while n > 1:
+    (n, r) = divmod(n, k)
+    if r != 0: return None
+    m += 1
+  return m
+
 
 # calculate intf(sqrt(n)) using Newton's method
 def isqrt(n):
@@ -1440,7 +1482,7 @@ def M(n, k):
   return C(n + k - 1, k)
 
 
-def recurring(a, b, recur=False, base=10):
+def recurring(a, b, recur=0, base=10):
   """
   find recurring decimal representation of the fraction <a> / <b>
   return strings (<integer-part>, <non-recurring-decimal-part>, <recurring-decimal-part>)
@@ -1450,7 +1492,7 @@ def recurring(a, b, recur=False, base=10):
   ('0', '', '142857')
   >>> recurring(3, 2)
   ('1', '5', '')
-  >>> recurring(3, 2, recur=True)
+  >>> recurring(3, 2, recur=1)
   ('1', '4', '9')
   >>> recurring(5, 17, base=16)
   ('0', '', '4B')
@@ -1658,7 +1700,7 @@ def update(s, ps=()):
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
-def grid_adjacency(n, m, deltas=None, include_adjacent=True, include_diagonal=False):
+def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0):
   """
   this function generates the adjacency matrix for a grid with n
   columns and m rows, represented by a linear array of size n*m
@@ -1683,7 +1725,7 @@ def grid_adjacency(n, m, deltas=None, include_adjacent=True, include_diagonal=Fa
   [[1, 2], [0, 3], [0, 3], [1, 2]]
   >>> sorted(grid_adjacency(3, 3)[4])
   [1, 3, 5, 7]
-  >>> sorted(grid_adjacency(3, 3, include_diagonal=True)[4])
+  >>> sorted(grid_adjacency(3, 3, include_diagonal=1)[4])
   [0, 1, 2, 3, 5, 6, 7, 8]
   """
   # if deltas aren't provided use standard deltas
@@ -1766,6 +1808,35 @@ def tuples(s, n=2):
   except StopIteration:
     pass
 
+def contains(seq, subseq):
+  """
+  return the position in <seq> that <subseq> occurs as a contiguous subsequence
+  or -1 if it is not found
+
+  >>> contains("abcdefghijkl", "def")
+  3
+  >>> contains("abcdefghijkl", "hik")
+  -1
+  >>> contains(Primes(), [11, 13, 17, 19])
+  4
+  >>> contains([1, 2, 3], [1, 2, 3])
+  0
+  >>> contains([1, 2, 3], [])
+  0
+  """
+  subseq = tuple(subseq)
+  n = len(subseq)
+  if n == 0: return 0
+  k = 0
+  i = 1
+  for x in seq:
+    if x == subseq[k]:
+      k += 1
+      if k == n: return i - n
+    else:
+      k = 0
+    i += 1
+  return -1
 
 # subseqs: generate the subsequences of an iterator
 def subseqs(iterable, min_size=0, max_size=None):
@@ -2049,7 +2120,7 @@ def int2base(i, base=10, digits=_DIGITS):
     r = digits[n] + r
   return r
 
-def base2int(s, base=10, strip=False, digits=_DIGITS):
+def base2int(s, base=10, strip=0, digits=_DIGITS):
   """
   convert a string representation of an integer in the specified base to an integer.
 
@@ -2683,7 +2754,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
   
 
 # create a suitable prime sieve
-def Primes(n=None, expandable=False, array=_primes_array, fn=_primes_chunk):
+def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk):
   """
   Return a suitable prime sieve object.
 
@@ -2716,7 +2787,7 @@ def Primes(n=None, expandable=False, array=_primes_array, fn=_primes_chunk):
   If we want an automatically expanding version, we can set the
   'expandable' flag to True.
 
-  >>> primes = Primes(50, expandable=True)
+  >>> primes = Primes(50, expandable=1)
 
   We can find out the current size and contents of the sieve:
   >>> primes.max
@@ -2747,7 +2818,7 @@ def Primes(n=None, expandable=False, array=_primes_array, fn=_primes_chunk):
 
 # backwards compatability
 def PrimesGenerator(n=None, array=_primes_array, fn=_primes_chunk):
-  return Primes(n, expandable=True, array=array, fn=fn)
+  return Primes(n, expandable=1, array=array, fn=fn)
 
 ###############################################################################
 
@@ -3078,12 +3149,12 @@ class SubstitutedSum(object):
 
   solution = output_solution
 
-  def go(self, fn=None, first=False):
+  def go(self, fn=None, first=0):
     """
     find all solutions (matching the filter <fn>) and output them.
     """
     for s in self.solve(fn=fn, verbose=1):
-      if first:break
+      if first: break
 
   # class method to chain multiple sums together
   @classmethod
@@ -3270,7 +3341,7 @@ def _replace_words(s, symbols, fn):
   f = lambda m: fn(m.group(0))
   return re.sub('[' + symbols + ']+', f, s)
 
-def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1, process=1, reorder=1, env=None, verbose=0):
+def substituted_expression(exprs, base=10, symbols=None, wildcard=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1, process=1, reorder=1, env=None, verbose=0):
   """
   A solver for substituted expressions.
 
@@ -3291,6 +3362,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   <exprs> can be a single expression, or a sequence of expressions.
 
   The following parameters are optional:
+
   base - the number base to operate in (default: 10)
 
   symbols - the symbols to substitute in the expressions (default: upper case letters)
@@ -3299,7 +3371,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
 
   l2d - initial map of symbols to digits (default: all symbols unassigned)
 
-  d2i - map of digits to invalid latter assignments (default: leading digits cannot be 0)
+  d2i - map of digits to invalid symbol assignments (default: leading digits cannot be 0)
 
   If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
 
@@ -3405,7 +3477,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   idigits = set(irange(0, base - 1)).difference(digits)
 
   # find words in all exprs
-  words = _find_words(template, symbols)
+  words = set(_find_words(template, symbols))
 
   # invalid (<symbol>, <digit>) assignments
   invalid = set()
@@ -3433,7 +3505,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   (xs, vs)  = (list(), list())
   for (x, v, k) in exprs:
     xs.append(set(_find_words(x, symbols, r='')))
-    vs.append(set() if (v is None or not isinstance(v, basestring)) else set(_find_words(v, symbols, r='')))
+    vs.append(set(_find_words(v, symbols, r='')) if k == 3 else set())
 
   # determine the symbols in each expression
   syms = list(x.union(v) for (x, v) in zip(xs, vs))
@@ -3635,7 +3707,7 @@ alphametic = substituted_expression
 
 class SubstitutedExpression(object):
   """
-  A solver for Python expressions with letters substituted for numbers.
+  A solver for Python expressions with symbols substituted for numbers.
 
   It takes a Python expression and then tries all possible ways of assigning
   symbols (by default the capital letters) in it to digits and returns those
@@ -3674,7 +3746,7 @@ class SubstitutedExpression(object):
     symbols - the symbols to substituted in the expression (default: upper case letters)
     digits - the digits to be substituted in (default: determined from base)
     l2d - initial map of symbols to digits (default: all symbols unassigned)
-    d2i - map of digits to invalid letter assigmnents (default: leading digits cannot be 0)
+    d2i - map of digits to invalid symbol assigmnents (default: leading digits cannot be 0)
     distinct - symbols which should have distinct values (1 = all, 0 = none) (default: 1)
     env - additional environment for evaluation (default: None)
 
@@ -4043,7 +4115,7 @@ class SubstitutedDivision(object):
       return d
 
     # generate possible numbers matching <s> with dictionary <d>
-    def generate_numbers(s, d, slz=True):
+    def generate_numbers(s, d, slz=1):
       # the empty string matches 0
       if s == '':
         yield (0, d)
@@ -4948,7 +5020,7 @@ class Timer(object):
 """
 
 
-  def __init__(self, name='timing', timer=_timer, file=sys.stderr, exit_report=True, auto_start=True):
+  def __init__(self, name='timing', timer=_timer, file=sys.stderr, exit_report=1, auto_start=1):
     """
     Create (and start) a timer.
 
@@ -4974,7 +5046,7 @@ class Timer(object):
     Set the start time of a timer.
     """
     if self._exit_report:
-      atexit.register(self.report, force=False)
+      atexit.register(self.report, force=0)
       self._exit_report = False
     self._t1 = None
     self._t0 = self._timer()
@@ -4985,7 +5057,7 @@ class Timer(object):
     """
     self._t1 = self._timer()
 
-  def elapsed(self, disable_report=True):
+  def elapsed(self, disable_report=1):
     """
     Return the elapsed time of a stopped timer
 
@@ -5003,7 +5075,7 @@ class Timer(object):
     if t < 1.0: (t, u) = (1000 * t, 'us')
     return (fmt + u).format(t)
 
-  def report(self, force=True):
+  def report(self, force=1):
     """
     Stop the timer and generate the report (if required).
 
@@ -5041,7 +5113,7 @@ def timed(f):
   return _timed
 
 # create a default timer
-timer = Timer(auto_start=False)
+timer = Timer(auto_start=0)
 
 ###############################################################################
 
@@ -5257,7 +5329,7 @@ def _parsefile(path, *args):
 # check for updates to enigma.py
 # check = only check the current version
 # download = always download the latest version
-def _enigma_update(url, check=True, download=True):
+def _enigma_update(url, check=1, download=1):
   print('checking for updates...')
 
   if sys.version_info[0] == 2:
