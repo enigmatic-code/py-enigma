@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Apr 22 22:13:30 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Apr 24 13:39:51 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -73,7 +73,8 @@ is_cube                - check a number is a perfect cube
 is_distinct            - check a value is distinct from other values
 is_duplicate           - check to see if value (as a string) contains duplicate characters
 is_pairwise_distinct   - check all arguments are distinct
-is_power               - check a number is a perfect power
+is_power               - check if a number is n^k for some n
+is_power_of            - check if a number is k^n for some n
 is_prime               - simple prime test
 is_prime_mr            - Miller-Rabin fast prime test
 is_roman               - check a Roman Numeral is valid
@@ -134,7 +135,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-04-05"
+__version__ = "2017-04-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -989,15 +990,15 @@ def coprime_pairs(n=None, order=0):
 # but here we use Newton's method, which should work on arbitrary large integers
 # and we special case m = 2 (is_square)
 #
-# NOTE: that this will return 0 if n = 0 and None if n is not a perfect m-th power,
-# so [[ power(n, m) ]] will evaluate to True only for positive n
-# if you want to allow n to be 0 you should check: [[ power(n, m) is not None ]]
-def is_power(n, m):
+# NOTE: that this will return 0 if n = 0 and None if n is not a perfect k-th power,
+# so [[ power(n, k) ]] will evaluate to True only for positive n
+# if you want to allow n to be 0 you should check: [[ power(n, k) is not None ]]
+def is_power(n, k):
   """
-  check positive integer <n> is a perfect <m>th power of some integer.
+  check positive integer <n> is a perfect <k>th power of some integer.
 
-  if <n> is a perfect <m>th power, returns the integer <m>th root.
-  if <n> is not a perfect <m>th power, returns None.
+  if <n> is a perfect <k>th power, returns the integer <k>th root.
+  if <n> is not a perfect <k>th power, returns None.
 
   >>> is_power(49, 2)
   7
@@ -1015,17 +1016,17 @@ def is_power(n, m):
   # initial guess
   try:
     # make a sneaky close guess for non-huge numbers
-    a = int(n ** (1.0000000001 / float(m)))
+    a = int(n ** (1.0000000001 / float(k)))
   except OverflowError:
     # default initial guess
     a = 1
   # calculate successive approximations via Newton's method
-  m1 = m - 1
+  k1 = k - 1
   while True:
-    d = (n // (a ** m1) - a) // m
+    d = (n // (a ** k1) - a) // k
     a += d
     if -2 < d < 2: break
-  return (a if a ** m == n else None)
+  return (a if a ** k == n else None)
 
 
 # it would be more Pythonic to encapsulate is_square in a class with the initialisation
@@ -1092,17 +1093,17 @@ cube = is_cube
 square = is_square
 
 
-def is_power_of(k, n):
+def is_power_of(n, k):
   """
   check <n> is a power of <k>.
 
   returns <m> such that pow(k, m) = n or None.
 
-  >>> is_power_of(2, 128)
+  >>> is_power_of(128, 2)
   7
-  >>> is_power_of(2, 1)
+  >>> is_power_of(1, 2)
   0
-  >>> is_power_of(2, 0) is None
+  >>> is_power_of(0, 2) is None
   True
   >>> is_power_of(0, 0)
   1
