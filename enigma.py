@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Apr 24 13:43:57 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Apr 28 16:57:29 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -135,7 +135,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-04-23"
+__version__ = "2017-04-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3879,9 +3879,9 @@ class SubstitutedExpression(object):
       "options:",
       "  --symbols=<string> (or -s<string>) = symbols to replace with digits",
       "  --base=<n> (or -b<n>) = set base to <n>",
-      "  --assign=<letter>,<digit> (or -a<l>,<d>) = assign digit to letter",
+      "  --assign=<symbol>,<decimal> (or -a<s>,<d>) = assign decimal value to symbol",
       "  --digits=<digit>,... or --digits=<digit>-<digit> (or -d...) = available digits",
-      "  --invalid=<digits>,<letters> (or -i<ds>,<ls>) = invalid digit to letter assignments",
+      "  --invalid=<digits>,<symbols> (or -i<ds>,<ss>) = invalid digit to symbol assignments",
       "  --answer=<expr> (or -A<expr>) = count answers according to <expr>",
       "  --distinct=<string> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
       "  --first (or -1) = stop after the first solution",
@@ -3912,10 +3912,12 @@ class SubstitutedExpression(object):
           opt['base'] = int(v)
         elif k == 'a' or k == 'assign':
           # --assign=<letter>,<digit> (or -a<letter>,<digit>)
+          # NOTE: <digit> is specified in decimal (not --base)
           (l, d) = v.split(',', 1)
           opt['l2d'][l] = int(d)
         elif k == 'd' or k == 'digits':
           # --digits=<digit>,... or <digit>-<digit> (or -d)
+          # NOTE: <digits> are specified in decimal (not --base)
           if '-' in v:
             (a, _, b) = v.partition('-')
             opt['digits'] = irange(int(a), int(b))
@@ -3923,7 +3925,9 @@ class SubstitutedExpression(object):
             ds = v.split(',')
             opt['digits'] = tuple(int(d) for d in ds)
         elif k == 'i' or k == 'invalid':
-          # --invalid=<digit>,<letters> (or -i<ds>,<ls>)
+          # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
+          # NOTE: <digits> are specified in decimal (not --base)
+          # which means you can't specify digits > 9 (FIX)
           if opt['d2i'] is None: opt['d2i'] = dict()
           (d, s) = v.split(',', 1)
           for i in d:
@@ -4792,8 +4796,7 @@ class Football(object):
 
     # choose outcomes for each remaining match
     for s in self.games(repeat=len(rs)):
-      matches1 = dict(matches)
-      for (k, v) in zip(rs, s): matches1[k] = v
+      matches1 = update(matches, zip(rs, s))
       # compute the row in the table for team t
       r = self.table((matches1[m] for m in ms), (m.index(t) for m in ms))
       # check the output of the table
@@ -4867,8 +4870,7 @@ class Football(object):
     sms = list(m for m in ms if m in scores)
     # find possible scores for each remaining match
     for s in self.scores(list(matches[m] for m in rs), list(m.index(t) for m in rs), d[gf[t]], d[ga[t]], list(scores[m] for m in sms), list(m.index(t) for m in sms)):
-      scores2 = dict(scores)
-      for (m, z) in zip(rs, s): scores2[m] = z
+      scores2 = update(scores, zip(rs, s))
       for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores2): yield z
 
   # gf, ga - goals for, goals against
@@ -4925,8 +4927,7 @@ class Football(object):
       m = matches[k]
       s = ((join(scores[k], sep='-') if scores.get(k, None) else '---') if scores else '')
       if teams: k = tuple(teams[t] for t in k)
-      k=join(k, sep=' vs ')
-      printf("{k} = ({m}) {s}")
+      printf("{k} = ({m}) {s}", k=join(k, sep=' vs '))
     if d is not None:
       printf("{d}", d=join((join((k, d[k]), sep='=') for k in sorted(d.keys())), sep=' '))
     if end is not None: printf("{end}")
@@ -5301,9 +5302,8 @@ grouping = namespace('grouping', __grouping())
 
 # parse a run file (which uses a shell-like syntax)
 
-import shlex
-
 def _parsefile(path, *args):
+  import shlex
 
   with open(path, 'r') as f:
     # parse the file removing whitespace, comments, quotes
@@ -5324,6 +5324,32 @@ def _parsefile(path, *args):
     words = list(flattened(zip(divide(words), divide(args)), depth=2))
           
   return (cmd, words)
+
+
+# run command line arguments
+def run(cmd, *args):
+  import os
+
+  # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
+  if cmd == '-r' or cmd == '--run':
+    (cmd, args) = _parsefile(*args)
+  # or just "<file> <additional-args>"
+  elif os.path.isfile(cmd):
+    (cmd, args) = _parsefile(cmd, *args)
+
+  # solver does not start with a hyphen
+  if cmd.startswith('-'): return
+
+  # find the solver
+  fn = globals().get(cmd)
+  if fn:
+    fn = getattr(fn, 'command_line')
+    if fn:
+      sys.exit(fn(args))
+
+  # if we get this far we can't find the solver
+  printf("enigma.py: {cmd}.command_line() not implemented")
+  sys.exit(-1)
 
 ###############################################################################
 
@@ -5486,33 +5512,13 @@ enigma.py has the following command-line usage:
 
 if __name__ == "__main__":
 
-  import os
-
   # allow solvers to run from the command line:
   #   % python enigma.py <class> <args> ...
   # or put all the arguments into a file and use:
   #   % python enigma.py -r <file> <additional-args>
   #   % python enigma.py --run <file> <additional-args>
   #   % python enigma.py <file> <additional-args>
-  if argv:
-    (cmd, args) = (argv[0], argv[1:])
-    # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
-    if cmd == '-r' or cmd == '--run':
-      (cmd, args) = _parsefile(*args)
-    # or just "<file> <additional-args>"
-    elif os.path.isfile(cmd):
-      (cmd, args) = _parsefile(cmd, *args)
-    # solver does not start with a hyphen
-    if not cmd.startswith('-'):
-      fn = vars().get(cmd)
-      if fn:
-        fn = getattr(fn, 'command_line')
-        if fn:
-          sys.exit(fn(args))
-
-      printf("enigma.py: {cmd}.command_line() not implemented")
-      sys.exit(-1)
-
+  if argv: run(*argv)
 
   # identify the version number
   #print('[python version ' + sys.version.replace("\n", " ") + ']')
