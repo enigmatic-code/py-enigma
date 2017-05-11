@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Apr 28 16:57:29 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu May 11 22:51:06 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -135,7 +135,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-04-27"
+__version__ = "2017-05-11"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -202,7 +202,12 @@ def is_distinct(value, *args):
 
 distinct = is_distinct
 
+# <s> has <n> distinct values
+def distinct_values(s, n=None):
+  if n is None: n = len(s)
+  return len(set(s)) == n
 
+# same as distinct_values(args), or distinct_values(args, len(args))
 def is_pairwise_distinct(*args):
   """
   check all arguments are pairwise distinct
@@ -224,6 +229,7 @@ def is_pairwise_distinct(*args):
 
 pairwise_distinct = is_pairwise_distinct
 
+# same as distinct_values(args, 1)
 def all_same(*args):
   """
   check all arguments have the same value
@@ -262,7 +268,7 @@ def join(s, sep=''):
   >>> join([5, 700, 5])
   '57005'
   """
-  return str(sep).join(str(x) for x in s)
+  return str.join(sep, (str(x) for x in s))
 
 def concat(*args, **kw):
   """
@@ -283,12 +289,12 @@ def concat(*args, **kw):
   sep = kw.get('sep', '')
   if len(args) == 1:
     try:
-      return join((str(x) for x in args[0]), sep)
+      return str.join(sep, (str(x) for x in args[0]))
     except TypeError:
       pass
     except:
       raise
-  return join((str(x) for x in args), sep)
+  return str.join(sep, (str(x) for x in args))
 
 
 def nconcat(*digits, **kw):
@@ -3667,7 +3673,7 @@ def substituted_expression(exprs, base=10, symbols=None, wildcard=None, digits=N
   d = join((("'" + s + "': _" + s) for s in sorted(done)), sep=', ')
   if answer:
     # compute the answer
-    r=_replace_words(answer, symbols, (lambda w: '(' + '_' + w + ')'))
+    r = _replace_words(answer, symbols, (lambda w: '(' + '_' + w + ')'))
     prog += sprintf("{_}r = {r}\n")
     prog += sprintf("{_}yield ({{ {d} }}, r)\n")
   else:
@@ -5326,9 +5332,13 @@ def _parsefile(path, *args):
   return (cmd, words)
 
 
+_run_exit = None
+
 # run command line arguments
 def run(cmd, *args):
   import os
+
+  _run_exit = None
 
   # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
   if cmd == '-r' or cmd == '--run':
@@ -5345,11 +5355,13 @@ def run(cmd, *args):
   if fn:
     fn = getattr(fn, 'command_line')
     if fn:
-      sys.exit(fn(args))
+      _run_exit = fn(args)
+      return
 
   # if we get this far we can't find the solver
   printf("enigma.py: {cmd}.command_line() not implemented")
-  sys.exit(-1)
+  _run_exit = -1
+  return
 
 ###############################################################################
 
@@ -5518,7 +5530,10 @@ if __name__ == "__main__":
   #   % python enigma.py -r <file> <additional-args>
   #   % python enigma.py --run <file> <additional-args>
   #   % python enigma.py <file> <additional-args>
-  if argv: run(*argv)
+  if argv:
+    run(*argv)
+    if _run_exit is not None:
+      sys.exit(_run_exit)
 
   # identify the version number
   #print('[python version ' + sys.version.replace("\n", " ") + ']')
