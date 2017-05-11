@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu May 11 22:51:06 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu May 11 23:35:44 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -5338,6 +5338,7 @@ _run_exit = None
 def run(cmd, *args):
   import os
 
+  global _run_exit
   _run_exit = None
 
   # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
@@ -5355,7 +5356,7 @@ def run(cmd, *args):
   if fn:
     fn = getattr(fn, 'command_line')
     if fn:
-      _run_exit = fn(args)
+      _run_exit = (fn(args) or 0)
       return
 
   # if we get this far we can't find the solver
