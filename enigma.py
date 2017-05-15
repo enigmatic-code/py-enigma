@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 14 22:45:14 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon May 15 09:28:01 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -394,7 +394,7 @@ def match(v, t):
   True
   >>> match("abcd", "?b?")
   False
-  >>> nmatch(1234, '?2??')
+  >>> match(1234, '?2??')
   True
   """
   return fnmatch(str(v), t)
