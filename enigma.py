@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon May 15 09:28:01 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed May 17 15:27:22 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -135,7 +135,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-05-14"
+__version__ = "2017-05-16"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3372,28 +3372,22 @@ _SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 import re
 
-def _find_words(s, symbols, r='+', protected=()):
-  if protected:
-    ss = re.split('(' + join(protected, sep='|') + ')', s)
+# find words in string <s>
+def _find_words(s, r=1):
+  words = set(re.findall('{(.+?)}', s))
+  if r:
+    # return the words
+    return words
   else:
-    ss = [ s ]
+    # return individual characters
+    return set().union(*words)
 
-  words = set()
-  for w in ss:
-    if w in protected: continue
-    words.update(re.findall('[' + symbols + ']' + r, w))
+# replace words in string <s>
+def _replace_words(s, fn):
+  # new style, with braces
+  _fn = lambda m: fn(m.group(1))    
+  return re.sub('{(.+?)}', _fn, s)
 
-  return words
-
-def _replace_words(s, symbols, fn, protected=()):
-  if protected:
-    ss = re.split('(' + join(protected, sep='|') + ')', s)
-  else:
-    ss = [ s ]
-
-  _fn = lambda m: fn(m.group(0))
-
-  return join((w if w in protected else re.sub('[' + symbols + ']+', _fn, w)) for w in ss)
 
 _gensym = [ 0 ]
 
@@ -3401,7 +3395,7 @@ def gensym(x):
   _gensym[0] += 1
   return concat(x, _gensym[0])
 
-def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1, process=1, reorder=1, env=None, protected=(), verbose=0):
+def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1, process=1, reorder=1, env=None, verbose=0):
   """
   A solver for substituted expressions.
 
@@ -3441,8 +3435,6 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   distinct - specify which symbols should have distinct values.
   can be a sequence of sets of symbols which are distinct amongst each set
   shortcuts: 1 = all symbols, 0 = no symbols (default: 1)
-
-  protected - list of words which will not be expanded (default: none)
 
   process - if a True value, exprs will be processed from a simple string
   (or sequence of strings) to acceptable input values.
@@ -3489,18 +3481,30 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       if isinstance(expr, basestring):
         # expression is a single string, turn it into an (<expr>, <value>) pair
         (v, s) = ('', re.split(r'\s+=\s+', expr))
-        if len(s) == 2:
-          (expr, v) = s
-        if not v:
-          v = None
-        elif not all(s in symbols for s in v):
-          # try to turn the value into an integer
-          v = base2int(v, base=base)
-        xs.append((expr, v))
+        if len(s) == 2: (expr, v) = s
+        if not v: v = None
       else:
         # assume expr is already an (<expr>, <value>) pair
-        xs.append(expr)
+        (expr, v) = expr
+
+      # convert old style (without braces) into new style (with braces)
+      if symbols:
+        if '{' not in expr:
+          expr = re.sub('[' + symbols + ']+', (lambda m: '{' + m.group(0) + '}'), expr)
+        if isinstance(v, basestring) and '{' not in v and all(x in symbols for x in v):
+          v = '{' + v + '}'
+
+      # value is either an alphabetic or a numeric literal
+      if isinstance(v, basestring) and '{' not in v:
+        v = base2int(v, base=base)
+
+      xs.append((expr, v))
+
     exprs = xs
+
+    # fix up old style answers
+    if answer and '{' not in answer:
+      answer = re.sub('[' + symbols + ']+', (lambda m: '{' + m.group(0) + '}'), answer)
 
   # make the output template (which is kept in input order)
   # and also categorise the expressions to (<expr>, <value>, <cat>), where <cat> is:
@@ -3516,7 +3520,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       xs.append((x, v, 1))
     elif isinstance(v, basestring):
       ts.append(x + ' = ' + v)
-      xs.append((x, v, 3))
+      xs.append((x, v[1:-1], 3))
     else:
       ts.append(x + ' = ' + int2base(v, base=base))
       xs.append((x, v, 2))
@@ -3540,7 +3544,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   idigits = set(irange(0, base - 1)).difference(digits)
 
   # find words in all exprs
-  words = _find_words(template, symbols, protected=protected)
+  words = _find_words(template)
 
   # invalid (<symbol>, <digit>) assignments
   invalid = set()
@@ -3557,18 +3561,16 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   # but for the rest of the time we are only interested
   # in words in the <exprs> (not the <values>)
   words = set()
-  for (x, v, k) in exprs:
-    for w in _find_words(x, symbols, protected=protected):
-      if len(w) > 1:
-        words.add(w)
+  for (x, _, _) in exprs:
+    words.update(w for w in _find_words(x) if len(w) > 1)
 
   # find the symbols in the (<expr>, <value>) pairs
   # xs = symbols in <expr>
   # vs = symbols in <value>
   (xs, vs)  = (list(), list())
   for (x, v, k) in exprs:
-    xs.append(_find_words(x, symbols, r='', protected=protected))
-    vs.append(_find_words(v, symbols, r='', protected=protected) if k == 3 else set())
+    xs.append(_find_words(x, r=0))
+    vs.append(_find_words(v, r=0) if k == 3 else set())
 
   # determine the symbols in each expression
   syms = list(x.union(v) for (x, v) in zip(xs, vs))
@@ -3615,7 +3617,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
     d = dict()
     for ss in distinct:
       for s in ss:
-        d[s] = tuple(x for x in ss if x != s)
+        d[s] = set(x for x in ss if x != s)
     distinct = d
 
   # return an expression that evaluates word <w> in base <base>
@@ -3661,7 +3663,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       prog += sprintf("{_}for _{s} in {ds}:\n")
       _ += indent
       if done and s in distinct:
-        check = join((('_' + s + ' != ' + '_' + x) for x in distinct[s] if x in done), sep=' and ')
+        check = join((('_' + s + ' != ' + '_' + x) for x in done if x in distinct[s]), sep=' and ')
         if check:
           prog += sprintf("{_}if {check}:\n")
           _ += indent
@@ -3673,7 +3675,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
 
     # calculate the expression
     if k != 0: # (but not for the answer expression)
-      x = _replace_words(expr, symbols, (lambda w: '(' + '_' + w + ')'), protected=protected)
+      x = _replace_words(expr, (lambda w: '(' + '_' + w + ')'))
       prog += sprintf("{_}try:\n")
       prog += sprintf("{_}  x = int({x})\n")
       prog += sprintf("{_}except NameError:\n") # catch undefined functions
@@ -3702,7 +3704,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
           check = list()
           # check it is different from existing symbols
           if y in distinct:
-            check.extend((('_' + y + ' != ' + '_' + x) for x in distinct[y] if x in done))
+            check.extend((('_' + y + ' != ' + '_' + x) for x in done if x in distinct[y]))
           # check any invalid values for this symbol
           for v in idigits.union(v for (s, v) in invalid if y == s):
             check.append('_' + y + ' != ' + str(v))
@@ -3735,7 +3737,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   d = join((("'" + s + "': _" + s) for s in sorted(done)), sep=', ')
   if answer:
     # compute the answer
-    r = _replace_words(answer, symbols, (lambda w: '(' + '_' + w + ')'), protected=protected)
+    r = _replace_words(answer, (lambda w: '(' + '_' + w + ')'))
     prog += sprintf("{_}r = {r}\n")
     prog += sprintf("{_}yield ({{ {d} }}, r)\n")
   else:
@@ -3758,7 +3760,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
 
   # and run it
   if verbose > 0:
-    printf("{template}")
+    printf("{t}", t=_replace_words(template, identity))
   for r in solve():
     if verbose > 0:
       d = (r[0] if answer else r)
@@ -3766,8 +3768,8 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
       # {t} = the original expressions with digits (in base <base>) substituted for symbols
       # {s} = the mapping of symbols to digits (in base 10)
       printf("{t} / {s}",
-        t=_replace_words(template, symbols, (lambda w: substitute(d, w)), protected),
-        s=join(((k + '=' + int2base(d[k], base=10)) for k in symbols if k in d), sep=' '),
+        t=_replace_words(template, (lambda w: substitute(d, w))),
+        s=join(((k + '=' + int2base(d[k], base=10)) for k in sorted(d.keys())), sep=' '),
       )
     yield r
 
@@ -3796,7 +3798,7 @@ class SubstitutedExpression(object):
   See SubstitutedExpression.command_line() for more examples.
   """
 
-  def __init__(self, expr, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1, protected=(), env=None):
+  def __init__(self, expr, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1, env=None, reorder=1, first=0, verbose=1):
     """
     create a substituted expression puzzle.
 
@@ -3829,10 +3831,13 @@ class SubstitutedExpression(object):
     self.d2i = d2i
     self.answer = answer
     self.distinct = distinct
-    self.protected = protected
     self.env = env
+    # solve() / go() defaults
+    self.reorder = reorder
+    self.first = first
+    self.verbose = verbose
 
-  def solve(self, reorder=1, verbose=0):
+  def solve(self, reorder=None, first=None, verbose=None):
     """
     generate solutions to the substituted expression problem.
 
@@ -3850,14 +3855,17 @@ class SubstitutedExpression(object):
     d2i = self.d2i
     answer = self.answer
     distinct = self.distinct
-    protected = self.protected
     env = self.env
+    if reorder is None: reorder = self.reorder
+    if first is None: first = self.first
+    if verbose is None: verbose = self.verbose
 
-    for s in substituted_expression(expr, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i, answer=answer, distinct=distinct, process=1, reorder=reorder, protected=protected, env=env, verbose=verbose):
+    for s in substituted_expression(expr, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i, answer=answer, distinct=distinct, process=1, reorder=reorder, env=env, verbose=verbose):
       yield s
+      if first: break
 
 
-  def go(self, reorder=1, first=0, verbose=1):
+  def go(self, reorder=None, first=None, verbose=None):
     """
     find solutions to the substituted expression problem and output them.
 
@@ -3867,6 +3875,10 @@ class SubstitutedExpression(object):
     was set during init() returns a collections.Counter() object counting
     the number of times each answer occurs.
     """
+    if reorder is None: reorder = self.reorder
+    if first is None: first = self.first
+    if verbose is None: verbose = self.verbose
+
     # collect answers (either total number or collected by "answer")
     answer = self.answer
     r = (collections.Counter() if answer else 0)
@@ -3876,18 +3888,18 @@ class SubstitutedExpression(object):
       t = Timer()
       t.start()
 
-    for s in self.solve(reorder=reorder, verbose=verbose):
+    for s in self.solve(reorder=reorder, first=first, verbose=verbose):
       if answer:
         r[s[1]] += 1
       else:
         r += 1
-      if first: break
-      
+
     if verbose > 2:
       t.stop()
 
     if verbose > 0:
       if answer:
+        answer = _replace_words(answer, identity)
         # report the answer counts
         for (k, v) in r.most_common():
           printf("{answer} = {k} [{v} solution{s}]", s=('' if v == 1 else 's'))
@@ -3930,7 +3942,7 @@ class SubstitutedExpression(object):
     if self.answer:
       args.append(sprintf("--answer={q}{self.answer}{q}"))
 
-    if self.distinct:
+    if self.distinct is not None:
       distinct = self.distinct
       if not isinstance(distinct, int):
         if not isinstance(self.distinct, basestring):
@@ -3938,10 +3950,14 @@ class SubstitutedExpression(object):
         distinct = q + distinct + q
       args.append(sprintf("--distinct={distinct}"))
 
-    # there are also the following arguments to go() / solve()
-    # --verbose
-    # --first
-    # --reorder
+    if self.reorder is not None:
+      args.append(sprintf("--reorder={self.reorder}"))
+
+    if self.first is not None:
+      args.append(sprintf("--first={self.first}"))
+
+    if self.verbose is not None:
+      args.append(sprintf("--verbose={self.verbose}"))
 
     # and the expressions
     args.extend(q + x + q for x in self.expr)
@@ -4000,14 +4016,12 @@ class SubstitutedExpression(object):
       "  --distinct=<string> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
       "  --first (or -1) = stop after the first solution",
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
-      "  --protected=<string> (or -P<s>) = list of protected words",
       "  --verbose[=<n>] (or -v[<n>]) = verbosity (0 = off, 1 = solutions, 2+ = more)",
       "  --help (or -h) = show command-line usage",
     ), sep="\n")
 
     # process options
-    opt = { 'l2d': dict(), 'd2i': None } # SubstitutedExpression() args
-    kw = { 'verbose': 1, 'first': False, 'reorder': True } # SubstitutedExpression.go() args
+    opt = { 'l2d': dict(), 'd2i': None, 'verbose': 1, 'first': 0, 'reorder': 1 }
     while args and args[0].startswith('-'):
       arg = args.pop(0)
       try:
@@ -4053,16 +4067,14 @@ class SubstitutedExpression(object):
           else:
             v = v.split(',')
           opt['distinct'] = v
-        elif k == 'P' or k == 'protected':
-          opt['protected'] = v.split(',')
         elif k == 'A' or k == 'answer':
           opt['answer'] = v
         elif k == '1' or k == 'first':
-          kw['first'] = (int(v) if v else 1)
+          opt['first'] = (int(v) if v else 1)
         elif k == 'v' or k == 'verbose':
-          kw['verbose'] = (int(v) if v else 1)
+          opt['verbose'] = (int(v) if v else 1)
         elif k == 'r' or k == 'reorder':
-          kw['reorder'] = (int(v) if v else 0)
+          opt['reorder'] = (int(v) if v else 0)
         else:
           raise ValueError
       except:
@@ -4075,7 +4087,7 @@ class SubstitutedExpression(object):
       return -1
     
     # call the solver
-    cls(args, **opt).go(**kw)
+    cls(args, **opt).go()
     return 0
 
 # an alias to save typing
@@ -5469,7 +5481,7 @@ def run(cmd, *args):
   if fn:
     fn = getattr(fn, 'command_line')
     if fn:
-      _run_exit = (fn(args) or 0)
+      _run_exit = (fn(list(args)) or 0)
       return
 
   # if we get this far we can't find the solver
