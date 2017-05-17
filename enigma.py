@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed May 17 15:27:22 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed May 17 19:31:35 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3374,7 +3374,7 @@ import re
 
 # find words in string <s>
 def _find_words(s, r=1):
-  words = set(re.findall('{(.+?)}', s))
+  words = set(re.findall('{(\w+?)}', s))
   if r:
     # return the words
     return words
@@ -3386,7 +3386,7 @@ def _find_words(s, r=1):
 def _replace_words(s, fn):
   # new style, with braces
   _fn = lambda m: fn(m.group(1))    
-  return re.sub('{(.+?)}', _fn, s)
+  return re.sub('{(\w+?)}', _fn, s)
 
 
 _gensym = [ 0 ]
