@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed May 17 19:31:35 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat May 20 10:23:58 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -135,7 +135,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-05-16"
+__version__ = "2017-05-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1674,7 +1674,7 @@ def irange(a, b=None, step=1):
 
 
 # flatten a list of lists
-def flatten(l, fn=list):
+def flatten(s, fn=list):
   """
   flatten a list of lists (actually an iterator of iterators).
 
@@ -1685,7 +1685,7 @@ def flatten(l, fn=list):
   >>> flatten([['abc'], ['def', 'ghi']])
   ['abc', 'def', 'ghi']
   """
-  return fn(j for i in l for j in i)
+  return fn(j for i in s if i is not None for j in i)
 
 # an iterator that fully flattens a nested structure
 def flattened(s, depth=None):
@@ -3545,6 +3545,8 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
 
   # find words in all exprs
   words = _find_words(template)
+  # and determine the symbols that are used
+  symbols = join(sorted(set().union(*words)))
 
   # invalid (<symbol>, <digit>) assignments
   invalid = set()
@@ -3936,8 +3938,8 @@ class SubstitutedExpression(object):
       args.append(sprintf("--digits={q}{digits}{q}", digits=join(self.digits, sep=",")))
 
     if self.d2i:
-      # TODO: sort this
-      args.append(sprintf("--invalid={q}{self.d2i}{q}"))
+      for (k, v) in sorted(self.d2i.items(), key=lambda t: t[0]):
+        args.append(sprintf("--invalid={q}{k},{v}{q}"))
 
     if self.answer:
       args.append(sprintf("--answer={q}{self.answer}{q}"))
