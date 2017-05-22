@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat May 20 10:23:58 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon May 22 16:23:44 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -135,7 +135,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-05-19"
+__version__ = "2017-05-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2740,6 +2740,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     function specified in __init__().
     """
     if n is None: n = self.chunk(self.max)
+    #printf("_PrimeSieveE6X: expanding to {n}")
     _PrimeSieveE6.extend(self, n)
 
   # for backwards compatability
@@ -2784,11 +2785,6 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     self.extend(b)
     return _PrimeSieveE6.range(self, a, b)
 
-  # expand the sieve as necessary
-  def prime_factor(self, n):
-    self.extend(isqrt(n))
-    return _PrimeSieveE6.prime_factor(self, n)
-  
 
 # create a suitable prime sieve
 def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk):
@@ -3459,7 +3455,7 @@ def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, 
   (is_prime(509)) (is_square(1936)) (is_cube(42875)) (42875) / E=4 F=1 G=8 H=7 I=2 O=9 R=6 T=5 U=3 W=0
   True
   """
-
+  
   # the symbols to replace
   if symbols is None:
     symbols = _SYMBOLS
@@ -3849,6 +3845,8 @@ class SubstitutedExpression(object):
     verbose - if set to >0 solutions are output as they are found, >1 additional information is output.
     """
 
+    if verbose > 3: print(">>> " + join(self.command_line_args(quote=1), sep=' '))
+
     expr = self.expr
     base = self.base
     digits = self.digits
@@ -3919,8 +3917,14 @@ class SubstitutedExpression(object):
 
 
   # generate appropriate command line arguments to reconstruct this instance
-  def command_line_args(self, quote=0):
-    q = ['', '"'][quote]
+  def command_line_args(self, file=None, quote=0):
+
+    if quote == 0:
+      q = ''
+    elif quote == 1:
+      q = '"'
+    else:
+      q = quote
 
     args = [ 'SubstitutedExpression' ]
 
@@ -3963,6 +3967,17 @@ class SubstitutedExpression(object):
 
     # and the expressions
     args.extend(q + x + q for x in self.expr)
+
+    if file is None:
+      # just return the args
+      pass
+    elif isinstance(file, basestr):
+      # treat the string as a filename
+      with open(path, 'w') as f:
+        f.writelines(args)
+    else:
+      # assume a file handle has been passed
+      file.writelines(args)
 
     return args
 
