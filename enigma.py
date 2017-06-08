@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon May 22 16:23:44 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun  8 16:52:22 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -135,7 +135,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-05-22"
+__version__ = "2017-06-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2071,13 +2071,13 @@ def int2roman(x):
   """
   x = int(x)
   if not(0 < x < 5000): raise ValueError("integer out of range: {x}".format(x=x))
-  s = ''
+  s = list()
   for (n, i, m) in _romans:
     (d, r) = divmod(x, i)
     if d < 1: continue
-    s += n * d
+    s.append(n * d)
     x = r
-  return s
+  return join(s)
 
 
 def roman2int(x):
@@ -2568,6 +2568,7 @@ class _PrimeSieveE6(object):
     extend the sieve up to (at least) n
     """
     if not(n > self.max): return
+    #printf("_PrimeSieveE6: expanding to {n}")
 
     # extend the sieve to the right size
     s = self.sieve
@@ -2648,29 +2649,48 @@ class _PrimeSieveE6(object):
   __contains__ = is_prime
 
   # generate prime factors of <n>
-  def prime_factor(self, n):
+  # (try setting mr=100 if checking large numbers)
+  def prime_factor(self, n, mr=0):
     """
     generate (<prime>, <exponent>) pairs in the prime factorisation of
     positive integer <n>.
 
+    if <mr> is set the program will use a Miller-Rabin probabilistic
+    test after <mr> primes have failed to divide the residue.
 
-    Note: This will only consider primes up to the limit of the sieve,
-    this is a complete factorisation for <n> up to the square of the
-    limit of the sieve.
-
+    Note: This will only divide primes up to the limit of the sieve,
+    so this is a complete factorisation for <n> up to the square of the
+    limit of the sieve. When <mr> is set it can cope with numbers that
+    have one large prime factor.
     """
     # maybe should be: n < 1
     #if n < 0: raise ValueError("can only factorise positive integers")
     if n > 1:
-      for p in self.generate():
-        if n < p: return
+      t = 0
+      i = self.generate()
+      while n > 1:
+
+        if n < self.max:
+          if self.is_prime(n):
+            yield (n, 1)
+            return
+
+        elif mr and t == mr and is_prime_mr(n):
+          yield (n, 1)
+          return
+
+        p = next(i)
         e = 0
         while True:
           (d, r) = divmod(n, p)
           if r != 0: break
           e += 1
           n = d
-        if e > 0: yield (p, e)
+        if e > 0:
+          yield (p, e)
+          t = 0
+        else:
+          t += 1
 
   # return a list of the factors of n
   def factor(self, n):
@@ -2740,7 +2760,6 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     function specified in __init__().
     """
     if n is None: n = self.chunk(self.max)
-    #printf("_PrimeSieveE6X: expanding to {n}")
     _PrimeSieveE6.extend(self, n)
 
   # for backwards compatability
@@ -3845,7 +3864,7 @@ class SubstitutedExpression(object):
     verbose - if set to >0 solutions are output as they are found, >1 additional information is output.
     """
 
-    if verbose > 3: print(">>> " + join(self.command_line_args(quote=1), sep=' '))
+    #if verbose > 3: print(">>> " + join(self.command_line_args(quote=1), sep=' '))
 
     expr = self.expr
     base = self.base
