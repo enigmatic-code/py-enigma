@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun  8 16:52:22 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul 15 11:41:51 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -93,7 +93,7 @@ number                 - create an integer from a string ignoring non-digits
 P                      - permutations function (nPk)
 partitions             - partition a sequence of distinct values into tuples
 pi                     - float approximation to pi
-poly_*                 - routines manilpulating polynomials, wrapped as Polynomial
+poly_*                 - routines manipulating polynomials, wrapped as Polynomial
 powerset               - the powerset of an iterator
 prime_factor           - generate terms in the prime factorisation of a number
 printf                 - print with interpolated variables
@@ -135,7 +135,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-06-07"
+__version__ = "2017-06-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -316,7 +316,7 @@ def nconcat(*digits, **kw):
   <digits> of digits
 
   the digits can be specified as individual arguments, or as a single
-  argument constisting of a sequence of digits.
+  argument consisting of a sequence of digits.
 
   >>> nconcat(1, 2, 3, 4, 5)
   12345
@@ -503,7 +503,8 @@ def filter_unique(s, f=identity, g=identity):
   unique value for g(x), and those objects where f(x) implies multiple
   values for g(x).
   
-  returns the partition of the original sequence as (<unique values>, <non-unique values>)
+  returns the partition of the original sequence as
+  (<unique values>, <non-unique values>)
 
   See: Enigma 265 <https://enigmaticcode.wordpress.com/2015/03/14/enigma-265-the-parable-of-the-wise-fool/#comment-4167>
 
@@ -728,11 +729,14 @@ def uniq(i, fn=None):
 
 def uniq1(i, fn=None):
   """
-  generate unique values from iterator <i> (maintaining order),
-  where values are compared using <fn>.
+  generate unique consecutive values from iterator <i> (maintaining
+  order), where values are compared using <fn>.
 
   this function assumes that common elements are generated in <i>
   together, so it only needs to track the last value.
+
+  essentially it collapses repeated consecutive values to a single
+  value.
 
   >>> list(uniq1((1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5)))
   [1, 2, 3, 4, 5]
@@ -913,40 +917,96 @@ def is_prime(n):
 prime = is_prime
 
 
-# Miller-Rabin primality test - contributed by Brian Gladman
-def is_prime_mr(n, r=10):
+# Miller-Rabin primality test
+# modified from a contribution by Brian Gladman
+
+import random
+
+def _is_composite(a, d, n, s):
+  if a == 0: return 0
+  x = pow(a, d, n)
+  if x == 1:
+    return 0
+  for i in range(s):
+    if x == n - 1:
+      return 0
+    x = (x * x) % n
+  # definitely composite
+  return 1
+
+def is_prime_mr(n, r=0):
   """
   Miller-Rabin primality test for <n>.
-  <r> is the number of rounds 
+  <r> is the number of random extra rounds performed for large numbers
 
-  if False is returned the number is definitely composite.
-  if True is returned the number is probably prime.
+  return value:
+    0 = the number is definitely not prime (definitely composite for n > 1)
+    1 = the number is probably prime
+    2 = the number is definitely prime
 
-  >>> is_prime_mr(341550071728361)
-  True
-  >>> is_prime_mr(341550071728321)
-  False
+  for numbers less than 2^64, the prime test is completely accurate,
+  and deterministic, the extra rounds are not performed.
+
+  for larger numbers <r> additional rounds are performed, and if the
+  number cannot be found to be composite a value of 1 (probably prime)
+  is returned. confidence can be increased by using more additional
+  rounds.
+
+  >>> is_prime_mr(288230376151711813)
+  2
+  >>> is_prime_mr(316912650057057350374175801351)
+  1
+  >>> is_prime_mr(332306998946228968225951765070086168)
+  0
   """
-  if n < 10: return n in (2, 3, 5, 7)
-  import random
-  t = n - 1
-  s = 0
-  while not(t & 1):
-    t >>= 1
-    s += 1
-  for i in range(r):
-    a = random.randrange(2, n - 1)
-    x = pow(a, t, n)
-    if x != 1 and x != n - 1:
-      for j in range(s - 1):
-        x = (x * x) % n
-        if x == 1:
-          return False
-        if x == n - 1:
-          break
-      else:
-        return False
-  return True
+  # 0, 1 = not prime
+  if n < 2:
+    return 0
+  # 2, 3 = definitely prime
+  if n < 4:
+    return 2
+
+  # all other primes have a residue mod 6 of 1 or 5
+  r = n % 6
+  if r != 1 and r != 5:
+    return 0
+
+  # compute 2^s.d = n - 1
+  d = n - 1
+  s = (d & -d).bit_length() - 1
+  d >>= s
+
+  # bases from: https://miller-rabin.appspot.com/
+  # we use 3 sets of bases:
+  # 1 base = [9345883071009581737] is completely accurate for n < 341531 (about 2^18)
+  # 2 bases = [336781006125, 9639812373923155] (2 bases) is completely accurate for n < 1050535501 (about 2^30)
+  # 7 bases = [2, 325, 9375, 28178, 450775, 9780504, 1795265022] is completely accurate for n < 2^64
+
+  # 1 base is completely accurate for n < 341531
+  if n < 341531:
+    return (0 if _is_composite(9345883071009581737 % n, d, n, s) else 2)
+
+  # 2 bases are completely accurate for n < 1050535501
+  if n < 1050535501:
+    return (0 if _is_composite(336781006125 % n, d, n, s) or _is_composite(9639812373923155 % n, d, n, s) else 2)
+
+  # test remaining numbers with the 7 base set
+  if any(_is_composite(a % n, d, n, s) for a in (2, 325, 9375, 28178, 450775, 9780504, 1795265022)):
+    # definitely composite
+    return 0
+
+  # the 7 base set is completely accurate for n < 2^64:
+  if n < 0x10000000000000000:
+    # definitely prime
+    return 2
+
+  # for larger numbers run further prime tests as specified
+  if r > 0 and any(_is_composite(random.randrange(2, n - 1), d, n, s) for _ in range(r)):
+    # definitely composite
+    return 0
+
+  # otherwise, probably prime
+  return 1
 
 
 def tau(n):
@@ -1620,7 +1680,7 @@ def printf(fmt='', **kw):
   """
   print format string <fmt> with interpolated variables and keyword arguments.
 
-  the final newline can be supressed by ending the string with '\'.
+  the final newline can be suppressed by ending the string with '\'.
 
   >>> (a, b, c) = (1, 2, 3)
   >>> printf("a={a} b={b} c={c}")
@@ -1729,7 +1789,7 @@ def update(s, ps=()):
     # use update() method if available
     s.update(ps)
   except AttributeError:
-    # overwise update the pairs individually
+    # otherwise update the pairs individually
     for (k, v) in ps:
       s[k] = v
   # return the new object
@@ -2762,7 +2822,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     if n is None: n = self.chunk(self.max)
     _PrimeSieveE6.extend(self, n)
 
-  # for backwards compatability
+  # for backwards compatibility
   expand = extend
 
   # generate all primes, a chunk at a time
@@ -2785,8 +2845,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
   # expand the sieve as necessary
   def is_prime(self, n):
     """
-    primaility test - the sieve is expanded as necessary before
-    testing.
+    primality test - the sieve is expanded as necessary before testing.
     """
     self.extend(n)
     return _PrimeSieveE6.is_prime(self, n)
@@ -2812,7 +2871,7 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk):
 
   n - initial limit of the sieve (the sieve contains primes up to n)
   expandable - should the sieve expand as necessary
-  array - list implelementation to use
+  array - list implementation to use
   fn - function used to increase the limit on expanding sieves
 
   If we are interested in a limited collection of primes, we can do
@@ -2847,7 +2906,7 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk):
   >>> primes.list()
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
 
-  But if we use it as a generator it will expand indefiniately, so we
+  But if we use it as a generator it will expand indefinitely, so we
   can only sum a restricted range:
   >>> sum(primes.range(0, 100))
   1060
@@ -2868,7 +2927,7 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk):
   else:
     return _PrimeSieveE6(n, array=array)
 
-# backwards compatability
+# backwards compatibility
 def PrimesGenerator(n=None, array=_primes_array, fn=_primes_chunk):
   return Primes(n, expandable=1, array=array, fn=fn)
 
@@ -3164,22 +3223,20 @@ class SubstitutedSum(object):
 
     self.text = text
 
-  def solve(self, fn=None, verbose=0):
+  def solve(self, check=None, verbose=0):
     """
     generate solutions to the substituted addition sum puzzle.
 
     solutions are returned as a dictionary assigning letters to digits. 
     """
-    if fn is None: fn = lambda x: True
-
     if verbose > 0:
       printf("{self.text}")
 
     for s in substituted_sum(self.terms, self.result, base=self.base, digits=self.digits, l2d=self.l2d, d2i=self.d2i):
-      if fn(s):
-        if verbose > 0:
-          self.output_solution(s)
-        yield s
+      if check and not(check(s)): continue
+      if verbose > 0:
+        self.output_solution(s)
+      yield s
 
   def substitute(self, s, text, digits=_DIGITS):
     """
@@ -3202,11 +3259,11 @@ class SubstitutedSum(object):
 
   solution = output_solution
 
-  def go(self, fn=None, first=0):
+  def go(self, check=None, first=0):
     """
     find all solutions (matching the filter <fn>) and output them.
     """
-    for s in self.solve(fn=fn, verbose=1):
+    for s in self.solve(check=check, verbose=1):
       if first: break
 
   # class method to chain multiple sums together
@@ -3403,6 +3460,14 @@ def _replace_words(s, fn):
   _fn = lambda m: fn(m.group(1))    
   return re.sub('{(\w+?)}', _fn, s)
 
+# return an expression that evaluates word <w> in base <base>
+def _word(w, base):
+  (m, d) = (1, dict())
+  for x in w[::-1]:
+    d[x] = d.get(x, 0) + m
+    m *= base
+  return join((concat(('_', k) + (() if v == 1 else ('*', v))) for (k, v) in d.items()), sep=' + ')
+
 
 _gensym = [ 0 ]
 
@@ -3410,387 +3475,16 @@ def gensym(x):
   _gensym[0] += 1
   return concat(x, _gensym[0])
 
-def substituted_expression(exprs, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1, process=1, reorder=1, env=None, verbose=0):
-  """
-  A solver for substituted expressions.
 
-  exprs - the expression(s) to solve.
-
-  an expression is either an (<expr>, <value>) pair or a string of the
-  form "<expr>" or "<expr> = <value>" (spaces _not_ optional).
-
-  <expr> is a string containing a Python expression that will have symbols
-  substituted with digits before evaluation.
-
-  <value> is one of:
-    None - look for cases where <expr> evaluates to True
-    <int> - look for cases where <expr> evaluates to that integer
-    <word> - look for cases where <expr> evalutes to the same value as <word>
-    when digits are substituted for the symbols in <word>
-
-  <exprs> can be a single expression, or a sequence of expressions.
-
-  The following parameters are optional:
-
-  base - the number base to operate in (default: 10)
-
-  symbols - the symbols to substitute in the expressions (default: upper case letters)
-
-  digits - the digits to be substituted in (default: determined from the base)
-
-  l2d - initial map of symbols to digits (default: all symbols unassigned)
-
-  d2i - map of digits to invalid symbol assignments (default: leading digits cannot be 0)
-
-  If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
-
-  answer - an expression that will be substituted and evaluated and returned along
-  with the symbol mappings (default: None)
-
-  distinct - specify which symbols should have distinct values.
-  can be a sequence of sets of symbols which are distinct amongst each set
-  shortcuts: 1 = all symbols, 0 = no symbols (default: 1)
-
-  process - if a True value, exprs will be processed from a simple string
-  (or sequence of strings) to acceptable input values.
-
-  reorder - if a True value, exprs may be evaluated in a different order.
-
-  verbose - set to 1 for solution output, 2+ for more information.
-
-  Solutions are returned as a dict() of <symbol> to <digit> mappings.
-
-  If the "answer" parameter is set then the its value will also be returned as the
-  pair (<dict>, <answer>).
-
-  >>> all(substituted_expression("TOM * 13 = DALEY", verbose=1))
-  (TOM * 13 = DALEY)
-  (796 * 13 = 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
-  True
-
-  >>> all(substituted_expression(["is_prime(TWO)", "is_square(FOUR)", "is_cube(EIGHT)"], answer="EIGHT", verbose=1))
-  (is_prime(TWO)) (is_square(FOUR)) (is_cube(EIGHT)) (EIGHT)
-  (is_prime(503)) (is_square(1369)) (is_cube(42875)) (42875) / E=4 F=1 G=8 H=7 I=2 O=3 R=9 T=5 U=6 W=0
-  (is_prime(509)) (is_square(1936)) (is_cube(42875)) (42875) / E=4 F=1 G=8 H=7 I=2 O=9 R=6 T=5 U=3 W=0
-  True
-  """
-  
-  # the symbols to replace
-  if symbols is None:
-    symbols = _SYMBOLS
-
-  # process expr to be a list of (<expr>, <value>) pairs, where:
-  # <value> is:
-  # None = look for a true value
-  # word = look for a value equal to the substituted word
-  # integer = look for the specific value
-  if process:
-
-    # allow expr to be a single string
-    if isinstance(exprs, basestring):
-      exprs = [exprs]
-
-    # now process the list
-    xs = list()
-    for expr in exprs:
-      if isinstance(expr, basestring):
-        # expression is a single string, turn it into an (<expr>, <value>) pair
-        (v, s) = ('', re.split(r'\s+=\s+', expr))
-        if len(s) == 2: (expr, v) = s
-        if not v: v = None
-      else:
-        # assume expr is already an (<expr>, <value>) pair
-        (expr, v) = expr
-
-      # convert old style (without braces) into new style (with braces)
-      if symbols:
-        if '{' not in expr:
-          expr = re.sub('[' + symbols + ']+', (lambda m: '{' + m.group(0) + '}'), expr)
-        if isinstance(v, basestring) and '{' not in v and all(x in symbols for x in v):
-          v = '{' + v + '}'
-
-      # value is either an alphabetic or a numeric literal
-      if isinstance(v, basestring) and '{' not in v:
-        v = base2int(v, base=base)
-
-      xs.append((expr, v))
-
-    exprs = xs
-
-    # fix up old style answers
-    if answer and '{' not in answer:
-      answer = re.sub('[' + symbols + ']+', (lambda m: '{' + m.group(0) + '}'), answer)
-
-  # make the output template (which is kept in input order)
-  # and also categorise the expressions to (<expr>, <value>, <cat>), where <cat> is:
-  # 0 = answer (<value> = None)
-  # 1 = expression with no value, we look for a true (<value> = None)
-  # 2 = extression with an integer value, we do a direct comparison (<value> = int)
-  # 3 = expression with string value, we look to assign/check symbols (<value> = str)
-  ts = list()
-  xs = list()
-  for (x, v) in exprs:
-    if v is None:
-      ts.append(x)
-      xs.append((x, v, 1))
-    elif isinstance(v, basestring):
-      ts.append(x + ' = ' + v)
-      xs.append((x, v[1:-1], 3))
-    else:
-      ts.append(x + ' = ' + int2base(v, base=base))
-      xs.append((x, v, 2))
-  if answer:
-    ts.append(answer)
-    xs.append((answer, None, 0))
-  template = join(('(' + t + ')' for t in ts), sep=' ')
-  exprs = xs
-
-  # initial mapping of symbols to digits
-  if l2d is None:
-    l2d = dict()
-
-  # allowable digits (and invalid digits)
-  if digits is None:
-    digits = irange(0, base - 1)
-  digits = set(digits)
-  # TODO: I suspect this needs to work with more values of "distinct"
-  if distinct == 1:
-    digits = digits.difference(l2d.values())
-  idigits = set(irange(0, base - 1)).difference(digits)
-
-  # find words in all exprs
-  words = _find_words(template)
-  # and determine the symbols that are used
-  symbols = join(sorted(set().union(*words)))
-
-  # invalid (<symbol>, <digit>) assignments
-  invalid = set()
-  if d2i is not None:
-    for (d, ss) in d2i.items():
-      invalid.update((s, d) for s in ss)
-  else:
-    # disallow leading zeros
-    if 0 in digits:
-      for w in words:
-        if len(w) > 1:
-          invalid.add((w[0], 0))
-
-  # but for the rest of the time we are only interested
-  # in words in the <exprs> (not the <values>)
-  words = set()
-  for (x, _, _) in exprs:
-    words.update(w for w in _find_words(x) if len(w) > 1)
-
-  # find the symbols in the (<expr>, <value>) pairs
-  # xs = symbols in <expr>
-  # vs = symbols in <value>
-  (xs, vs)  = (list(), list())
-  for (x, v, k) in exprs:
-    xs.append(_find_words(x, r=0))
-    vs.append(_find_words(v, r=0) if k == 3 else set())
-
-  # determine the symbols in each expression
-  syms = list(x.union(v) for (x, v) in zip(xs, vs))
-
-  # reorder the expressions into a more appropriate evaluation order
-  if reorder:
-    # at each stage chose the expression with the fewest unassigned symbols
-    # TODO: consider making a map of symbol -> possibilities then choosing the expression
-    # with the fewest possibilities (multiplied up from all symbols in the expression)
-    d = set(l2d.keys())
-    (s, r) = (list(), list(i for (i, _) in enumerate(syms)))
-    fn = lambda i: (exprs[i][2] == 0, len(xs[i].difference(d)), -len(vs[i].difference(d, xs[i])))
-    while r:
-      i = min(r, key=fn)
-      s.append(i)
-      d.update(xs[i], vs[i])
-      r.remove(i)
-    # update the lists
-    exprs = list(exprs[i] for i in s)
-    xs = list(xs[i] for i in s)
-    vs = list(vs[i] for i in s)
-    ts = list(ts[i] for i in s)
-
-  if verbose > 1:
-    # output information
-    printf("[base={base}, digits={digits}, symbols={symbols!r}, distinct={distinct!r}]")
-    printf("[l2d={l2d}, d2i={d2i}]")
-    # output the solving strategy
-    ss = list()
-    d = set(l2d.keys())
-    for (i, x) in enumerate(xs):
-      ss.append(sprintf("({e}) [{n}+{m}]", e=ts[i], n=len(x.difference(d)), m=len(vs[i].difference(d, x))))
-      d.update(x, vs[i])
-    printf("[strategy: {ss}]", ss=join(ss, sep=' -> '))
-
-  # sort out distinct=0,1
-  if type(distinct) is int:
-    distinct = (symbols if distinct else '')
-  # distinct should be a sequence (probably of strings)
-  if isinstance(distinct, basestring):
-    distinct = [distinct]
-  # turn distinct into a dict mapping <symbol> -> <excluded symbols>
-  if type(distinct) is not dict:
-    d = dict()
-    for ss in distinct:
-      for s in ss:
-        d[s] = set(x for x in ss if x != s)
-    distinct = d
-
-  # return an expression that evaluates word <w> in base <base>
-  def _word(w, base):
-    (m, d) = (1, dict())
-    for x in w[::-1]:
-      d[x] = d.get(x, 0) + m
-      m *= base
-    return join((concat(('_', k) + (() if v == 1 else ('*', v))) for (k, v) in d.items()), sep=' + ')
-
-  # generate the program
-  (prog, _, indent) = ('', '', '  ')
-
-  # wrap it all up as function solve()
-  solver = gensym('_substituted_expression_solver')
-  prog += sprintf("{_}def {solver}():\n")
-  _ += indent
-
-  # set initial values
-  done = set()
-  for (s, d) in l2d.items():
-    prog += sprintf("{_}_{s} = {d}\n")
-    done.add(s)
-
-  # look for words which can be made
-  for w in words:
-    if all(x in done for x in w):
-      prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
-
-  in_loop = False
-
-  # deal with each <expr>,<value> pair
-  for ((expr, val, k), xsyms, vsyms) in zip(exprs, xs, vs):
-
-    # deal with each symbol in <expr>
-    # TODO: we could consider these in an order that makes words
-    # in <words> as soon as possible
-    for s in xsyms:
-      if s in done: continue
-      # allowable digits for s
-      ds = list(digits.difference(d for (x, d) in invalid if x == s))
-      in_loop = True
-      prog += sprintf("{_}for _{s} in {ds}:\n")
-      _ += indent
-      if done and s in distinct:
-        check = join((('_' + s + ' != ' + '_' + x) for x in done if x in distinct[s]), sep=' and ')
-        if check:
-          prog += sprintf("{_}if {check}:\n")
-          _ += indent
-      done.add(s)
-      # look for words which can now be made
-      for w in words:
-        if s in w and all(x in done for x in w):
-          prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
-
-    # calculate the expression
-    if k != 0: # (but not for the answer expression)
-      x = _replace_words(expr, (lambda w: '(' + '_' + w + ')'))
-      prog += sprintf("{_}try:\n")
-      prog += sprintf("{_}  x = int({x})\n")
-      prog += sprintf("{_}except NameError:\n") # catch undefined functions
-      prog += sprintf("{_}  raise\n")
-      prog += sprintf("{_}except:\n") # maybe "except (ArithmeticError, ValueError)"
-      prog += sprintf("{_}  {skip}\n", skip=('continue' if in_loop else 'pass'))
-
-    # check the value
-    if k == 3:
-      # this is a literal word
-      for (j, y) in enumerate(val[::-1], start=-len(val)):
-        if y in done:
-          # this is a symbol with an assigned value
-          prog += sprintf("{_}y = x % {base}\n")
-          # check the value
-          prog += sprintf("{_}if y == _{y}:\n")
-          _ += indent
-          prog += sprintf("{_}x //= {base}\n")          
-          # and check x == 0 for the final value
-          if j == -1:
-            prog += sprintf("{_}if x == 0:\n")
-            _ += indent
-        else:
-          # this is a new symbol...
-          prog += sprintf("{_}_{y} = x % {base}\n")
-          check = list()
-          # check it is different from existing symbols
-          if y in distinct:
-            check.extend((('_' + y + ' != ' + '_' + x) for x in done if x in distinct[y]))
-          # check any invalid values for this symbol
-          for v in idigits.union(v for (s, v) in invalid if y == s):
-            check.append('_' + y + ' != ' + str(v))
-          if check:
-            check = join(check, sep=' and ')
-            prog += sprintf("{_}if {check}:\n")
-            _ += indent
-          prog += sprintf("{_}x //= {base}\n")          
-          # and check x == 0 for the final value
-          if j == -1:
-            prog += sprintf("{_}if x == 0:\n")
-            _ += indent
-          done.add(y)
-          # look for words which can now be made
-          for w in words:
-            if y in w and all(x in done for x in w):
-              prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
-
-    elif k == 1:
-      # look for a True value
-      prog += sprintf("{_}if x:\n")
-      _ += indent
-
-    elif k == 2:
-      # it's a comparable value
-      prog += sprintf("{_}if x == {val}:\n")
-      _ += indent
-
-  # yield solutions as dictionaries
-  d = join((("'" + s + "': _" + s) for s in sorted(done)), sep=', ')
-  if answer:
-    # compute the answer
-    r = _replace_words(answer, (lambda w: '(' + '_' + w + ')'))
-    prog += sprintf("{_}r = {r}\n")
-    prog += sprintf("{_}yield ({{ {d} }}, r)\n")
-  else:
-    prog += sprintf("{_}yield {{ {d} }}\n")
-
-  if verbose > 2:
-    printf("-- [code language=\"python\"] --\n{prog}\n-- [/code] --")
-
-  # compile the solver
-  # a bit of jiggery pokery to make this work in several Python versions
-  # older Python barfs on:
-  #   ns = dict()
-  #   eval(prog, None, ns)
-  #   solve = ns[solver]
-  if not env: env = dict()
-  gs = update(globals(), env)
-  code = compile(prog, '<string>', 'exec')
-  eval(code, gs)
-  solve = gs[solver]
-
-  # and run it
-  if verbose > 0:
-    printf("{t}", t=_replace_words(template, identity))
-  for r in solve():
-    if verbose > 0:
-      d = (r[0] if answer else r)
-      # output:
-      # {t} = the original expressions with digits (in base <base>) substituted for symbols
-      # {s} = the mapping of symbols to digits (in base 10)
-      printf("{t} / {s}",
-        t=_replace_words(template, (lambda w: substitute(d, w))),
-        s=join(((k + '=' + int2base(d[k], base=10)) for k in sorted(d.keys())), sep=' '),
-      )
-    yield r
-
-alphametic = substituted_expression
+# file.writelines does NOT include newline characters
+def writelines(fh, lines, sep=None, flush=1):
+  if sep is None:
+    import os
+    sep = os.linesep
+  for line in lines:
+    fh.write(line)
+    fh.write(sep)
+  if flush: fh.flush()
 
 
 class SubstitutedExpression(object):
@@ -3799,7 +3493,7 @@ class SubstitutedExpression(object):
 
   It takes a Python expression and then tries all possible ways of assigning
   symbols (by default the capital letters) in it to digits and returns those
-  assigments which result in the expression having a True value.
+  assignments which result in the expression having a True value.
 
   While this is slower than the specialised solvers, like SubstitutedSum(),
   it does allow for more general expressions to be evaluated.
@@ -3815,17 +3509,17 @@ class SubstitutedExpression(object):
   See SubstitutedExpression.command_line() for more examples.
   """
 
-  def __init__(self, expr, base=10, symbols=None, digits=None, l2d=None, d2i=None, answer=None, distinct=1, env=None, reorder=1, first=0, verbose=1):
+  def __init__(self, exprs, base=10, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None, template=None, solution=None, header=None, distinct=1, env=None, process=1, reorder=1, first=0, verbose=1):
     """
     create a substituted expression puzzle.
 
-    expr - the expression(s)
+    exprs - the expression(s)
 
-    expr can be a single expression, or a sequence of expressions.
+    exprs can be a single expression, or a sequence of expressions.
 
     A single expression is of the form:
 
-      "<expr>" or "<expr> = <value>"
+      "<expr>" or "<expr> = <value>" or (<expr>, <value>)
 
     where value is a valid "word" (sequence of symbols), or an integer value.
 
@@ -3833,58 +3527,451 @@ class SubstitutedExpression(object):
     base - the number base to operate in (default: 10)
     symbols - the symbols to substituted in the expression (default: upper case letters)
     digits - the digits to be substituted in (default: determined from base)
-    l2d - initial map of symbols to digits (default: all symbols unassigned)
-    d2i - map of digits to invalid symbol assigmnents (default: leading digits cannot be 0)
+    s2d - initial map of symbols to digits (default: all symbols unassigned)
+    d2i - map of digits to invalid symbol assignments (default: leading digits cannot be 0)
+    answer - an expression for the answer value
     distinct - symbols which should have distinct values (1 = all, 0 = none) (default: 1)
     env - additional environment for evaluation (default: None)
 
     If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
     """
-    self.expr = expr
+
+    self.exprs = exprs
     self.base = base
     self.symbols = symbols
     self.digits = digits
-    self.l2d = l2d
+    self.s2d = (s2d or l2d) # s2d is preferred
     self.d2i = d2i
     self.answer = answer
+    self.template = template
+    self.solution = solution
+    self.header = header
     self.distinct = distinct
     self.env = env
-    # solve() / go() defaults
+
+    self.process = process
     self.reorder = reorder
     self.first = first
     self.verbose = verbose
 
-  def solve(self, reorder=None, first=None, verbose=None):
+    # set by process
+    self._processed = 0
+
+    # set by prepare()
+    self._prepared = 0
+
+    if process: self._process()
+
+
+  # sort out calling methods
+  def _process(self):
+
+    exprs = self.exprs
+    base = self.base
+    symbols = self.symbols
+    digits = self.digits
+    s2d = self.s2d
+    d2i = self.d2i
+    answer = self.answer
+    template = self.template
+    distinct = self.distinct
+    process = self.process
+    verbose = self.verbose
+
+    # sort out verbose argument
+    #   4 = output solutions
+    #   8 = output header template
+    #  16 = output solution count
+    #  32 = output timing
+    #  64 = output parameters
+    # 128 = output solver info
+    # 256 = output code
+    # ---
+    # 508 = all of the above
+    if verbose and verbose < 4:
+      # old style verbose flags (1, 2, 3)
+      v1 = (4 | 8 | 16) # header + solutions + count
+      v2 = (v1 | 128) # + solver info
+      v3 = (v2 | 32 | 256) # + timing + code
+      verbose = (0, v1, v2, v3)[verbose]
+
+    # the symbols to replace (for implicit expressions)
+    if symbols is None: symbols = _SYMBOLS
+
+    # process expr to be a list of (<expr>, <value>) pairs, where:
+    # <value> is:
+    # None = look for a true value
+    # word = look for a value equal to the substituted word
+    # integer = look for the specific value
+    if process:
+
+      # allow expr to be a single string
+      if isinstance(exprs, basestring): exprs = [exprs]
+
+      # function fix up implicit parameters
+      def fix(s):
+        if s is None: return None
+        if '{' in s: return s
+        return re.sub('[' + symbols + ']+', (lambda m: '{' + m.group(0) + '}'), s)
+
+      # now process the list
+      xs = list()
+      for expr in exprs:
+        if isinstance(expr, basestring):
+          # expression is a single string, turn it into an (<expr>, <value>) pair
+          (v, s) = ('', re.split(r'\s+=\s+', expr))
+          if len(s) == 2: (expr, v) = s
+          if not v: v = None
+        else:
+          # assume expr is already an (<expr>, <value>) pair
+          (expr, v) = expr
+
+        # convert implicit (without braces) into explicit (with braces)
+        if symbols:
+          expr = fix(expr)
+          if isinstance(v, basestring) and '{' not in v and all(x in symbols for x in v): v = '{' + v + '}'
+
+        # value is either an alphabetic or a numeric literal
+        if isinstance(v, basestring) and '{' not in v:
+          v = base2int(v, base=base)
+
+        xs.append((expr, v))
+
+      exprs = xs
+
+      # fix up implicit (old style) parameters
+      answer = fix(answer)
+      template = fix(template)
+
+    # make the output template (which is kept in input order)
+    # and also categorise the expressions to (<expr>, <value>, <cat>), where <cat> is:
+    # 0 = answer (<value> = None)
+    # 1 = expression with no value, we look for a true (<value> = None)
+    # 2 = expression with an integer value, we do a direct comparison (<value> = int)
+    # 3 = expression with string value, we look to assign/check symbols (<value> = str)
+    ts = list()
+    xs = list()
+    for (x, v) in exprs:
+      if v is None:
+        ts.append(x)
+        xs.append((x, v, 1))
+      elif isinstance(v, basestring):
+        ts.append(x + ' = ' + v)
+        xs.append((x, v[1:-1], 3))
+      else:
+        ts.append(x + ' = ' + int2base(v, base=base))
+        xs.append((x, v, 2))
+    if answer:
+      ts.append(answer)
+      xs.append((answer, None, 0))
+    _template = join(('(' + t + ')' for t in ts), sep=' ')
+    exprs = xs
+
+    # initial mapping of symbols to digits
+    if s2d is None: s2d = dict()
+
+    # allowable digits (and invalid digits)
+    if digits is None: digits = range(base)
+    digits = set(digits)
+    # TODO: I suspect this needs to work with more values of "distinct"
+    if distinct == 1: digits = digits.difference(s2d.values())
+    idigits = set(range(base)).difference(digits)
+
+    # find words in all exprs
+    words = _find_words(_template)
+    # and determine the symbols that are used
+    symbols = join(sorted(set().union(*words)))
+
+    # invalid (<symbol>, <digit>) assignments
+    invalid = set()
+    if d2i is not None:
+      for (d, ss) in d2i.items():
+        invalid.update((s, d) for s in ss)
+    else:
+      # disallow leading zeros
+      if 0 in digits:
+        for w in words:
+          if len(w) > 1:
+            invalid.add((w[0], 0))
+
+    # but for the rest of the time we are only interested
+    # in words in the <exprs> (not the <values>)
+    words = set()
+    for (x, _, _) in exprs:
+      words.update(w for w in _find_words(x) if len(w) > 1)
+
+    # find the symbols in the (<expr>, <value>) pairs
+    # xs = symbols in <expr>
+    # vs = symbols in <value>
+    (xs, vs)  = (list(), list())
+    for (x, v, k) in exprs:
+      xs.append(_find_words(x, r=0))
+      vs.append(set(v) if k == 3 else set())
+
+    # determine the symbols in each expression
+    syms = list(x.union(v) for (x, v) in zip(xs, vs))
+
+    # sort out distinct=0,1
+    if type(distinct) is int: distinct = (symbols if distinct else '')
+    # distinct should be a sequence (probably of strings)
+    if isinstance(distinct, basestring): distinct = [distinct]
+
+    # add the value of the symbols into the template
+    self.template = (template or _template)
+    if self.solution is None: self.solution = symbols
+    if self.header is None: self.header = _replace_words(self.template, identity)
+
+    # update the processed values
+    self.exprs = exprs
+    self.symbols = symbols
+    self.digits = digits
+    self.s2d = s2d
+    self.answer = answer
+    self.distinct = distinct
+    self.verbose = verbose
+    self._words = words
+    self._invalid = invalid
+    self._idigits = idigits
+    self._exprs = (exprs, xs, vs, ts, syms)
+
+
+  # create and compile the code
+  def _prepare(self):
+
+    base = self.base
+    symbols = self.symbols
+    digits = self.digits
+    s2d = self.s2d
+    d2i = self.d2i
+    answer = self.answer
+    distinct = self.distinct
+    env = self.env
+    reorder = self.reorder
+    verbose = self.verbose
+
+    words = self._words
+    invalid = self._invalid
+    idigits = self._idigits
+    (exprs, xs, vs, ts, syms) = self._exprs
+
+    if self.verbose & 64:
+      print("--[code]--\n" + join(self.save(quote=1), sep="\n") + "\n--[/code]--\n")
+
+    # reorder the expressions into a more appropriate evaluation order
+    if reorder:
+      # at each stage chose the expression with the fewest unassigned symbols
+      # TODO: consider making a map of symbol -> possibilities then choosing the expression
+      # with the fewest possibilities (multiplied up from all symbols in the expression)
+      d = set(s2d.keys())
+      (s, r) = (list(), list(i for (i, _) in enumerate(syms)))
+      fn = lambda i: (exprs[i][2] == 0, len(xs[i].difference(d)), -len(vs[i].difference(d, xs[i])))
+      while r:
+        i = min(r, key=fn)
+        s.append(i)
+        d.update(xs[i], vs[i])
+        r.remove(i)
+      # update the lists
+      exprs = list(exprs[i] for i in s)
+      xs = list(xs[i] for i in s)
+      vs = list(vs[i] for i in s)
+      ts = list(ts[i] for i in s)
+
+    if verbose & 128:
+      # output solver information
+      printf("[base={base}, digits={digits}, symbols={symbols!r}, distinct={distinct!r}]", distinct=join(distinct, sep=','))
+      printf("[s2d={s2d}, d2i={d2i}]")
+      # output the solving strategy
+      (ss, d) = (list(), set(s2d.keys()))
+      for (i, x) in enumerate(xs):
+        ss.append(sprintf("({e}) [{n}+{m}]", e=ts[i], n=len(x.difference(d)), m=len(vs[i].difference(d, x))))
+        d.update(x, vs[i])
+      printf("[strategy: {ss}]", ss=join(ss, sep=' -> '))
+
+    # turn distinct into a dict mapping <symbol> -> <excluded symbols>
+    if type(distinct) is not dict:
+      d = dict()
+      for ss in distinct:
+        for s in ss:
+          d[s] = set(x for x in ss if x != s)
+      distinct = d
+
+    # generate the program
+    (prog, _, indent) = ('', '', '  ')
+
+    # wrap it all up as function solver
+    solver = gensym('_substituted_expression_solver')
+    prog += sprintf("{_}def {solver}():\n")
+    _ += indent
+
+    # set initial values
+    done = set()
+    for (s, d) in s2d.items():
+      prog += sprintf("{_}_{s} = {d}\n")
+      done.add(s)
+
+    # look for words which can be made
+    for w in words:
+      if all(x in done for x in w):
+        prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
+
+    in_loop = False
+
+    # deal with each <expr>,<value> pair
+    for ((expr, val, k), xsyms, vsyms) in zip(exprs, xs, vs):
+
+      # deal with each symbol in <expr>
+      # TODO: we could consider these in an order that makes words
+      # in <words> as soon as possible
+      for s in xsyms:
+        if s in done: continue
+        # allowable digits for s
+        ds = list(digits.difference(d for (x, d) in invalid if x == s))
+        in_loop = True
+        prog += sprintf("{_}for _{s} in {ds}:\n")
+        _ += indent
+        if done and s in distinct:
+          check = join((('_' + s + ' != ' + '_' + x) for x in done if x in distinct[s]), sep=' and ')
+          if check:
+            prog += sprintf("{_}if {check}:\n")
+            _ += indent
+        done.add(s)
+        # look for words which can now be made
+        for w in words:
+          if s in w and all(x in done for x in w):
+            prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
+
+      # calculate the expression
+      if k != 0: # (but not for the answer expression)
+        x = _replace_words(expr, (lambda w: '(' + '_' + w + ')'))
+        prog += sprintf("{_}try:\n")
+        prog += sprintf("{_}  x = int({x})\n")
+        prog += sprintf("{_}except NameError:\n") # catch undefined functions
+        prog += sprintf("{_}  raise\n")
+        prog += sprintf("{_}except:\n") # maybe "except (ArithmeticError, ValueError)"
+        prog += sprintf("{_}  {skip}\n", skip=('continue' if in_loop else 'pass'))
+
+      # check the value
+      if k == 3:
+        # this is a literal word
+        for (j, y) in enumerate(val[::-1], start=-len(val)):
+          if y in done:
+            # this is a symbol with an assigned value
+            prog += sprintf("{_}y = x % {base}\n")
+            # check the value
+            prog += sprintf("{_}if y == _{y}:\n")
+            _ += indent
+            prog += sprintf("{_}x //= {base}\n")          
+            # and check x == 0 for the final value
+            if j == -1:
+              prog += sprintf("{_}if x == 0:\n")
+              _ += indent
+          else:
+            # this is a new symbol...
+            prog += sprintf("{_}_{y} = x % {base}\n")
+            check = list()
+            # check it is different from existing symbols
+            if y in distinct:
+              check.extend((('_' + y + ' != ' + '_' + x) for x in done if x in distinct[y]))
+            # check any invalid values for this symbol
+            for v in idigits.union(v for (s, v) in invalid if y == s):
+              check.append('_' + y + ' != ' + str(v))
+            if check:
+              check = join(check, sep=' and ')
+              prog += sprintf("{_}if {check}:\n")
+              _ += indent
+            prog += sprintf("{_}x //= {base}\n")          
+            # and check x == 0 for the final value
+            if j == -1:
+              prog += sprintf("{_}if x == 0:\n")
+              _ += indent
+            done.add(y)
+            # look for words which can now be made
+            for w in words:
+              if y in w and all(x in done for x in w):
+                prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
+
+      elif k == 1:
+        # look for a True value
+        prog += sprintf("{_}if x:\n")
+        _ += indent
+
+      elif k == 2:
+        # it's a comparable value
+        prog += sprintf("{_}if x == {val}:\n")
+        _ += indent
+
+    # yield solutions as dictionaries
+    d = join((("'" + s + "': _" + s) for s in sorted(done)), sep=', ')
+    if answer:
+      # compute the answer
+      r = _replace_words(answer, (lambda w: '(' + '_' + w + ')'))
+      prog += sprintf("{_}r = {r}\n")
+      prog += sprintf("{_}yield ({{ {d} }}, r)\n")
+    else:
+      prog += sprintf("{_}yield {{ {d} }}\n")
+
+    if verbose & 256:
+      printf("-- [code language=\"python\"] --\n{prog}\n-- [/code] --")
+
+    # compile the solver
+    # a bit of jiggery pokery to make this work in several Python versions
+    # older Python barfs on:
+    #   ns = dict()
+    #   eval(prog, None, ns)
+    #   solve = ns[solver]
+    if not env: env = dict()
+    gs = update(globals(), env)
+    code = compile(prog, '<string>', 'exec')
+    eval(code, gs)
+
+    self._solver = gs[solver]
+    self._prepared = 1
+
+
+  # execute the code
+  def solve(self, check=None, first=None, verbose=None):
     """
     generate solutions to the substituted expression problem.
 
     solutions are returned as a dictionary assigning symbols to digits.
 
-    reorder - if set to True the expressions may be solved in a different order.
+    first - if set to True only the first solution is returned
     verbose - if set to >0 solutions are output as they are found, >1 additional information is output.
     """
 
-    #if verbose > 3: print(">>> " + join(self.command_line_args(quote=1), sep=' '))
+    if not self._prepared: self._prepare()
 
-    expr = self.expr
-    base = self.base
-    digits = self.digits
-    symbols = self.symbols
-    l2d = self.l2d
-    d2i = self.d2i
+    solver = self._solver
     answer = self.answer
-    distinct = self.distinct
-    env = self.env
-    if reorder is None: reorder = self.reorder
+    header = self.header
     if first is None: first = self.first
     if verbose is None: verbose = self.verbose
 
-    for s in substituted_expression(expr, base=base, symbols=symbols, digits=digits, l2d=l2d, d2i=d2i, answer=answer, distinct=distinct, process=1, reorder=reorder, env=env, verbose=verbose):
+    if verbose & 8 and header: print(header)
+
+    for s in solver():
+      if check and not(check(s)): continue
+      if verbose & 4: self.output_solution((s[0] if answer else s))
+      # return the result
       yield s
       if first: break
 
+  # output a solution as: "<template> / <solution>" 
+  # <template> = the given template with digits substituted for symbols
+  # <solution> = the assignment of symbols (given in <solution>) to digits (in base 10)
+  def output_solution(self, d, template=None, solution=None):
+    if template is None: template = self.template
+    if solution is None: solution = self.solution
+    # output the solution using the template
+    ss = list()
+    if template:
+      ss.append(_replace_words(template, (lambda w: substitute(d, w))))
+    if solution:
+      ss.append(join(((k + '=' + int2base(d[k], base=10)) for k in solution), sep=' '))
+    print(join(ss, sep=' / '))
 
-  def go(self, reorder=None, first=None, verbose=None):
+
+  def go(self, check=None, first=None, verbose=None):
     """
     find solutions to the substituted expression problem and output them.
 
@@ -3894,29 +3981,30 @@ class SubstitutedExpression(object):
     was set during init() returns a collections.Counter() object counting
     the number of times each answer occurs.
     """
-    if reorder is None: reorder = self.reorder
-    if first is None: first = self.first
     if verbose is None: verbose = self.verbose
 
     # collect answers (either total number or collected by "answer")
     answer = self.answer
     r = (collections.Counter() if answer else 0)
 
-    if verbose > 2:
-      # measure internal time
+    # measure internal time
+    if verbose & 32:
       t = Timer()
       t.start()
 
-    for s in self.solve(reorder=reorder, first=first, verbose=verbose):
+    # solve the problem, counting the answers
+    for s in self.solve(check=check, first=first, verbose=verbose):
       if answer:
         r[s[1]] += 1
       else:
         r += 1
 
-    if verbose > 2:
+    # stop the timer
+    if verbose & 32:
       t.stop()
 
-    if verbose > 0:
+    # output solutions
+    if verbose & 16:
       if answer:
         answer = _replace_words(answer, identity)
         # report the answer counts
@@ -3927,6 +4015,7 @@ class SubstitutedExpression(object):
 
     return r
 
+
   def substitute(self, s, text, digits=_DIGITS):
     """
     given a solution to the substituted expression sum and some text,
@@ -3936,7 +4025,7 @@ class SubstitutedExpression(object):
 
 
   # generate appropriate command line arguments to reconstruct this instance
-  def command_line_args(self, file=None, quote=0):
+  def to_args(self, quote=0):
 
     if quote == 0:
       q = ''
@@ -3945,27 +4034,13 @@ class SubstitutedExpression(object):
     else:
       q = quote
 
-    args = [ 'SubstitutedExpression' ]
-
-    if self.symbols:
-      args.append(sprintf("--symbols={q}{self.symbols}{q}"))
+    args = []
 
     if self.base:
       args.append(sprintf("--base={self.base}"))
 
-    if self.l2d:
-      for (k, v) in sorted(self.l2d.items(), key=lambda t: t[1]):
-        args.append(sprintf("--assign={q}{k},{v}{q}"))
-    
-    if self.digits:
-      args.append(sprintf("--digits={q}{digits}{q}", digits=join(self.digits, sep=",")))
-
-    if self.d2i:
-      for (k, v) in sorted(self.d2i.items(), key=lambda t: t[0]):
-        args.append(sprintf("--invalid={q}{k},{v}{q}"))
-
-    if self.answer:
-      args.append(sprintf("--answer={q}{self.answer}{q}"))
+    if self.symbols:
+      args.append(sprintf("--symbols={q}{self.symbols}{q}"))
 
     if self.distinct is not None:
       distinct = self.distinct
@@ -3974,6 +4049,32 @@ class SubstitutedExpression(object):
           distinct = join(distinct, sep=",")
         distinct = q + distinct + q
       args.append(sprintf("--distinct={distinct}"))
+    
+    if self.digits:
+      args.append(sprintf("--digits={q}{digits}{q}", digits=join(self.digits, sep=",")))
+
+    if self.s2d:
+      for (k, v) in sorted(self.s2d.items(), key=lambda t: t[1]):
+        args.append(sprintf("--assign={q}{k},{v}{q}"))
+
+    if self.d2i:
+      for (k, v) in sorted(self.d2i.items(), key=lambda t: t[0]):
+        args.append(sprintf("--invalid={q}{k},{v}{q}"))
+
+    if self.answer:
+      args.append(sprintf("--answer={q}{self.answer}{q}"))
+
+    if self.template:
+      args.append(sprintf("--template={q}{self.template}{q}"))
+
+    if self.solution:
+      args.append(sprintf("--solution={q}{self.solution}{q}"))
+
+    if self.header:
+      args.append(sprintf("--header={q}{self.header}{q}"))
+
+    if self.env is not None:
+      raise ValueError("can't generate arg for \"env\" parameter")
 
     if self.reorder is not None:
       args.append(sprintf("--reorder={self.reorder}"))
@@ -3985,20 +4086,167 @@ class SubstitutedExpression(object):
       args.append(sprintf("--verbose={self.verbose}"))
 
     # and the expressions
-    args.extend(q + x + q for x in self.expr)
+    for (x, v, k) in self.exprs:
+      if k == 1:
+        args.append(q + x + q)
+      elif k == 2:
+        args.append(q + x + " = " + str(v) + q)
+      elif k == 3:
+        args.append(q + x + " = {" + v + "}" + q)
+
+    return args
+
+  # generate appropriate command line arguments to reconstruct this instance
+  def save(self, file=None, quote=0):
+
+    args = self.to_args(quote=quote)
+    if not args: raise ValueError
+
+    args.insert(0, "SubstitutedExpression") # self.__class__.__name__
 
     if file is None:
       # just return the args
       pass
-    elif isinstance(file, basestr):
+    elif isinstance(file, basestring):
       # treat the string as a filename
-      with open(path, 'w') as f:
-        f.writelines(args)
+      with open(file, 'wt') as f:
+        writelines(f, args)
     else:
       # assume a file handle has been passed
-      file.writelines(args)
+      writelines(file, args)
 
     return args
+
+  # usage strings
+  @classmethod
+  def _usage(cls):
+
+    return (
+      "usage: SubstitutedExpression [<opts>] <expression> [<expression> ...]",
+      "options:",
+      "  --symbols=<string> (or -s<string>) = symbols to replace with digits",
+      "  --base=<n> (or -b<n>) = set base to <n>",
+      "  --assign=<symbol>,<decimal> (or -a<s>,<d>) = assign decimal value to symbol",
+      "  --digits=<digit>,... or --digits=<digit>-<digit> (or -d...) = available digits",
+      "  --invalid=<digits>,<symbols> (or -i<ds>,<ss>) = invalid digit to symbol assignments",
+      "  --answer=<expr> (or -A<expr>) = count answers according to <expr>",
+      "  --template=<string> (or -T<s>) = solution template",
+      "  --solution=<string> (or -S<s>) = solution symbols",
+      "  --header=<strong> (or -H<s>) = solution header",
+      "  --distinct=<string> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
+      "  --first (or -1) = stop after the first solution",
+      "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
+      "  --verbose[=<n>] (or -v[<n>]) = verbosity (0 = off, 1 = solutions, 2+ = more)",
+      "  --help (or -h) = show command-line usage",
+      "",
+      "verbosity levels:",
+      "    4 = output solutions (1,2,3)",
+      "    8 = output header (1,2,3)",
+      "   16 = output solution count (1,2,3)",
+      "   32 = output timing info (3)",
+      "   64 = output parameters",
+      "  128 = output solver info (2,3)",
+      "  256 = output Python code (3)",
+      "",
+    )
+
+  # process option <k> = <v> into <opt>, returns:
+  #   None = help
+  #   True = option processed
+  #   Exception = error
+  @classmethod
+  def _getopt(cls, k, v, opt):
+
+    if k == 'h' or k == 'help':
+      # --help (or -h)
+      return None
+    elif k == 's' or k == 'symbols':
+      # --symbols=<string> (or -s<string>)
+      opt['symbols'] = v
+    elif k == 'T' or k == 'template':
+      opt['template'] = v
+    elif k == 'S' or k == 'solution':
+      opt['solution'] = v
+    elif k == 'H' or k == 'header':
+      opt['header'] = v
+    elif k == 'b' or k == 'base':
+      # --base=<n> (or -b)
+      opt['base'] = int(v)
+    elif k == 'a' or k == 'assign':
+      # --assign=<letter>,<digit> (or -a<letter>,<digit>)
+      # NOTE: <digit> is specified in decimal (not --base)
+      (l, d) = v.split(',', 1)
+      opt['s2d'][l] = int(d)
+    elif k == 'd' or k == 'digits':
+      # --digits=<digit>,... or <digit>-<digit> (or -d)
+      # NOTE: <digits> are specified in decimal (not --base)
+      if '-' in v:
+        (a, _, b) = v.partition('-')
+        opt['digits'] = irange(int(a), int(b))
+      else:
+        ds = v.split(',')
+        opt['digits'] = tuple(int(d) for d in ds)
+    elif k == 'i' or k == 'invalid':
+      # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
+      # NOTE: <digits> are specified in decimal (not --base)
+      # which means you can't specify digits > 9 (FIX)
+      if opt['d2i'] is None: opt['d2i'] = dict()
+      (d, s) = v.split(',', 1)
+      for i in d:
+        opt['d2i'][int(i)] = s
+    elif k == 'D' or k == 'distinct':
+      if v == '0' or v == '1':
+        v = int(v)
+      else:
+        v = v.split(',')
+      opt['distinct'] = v
+    elif k == 'A' or k == 'answer':
+      opt['answer'] = v
+    elif k == '1' or k == 'first':
+      opt['first'] = (int(v) if v else 1)
+    elif k == 'v' or k == 'verbose':
+      if v:
+        v = sum(int(x) for x in re.split(r'[\+\|]', v))
+      else:
+        v = 1
+      opt['verbose'] = v
+    elif k == 'r' or k == 'reorder':
+      opt['reorder'] = (int(v) if v else 0)
+
+    else:
+      # unrecognised option
+      raise ValueError
+
+    return True
+
+
+  # class method to make an object from arguments
+  @classmethod
+  def from_args(cls, args):
+
+    # process options
+    opt = { '_argv': list(), 's2d': dict(), 'd2i': None, 'verbose': 1, 'first': 0, 'reorder': 1 }
+    for arg in args:
+
+      # deal with option args
+      try:
+        if arg.startswith('--'):
+          (k, _, v) = arg.lstrip('-').partition('=')
+        elif arg.startswith('-'):
+          (k, v) = (arg[1], arg[2:])
+        else:
+          # push non-option args onto _argv
+          opt['_argv'].append(arg)
+          continue
+
+        if not cls._getopt(k, v, opt):
+          return None
+
+      except:
+        raise ValueError(sprintf("[{cls.__name__}] invalid option: {arg}"))
+
+    return opt
+
 
   # class method to call from the command line
   @classmethod
@@ -4040,543 +4288,414 @@ class SubstitutedExpression(object):
     (FOUR, TEN) = (3407, 529) [1 solution]
     """
 
-    usage = join((
-      sprintf("usage: {cls.__name__} [<opts>] <expression> [<expression> ...]"),
-      "options:",
-      "  --symbols=<string> (or -s<string>) = symbols to replace with digits",
-      "  --base=<n> (or -b<n>) = set base to <n>",
-      "  --assign=<symbol>,<decimal> (or -a<s>,<d>) = assign decimal value to symbol",
-      "  --digits=<digit>,... or --digits=<digit>-<digit> (or -d...) = available digits",
-      "  --invalid=<digits>,<symbols> (or -i<ds>,<ss>) = invalid digit to symbol assignments",
-      "  --answer=<expr> (or -A<expr>) = count answers according to <expr>",
-      "  --distinct=<string> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
-      "  --first (or -1) = stop after the first solution",
-      "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
-      "  --verbose[=<n>] (or -v[<n>]) = verbosity (0 = off, 1 = solutions, 2+ = more)",
-      "  --help (or -h) = show command-line usage",
-    ), sep="\n")
+    opt = cls.from_args(args)
 
-    # process options
-    opt = { 'l2d': dict(), 'd2i': None, 'verbose': 1, 'first': 0, 'reorder': 1 }
-    while args and args[0].startswith('-'):
-      arg = args.pop(0)
-      try:
-        if arg.startswith('--'):
-          (k, _, v) = arg.lstrip('-').partition('=')
-        else:
-          (k, v) = (arg[1], arg[2:])
-        if k == 'h' or k == 'help':
-          # --help (or -h)
-          print(usage)
-          return -1
-        elif k == 's' or k == 'symbols':
-          # --symbols=<string> (or -s<string>)
-          opt['symbols'] = v
-        elif k == 'b' or k == 'base':
-          # --base=<n> (or -b)
-          opt['base'] = int(v)
-        elif k == 'a' or k == 'assign':
-          # --assign=<letter>,<digit> (or -a<letter>,<digit>)
-          # NOTE: <digit> is specified in decimal (not --base)
-          (l, d) = v.split(',', 1)
-          opt['l2d'][l] = int(d)
-        elif k == 'd' or k == 'digits':
-          # --digits=<digit>,... or <digit>-<digit> (or -d)
-          # NOTE: <digits> are specified in decimal (not --base)
-          if '-' in v:
-            (a, _, b) = v.partition('-')
-            opt['digits'] = irange(int(a), int(b))
-          else:
-            ds = v.split(',')
-            opt['digits'] = tuple(int(d) for d in ds)
-        elif k == 'i' or k == 'invalid':
-          # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
-          # NOTE: <digits> are specified in decimal (not --base)
-          # which means you can't specify digits > 9 (FIX)
-          if opt['d2i'] is None: opt['d2i'] = dict()
-          (d, s) = v.split(',', 1)
-          for i in d:
-            opt['d2i'][int(i)] = s
-        elif k == 'D' or k == 'distinct':
-          if v == '0' or v == '1':
-            v = int(v)
-          else:
-            v = v.split(',')
-          opt['distinct'] = v
-        elif k == 'A' or k == 'answer':
-          opt['answer'] = v
-        elif k == '1' or k == 'first':
-          opt['first'] = (int(v) if v else 1)
-        elif k == 'v' or k == 'verbose':
-          opt['verbose'] = (int(v) if v else 1)
-        elif k == 'r' or k == 'reorder':
-          opt['reorder'] = (int(v) if v else 0)
-        else:
-          raise ValueError
-      except:
-        printf("{cls.__name__}: invalid option: {arg}")
-        return -1
+    if opt:
+      # create the object
+      argv = opt.pop('_argv')
+      self = cls(argv, **opt)
+      if self is not None:
+        # call the solver
+        self.go()
+        return 0
 
-    # check command line usage
-    if not args:
-      print(usage)
-      return -1
-    
-    # call the solver
-    cls(args, **opt).go()
-    return 0
+    # failure, output usage message
+    print(join(cls._usage(), sep="\n"))
+    return -1
 
-# an alias to save typing
-Alphametic = SubstitutedExpression
+
+def substituted_expression(*args, **kw):
+  if 'verbose' not in kw: kw['verbose'] = 0
+  for r in SubstitutedExpression(*args, **kw).solve():
+    yield r
 
 ###############################################################################
 
 # Substituted Division Solver
 
-# originally written for Enigma 206, but applicable to lots of Enigma puzzles
+# new solver that uses the SubstitutedExpression alphametic solver...
 
-SubstitutedDivisionSolution = collections.namedtuple('SubstitutedDivisionSolution', 'a b c r d')
+# first we need a class that manages a set of "slots"
 
-class SubstitutedDivision(object):
-  """
-  A solver for long division sums with letters substituted for digits.
+# (UN, j) = slot j has been unified with this slot
+# (EQ, d) = slot has value of digit d
+# (NE, d) = slot is not digit d
+# (IS, x) = slot has input symbol x
+(UN, EQ, NE, IS) = ('UN', 'EQ', 'NE', 'IS')
 
-  e.g. Enigma 206
+_SYMBOLS_UL = _SYMBOLS + _SYMBOLS.lower()
 
-            - - -
-      ___________
-  - - ) p k m k h
-        p m d
-        -----
-          x p k
-            - -
-          -----
-            k h h
-            m b g
-            -----
-                k
-                =
+class Slots(object):
 
-  In this example there are the following intermediate (subtraction) sums:
+  def __init__(self, wildcard='?', symbols=_SYMBOLS_UL):
 
-    pkm - pmd = xp, xpk - ?? = kh, khh - mbg = k
-
-  The first term in each of these sums can be inferred from the
-  dividend and result of the previous intermediate sum, so we don't
-  need to specify them.
-
-  When the result contains a 0 digit there is no corresponding
-  intermediate sum, in this case the intermediate sum is specified as None.
-
-  In problems like Enigma 309 where letters are specified in parts of
-  the intermediate sums that are copied down from the dividend, but
-  not specified in the dividend itself you need to copy the letter back
-  into the dividend manually, or fully specify the intermediate with the
-  additional information in it.
-  See <https://enigmaticcode.wordpress.com/2015/09/10/enigma-309-missing-letters/>
-
-  Enigma 206 <https://enigmaticcode.wordpress.com/2014/07/13/enigma-206-division-some-letters-for-digits-some-digits-missing/>
-
-  >>> SubstitutedDivision('pkmkh', '??', '???', [('pmd', 'xp'), ('??', 'kh'), ('mbg', 'k')]).go()
-  47670 / 77 = 619 rem 7 [b=9 d=2 g=3 h=0 k=7 m=6 p=4 x=1] [476 - 462 = 14, 147 - 77 = 70, 700 - 693 = 7]
-
-
-  Enigma 250 <https://enigmaticcode.wordpress.com/2015/01/13/enigma-250-a-couple-of-sevens/>
-  >>> SubstitutedDivision('7?????', '??', '?????', [('??', '??'), ('??', '?'), None, ('??', '??'), ('??7', '')], { '7': 7 }).go()
-  760287 / 33 = 23039 rem 0 [7=7] [76 - 66 = 10, 100 - 99 = 1, 128 - 99 = 29, 297 - 297 = 0]
-
-
-  Enigma 309 <https://enigmaticcode.wordpress.com/2015/09/10/enigma-309-missing-letters/>
-  >>> SubstitutedDivision('h???g?', '??', 'm?gh', [('g??', '??'), ('ky?', '?'), ('m?', 'x'), ('??', '')]).go()
-  202616 / 43 = 4712 rem 0 [g=1 h=2 k=3 m=4 x=8 y=0] [202 - 172 = 30, 306 - 301 = 5, 51 - 43 = 8, 86 - 86 = 0]
-
-
-  Enigma 309 <https://enigmaticcode.wordpress.com/2015/09/10/enigma-309-missing-letters/>
-  >>> SubstitutedDivision('h?????', '??', 'm?gh', [('g??', '??'), ('ky?', '?'), ('?g', 'm?', 'x'), ('??', '')]).go()
-  202616 / 43 = 4712 rem 0 [g=1 h=2 k=3 m=4 x=8 y=0] [202 - 172 = 30, 306 - 301 = 5, 51 - 43 = 8, 86 - 86 = 0]
-  """
-
-  def __init__(self, dividend, divisor, result, intermediates, mapping={}, wildcard='?', digits=None):
-    """
-    create a substituted long division puzzle.
-
-    a / b = c remainder r
-
-    dividend - the dividend (a)
-    divisor - the divisor (b)
-    result - the result (c)
-    intermediates - a list of pairs representing the intermediate subtraction sums
-
-    The following parameters are optional:
-    mapping - initial map of letters to digits (default: all letters are unassigned)
-    wildcard - the wildcard character used in the sum (default: '?')
-    digits - set of digits to use (default: the digits 0 to 9)
-    """
-    self.dividend = dividend
-    self.divisor = divisor
-    self.result = result
-    self.intermediates = intermediates
-    self.mapping = mapping
+    # wildcard character in input strings
     self.wildcard = wildcard
-    self.base = 10
-    self.digits = (set(irange(0, self.base - 1)) if digits is None else digits)
-    # checks: there should be an intermediate for each digit of the result
-    assert len(result) == len(intermediates), "result/intermediate length mismatch"
 
-  # solutions are generated as a named tuple (a, b, c, r, d)
-  # where a / b = c rem r, and d is mapping of symbols to digits
-  def solve(self, fn=None):
-    """
-    generate solutions to the substituted long division sum puzzle.
+    # pool of valid symbols
+    self.symbols = symbols
 
-    solutions are returned as a SubstitutedDivisionSolution() object with the following attributes:
-    a - the dividend
-    b - the divisor
-    c - the result
-    r - the remainder
-    d - the map of letters to digits
-    """
+    # slot ids
+    self._id = 0
 
-    # first let's have some internal functions useful for the solver
+    # slot properties
+    self._s2p = collections.defaultdict(set) # <slot> -> <props>
+    self._p2s = collections.defaultdict(lambda: collections.defaultdict(set)) # <type> -> <value> -> <slots>
+
+  # allocate a new slot (with (k, v) properties)
+  def slot_new(self, *props):
+    self._id += 1
+    i = self._id
+    self.slot_setprops(i, *props)
+    return i
+
+  def slot_setprops(self, i, *props):
+    ps = self._s2p[i] # properties for slot i
+    for (k, v) in props:
+
+      if k == EQ:
+        # incompatible with (NE, v)
+        if (NE, v) in ps: raise ValueError("property mismatch")
+        # incompatible with (EQ, u) where u != v
+        if any(k1 == EQ and v1 != v for (k1, v1) in ps): raise ValueError("property mismatch")
+
+      elif k == NE:
+        # incompatible with (EQ, v)
+        if (EQ, v) in ps: raise ValueError("property mismatch")
+
+      # add the properties
+      ps.add((k, v))
+      self._p2s[k][v].add(i)
+
+  # find (or create) a slot with this property
+  def slot_find(self, k, v, create=1):
+    # return the lowest numbered slot we find
+    try:
+      return min(self._p2s[k][v])
+    except ValueError:
+      pass
+    # otherwise create a slot with this property
+    if create:
+      return self.slot_new((k, v))
+    # otherwise there is no slot
+    return None
+
+  # allocate a slot for the input symbol <s>
+  def _allocate(self, s):
+
     wildcard = self.wildcard
-    base = self.base
-    digits = self.digits
+    symbols = self.symbols
 
-    # update a map consistently with (key, value) pairs
-    # an updated mapping will be returned, or None
-    def _update(d, kvs):
-      cow = True # copy on write flag for d
-      for (k, v) in kvs:
-        # check v is an allowable digit
-        if v not in digits: return None
-        if k == wildcard:
-          # if k is a wildcard then that's OK
-          pass
-        elif k in d:
-          # if k is already in the map it had better map to v
-          if d[k] != v: return None
+    if s == wildcard:
+      # wildcard character, allocate a new slot
+      return self.slot_new()
+
+    if s in '0123456789':
+      # integer literal, use the same slot for the same literal
+      return self.slot_find(EQ, int(s))
+
+    if s in symbols:
+      # a symbol, use the same slot for the same input symbol
+      return self.slot_find(IS, s)
+
+    # unrecognised input symbol
+    raise ValueError(sprintf("_allocate: invalid input symbol <{s}>"))
+
+  # allocate a collection of slots for the input terms <ts>
+  def allocate(self, ts):
+    if ts is None: return None
+    return list((None if ss is None else list(self._allocate(s) for s in ss)) for ss in ts)
+
+  # find the leader for this slot
+  def _slot(self, i):
+    return self.slot_find(UN, i, create=0) or i
+
+  # unify two slots <i> and <j>
+  def _unify(self, i, j):
+    i = self._slot(i)
+    j = self._slot(j)
+    if i == j: return
+    (i, j) = (min(i, j), max(i, j))
+    # copy any properties from slot j to slot i
+    self.slot_setprops(i, *(self._s2p[j]))
+    # mark slot j as being unified with i
+    self.slot_setprops(i, (UN, j))
+
+  # unify two sequence of slots <s> and <t>
+  def unify(self, s, t):
+    assert len(s) == len(t)
+    for (i, j) in zip(s, t):
+      self._unify(i, j)
+
+  # return the symbol for a slot
+  def symbol(self, i):
+    # use the (lowest) symbol from an IS property
+    vs = sorted(v for (k, v) in self._s2p[self._slot(i)] if k == IS)
+    if vs:
+      return vs[0]
+    # use the next unallocated symbol
+    for v in self.symbols:
+      if not self.slot_find(IS, v, create=0):
+        self.slot_setprops(i, (IS, v))
+        return v
+    raise ValueError("symbol pool exhausted")
+
+  # return labels for a sequence of slots
+  def label(self, ss):
+    if ss is None: return None
+    return list((None if s is None else join(self.symbol(x) for x in s)) for s in ss)
+
+  # return properties as <value, slots>
+  def prop_items(self, k):
+    for (v, ss) in self._p2s[k].items():
+      if ss:
+        yield (v, ss)
+
+  # return a string of the symbols currently assigned
+  def symbols_used(self):
+    return join(sorted(v for (v, ss) in self.prop_items(IS)))
+
+# a named tuple for the results (now includes "subs" field)
+# (s is the solution from SubstituteExpression, with eliminated symbols reinstated)
+SubstitutedDivisionSolution = collections.namedtuple('SubstitutedDivisionSolution', 'a b c r subs d s')
+
+# the new solver
+
+class SubstitutedDivision(SubstitutedExpression):
+
+  def __init__(self, *args, **kw):
+
+    # sort out various argument formats
+
+    split = None
+
+    if len(args) == 4:
+      # (preferred)
+      # arguments are already broken down
+      # args = (a, b, c, [(x, y, z), ... ])
+      (a, b, c, subs) = args
+      subs = list((None if x is None else list(x)) for x in subs)
+
+    elif len(args) == 2:
+      # arguments are passed as strings
+      # args = ("{a} / {b} = {c}", ["{x} - {y} = {z}", ... ])
+      split = args
+      
+    elif len(args) == 1:
+      # args are passed as a list of strings (probably from the command line)
+      # args = (["{a} / {b} = {c}", "{x} - {y} = {z}", ...],)
+      args = args[0]
+      split = (args[0], args[1:])
+
+    else:
+      raise ValueError("invalid arguments")
+
+    # split compound arguments into component parts
+    if split:
+      (div, subs) = split
+      debrace = (lambda x: re.sub(r'[\{\}]', '', x))
+      (div, subs) = (debrace(div), list((None if x is None else debrace(x)) for x in subs))
+      (a, b, c) = re.split(r'[\s\/\=]+', div)
+      subs = list(((re.split(r'[\s\-\=]+', x) if isinstance(x, basestring) else x) if x else None) for x in subs)
+
+    def fmt(v, brace=0, none="0"):
+      return (none if v is None else ('{' + v + '}' if brace else v))
+
+    def fmt_subs(subs, brace=0, sep=", "):
+      s = list()
+      for t in subs:
+        if t is None:
+          s.append("None")
         else:
-          # both k and v should be new values in the map
-          if v in d.values(): return None
-          # update the map
-          if cow:
-            d = d.copy()
-            cow = False
-          d[k] = v
-      return d
+          (x, y, z) = (fmt(v, brace=brace) for v in t)
+          s.append(x + ' - ' + y + ' = ' + z)
+      return join(s, sep=sep)
 
-    # match a string <s> to a number <n> using mapping <d>
-    # an updated mapping will be returned, or None
-    def match_number(d, s, n):
-      # the empty string matches 0
-      if s == '': return (d if n == 0 else None)
-      # split the number into digits
-      ns = split(int2base(n, base), int)
-      # they should be the same length
-      if len(s) != len(ns): return None
-      # try to update the map
-      return _update(d, zip(s, ns))
+    # we use None instead of 0 if the result comes out exactly
+    if not(subs[-1][-1]) or subs[-1][-1] == '0': subs[-1][-1] = None
+    rem = subs[-1][-1]
 
-    # match multiple (<s>, <n>) pairs
-    def match_numbers(d, *args):
-      for (s, n) in args:
-        d = match_number(d, s, n)
-        if d is None: break
-      return d
+    # create the solution header (from the input parameters)
+    header = sprintf("{a} / {b} = {c} (rem {r}) [{subs}]", r=fmt(rem), subs=fmt_subs(subs))
 
-    # generate possible numbers matching <s> with dictionary <d>
-    def generate_numbers(s, d, slz=1):
-      # the empty string matches 0
-      if s == '':
-        yield (0, d)
-      elif len(s) == 1:
-        if s == wildcard:
-          for x in digits:
-            if not(slz and x == 0):
-              yield (x, d)
-        elif s in d:
-          x = d[s]
-          if not(slz and x == 0):
-            yield (x, d)
-        else:
-          for x in digits:
-            if not(slz and x == 0):
-              d2 = _update(d, [(s, x)])
-              if d2:
-                yield (x, d2)
+    # create a slots object
+    slots = Slots()
+
+    # allocate slots for the input data
+    (a, b, c) = slots.allocate((a, b, c))
+    subs = list(slots.allocate(x) for x in subs)
+    assert len(c) == len(subs), "result/intermediate mismatch"
+
+    # no leading zeros (or singleton zeros)
+    for s in flatten([(a, b, c)] + subs):
+      if s is None: continue
+      slots.slot_setprops(s[0], (NE, 0))
+
+    # an empty intermediate implies zero in the result
+    # (and non-empty intermediates implies non-zero in the result)
+    for (s, r) in zip(subs, c):
+      if not s:
+        slots._unify(r, slots.slot_find(EQ, 0))
       else:
-        # multi-character string, do the final character
-        for (y, d1) in generate_numbers(s[-1], d, False):
-          # and the rest
-          for (x, d2) in generate_numbers(s[:-1], d1, slz):
-            yield (base * x + y, d2)
+        slots.slot_setprops(r, (NE, 0))
 
-    # match strings <md> against single digit multiples of <n>, according to map <d>
-    # return (<list of single digits>, <map>)
-    def generate_multiples(ms, n, d):
-      if not ms:
-        yield ([], d)
-      else:      
-        # find a match for the first one
-        (m, s) = ms[0]
-        # special case: s is None matches 0
-        if s is None:
-          if m == wildcard:
-            for (x, d2) in generate_multiples(ms[1:], n, d):
-              yield ([0] + x, d2)
-          elif m in d:
-            if d[m] == 0:
-              for (x, d2) in generate_multiples(ms[1:], n, d):
-                yield ([0] + x, d2)
-          else:
-            if 0 not in d.values():
-              d2 = d.copy()
-              d2[m] = 0
-              for (x, d3) in generate_multiples(ms[1:], n, d2):
-                yield ([0] + x, d3)
-        # if m is already allocated
-        elif m in d:
-          i = d[m]
-          d2 = match_number(d, s, i * n)
-          if d2 is not None:
-            for (x, d3) in generate_multiples(ms[1:], n, d2):
-              yield ([i] + x, d3)
-        # generate allowable non-zero digits for wildcard/new assignment
+    # unify slots in the intermediate sums
+    (i, j, prev) = (0, len(a) + 1 - len(subs), None)
+    for k in irange(0, len(subs) - 1):
+      if subs[k]:
+        slots.unify(([] if k == 0 else prev[2]) + a[i:j], subs[k][0])
+        i = j
+        prev = subs[k]
+      j += 1
+
+    # if the sum comes out exactly there is no remainder
+    if rem is None:
+      # we can unify the two terms in the final subtraction sum
+      slots.unify(subs[-1][0], subs[-1][1])
+
+    # record the symbols used in the input strings
+    input_symbols = slots.symbols_used()
+
+    # assign symbols for the slots
+    (a, b, c) = slots.label((a, b, c))
+    subs = list(slots.label(s) for s in subs)
+
+    # output the slot information
+    if 0:
+      for (k, vs) in slots._s2p.items():
+        u = slots._p2s[UN][k]
+        if u:
+          printf("slot {k} -> slot {u}")
         else:
-          for i in digits:
-            if i == 0: continue
-            if m != wildcard and i in d.values(): continue
-            d2 = match_number(d, s, i * n)
-            if d2 is None: continue
-            # and the rest
-            for (x, d3) in generate_multiples(ms[1:], n, d2):
-              d4 = (d3 if m == wildcard else _update(d3, [(m, i)]))
-              if d4 is not None:
-                yield ([i] + x, d4)
+          printf("slot {k} = {vs}")
 
-    # match the intermediates/dividend against the actual values in a/b = c
-    # an updated mapping will be returned, or None
-    def match_intermediates(a, b, c, zs, dividend, d):
-      i = len(int2base(a, base)) - len(zs)
-      sx = dividend[:i]
-      sxr = list(dividend[i:])
-      n = base ** (len(zs) - 1)
-      z = 0
-      # consider each intermediate sum: x - y = z
-      for s in zs:
-        sx = sx + sxr.pop(0)        
-        (x, a) = divmod(a, n)
-        x = base * z + x
-        (y, c) = divmod(c, n)
-        y *= b
-        z = x - y
-        # the remainder must be in the correct range
-        if not(0 <= z < b): return
-        if s is None:
-          # there is no intermediate when y == 0
-          assert y == 0
-        else:
-          d = match_numbers(d, (s, z), (sx, x))
-          if d is None: return
-          sx = s
-        n //= base
-      yield d
+    # record the arguments required for a solution
+    self.args = (a, b, c, subs)
+    self.input_symbols = dict((k, slots.symbol(slots.slot_find(IS, k, create=0))) for k in input_symbols)
 
-    # now for the actual solver
+    # assemble a SubstitutedExpression object
+    expr = list()
 
-    dividend = self.dividend
-    divisor = self.divisor
-    result = self.result
-    intermediates = self.intermediates
-    if fn is None: fn = lambda x: True
+    # the main division sum
+    if rem is None:
+      expr.append(sprintf("{b} * {c} = {a}"))
+    else:
+      expr.append(sprintf("{b} * {c} + {r} = {a}", r=subs[-1][-1]))
 
-    # in the intermediates (x - y = z) we're interested in the ys and the zs
-    xs = list((None if s is None or len(s) < 3 else s[-3]) for s in intermediates)
-    ys = list((None if s is None else s[-2]) for s in intermediates)
-    zs = list((None if s is None else s[-1]) for s in intermediates)
+    # the multiples
+    for (s, r) in zip(subs, c):
+      if s is None: continue
+      (x, y, z) = s
+      expr.append(sprintf("{b} * {r} = {y}"))
 
-    # if there are any xs specified we need to check them against the dividend
-    # and copy up any specified letters that are not specified in the dividend
-    if any(x is not None for x in xs):
-      d = list(dividend)
-      (a, b) = (0, len(d) - len(ys) + 1)
-      for (x, y) in zip(xs, ys):
-        # if there's no intermediate sum...
-        if y is None:
-          # ... an extra element from the dividend is copied next time
-          b += 1
-          continue
-        # if the x part of the sum is specified
-        if x is not None:
-          # check it against the corresponding part of the dividend
-          for (i, (p, q)) in enumerate(zip(d[a:b], x[a - b:]), start=a):
-            # if something is specified in the intermediate...
-            if q != wildcard:
-              # ... but not in the dividend...
-              if p == wildcard:
-                # then update the dividend
-                d[i] = q
-              else:
-                # otherwise they should be the same
-                assert p == q, "dividend/intermediate mismatch"
-        # go on to the next intermediate
-        a = b
-        b += 1
-      dividend = join(d)
+    # the subtraction sums
+    for s in subs:
+      if s is None: continue
+      (x, y, z) = s
+      if z is None: continue
+      expr.append(sprintf("{x} - {y} = {z}"))
 
-    # list of (<digit of result>, <multiple of divisor>) pairs
-    ms = list(zip(result, ys))
+    # add in any additional expressions
+    if 'extra' in kw: expr.extend(kw['extra'])
 
-    # initial mapping of letters to digits
-    d0 = self.mapping
+    # remove duplicate expressions
+    expr = list(uniq(expr))
 
-    # consider the sum as: a / b = c remainder r
+    # solver parameters
+    input_syms = join(sorted(set(self.input_symbols.keys())))
+    opt = dict()
+    opt['symbols'] = slots.symbols_used()
+    opt['distinct'] = kw.get('distinct', input_syms)
+    opt['template'] = sprintf("{{{a}}} / {{{b}}} = {{{c}}} (rem {r}) [{subs}]", r=fmt(subs[-1][-1], brace=1), subs=fmt_subs(subs, brace=1))
+    opt['solution'] = input_syms
+    opt['header'] = header
 
-    # consider possible divisors (b)
-    for (b, d1) in generate_numbers(divisor, d0):
+    # initial values
+    s2d = kw.get('s2d', dict())
+    for (v, ss) in slots.prop_items(EQ):
+      for s in ss:
+        s2d[slots.symbol(s)] = v
+    opt['s2d'] = s2d
 
-      # find multiples of the divisor that match
-      for (cd, d2) in generate_multiples(ms, b, d1):
-        # the result (c) is now defined
-        c = nconcat(cd, base=base)
+    # invalid digits
+    d2i = collections.defaultdict(set)
+    if kw.get('d2i', None):
+      for (k, v) in kw['d2i'].items():
+        d2i[k].update(self.input_symbols[s] for s in v)
+    for (v, ss) in slots.prop_items(NE):
+      for s in ss:
+        d2i[v].add(slots.symbol(s))
+    opt['d2i'] = dict((k, join(sorted(v))) for (k, v) in d2i.items())
 
-        # find possible remainders (r)
-        for (r, d3) in generate_numbers(zs[-1], d2):
-          # so the actual sum is a / b = c rem r
-          a = b * c + r
-          # check that the computed dividend matches the template
-          d4 = match_number(d3, dividend, a)
-          if d4 is None: continue
+    # other options
+    for v in ('digits', 'answer', 'verbose'):
+      if v in kw:
+        opt[v] = kw[v]
 
-          # now check the intermediate results match up
-          for d5 in match_intermediates(a, b, c, zs, dividend, d4):
-            s = SubstitutedDivisionSolution(a, b, c, r, d5)
-            if fn(s):
-              yield s
-    
-  # generate actual intermediates
-  # note: "empty" intermediate sums are not returned
-  def solution_intermediates(self, s):
-    """
-    generate the actual intermediate subtraction sums.
+    # initialise the substituted expression
+    SubstitutedExpression.__init__(self, expr, **opt)
 
-    Note: "empty" intermediate sums (specified as None in the input) are not returned.
-    """
-    (a, x, c, intermediates) = (list(int2base(s.a, self.base)), 0, 0, [])
-    while a:
-      x = x * self.base + int(a.pop(0))
-      (y, r) = divmod(x, s.b)
-      if y == 0: continue
-      intermediates.append((x, s.b * y, r))
-      c = c * self.base + y
-      x = r
-    return intermediates
+  def substitute_all(self, d, ss):
+    if ss is None: return None
+    return tuple(int(self.substitute(d, s)) for s in ss)
 
-  # substituted text using the solution
-  def substitute(self, s, text, digits=_DIGITS):
-    """
-    given a solution to the substituted division sum and some text,
-    return the text with the letters substituted for digits.
-    """
-    return substitute(s, text, digits=digits)
-  
-  # output the solution
+  def solve(self, check=None, first=None, verbose=None):
+    if verbose is None: verbose = self.verbose
+    answer = self.answer
+    # solution templates
+    (ta, tb, tc, tsubs) = self.args
+    tr = tsubs[-1][-1]
+    if tr is None:
+      tr = '0'
+      tsubs[-1][-1] = tr
+    # find solutions (but disable solution output)
+    for s in SubstitutedExpression.solve(self, verbose=(verbose & ~4)):
+      if answer: (s, ans) = s
+      # substitute the solution values
+      (a, b, c, r) = self.substitute_all(s, (ta, tb, tc, tr))
+      subs = tuple(self.substitute_all(s, x) for x in tsubs)
+      # find the values of the input symbols
+      d = dict((k, s[v]) for (k, v) in self.input_symbols.items())
+      # copy any input symbols that were eliminated
+      for (k, v) in self.input_symbols.items():
+        if k not in s: s[k] = s[v]
+      # made a solution object
+      ss = SubstitutedDivisionSolution(a, b, c, r, subs, d, s)
+      if check and not(check(ss)): continue
+      # output the solution
+      if verbose & 4: self.output_solution(ss)
+      # return the result
+      yield ((ss, ans) if answer else ss)
+
   def output_solution(self, s):
-    """
-    output a solution in the form:
+    # copy any input symbols that were eliminated
+    SubstitutedExpression.output_solution(self, s.s)
 
-    a / b = c rem r [mapping] [intermediates]
-    """
-    (a, b, c, r, d) = s
-    printf(
-      "{a} / {b} = {c} rem {r} [{d}] [{intermediates}]",
-      d=join((k + '=' + str(d[k]) for k in sorted(d.keys())), sep=' '),
-      intermediates=join((sprintf("{x} - {y} = {z}") for (x, y, z) in self.solution_intermediates(s)), sep=', ')
-    )
+  def solution_intermediates(self, s):
+    # the intermediate subtraction sums are now part of the solution
+    return s.subs
 
-  solution = output_solution
+  # deal with additional SubstitutedDivision() options
 
-  # find all solutions and output them
-  def go(self, fn=None):
-    """
-    find all solutions (matching filter function <fn>) and output them.
-    """
-    for s in self.solve(fn):
-      self.output_solution(s)
-
-  # class method to call from the command line
   @classmethod
-  def command_line(cls, args):
-    """
-    run the SubstitutedDivision solver with the specified command line arguments.
-
-    e.g. for Enigma 309: (note use of 0 in the final intermediate)
-    % python enigma.py SubstitutedDivision "h????? / ?? = m?gh" "h?? - g?? = ??" "??? - ky? = ?" "?g - m? = x" "x? - ?? = 0"
-    [solving h????? / ?? = m?gh, [('h??', 'g??', '??'), ('???', 'ky?', '?'), ('?g', 'm?', 'x'), ('x?', '??', '')] ...]
-    202616 / 43 = 4712 rem 0 [g=1 h=2 k=3 m=4 x=8 y=0] [202 - 172 = 30, 306 - 301 = 5, 51 - 43 = 8, 86 - 86 = 0]
-
-    e.g for Enigma 440: (note use of empty argument for missing intermediate)
-    % python enigma.py SubstitutedDivision "????? / ?x = ??x" "?? ?" "" "??x 0"
-    [solving ????? / ?x = ??x, [('??', '?'), None, ('??x', '')] ...]
-    10176 / 96 = 106 rem 0 [x=6] [101 - 96 = 5, 576 - 576 = 0]    
-    """
-
-    usage = join((
-      sprintf("usage: {cls.__name__} [<opts>] \"<a> / <b> = <c>\" \"[<x> - <y> = <z>] | [<y> <z>]\" ..."),
+  def _usage(cls):
+    return (
+      "usage: SubstitutedDivision [<opts>] \"<a> / <b> = <c>\" \"<x> - <y> = <z>\" ...",
       "options:",
-      "  --assign=<symbol>,<digit> (or -a<s>,<d>) = assign digit to symbol",
-      "  --wildcard=<symbol> (or -w<s>) = use <symbol> for wildcard (default: \"?\")",
-      "  --help (or -h) = show command-line usage",
-    ), sep="\n")
+      "  --extra=<expr> (or -E<expr>) = extra alphametic expression (option may be repeated)",
+    ) + SubstitutedExpression._usage()[2:]
+      
 
-    # process options
-    opt = { 'mapping': dict(), 'wildcard': '?' } # SubstitutedDivision() args
-    while args and args[0].startswith('-'):
-      arg = args.pop(0)
-      try:
-        if arg.startswith('--'):
-          (k, _, v) = arg.lstrip('-').partition('=')
-        else:
-          (k, v) = (arg[1], arg[2:])
-        if k == 'h' or k == 'help':
-          # --help (or -h)
-          print(usage)
-          return -1
-        elif k == 'a' or k == 'assign':
-          # --assign=<letter>,<digit> (or -a<letter>,<digit>)
-          (s, d) = v.split(',', 1)
-          opt['mapping'][s] = int(d)
-        elif k == 'w' or k == 'wildcard':
-          opt['wildcard'] = v
-        else:
-          raise ValueError
-      except:
-        printf("{cls.__name__}: invalid option: {arg}")
-        return -1
+  @classmethod
+  def _getopt(cls, k, v, opt):
+    if k == 'E' or k == 'extra':
+      if not opt.get('extra', None): opt['extra'] = []
+      opt['extra'].append(v)
 
-    # check command line usage
-    if len(args) < 2:
-      print(usage)
-      return -1
+    else:
+      return SubstitutedExpression._getopt(k, v, opt)
 
-    # extract the terms and result
-    import re
-
-    # intermediate sums:
-    # - an empty result is denoted by '0' or '#' (be careful if using '0' as a symbol)
-    # - an empty intermediate is denoted by ''
-    def intermediate(x):
-      if x == ['']: return None
-      if x[-1] in ('0', '#'): x[-1] = ''
-      return x
-
-    (a, b, c) = re.split(r'[\s\/\=]+', args[0])
-    intermediates = list(map(intermediate, (re.split(r'[\s\-\=]+', x) for x in args[1:])))
-    printf("[solving {a} / {b} = {c}, {intermediates} ...]", intermediates=list(None if x is None else tuple(x) for x in intermediates))
-
-    # call the solver
-    cls(a, b, c, intermediates, **opt).go()
-    return 0
+    return True
 
 ###############################################################################
 
@@ -4989,7 +5108,7 @@ class Football(object):
     in the table. columns need not be specified if they have no
     non-empty values.
 
-    teams - a sequence of indices speficying the order the teams will
+    teams - a sequence of indices specifying the order the teams will
     be processed in. if no order is specified a heuristic order will
     be chosen.
 
@@ -5084,9 +5203,9 @@ class Football(object):
 
     teams - labels to use for the teams (rather than the row indices).
 
-    d - dict() of symbol to value assigments to ouput.
+    d - dict() of symbol to value assignments to output.
 
-    start, end - delimeters to use before and after the matches are
+    start, end - delimiters to use before and after the matches are
     output.
     """
     if start is not None: printf("{start}")
@@ -5469,7 +5588,7 @@ grouping = namespace('grouping', __grouping())
 
 # parse a run file (which uses a shell-like syntax)
 
-def _parsefile(path, *args):
+def parsefile(path, *args):
   import shlex
 
   with open(path, 'r') as f:
@@ -5504,10 +5623,10 @@ def run(cmd, *args):
 
   # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
   if cmd == '-r' or cmd == '--run':
-    (cmd, args) = _parsefile(*args)
+    (cmd, args) = parsefile(*args)
   # or just "<file> <additional-args>"
   elif os.path.isfile(cmd):
-    (cmd, args) = _parsefile(cmd, *args)
+    (cmd, args) = parsefile(cmd, *args)
 
   # solver does not start with a hyphen
   if cmd.startswith('-'): return
