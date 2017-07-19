@@ -5,8 +5,21 @@ from the enigma.py library. <http://www.magwag.plus.com/jim/enigma.html>
 
 Straightforward examples:
 
+
 Enigma 206: Division. Some letters for digits, some digits missing
 <https://enigmaticcode.wordpress.com/2014/07/13/enigma-206-division-some-letters-for-digits-some-digits-missing/#comment-5787>
+
+
+Enigma 372: Letter by letter
+<https://enigmaticcode.wordpress.com/2016/11/25/enigma-372-letter-by-letter/#comment-5222>
+
+
+Enigma 376: Letters decide to divide
+<https://enigmaticcode.wordpress.com/2016/12/23/enigma-376-letters-decide-to-divide/#comment-5280>
+
+
+Enigma 380: Answer what?
+<https://enigmaticcode.wordpress.com/2017/01/20/enigma-380-answer-what/#comment-5325>
 
 
 Puzzle 69: Division: letters for digits
@@ -16,6 +29,13 @@ Puzzle 69: Division: letters for digits
 Puzzle 73: A division sum. Find the missing digits
 <https://enigmaticcode.wordpress.com/2017/05/11/puzzle-73-a-division-sum-find-the-missing-digits/#comment-5795>
 
+
+Puzzle 79: Division: some letters for digits, some digits missing
+<https://enigmaticcode.wordpress.com/2017/03/01/puzzle-79-division-some-letters-for-digits-some-digits-missing/#comment-5407>
+
+
+Puzzle 83: Division: some letters for digits, some missing
+<https://enigmaticcode.wordpress.com/2017/01/25/puzzle-83-division-some-letters-for-digits-some-missing/#comment-5333>
 
 
 
