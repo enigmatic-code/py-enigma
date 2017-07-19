@@ -45,6 +45,12 @@ Enigma 16: Four, five, six, seven
 (uses the --extra paramater to provide additional alphametic condition)
 
 
+Enigma 389: Missing, presumed ...?
+<https://enigmaticcode.wordpress.com/2017/03/24/enigma-389-missing-presumed/#comment-5796>
+
+(uses the --distinct parameter)
+
+
 Enigma 227: Set a tease
 <https://enigmaticcode.wordpress.com/2014/10/06/enigma-227-set-a-tease/#comment-5791>
 
