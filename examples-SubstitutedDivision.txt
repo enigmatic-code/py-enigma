@@ -1,5 +1,5 @@
 This is a list of puzzles solved using the SubstitutedDivision solver
-from the enigma.py library. <http://www.magwag.plus.com/jim/enigma.html>
+from the enigma.py library. [ http://www.magwag.plus.com/jim/enigma.html ]
 
 
 
