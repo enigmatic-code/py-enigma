@@ -1,0 +1,57 @@
+This is a list of puzzles solved using the SubstitutedDivision solver
+from the enigma.py library. <http://www.magwag.plus.com/jim/enigma.html>
+
+
+
+Straightforward examples:
+
+Enigma 206: Division. Some letters for digits, some digits missing
+<https://enigmaticcode.wordpress.com/2014/07/13/enigma-206-division-some-letters-for-digits-some-digits-missing/#comment-5787>
+
+
+Puzzle 69: Division: letters for digits
+<https://enigmaticcode.wordpress.com/2017/07/19/puzzle-69-division-letters-for-digits/#comment-5792>
+
+
+Puzzle 73: A division sum. Find the missing digits
+<https://enigmaticcode.wordpress.com/2017/05/11/puzzle-73-a-division-sum-find-the-missing-digits/#comment-5795>
+
+
+
+
+More complex examples:
+
+Enigma 226: Cold comfort five
+<https://enigmaticcode.wordpress.com/2014/10/02/enigma-226-cold-comfort-five/#comment-5793>
+
+(uses --invalid parameter)
+
+
+Enigma 250: A couple of sevens
+<https://enigmaticcode.wordpress.com/2015/01/13/enigma-250-a-couple-of-sevens/#comment-5782>
+
+(shows use of --assign and --invalid parameters)
+
+
+Puzzle 71: All wrong, all wrong
+<https://enigmaticcode.wordpress.com/2017/06/21/puzzle-71-all-wrong-all-wrong/#comment-5781>
+
+(use of multiple --invalid parameters)
+
+
+Enigma 16: Four, five, six, seven
+<https://enigmaticcode.wordpress.com/2012/12/12/enigma-16-four-five-six-seven/#comment-5794>
+
+(uses the --extra paramater to provide additional alphametic condition)
+
+
+Enigma 227: Set a tease
+<https://enigmaticcode.wordpress.com/2014/10/06/enigma-227-set-a-tease/#comment-5791>
+
+(uses the --distinct parameter)
+
+
+Enigma 102: AN )ENIGMA
+<https://enigmaticcode.wordpress.com/2013/06/25/enigma-102-an-enigma/#comment-5786>
+
+(solver used in a program)
