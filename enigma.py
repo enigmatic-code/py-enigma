@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul 15 11:41:51 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 19 11:15:51 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -135,7 +135,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-06-21"
+__version__ = "2017-07-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -903,6 +903,9 @@ def divisors(n):
 def is_prime(n):
   """
   return True if the positive integer <n> is prime.
+
+  Note: for numbers up to 2^64 is_prime_mr() is a fast, accurate prime
+  test. for larger numbers it is probabilistically accurate.
 
   >>> is_prime(101)
   True
@@ -3498,20 +3501,21 @@ class SubstitutedExpression(object):
   While this is slower than the specialised solvers, like SubstitutedSum(),
   it does allow for more general expressions to be evaluated.
 
-  e.g. Enigma 1530: \"Solve: TOM x 13 = DALEY\"
-  <https://enigmaticcode.wordpress.com/2012/07/09/enigma-1530-tom-daley/>
+
+  Enigma 1530 <https://enigmaticcode.wordpress.com/2012/07/09/enigma-1530-tom-daley/>
   >>> SubstitutedExpression('TOM * 13 = DALEY').go()
   (TOM * 13 = DALEY)
   (796 * 13 = 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
   [1 solution]
   1
 
+
   See SubstitutedExpression.command_line() for more examples.
   """
 
   def __init__(self, exprs, base=10, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None, template=None, solution=None, header=None, distinct=1, env=None, process=1, reorder=1, first=0, verbose=1):
     """
-    create a substituted expression puzzle.
+    create a substituted expression solver.
 
     exprs - the expression(s)
 
@@ -3935,6 +3939,7 @@ class SubstitutedExpression(object):
 
     solutions are returned as a dictionary assigning symbols to digits.
 
+    check - a boolean function called to reject unwanted solutions
     first - if set to True only the first solution is returned
     verbose - if set to >0 solutions are output as they are found, >1 additional information is output.
     """
@@ -4258,7 +4263,8 @@ class SubstitutedExpression(object):
     we can solve substituted sum problems (although using
     SubstitutedSum would be faster)
 
-    e.g. Enigma 327 <https://enigmaticcode.wordpress.com/2016/01/08/enigma-327-it-all-adds-up/>
+
+    Enigma 327 <https://enigmaticcode.wordpress.com/2016/01/08/enigma-327-it-all-adds-up/>
     % python enigma.py SubstitutedExpression "KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE"
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
@@ -4462,8 +4468,92 @@ SubstitutedDivisionSolution = collections.namedtuple('SubstitutedDivisionSolutio
 # the new solver
 
 class SubstitutedDivision(SubstitutedExpression):
+  """
+  A solver for long division sums with letters substituted for digits.
+
+  e.g. Enigma 206
+
+            - - -
+      ___________
+  - - ) p k m k h
+        p m d
+        -----
+          x p k
+            - -
+          -----
+            k h h
+            m b g
+            -----
+                k
+                =
+
+  In this example there are the following intermediate (subtraction) sums:
+
+    pkm - pmd = xp, xpk - ?? = kh, khh - mbg = k
+
+  When the result contains a 0 digit there is no corresponding
+  intermediate sum, in this case the intermediate sum is specified as None.
+
+
+  Enigma 206 <https://enigmaticcode.wordpress.com/2014/07/13/enigma-206-division-some-letters-for-digits-some-digits-missing/>
+
+  >>> SubstitutedDivision('pkmkh / ?? = ???', ['pkm - pmd = xp', 'xpk - ?? = kh', 'khh - mbg = k']).go()
+  pkmkh / ?? = ??? (rem k) [pkm - pmd = xp, xpk - ?? = kh, khh - mbg = k]
+  47670 / 77 = 619 (rem 7) [476 - 462 = 14, 147 - 77 = 70, 700 - 693 = 7] / b=9 d=2 g=3 h=0 k=7 m=6 p=4 x=1
+  [1 solution]
+  1
+
+
+  See SubstitutedDivision.command_line() for more examples.
+  """
 
   def __init__(self, *args, **kw):
+    """
+    create a substituted long division solver.
+
+    args - the long division sum to solve.
+
+    a long division sum is considered to have the following components:
+
+      a / b = c remainder r
+      
+      the dividend = a
+      the divisor = b
+      the result = c
+
+      along with a set of intermediate substractions of the form:
+
+      x - y = z
+
+      one sum for each digit in the result (a 0 digit in the result
+      corresponds to an empty intermediate subtraction sum, which is
+      specified using None).
+
+      the sum is specified in one of the following ways:
+
+        1. each component is separated out
+        (this is how the old SubstitutedDivision() solver was called)
+
+        args = (<a>, <b>, <c>, [(<x>, <y>, <z>), ... ])
+
+        2. the sums are specified as strings:
+
+        args = ("<a> / <b> = <c>", ["<x> - <y> = <z>", ...])
+
+        or:
+
+        args = ("<a> / <b> = <c>", "<x> - <y> = <z>", ...)
+
+
+    the following keyword arguments from SubstitutedExpression() can be used:
+
+      digits - specify digits to be substituted
+      distinct - specify sets of symbols whose values should be distinct
+      d2i - invalid digit to symbol map
+      s2d - initial symbol to digit map
+      answer - collect solutions by answer
+      verbose - control output of solutions and tourist information
+    """
 
     # sort out various argument formats
 
@@ -4640,6 +4730,15 @@ class SubstitutedDivision(SubstitutedExpression):
     return tuple(int(self.substitute(d, s)) for s in ss)
 
   def solve(self, check=None, first=None, verbose=None):
+    """
+    generate solutions for the substituted long division problem.
+
+    solutions are returned as a SubstitutedDivisionSolution() object
+
+    check - a boolean function called to reject unwanted solutions
+    first - if set to True only the first solution is returned
+    verbose - an integer controlling the output of solutions and additional information
+    """
     if verbose is None: verbose = self.verbose
     answer = self.answer
     # solution templates
@@ -4666,6 +4765,7 @@ class SubstitutedDivision(SubstitutedExpression):
       if verbose & 4: self.output_solution(ss)
       # return the result
       yield ((ss, ans) if answer else ss)
+      if first: break
 
   def output_solution(self, s):
     # copy any input symbols that were eliminated
@@ -4696,6 +4796,71 @@ class SubstitutedDivision(SubstitutedExpression):
       return SubstitutedExpression._getopt(k, v, opt)
 
     return True
+
+
+  @classmethod
+  def command_line(cls, args):
+    """
+    run the SubstitutedDivision solver with the specified command line
+    arguments.
+
+    the division sum is specified on the command line as:
+
+      "<a> / <b> = <c>" "<x> - <y> = <z>" ...
+
+    there should be as many intermediate subtraction sums as there are
+    digits in the result <c>. when there is an empty intermediate sum
+    (which corresponds to a 0 in the result) an empty argument should
+    be passed. if there is no remainder the final intermediate
+    subtraction will look like "<x> - <y> = 0".
+
+    literal digits in the arguments stand for themselves, a ? 
+    character stands for any digit, and a letter stands for a digit
+    whose value is not known.
+
+    solver parameters can be specified on the command line in the same
+    way as for the SubstitutedExpression solver, along with the
+    additional "--extra / -E" parameter.
+
+    Some exapmles:
+
+
+    [Enigma 206] <https://enigmaticcode.wordpress.com/2014/07/13/enigma-206-division-some-letters-for-digits-some-digits-missing/>
+
+    % python enigma.py SubstitutedDivision "pkmkh / ?? = ???" "pkm - pmd = xp" "xpk - ?? = kh" "khh - mbg = k"
+    7????? / ?? = ????? (rem 0) [7? - ?? = ??, ??? - ?? = ?, None, ??? - ?? = ??, ??? - ??7 = 0]
+    760287 / 33 = 23039 (rem 0) [76 - 66 = 10, 100 - 99 = 1, None, 128 - 99 = 29, 297 - 297 = 0]
+    [1 solution]    
+
+
+    [Enigma 250] <https://enigmaticcode.wordpress.com/2015/01/13/enigma-250-a-couple-of-sevens/>
+
+    The third intermediate subtraction sum is empty.
+
+    % python enigma.py SubstitutedDivision "7????? / ?? = ?????" "7? - ?? = ??" "??? - ?? = ?" "" "??? - ?? = ??" "??? - ??7 = 0"
+    7????? / ?? = ????? (rem 0) [7? - ?? = ??, ??? - ?? = ?, None, ??? - ?? = ??, ??? - ??7 = 0]
+    760287 / 33 = 23039 (rem 0) [76 - 66 = 10, 100 - 99 = 1, None, 128 - 99 = 29, 297 - 297 = 0]
+    [1 solution]
+
+
+    [Enigma 226] <https://enigmaticcode.wordpress.com/2014/10/02/enigma-226-cold-comfort-five/>
+
+    A solver parameter is used to stop X from taking on the value of 5.
+
+    % python enigma.py SubstitutedDivision --invalid="5,X" "???0000 / ?? = ?????" "??? - ?? = ?" "?? - ?? = ??" "??? - ?X? = ??" "??? - ??? = ??" "??? - ??? = 0"
+
+
+    [Enigma 16] <https://enigmaticcode.wordpress.com/2012/12/12/enigma-16-four-five-six-seven/>
+
+    The --extra parameter is used to provide an additional condition.
+
+    % python enigma.py SubstitutedDivision --distinct="" "C??? / A? = ???" "C? - ?D = ?" "" "??? - B?? = 0" --extra="sum([A != 4, B != 5, C != 6, D != 7]) = 1"
+    C??? / A? = ??? (rem 0) [C? - ?D = ?, None, ??? - B?? = 0]
+    6213 / 57 = 109 (rem 0) [62 - 57 = 5, None, 513 - 513 = 0] / A=5 B=5 C=6 D=7
+    [1 solution]
+    """
+    # this function is only here so we can set the docstring, so just call the parent class 
+    return super(SubstitutedDivision, cls).command_line(args)
 
 ###############################################################################
 
@@ -5781,11 +5946,14 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
+
     Enigma 440 can be solved using:
       
     % python enigma.py SubstitutedDivision "????? / ?x = ??x" "??? - ?? = ?" "" "??? - ??x = 0"
-    [solving ????? / ?x = ??x, [('??', '?'), None, ('??x', '')] ...]
-    10176 / 96 = 106 rem 0 [x=6] [101 - 96 = 5, 576 - 576 = 0]
+    ????? / ?x = ??x (rem 0) [??? - ?? = ?, None, ??? - ??x = 0]
+    10176 / 96 = 106 (rem 0) [101 - 96 = 5, None, 576 - 576 = 0] / x=6
+    [1 solution]    
+
 
     Enigma 1530 can be solved using:
 
@@ -5793,6 +5961,7 @@ enigma.py has the following command-line usage:
     (TOM * 13 == DALEY)
     (796 * 13 == 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
     [1 solution]
+
 
     Alternatively the arguments to enigma.py can be placed in a text file
     and then executed with the --run / -r command, for example:
