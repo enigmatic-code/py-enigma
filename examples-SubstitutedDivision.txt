@@ -41,6 +41,7 @@ Puzzle 83: Division: some letters for digits, some missing
 
 More complex examples:
 
+
 Enigma 226: Cold comfort five
 <https://enigmaticcode.wordpress.com/2014/10/02/enigma-226-cold-comfort-five/#comment-5793>
 
