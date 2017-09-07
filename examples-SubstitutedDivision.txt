@@ -1,5 +1,5 @@
 This is a list of puzzles solved using the SubstitutedDivision solver
-from the enigma.py library. [ http://www.magwag.plus.com/jim/enigma.html ]
+from the enigma.py library. <http://www.magwag.plus.com/jim/enigma.html>
 
 
 
@@ -58,6 +58,13 @@ Puzzle 71: All wrong, all wrong
 <https://enigmaticcode.wordpress.com/2017/06/21/puzzle-71-all-wrong-all-wrong/#comment-5781>
 
 (use of multiple --invalid parameters)
+
+
+Enigma 67: More wrong figures
+<https://enigmaticcode.wordpress.com/2013/03/05/enigma-67-more-wrong-figures/#comment-5915>
+
+(use of multiple --invalid parameters)
+
 
 
 Enigma 16: Four, five, six, seven
