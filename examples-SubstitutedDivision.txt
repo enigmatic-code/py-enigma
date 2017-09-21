@@ -54,17 +54,22 @@ Enigma 250: A couple of sevens
 (shows use of --assign and --invalid parameters)
 
 
-Puzzle 71: All wrong, all wrong
-<https://enigmaticcode.wordpress.com/2017/06/21/puzzle-71-all-wrong-all-wrong/#comment-5781>
-
-(use of multiple --invalid parameters)
-
-
 Enigma 67: More wrong figures
 <https://enigmaticcode.wordpress.com/2013/03/05/enigma-67-more-wrong-figures/#comment-5915>
 
 (use of multiple --invalid parameters)
 
+
+Puzzle 65: Division: figures all wrong
+<https://enigmaticcode.wordpress.com/2017/09/20/puzzle-65-division-figures-all-wrong/#comment-5955>
+
+(use of mutliple --invalid parameters)
+
+
+Puzzle 71: All wrong, all wrong
+<https://enigmaticcode.wordpress.com/2017/06/21/puzzle-71-all-wrong-all-wrong/#comment-5781>
+
+(use of multiple --invalid parameters)
 
 
 Enigma 16: Four, five, six, seven
