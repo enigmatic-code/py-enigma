@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 19 11:15:51 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Sep 22 07:58:10 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -135,11 +135,12 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-07-18"
+__version__ = "2017-09-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
 import sys
+import os
 
 # command line arguments
 argv = sys.argv[1:]
@@ -313,7 +314,7 @@ def concat(*args, **kw):
 def nconcat(*digits, **kw):
   """
   return an integer consisting of the concatenation of the list
-  <digits> of digits
+  <digits> of single digits
 
   the digits can be specified as individual arguments, or as a single
   argument consisting of a sequence of digits.
@@ -331,14 +332,15 @@ def nconcat(*digits, **kw):
   """
   # in Python3 [[ def nconcat(*digits, base=10): ]] is allowed instead
   base = kw.get('base', 10)
+  fn = lambda x: reduce(lambda a, b: a * base + b, x, 0)
   if len(digits) == 1:
     try:
-      return reduce(lambda a, b: a * base + b, digits[0], 0)
+      return fn(digits[0])
     except TypeError:
       pass
     except:
       raise
-  return reduce(lambda a, b: a * base + b, digits, 0)
+  return fn(digits)
   # or: (slower, and only works with digits < 10)
   #return int(concat(*digits), base=base)
 
@@ -3482,7 +3484,6 @@ def gensym(x):
 # file.writelines does NOT include newline characters
 def writelines(fh, lines, sep=None, flush=1):
   if sep is None:
-    import os
     sep = os.linesep
   for line in lines:
     fh.write(line)
@@ -5390,6 +5391,8 @@ class Football(object):
 import atexit
 import time
 
+if hasattr(time, 'process_time'):
+  _timer = time.process_time
 if hasattr(time, 'perf_counter'):
   _timer = time.perf_counter
 elif sys.platform == "win32":
@@ -5751,6 +5754,43 @@ grouping = namespace('grouping', __grouping())
 
 ###############################################################################
 
+# this allows you to get an interactive shell on a running Python process
+# by sending it SIGUSR1, but is only enabled if "i" appears in
+# the environment variable $PY_ENIGMA.
+
+_PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
+
+if 'i' in _PY_ENIGMA:
+
+  # start an interactive shell using the environment of the specified frame
+  def shell(frame=None):
+
+    vs = dict()
+    if frame:
+      vs = update(frame.f_globals, frame.f_locals)
+      printf("[file {frame.f_code.co_filename}, line {frame.f_lineno}, function {frame.f_code.co_name}]")
+    vs['_frame'] = frame
+
+    import code
+    import readline
+    import rlcompleter
+    readline.parse_and_bind('tab: complete')
+    code.interact(local=vs)
+
+
+  import signal
+
+  def _signal_handler(signum, frame):
+
+    printf("[interrupt ...]")
+    shell(frame)
+    printf("[continuing ...]")
+
+  signal.signal(signal.SIGUSR1, _signal_handler)
+  if 'v' in _PY_ENIGMA: printf("[_PY_ENIGMA: pid = {pid}]", pid=os.getpid())
+
+###############################################################################
+
 # parse a run file (which uses a shell-like syntax)
 
 def parsefile(path, *args):
@@ -5780,8 +5820,8 @@ def parsefile(path, *args):
 _run_exit = None
 
 # run command line arguments
+# always returns None, but sets _run_exit
 def run(cmd, *args):
-  import os
 
   global _run_exit
   _run_exit = None
@@ -5957,7 +5997,7 @@ enigma.py has the following command-line usage:
 
     Enigma 1530 can be solved using:
 
-    % python enigma.py SubstitutedExpression "TOM * 13 == DALEY"
+    % python enigma.py SubstitutedExpression "TOM * 13 = DALEY"
     (TOM * 13 == DALEY)
     (796 * 13 == 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
     [1 solution]
@@ -5970,7 +6010,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.13', python3='3.6.1')
+""".format(version=__version__, python='2.7.14', python3='3.6.2')
 
 if __name__ == "__main__":
 
