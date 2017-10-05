@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct  5 08:41:47 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct  5 13:17:30 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1764,21 +1764,22 @@ def _flatten_test(s):
   return None
 
 # a generator for flattening a sequence
-def _flattened(s, depth, fn):
+def _flattened(s, depth, test):
   d = (None if depth is None else depth - 1)
   for i in s:
-    j = (fn(i) if depth is None or depth > 0 else None)
+    j = (test(i) if depth is None or depth > 0 else None)
     if j is None:
       yield i
     else:
-      for k in _flattened(j, d, fn): yield k
+      for k in _flattened(j, d, test): yield k
 
 # fully flatten a nested structure
-def flattened(s, depth=None, fn=_flatten_test):
+# (<fn> has been renamed to <test>)
+def flattened(s, depth=None, test=_flatten_test, fn=None):
   """
   fully flatten a nested structure <s> (to depth <depth>, default is to fully flatten).
 
-  <fn> can be used to determine how objects are flattened, it should return either
+  <test> can be used to determine how objects are flattened, it should return either
   - None, if the object is not to be flattened, or
   - an iterable of objects representing one level of flattening
   default behaviour is to flatten sequences other than strings
@@ -1792,11 +1793,12 @@ def flattened(s, depth=None, fn=_flatten_test):
   >>> flattened(42)
   42
   """
-  z = (fn(s) if depth is None or depth > 0 else None)
+  if test is None: test = fn
+  z = (test(s) if depth is None or depth > 0 else None)
   if z is None:
     return s
   else:
-    return _flattened(z, depth, fn)
+    return _flattened(z, depth, test)
 
 
 # return a copy of object s, but with value <v> at index <k> for (k, v) in ps
