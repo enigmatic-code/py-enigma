@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Sep 22 07:58:10 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct  5 08:41:47 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -135,7 +135,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-09-22"
+__version__ = "2017-10-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1752,10 +1752,36 @@ def flatten(s, fn=list):
   """
   return fn(j for i in s if i is not None for j in i)
 
-# an iterator that fully flattens a nested structure
-def flattened(s, depth=None):
+# do we flatten this?
+def _flatten_test(s):
+  # don't flatten strings
+  if isinstance(s, basestring):
+    return None
+  # do flatten other sequences
+  if isinstance(s, collections.Sequence):
+    return s
+  # otherwise don't flatten
+  return None
+
+# a generator for flattening a sequence
+def _flattened(s, depth, fn):
+  d = (None if depth is None else depth - 1)
+  for i in s:
+    j = (fn(i) if depth is None or depth > 0 else None)
+    if j is None:
+      yield i
+    else:
+      for k in _flattened(j, d, fn): yield k
+
+# fully flatten a nested structure
+def flattened(s, depth=None, fn=_flatten_test):
   """
   fully flatten a nested structure <s> (to depth <depth>, default is to fully flatten).
+
+  <fn> can be used to determine how objects are flattened, it should return either
+  - None, if the object is not to be flattened, or
+  - an iterable of objects representing one level of flattening
+  default behaviour is to flatten sequences other than strings
 
   >>> list(flattened([[1, [2, [3, 4, [5], [[]], [[6, 7], 8], [[9]]]], []]]))
   [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -1763,14 +1789,15 @@ def flattened(s, depth=None):
   [1, 2, 3, 4, [5], [[]], [[6, 7], 8], [[9]]]
   >>> list(flattened([['abc'], ['def', 'ghi']]))
   ['abc', 'def', 'ghi']
+  >>> flattened(42)
+  42
   """
-  n = (None if depth is None else depth - 1)
-  for i in s:
-    if (isinstance(i, collections.Sequence) and not isinstance(i, basestring)) and (depth is None or depth > 0):
-      for j in flattened(i, n):
-        yield j
-    else:
-      yield i
+  z = (fn(s) if depth is None or depth > 0 else None)
+  if z is None:
+    return s
+  else:
+    return _flattened(z, depth, fn)
+
 
 # return a copy of object s, but with value <v> at index <k> for (k, v) in ps
 def update(s, ps=()):
