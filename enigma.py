@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct  5 13:17:30 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Oct 10 10:21:07 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -43,6 +43,7 @@ divf                   - floor division
 divisor                - generate the divisors of a number
 divisor_pairs          - generate pairs of divisors of a number
 divisors               - the divisors of a number
+drop_factors           - reduce a number by removing factors
 egcd                   - extended gcd
 factor                 - the prime factorisation of a number
 factorial              - factorial function
@@ -135,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-10-05"
+__version__ = "2017-10-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -344,9 +345,14 @@ def nconcat(*digits, **kw):
   # or: (slower, and only works with digits < 10)
   #return int(concat(*digits), base=base)
 
-def nsplit(n, base=10):
+def nsplit(n, k=None, base=10):
   """
   split an integer into digits (using base <base> representation)
+
+  if <k> is specified it gives the number of digits to return, if the
+  number has too few digits the the result is zero padded at the beginning,
+  if the number has too many digits then the result includes only the
+  rightmost digits.
 
   >>> nsplit(12345)
   (1, 2, 3, 4, 5)
@@ -356,12 +362,20 @@ def nsplit(n, base=10):
   (123, 456, 789)
   >>> nsplit(2130706433, base=256)
   (127, 0, 0, 1)
+  >>> nsplit(7, 3)
+  (0, 0, 7)
+  >>> nsplit(111 ** 2, 3)
+  (3, 2, 1)
   """
   ds = list()
   while True:
     (n, r) = divmod(n, base)
     ds.insert(0, r)
-    if n == 0: break
+    if k is None:
+      if n == 0: break
+    else:
+      if k < 2: break
+      k -= 1
   return tuple(ds)
 
 
@@ -1194,6 +1208,20 @@ cube = is_cube
 square = is_square
 
 
+def drop_factors(n, k):
+  """
+  remove factors of <k> from <n>.
+
+  return (i, m) where n = (m)(k^i) such that m is not divisible by k
+  """
+  i = 0
+  while n > 1:
+    (d, r) = divmod(n, k)
+    if r != 0: break
+    i += 1
+    n = d
+  return (i, n)
+
 def is_power_of(n, k):
   """
   check <n> is a power of <k>.
@@ -1210,12 +1238,10 @@ def is_power_of(n, k):
   1
   """
   if n == 0: return (1 if k == 0 else None)
-  m = 0
-  while n > 1:
-    (n, r) = divmod(n, k)
-    if r != 0: return None
-    m += 1
-  return m
+  if n == 1: return 0
+  if k < 2: return None
+  (i, m) = drop_factors(n, k)
+  return (i if m == 1 else None)
 
 
 # calculate intf(sqrt(n)) using Newton's method
@@ -1694,9 +1720,10 @@ def printf(fmt='', **kw):
   a=1 b=2 c=42
   """
   s = _sprintf(fmt, sys._getframe(1).f_locals, kw)
-  d = dict()
+  d = dict() # { 'flush': 1 }
   if s.endswith('\\'): (s, d['end']) = (s[:-1], '')
   print(s, **d)
+  
 
 
 # useful as a decorator for caching functions (@cached).
@@ -6039,7 +6066,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.14', python3='3.6.2')
+""".format(version=__version__, python='2.7.14', python3='3.6.3')
 
 if __name__ == "__main__":
 
