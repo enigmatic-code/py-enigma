@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct 26 23:31:37 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct 26 23:49:23 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -5924,11 +5924,17 @@ def run(cmd, *args):
   _run_exit = -1
   return
 
-# execute the Python code located in <path>, and report an execution time
-def timed_run(path):
-  import runpy
-  with Timer():
-    runpy.run_path(path)
+# execute the code located in <path>, and report an execution time
+def timed_run(path, *args):
+  if path.endswith(".py"):
+    # a Python file
+    import runpy
+    with Timer():
+      runpy.run_path(path)
+  else:
+    # use run()
+    with Timer():
+      run(path, *args)
 
 ###############################################################################
 
