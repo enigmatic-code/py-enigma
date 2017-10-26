@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Oct 10 10:21:07 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct 26 23:31:37 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -43,6 +43,7 @@ divf                   - floor division
 divisor                - generate the divisors of a number
 divisor_pairs          - generate pairs of divisors of a number
 divisors               - the divisors of a number
+divisors_pairs         - generate pairs of divisors of a number
 drop_factors           - reduce a number by removing factors
 egcd                   - extended gcd
 factor                 - the prime factorisation of a number
@@ -136,7 +137,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-10-10"
+__version__ = "2017-10-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -843,9 +844,12 @@ def factor(n, fn=prime_factor):
 
 def divisor_pairs(n):
   """
-  generate divisors (a, b) of positive integer <n>, such that <a> * <b> = <n>.
+  generate divisors (a, b) of positive integer n, such that a <= b and a * b = n.
 
-  the pairs are generated such that <a> <= <b>, in order of increasing <a>.
+  the pairs are generated in order of increasing <a>.
+
+  if you only want a few small divisors, this routine is OK, otherwise
+  you are probably better using divisors_pairs().
 
   >>> list(divisor_pairs(36))
   [(1, 36), (2, 18), (3, 12), (4, 9), (6, 6)]
@@ -914,6 +918,20 @@ def divisors(n):
   [1, 101]
   """
   return multiples(prime_factor(n))
+
+
+def divisors_pairs(n):
+  """
+  generate divisors pairs (a, b) with a <= b, such that a * b = n.
+
+  pairs are generated in order, by determining the factors of n.
+
+  this is probably faster than divisor_pairs() if you want all divisors.
+  """
+  for a in divisors(n):
+    b = n // a
+    if a > b: break
+    yield (a, b)
 
 
 def is_prime(n):
@@ -5811,7 +5829,7 @@ grouping = namespace('grouping', __grouping())
 ###############################################################################
 
 # this allows you to get an interactive shell on a running Python process
-# by sending it SIGUSR1, but is only enabled if "i" appears in
+# by sending it SIGUSR1 (30), but is only enabled if "i" appears in
 # the environment variable $PY_ENIGMA.
 
 _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
@@ -5820,7 +5838,6 @@ if 'i' in _PY_ENIGMA:
 
   # start an interactive shell using the environment of the specified frame
   def shell(frame=None):
-
     vs = dict()
     if frame:
       vs = update(frame.f_globals, frame.f_locals)
@@ -5837,13 +5854,15 @@ if 'i' in _PY_ENIGMA:
   import signal
 
   def _signal_handler(signum, frame):
-
-    printf("[interrupt ...]")
+    printf("[interrupt ... (Ctrl-D to resume) ...]")
     shell(frame)
     printf("[continuing ...]")
 
-  signal.signal(signal.SIGUSR1, _signal_handler)
-  if 'v' in _PY_ENIGMA: printf("[_PY_ENIGMA: pid = {pid}]", pid=os.getpid())
+  if hasattr(signal, 'SIGUSR1'):
+    signal.signal(signal.SIGUSR1, _signal_handler)
+    if 'v' in _PY_ENIGMA: printf("[_PY_ENIGMA: pid = {pid}]", pid=os.getpid())
+  else:
+    print("[_PY_ENIGMA: failed to install interrupt handler]")
 
 ###############################################################################
 
@@ -5904,6 +5923,12 @@ def run(cmd, *args):
   printf("enigma.py: {cmd}.command_line() not implemented")
   _run_exit = -1
   return
+
+# execute the Python code located in <path>, and report an execution time
+def timed_run(path):
+  import runpy
+  with Timer():
+    runpy.run_path(path)
 
 ###############################################################################
 
