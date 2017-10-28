@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Oct 28 09:30:26 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Oct 28 11:46:31 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -5913,18 +5913,6 @@ def run(cmd, *args, **kw):
   elif cmd.startswith('-'):
     return
 
-  # if cmd names a class
-  fn = globals().get(cmd)
-  if fn:
-    fn = getattr(fn, 'command_line')
-    if fn:
-      if timer: timer = Timer()
-      _run_exit = (fn(list(args)) or 0)
-      if timer: timer.report()
-      return
-    else:
-      printf("enigma.py: {cmd}.command_line() not implemented")
-
   # if cmd names a file
   if os.path.isfile(cmd):
     if cmd.endswith(".py"):
@@ -5938,6 +5926,18 @@ def run(cmd, *args, **kw):
     else:
       # otherwise, treat it as a run file
       (cmd, args) = parsefile(cmd, *args)
+
+  # if cmd names a class
+  fn = globals().get(cmd)
+  if fn:
+    fn = getattr(fn, 'command_line')
+    if fn:
+      if timer: timer = Timer()
+      _run_exit = (fn(list(args)) or 0)
+      if timer: timer.report()
+      return
+    else:
+      printf("enigma.py: {cmd}.command_line() not implemented")
 
   # if we get this far we can't find the solver
   printf("enigma.py: unable to run \"{cmd}\"")
