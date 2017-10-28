@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct 26 23:49:23 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Oct 28 09:30:26 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -24,7 +24,6 @@ The latest version is available at <http://www.magwag.plus.com/jim/enigma.html>.
 Currently this module provides the following functions and classes:
 
 alphametic             - an alias for substituted_expression()
-argv                   - command line arguments (= sys.argv[1:])
 arg                    - extract command line arguments
 base2int               - convert a string in the specified base to an integer
 C                      - combinatorial function (nCk)
@@ -137,14 +136,14 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-10-26"
+__version__ = "2017-10-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
 import sys
 import os
 
-# command line arguments
+# command line arguments (but better to use arg())
 argv = sys.argv[1:]
 
 import operator
@@ -1667,17 +1666,20 @@ def recurring(a, b, recur=0, base=10):
 
 
 # command line arguments
-# might have been better to use: arg(n, fn=identity, default=None, argv=argv)
-def arg(v, n, fn=identity, argv=argv):
+# might have been better to use: arg(n, fn=identity, default=None, argv=None)
+def arg(v, n, fn=identity, argv=None):
   """
   if command line argument <n> is specified return fn(argv[n])
   otherwise return default value <v>
+
+  if argv is None (the default), then the value of sysv.argv[1:] is used
 
   >>> arg(42, 0, int, ['56'])
   56
   >>> arg(42, 1, int, ['56'])
   42
   """
+  if argv is None: argv = sys.argv[1:]
   return (fn(argv[n]) if len(argv) > n else v)
 
 
@@ -4304,6 +4306,8 @@ class SubstitutedExpression(object):
   @classmethod
   def from_args(cls, args):
 
+    #if not args: return
+
     # process options
     opt = { '_argv': list(), 's2d': dict(), 'd2i': None, 'verbose': 1, 'first': 0, 'reorder': 1 }
     for arg in args:
@@ -5896,45 +5900,52 @@ _run_exit = None
 
 # run command line arguments
 # always returns None, but sets _run_exit
-def run(cmd, *args):
+def run(cmd, *args, **kw):
 
   global _run_exit
   _run_exit = None
 
+  timer = kw.get('timed', 0)
+
   # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
   if cmd == '-r' or cmd == '--run':
-    (cmd, args) = parsefile(*args)
-  # or just "<file> <additional-args>"
-  elif os.path.isfile(cmd):
-    (cmd, args) = parsefile(cmd, *args)
+    (cmd, args) = (args[0], args[1:])
+  elif cmd.startswith('-'):
+    return
 
-  # solver does not start with a hyphen
-  if cmd.startswith('-'): return
-
-  # find the solver
+  # if cmd names a class
   fn = globals().get(cmd)
   if fn:
     fn = getattr(fn, 'command_line')
     if fn:
+      if timer: timer = Timer()
       _run_exit = (fn(list(args)) or 0)
+      if timer: timer.report()
       return
+    else:
+      printf("enigma.py: {cmd}.command_line() not implemented")
+
+  # if cmd names a file
+  if os.path.isfile(cmd):
+    if cmd.endswith(".py"):
+      # use runpy for *.py
+      import runpy
+      sys.argv = [cmd] + list(args)
+      if timer: timer = Timer()
+      r = runpy.run_path(cmd)
+      if timer: timer.report()
+      return (0 if r else -1)
+    else:
+      # otherwise, treat it as a run file
+      (cmd, args) = parsefile(cmd, *args)
 
   # if we get this far we can't find the solver
-  printf("enigma.py: {cmd}.command_line() not implemented")
+  printf("enigma.py: unable to run \"{cmd}\"")
   _run_exit = -1
   return
 
-# execute the code located in <path>, and report an execution time
-def timed_run(path, *args):
-  if path.endswith(".py"):
-    # a Python file
-    import runpy
-    with Timer():
-      runpy.run_path(path)
-  else:
-    # use run()
-    with Timer():
-      run(path, *args)
+def timed_run(*args):
+  run(*args, timed=1)
 
 ###############################################################################
 
