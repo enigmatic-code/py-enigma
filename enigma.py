@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Oct 28 11:46:31 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Nov 17 10:03:58 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-10-27"
+__version__ = "2017-11-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1848,8 +1848,10 @@ def flattened(s, depth=None, test=_flatten_test, fn=None):
     return _flattened(z, depth, test)
 
 
-# return a copy of object s, but with value <v> at index <k> for (k, v) in ps
-def update(s, ps=()):
+# return a copy of object s, but with value <v> at index <k> for (k, v) in <ps>
+# <ps> can be a sequence of (k, v) pairs, or a sequence of keys, in which case
+# the values should be given in <vs>
+def update(s, ps=(), vs=None):
   """
   create an updated version of object <s> which is the same as <s> except
   that the value at index <k> is <v> for the pairs (<k>, <v>) in <ps>.
@@ -1857,9 +1859,10 @@ def update(s, ps=()):
   >>> update([0, 1, 2, 3], [(2, 'foo')])
   [0, 1, 'foo', 3]
 
-  >>> update({ 'a': 1, 'b': 2, 'c': 3 }, zip('bc', (4, 9))) == { 'a': 1, 'b': 4, 'c': 9 }
+  >>> update({ 'a': 1, 'b': 2, 'c': 3 }, 'bc', (4, 9)) == { 'a': 1, 'b': 4, 'c': 9 }
   True
   """
+  if vs is not None: ps = zip(ps, vs)
   try:
     # use copy() method if available
     s = s.copy()
@@ -5841,12 +5844,14 @@ _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 if 'i' in _PY_ENIGMA:
 
   # start an interactive shell using the environment of the specified frame
-  def shell(frame=None):
+  def shell(frame=None, env=None):
     vs = dict()
     if frame:
       vs = update(frame.f_globals, frame.f_locals)
       printf("[file {frame.f_code.co_filename}, line {frame.f_lineno}, function {frame.f_code.co_name}]")
-    vs['_frame'] = frame
+      vs['_frame'] = frame
+    if env:
+      vs = update(vs, env)
 
     import code
     import readline
@@ -5859,7 +5864,7 @@ if 'i' in _PY_ENIGMA:
 
   def _signal_handler(signum, frame):
     printf("[interrupt ... (Ctrl-D to resume) ...]")
-    shell(frame)
+    shell(frame=frame)
     printf("[continuing ...]")
 
   if hasattr(signal, 'SIGUSR1'):
@@ -5905,7 +5910,8 @@ def run(cmd, *args, **kw):
   global _run_exit
   _run_exit = None
 
-  timer = kw.get('timed', 0)
+  timer = kw.get('timed')
+  #interact = kw.get('interact')
 
   # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
   if cmd == '-r' or cmd == '--run':
@@ -5952,7 +5958,7 @@ def timed_run(*args):
 # check for updates to enigma.py
 # check = only check the current version
 # download = always download the latest version
-def _enigma_update(url, check=1, download=1):
+def _enigma_update(url, check=1, download=0, rename=0):
   print('checking for updates...')
 
   if sys.version_info[0] == 2:
@@ -5977,6 +5983,9 @@ def _enigma_update(url, check=1, download=1):
         if not data: break
         f.write(data)
     print("\ndownload complete")
+    if rename:
+      printf("renaming \"{name}\" to \"enigma.py\"")
+      os.rename(name, "enigma.py")
   elif __version__ < v:
     print("enigma.py is NOT up to date")
   else:
@@ -6018,7 +6027,7 @@ enigma.py has the following command-line usage:
     of the tests will be provided.
 
 
-  python enigma.py -u[cd]
+  python enigma.py -u[cdr]
 
     The enigma.py module can be used to check for updates. Running
     with the -u flag will check if there is a new version of the
@@ -6027,17 +6036,19 @@ enigma.py has the following command-line usage:
 
     If the module can be updated you will see something like this:
 
-      % python enigma.py -u                          
+      % python enigma.py -ur
       [enigma.py version 2013-09-10 (Python {python})]
       checking for updates...
       latest version is {version}
       downloading latest version to "{version}-enigma.py"
       ........
       download complete
+      renaming "{version}-enigma.py" to "enigma.py"
 
     Note that the updated version is downloaded to a file named
     "<version>-enigma.py" in the current directory. You can then
-    upgrade by renaming this file to "enigma.py".
+    upgrade by renaming this file to "enigma.py" (this will happen
+    automatically if the 'r' flag is passed).
 
     If you are running the latest version you will see something like
     this:
@@ -6136,7 +6147,7 @@ if __name__ == "__main__":
     print('  <class> <args> = run command_line(<args>) method on class')
     print('  [-r | --run] <file> [<additional-args>] = run the solver and args specified in <file>')
     print('  -t[v] = run tests [v = verbose]')
-    print('  -u[cd] = check for updates [c = only check, d = always download]')
+    print('  -u[cdr] = check for updates [c = only check, d = always download, r = rename after download]')
     print('  -h = this help')
 
   # -t => run tests
@@ -6148,10 +6159,11 @@ if __name__ == "__main__":
   # -u => check for updates, and download newer version
   # -uc => just check for updates (don't download)
   # -ud => always download latest version
+  # -u[d]r => rename downloaded file to "enigma.py"
   if 'u' in args:
     url='http://www.magwag.plus.com/jim/'
     try:
-      _enigma_update(url, check=('c' in args['u']), download=('d' in args['u']))
+      _enigma_update(url, check=('c' in args['u']), download=('d' in args['u']), rename=('r' in args['u']))
     except IOError as e:
       print(e)
       printf("failed to download update from {url}")
