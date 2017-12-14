@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Nov 17 10:03:58 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Dec 14 14:17:24 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-11-17"
+__version__ = "2017-12-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1767,7 +1767,7 @@ def cached(f):
 # inclusive range iterator
 def irange(a, b=None, step=1):
   """
-  a range iterator that includes both endpoints.
+  a range iterator that includes both integer endpoints, <a> and <b>.
 
   if only one endpoint is specified then this is taken as the highest value,
   and a lowest value of 1 is used (so irange(n) produces n integers from 1 to n).
@@ -1853,8 +1853,12 @@ def flattened(s, depth=None, test=_flatten_test, fn=None):
 # the values should be given in <vs>
 def update(s, ps=(), vs=None):
   """
-  create an updated version of object <s> which is the same as <s> except
-  that the value at index <k> is <v> for the pairs (<k>, <v>) in <ps>.
+  create an updated version of object <s> which is the same as <s>
+  except that the value at index <k> is <v> for the keys and values
+  provided in <ps> and <vs>.
+
+  <ps> can either be a sequence of (<key>, <value>) pairs, or <ps> can
+  be a sequence of keys and <vs> the corresponding sequence of values.
 
   >>> update([0, 1, 2, 3], [(2, 'foo')])
   [0, 1, 'foo', 3]
@@ -3193,7 +3197,7 @@ def _substituted_sum(terms, result, digits, l2d, d2i, n, carry=0, base=10):
   u = list(uniq(t[n] for t in terms if t[n] not in l2d))
   # and allocate them from the remaining digits
   for ds in itertools.permutations(digits, len(u)):
-    _l2d = update(l2d, zip(u, ds))
+    _l2d = update(l2d, u, ds)
     # sum the column
     (c, r) = divmod(sum(_l2d[t[n]] for t in terms) + carry, base)
     # is the result what we expect?
@@ -4376,16 +4380,16 @@ class SubstitutedExpression(object):
     (FOUR, TEN) = (3407, 529) [1 solution]
     """
 
-    opt = cls.from_args(args)
-
-    if opt:
-      # create the object
-      argv = opt.pop('_argv')
-      self = cls(argv, **opt)
-      if self is not None:
-        # call the solver
-        self.go()
-        return 0
+    if args:
+      opt = cls.from_args(args)
+      if opt:
+        # create the object
+        argv = opt.pop('_argv')
+        self = cls(argv, **opt)
+        if self is not None:
+          # call the solver
+          self.go()
+          return 0
 
     # failure, output usage message
     print(join(cls._usage(), sep="\n"))
@@ -5066,7 +5070,7 @@ class CrossFigure(object):
       (n, t, ans, cs) = min(ts)
       # and fill it out
       for n in self.match(t, cs):
-        grid2 = update(grid, zip(ans, n))
+        grid2 = update(grid, ans, n)
         if self._check_distinct(grid2):
           for x in self.solve(grid2, seen):
             yield x
@@ -5329,7 +5333,7 @@ class Football(object):
 
     # choose outcomes for each remaining match
     for s in self.games(repeat=len(rs)):
-      matches1 = update(matches, zip(rs, s))
+      matches1 = update(matches, rs, s)
       # compute the row in the table for team t
       r = self.table((matches1[m] for m in ms), (m.index(t) for m in ms))
       # check the output of the table
@@ -5403,7 +5407,7 @@ class Football(object):
     sms = list(m for m in ms if m in scores)
     # find possible scores for each remaining match
     for s in self.scores(list(matches[m] for m in rs), list(m.index(t) for m in rs), d[gf[t]], d[ga[t]], list(scores[m] for m in sms), list(m.index(t) for m in sms)):
-      scores2 = update(scores, zip(rs, s))
+      scores2 = update(scores, rs, s)
       for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores2): yield z
 
   # gf, ga - goals for, goals against
