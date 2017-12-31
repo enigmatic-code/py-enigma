@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Dec 31 13:51:26 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Dec 31 14:14:02 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3792,6 +3792,7 @@ class SubstitutedExpression(object):
     invalid = set()
     if d2i is not None:
       for (d, ss) in d2i.items():
+        if d not in digits: printf("WARNING: SubstitutedExpression: non-valid invalid digit {d} specified")
         invalid.update((s, d) for s in ss)
     else:
       # disallow leading zeros
