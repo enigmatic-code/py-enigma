@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Dec 14 14:17:24 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Dec 31 13:51:26 2017 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-12-14"
+__version__ = "2017-12-31"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3573,6 +3573,24 @@ def writelines(fh, lines, sep=None, flush=1):
     fh.write(sep)
   if flush: fh.flush()
 
+# a sequence of digit values may be specified (in decimal) as:
+#   "<d>" = a single digit
+#   "<d>-<d>" = a range of digits
+#   "<d>,...,<d>" "<d>|...|<d>" "<d>+...+<d>"
+#   "<d>" = a single digit
+# returns a sequence of integers
+def _digits(s):
+  # "<d>-<d>"
+  if '-' in s:
+    (a, _, b) = s.partition('-')
+    return irange(int(a), int(b))
+  # "<d>,...,<d>" "<d>|...|<d>" "<d>+...+<d>"
+  for x in (',', '|', '+'):
+    if x in s:
+      return tuple(int(d) for d in s.split(x))
+  # "<d>"
+  return (int(s),)
+
 
 class SubstitutedExpression(object):
   """
@@ -3918,6 +3936,7 @@ class SubstitutedExpression(object):
         prog += sprintf("{_}for _{s} in {ds}:\n")
         _ += indent
         if done and s in distinct:
+          # TODO: we should exclude initial values (that are excluded from ds) here
           check = join((('_' + s + ' != ' + '_' + x) for x in done if x in distinct[s]), sep=' and ')
           if check:
             prog += sprintf("{_}if {check}:\n")
@@ -4024,7 +4043,7 @@ class SubstitutedExpression(object):
     solutions are returned as a dictionary assigning symbols to digits.
 
     check - a boolean function called to reject unwanted solutions
-    first - if set to True only the first solution is returned
+    first - if set to positive <n> only the first <n> solutions are returned
     verbose - if set to >0 solutions are output as they are found, >1 additional information is output.
     """
 
@@ -4038,12 +4057,14 @@ class SubstitutedExpression(object):
 
     if verbose & 8 and header: print(header)
 
+    n = 0
     for s in solver():
       if check and not(check(s)): continue
       if verbose & 4: self.output_solution((s[0] if answer else s))
       # return the result
       yield s
-      if first: break
+      n += 1
+      if first and first == n: break
 
   # output a solution as: "<template> / <solution>" 
   # <template> = the given template with digits substituted for symbols
@@ -4269,20 +4290,14 @@ class SubstitutedExpression(object):
     elif k == 'd' or k == 'digits':
       # --digits=<digit>,... or <digit>-<digit> (or -d)
       # NOTE: <digits> are specified in decimal (not --base)
-      if '-' in v:
-        (a, _, b) = v.partition('-')
-        opt['digits'] = irange(int(a), int(b))
-      else:
-        ds = v.split(',')
-        opt['digits'] = tuple(int(d) for d in ds)
+      opt['digits'] = _digits(v)
     elif k == 'i' or k == 'invalid':
       # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
       # NOTE: <digits> are specified in decimal (not --base)
-      # which means you can't specify digits > 9 (FIX)
       if opt['d2i'] is None: opt['d2i'] = dict()
-      (d, s) = v.split(',', 1)
-      for i in d:
-        opt['d2i'][int(i)] = s
+      (ds, s) = v.split(',', 1)
+      for i in _digits(ds):
+        opt['d2i'][i] = s
     elif k == 'D' or k == 'distinct':
       if v == '0' or v == '1':
         v = int(v)
@@ -5839,6 +5854,33 @@ grouping = namespace('grouping', __grouping())
 
 ###############################################################################
 
+# some handy development routines
+
+
+# this looks for a "STOP" file, and if present removes it and returns True
+def stop(files=None, files_extra=None, use_exit=0, verbose=1):
+  if files is None:
+    # list of files, default is: STOP.<pid>, STOP.<prog>, STOP
+    files = [ ("STOP", os.getpid()) ]
+    f = sys.argv[0]
+    if f:
+      files.append(("STOP", os.path.splitext(os.path.basename(f))[0]))
+    files.append("STOP")
+  if files_extra is not None:
+    files = files_extra + files
+  for f in files:
+    if not isinstance(f, basestring):
+      f = join(f, sep='.')
+    if os.path.isfile(f):
+      # found one
+      if verbose: printf("found stop file \"{f}\"")
+      os.unlink(f)
+      if use_exit: sys.exit(0)
+      return True
+  # not found
+  return False
+
+
 # this allows you to get an interactive shell on a running Python process
 # by sending it SIGUSR1 (30), but is only enabled if "i" appears in
 # the environment variable $PY_ENIGMA.
@@ -6123,7 +6165,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.14', python3='3.6.3')
+""".format(version=__version__, python='2.7.14', python3='3.6.4')
 
 if __name__ == "__main__":
 
