@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Dec 31 14:14:02 2017 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jan  7 21:30:22 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2017-12-31"
+__version__ = "2018-01-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1444,9 +1444,9 @@ def divc(a, b):
 cdiv = divc
 
 
-def is_duplicate(s):
+def is_duplicate(*s):
   """
-  check to see if <s> (as a string) contains duplicate characters.
+  check to see if arguments (as strings) contain duplicate characters.
 
   >>> is_duplicate("hello")
   True
@@ -1455,7 +1455,7 @@ def is_duplicate(s):
   >>> is_duplicate(99 ** 2)
   False
   """
-  s = str(s)
+  s = join(s)
   return len(set(s)) != len(s)
   # or using regexps
   #return True if re.search(r'(.).*\1', str(s)) else False
@@ -1740,7 +1740,7 @@ def printf(fmt='', **kw):
   a=1 b=2 c=42
   """
   s = _sprintf(fmt, sys._getframe(1).f_locals, kw)
-  d = dict() # { 'flush': 1 }
+  d = dict() # flush=1
   if s.endswith('\\'): (s, d['end']) = (s[:-1], '')
   print(s, **d)
   
@@ -3466,7 +3466,7 @@ class SubstitutedSum(object):
     ), sep="\n")
 
     # process options (--<key>[=<value>] or -<k><v>)
-    opt = { 'l2d': dict(), 'd2i': None }
+    opt = dict(l2d=dict(), d2i=None)
     while args and args[0].startswith('-'):
       arg = args.pop(0)
       try:
@@ -3843,6 +3843,9 @@ class SubstitutedExpression(object):
 
 
   # create and compile the code
+  # NOTE: the generated code can have more than 20 nested blocks,
+  # which raises a SyntaxError in CPython. A workaround is to use PyPy
+  # instead (which doesn't seem to have this limitation)
   def _prepare(self):
 
     base = self.base
@@ -4332,7 +4335,7 @@ class SubstitutedExpression(object):
     #if not args: return
 
     # process options
-    opt = { '_argv': list(), 's2d': dict(), 'd2i': None, 'verbose': 1, 'first': 0, 'reorder': 1 }
+    opt = dict(_argv=list(), s2d=dict(), d2i=None, verbose=1, first=0, reorder=1)
     for arg in args:
 
       # deal with option args
