@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jan 28 11:20:50 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jan 28 12:51:05 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3848,7 +3848,7 @@ class SubstitutedExpression(object):
     self._invalid = invalid
     self._idigits = idigits
     self._exprs = (exprs, xs, vs, ts, syms)
-
+    self._processed = 1
 
   # create and compile the code
   # NOTE: the generated code can have more than 20 nested blocks,
