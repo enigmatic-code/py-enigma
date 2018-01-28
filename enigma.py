@@ -6,12 +6,12 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jan  7 21:30:22 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jan 28 11:20:50 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
 #
-# (c) Copyright 2009-2017, Jim Randell, all rights reserved.
+# (c) Copyright 2009-2018, Jim Randell, all rights reserved.
 #
 ###############################################################################
 # -*- mode: Python; py-indent-offset: 2; -*-
@@ -136,15 +136,12 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-01-07"
+__version__ = "2018-01-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
 import sys
 import os
-
-# command line arguments (but better to use arg())
-argv = sys.argv[1:]
 
 import operator
 import math
@@ -1665,7 +1662,16 @@ def recurring(a, b, recur=0, base=10):
         s += int2base(d, base)
 
 
-# command line arguments
+# command line arguments (and the function to fetch them)
+_argv = [ None, None ]
+
+# fetch command line arguments from sys
+def argv(force=0):
+  if force or _argv[0] is None: _argv[0] = sys.argv[1:]
+  return _argv[0]
+
+_argv[1] = argv
+
 # might have been better to use: arg(n, fn=identity, default=None, argv=None)
 def arg(v, n, fn=identity, argv=None):
   """
@@ -1679,7 +1685,7 @@ def arg(v, n, fn=identity, argv=None):
   >>> arg(42, 1, int, ['56'])
   42
   """
-  if argv is None: argv = sys.argv[1:]
+  if argv is None: argv = _argv[1]()
   return (fn(argv[n]) if len(argv) > n else v)
 
 
@@ -3615,7 +3621,7 @@ class SubstitutedExpression(object):
   See SubstitutedExpression.command_line() for more examples.
   """
 
-  def __init__(self, exprs, base=10, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None, template=None, solution=None, header=None, distinct=1, env=None, process=1, reorder=1, first=0, verbose=1):
+  def __init__(self, exprs, base=10, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None, template=None, solution=None, header=None, distinct=1, check=None, env=None, process=1, reorder=1, first=0, verbose=1):
     """
     create a substituted expression solver.
 
@@ -3637,6 +3643,7 @@ class SubstitutedExpression(object):
     d2i - map of digits to invalid symbol assignments (default: leading digits cannot be 0)
     answer - an expression for the answer value
     distinct - symbols which should have distinct values (1 = all, 0 = none) (default: 1)
+    check - a boolean function used to accept/reject solutions (default: None)
     env - additional environment for evaluation (default: None)
 
     If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
@@ -3653,6 +3660,7 @@ class SubstitutedExpression(object):
     self.solution = solution
     self.header = header
     self.distinct = distinct
+    self.check = check
     self.env = env
 
     self.process = process
@@ -4056,6 +4064,7 @@ class SubstitutedExpression(object):
     solver = self._solver
     answer = self.answer
     header = self.header
+    if check is None: check = self.check
     if first is None: first = self.first
     if verbose is None: verbose = self.verbose
 
@@ -6179,8 +6188,9 @@ if __name__ == "__main__":
   #   % python enigma.py -r <file> <additional-args>
   #   % python enigma.py --run <file> <additional-args>
   #   % python enigma.py <file> <additional-args>
-  if argv:
-    run(*argv)
+  args = argv()
+  if args:
+    run(*args)
     if _run_exit is not None:
       sys.exit(_run_exit)
 
@@ -6188,8 +6198,8 @@ if __name__ == "__main__":
   #print('[python version ' + sys.version.replace("\n", " ") + ']')
   printf('[enigma.py version {__version__} (Python {v})]', v=sys.version.split(None, 1)[0])
 
-  # parse arguments
-  args = dict((arg[1], arg[2:]) for arg in argv if len(arg) > 1 and arg[0] == '-')
+  # parse arguments into a dict
+  args = dict((arg[1], arg[2:]) for arg in args if len(arg) > 1 and arg[0] == '-')
 
   # -h => help
   if 'h' in args:
