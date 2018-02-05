@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jan 28 12:51:05 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb  5 12:37:25 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-01-28"
+__version__ = "2018-02-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3800,7 +3800,7 @@ class SubstitutedExpression(object):
     invalid = set()
     if d2i is not None:
       for (d, ss) in d2i.items():
-        if d not in digits: printf("WARNING: SubstitutedExpression: non-valid invalid digit {d} specified")
+        if d not in digits: printf("WARNING: SubstitutedExpression: non-valid invalid digit {d} specified", d=repr(d))
         invalid.update((s, d) for s in ss)
     else:
       # disallow leading zeros
@@ -3872,17 +3872,27 @@ class SubstitutedExpression(object):
     idigits = self._idigits
     (exprs, xs, vs, ts, syms) = self._exprs
 
+    # output run parameters
     if self.verbose & 64:
       print("--[code]--\n" + join(self.save(quote=1), sep="\n") + "\n--[/code]--\n")
 
+    # possible digits for each symbol
+    pdigits = dict((s, list(digits.difference(d for (x, d) in invalid if x == s))) for s in symbols)
+
     # reorder the expressions into a more appropriate evaluation order
     if reorder:
-      # at each stage chose the expression with the fewest unassigned symbols
-      # TODO: consider making a map of symbol -> possibilities then choosing the expression
-      # with the fewest possibilities (multiplied up from all symbols in the expression)
+      # at each stage chose the expression with the fewest remaining possibilities
       d = set(s2d.keys())
       (s, r) = (list(), list(i for (i, _) in enumerate(syms)))
-      fn = lambda i: (exprs[i][2] == 0, len(xs[i].difference(d)), -len(vs[i].difference(d, xs[i])))
+      # formerly we used:
+      #
+      #                (  is answer?  )  (# of unassiged symbols)  -(number of new symbols we get)
+      #fn = lambda i: (exprs[i][2] == 0, len(xs[i].difference(d)), -len(vs[i].difference(d, xs[i])))
+      #
+      # now we use:
+      #
+      #               (  is answer?  )  (     total possibilities for unassigned symbols     )  -(number of new symbols we get)
+      fn = lambda i: (exprs[i][2] == 0, multiply(len(pdigits[x]) for x in xs[i] if x not in d), -len(vs[i].difference(d, xs[i])))
       while r:
         i = min(r, key=fn)
         s.append(i)
@@ -3943,7 +3953,7 @@ class SubstitutedExpression(object):
       for s in xsyms:
         if s in done: continue
         # allowable digits for s
-        ds = list(digits.difference(d for (x, d) in invalid if x == s))
+        ds = pdigits[s]
         in_loop = True
         prog += sprintf("{_}for _{s} in {ds}:\n")
         _ += indent
@@ -5951,12 +5961,13 @@ def parsefile(path, *args):
     for (i, x) in enumerate(s):
       if not fn(x):
         return (s[:i], s[i:])
-    return (s, [])
+    return (s, ())
 
   # insert any extra args
   if args:
-    words = list(flattened(zip(divide(words), divide(args)), depth=2))
-          
+    ((s1, s3), (s2, s4)) = (divide(words), divide(args))
+    words = flatten((s1, s2, s3, s4))
+
   return (cmd, words)
 
 
