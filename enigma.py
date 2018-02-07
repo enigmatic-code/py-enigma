@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb  5 12:37:25 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Feb  7 18:19:57 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-02-05"
+__version__ = "2018-02-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3876,8 +3876,9 @@ class SubstitutedExpression(object):
     if self.verbose & 64:
       print("--[code]--\n" + join(self.save(quote=1), sep="\n") + "\n--[/code]--\n")
 
-    # possible digits for each symbol
-    pdigits = dict((s, list(digits.difference(d for (x, d) in invalid if x == s))) for s in symbols)
+    # valid digits for each symbol
+    valid = dict((s, list(digits.difference(d for (x, d) in invalid if x == s))) for s in symbols)
+    #for k in sorted(valid.keys()): printf("{k} -> {v}", v=valid[k])
 
     # reorder the expressions into a more appropriate evaluation order
     if reorder:
@@ -3891,8 +3892,8 @@ class SubstitutedExpression(object):
       #
       # now we use:
       #
-      #               (  is answer?  )  (     total possibilities for unassigned symbols     )  -(number of new symbols we get)
-      fn = lambda i: (exprs[i][2] == 0, multiply(len(pdigits[x]) for x in xs[i] if x not in d), -len(vs[i].difference(d, xs[i])))
+      #               (  is answer?  )  (    total possibilities for unassigned symbols    )  -(number of new symbols we get)
+      fn = lambda i: (exprs[i][2] == 0, multiply(len(valid[x]) for x in xs[i] if x not in d), -len(vs[i].difference(d, xs[i])))
       while r:
         i = min(r, key=fn)
         s.append(i)
@@ -3953,7 +3954,7 @@ class SubstitutedExpression(object):
       for s in xsyms:
         if s in done: continue
         # allowable digits for s
-        ds = pdigits[s]
+        ds = valid[s]
         in_loop = True
         prog += sprintf("{_}for _{s} in {ds}:\n")
         _ += indent
@@ -5497,15 +5498,27 @@ class Football(object):
     start, end - delimiters to use before and after the matches are
     output.
     """
-    if start is not None: printf("{start}")
+    if start is not None:
+      printf("{start}")
     for k in sorted(matches.keys()):
       m = matches[k]
-      s = ((join(scores[k], sep='-') if scores.get(k, None) else '---') if scores else '')
-      if teams: k = tuple(teams[t] for t in k)
+      if scores:
+        if scores.get(k, None):
+          s = join(scores[k], sep='-')
+        else:
+          if m == 'x':
+            s = '---'
+          else:
+            s = '?-?'
+      else:
+        s = ''
+      if teams:
+        k = tuple(teams[t] for t in k)
       printf("{k} = ({m}) {s}", k=join(k, sep=' vs '))
     if d is not None:
       printf("{d}", d=join((join((k, d[k]), sep='=') for k in sorted(d.keys())), sep=' '))
-    if end is not None: printf("{end}")
+    if end is not None:
+      printf("{end}")
 
 ###############################################################################
 
@@ -5991,14 +6004,16 @@ def run(cmd, *args, **kw):
 
   # if cmd names a file
   if os.path.isfile(cmd):
+    if timer and not isinstance(timer, basestring): timer = os.path.basename(cmd)
     if cmd.endswith(".py"):
       # use runpy for *.py
       import runpy
       sys.argv = [cmd] + list(args)
-      if timer: timer = Timer()
+      if timer: timer = Timer(name=timer)
       r = runpy.run_path(cmd)
       if timer: timer.report()
-      return (0 if r else -1)
+      _run_exit = (0 if r else -1)
+      return
     else:
       # otherwise, treat it as a run file
       (cmd, args) = parsefile(cmd, *args)
@@ -6008,7 +6023,8 @@ def run(cmd, *args, **kw):
   if fn:
     fn = getattr(fn, 'command_line')
     if fn:
-      if timer: timer = Timer()
+      if timer and not isinstance(timer, basestring): timer = 'timing'
+      if timer: timer = Timer(name=timer)
       _run_exit = (fn(list(args)) or 0)
       if timer: timer.report()
       return
