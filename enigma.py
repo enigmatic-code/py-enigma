@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Feb  7 18:19:57 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Feb  8 07:08:12 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-02-07"
+__version__ = "2018-02-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3580,7 +3580,6 @@ def writelines(fh, lines, sep=None, flush=1):
   if flush: fh.flush()
 
 # a sequence of digit values may be specified (in decimal) as:
-#   "<d>" = a single digit
 #   "<d>-<d>" = a range of digits
 #   "<d>,...,<d>" "<d>|...|<d>" "<d>+...+<d>"
 #   "<d>" = a single digit
@@ -3591,11 +3590,8 @@ def _digits(s):
     (a, _, b) = s.partition('-')
     return irange(int(a), int(b))
   # "<d>,...,<d>" "<d>|...|<d>" "<d>+...+<d>"
-  for x in (',', '|', '+'):
-    if x in s:
-      return tuple(int(d) for d in s.split(x))
   # "<d>"
-  return (int(s),)
+  return tuple(int(d) for d in re.split(r'[\+\|\,]', s))
 
 
 class SubstitutedExpression(object):
@@ -3799,7 +3795,8 @@ class SubstitutedExpression(object):
     # invalid (<symbol>, <digit>) assignments
     invalid = set()
     if d2i is not None:
-      for (d, ss) in d2i.items():
+      # it should provide a sequence of (<digit>, <symbol[s]>) pairs
+      for (d, ss) in (d2i.items() if hasattr(d2i, 'items') else d2i):
         if d not in digits: printf("WARNING: SubstitutedExpression: non-valid invalid digit {d} specified", d=repr(d))
         invalid.update((s, d) for s in ss)
     else:
@@ -4193,7 +4190,7 @@ class SubstitutedExpression(object):
 
     if self.d2i:
       for (k, v) in sorted(self.d2i.items(), key=lambda t: t[0]):
-        args.append(sprintf("--invalid={q}{k},{v}{q}"))
+        args.append(sprintf("--invalid={q}{k},{v}{q}", v=join(sorted(v))))
 
     if self.answer:
       args.append(sprintf("--answer={q}{self.answer}{q}"))
@@ -4321,7 +4318,7 @@ class SubstitutedExpression(object):
       if opt['d2i'] is None: opt['d2i'] = dict()
       (ds, s) = v.split(',', 1)
       for i in _digits(ds):
-        opt['d2i'][i] = s
+        opt['d2i'][i] = opt['d2i'].get(i, '') + s
     elif k == 'D' or k == 'distinct':
       if v == '0' or v == '1':
         v = int(v)
@@ -4333,11 +4330,7 @@ class SubstitutedExpression(object):
     elif k == '1' or k == 'first':
       opt['first'] = (int(v) if v else 1)
     elif k == 'v' or k == 'verbose':
-      if v:
-        v = sum(int(x) for x in re.split(r'[\+\|]', v))
-      else:
-        v = 1
-      opt['verbose'] = v
+      opt['verbose'] = (sum(_digits(v)) if v else 1)
     elif k == 'r' or k == 'reorder':
       opt['reorder'] = (int(v) if v else 0)
 
@@ -4357,7 +4350,6 @@ class SubstitutedExpression(object):
     # process options
     opt = dict(_argv=list(), s2d=dict(), d2i=None, verbose=1, first=0, reorder=1)
     for arg in args:
-
       # deal with option args
       try:
         if arg.startswith('--'):
@@ -4374,7 +4366,6 @@ class SubstitutedExpression(object):
 
       except:
         raise ValueError(sprintf("[{cls.__name__}] invalid option: {arg}"))
-
     return opt
 
 
