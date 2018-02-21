@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Feb  8 07:08:12 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Feb 20 22:05:55 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-02-08"
+__version__ = "2018-02-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -166,6 +166,15 @@ elif sys.version_info[0] > 2:
 # useful routines that can be re-exported
 pi = math.pi
 sqrt = math.sqrt
+
+# add attributes to a function (to use as static variables)
+# (but for better performance use global variables)
+def static(**kw):
+  def decorate(fn):
+    for (k, v) in kw.items():
+      setattr(fn, k, v)
+    return fn
+  return decorate
 
 # useful routines for solving Enigma puzzles
 
@@ -206,6 +215,13 @@ def distinct_values(s, n=None):
   if n is None: n = len(s)
   return len(set(s)) == n
 
+def seq_all_different(s):
+  seen = set()
+  for x in s:
+    if x in seen: return False
+    seen.add(x)
+  return True
+
 # same as distinct_values(args), or distinct_values(args, len(args))
 def is_pairwise_distinct(*args):
   """
@@ -219,14 +235,24 @@ def is_pairwise_distinct(*args):
   False
 
   """
+  # this gives the same result as: distinct_values(args, None)
   # it's probably faster to use a builtin...
-  return len(set(args)) == len(args)
+  #return len(set(args)) == len(args)
   ## even through the following may do fewer tests:
   #for i in range(len(args) - 1):
   #  if args[i] in args[i + 1:]: return False
   #return True
+  return seq_all_different(args)
 
 pairwise_distinct = is_pairwise_distinct
+
+def seq_all_same(s):
+  i = iter(s)
+  try:
+    v = next(i)
+  except StopIteration:
+    return True
+  return all(x == v for x in i)
 
 # same as distinct_values(args, 1)
 def all_same(*args):
@@ -240,9 +266,9 @@ def all_same(*args):
   True
 
   >>> all_same()
-  False
+  True
   """
-  return len(set(args)) == 1
+  return seq_all_same(args)
 
 all_different = is_pairwise_distinct
 
@@ -543,14 +569,30 @@ def filter_unique(s, f=identity, g=identity):
 
 def unpack(fn):
   """
-  Turn a function that takes named parameters into a function that
-  takes a tuple.
+  Turn a function that takes multiple parameters into a function that
+  takes a tuple of those parameters.
 
   To some extent this can be used to work around the removal of
-  parameter unpacking in Python 3 (PEP 3113).
+  parameter unpacking in Python 3 (PEP 3113):
 
-  >>> fn = lambda x, y: is_square(x ** 2 + y ** 2)
-  >>> list(filter(unpack(fn), [(1, 2), (2, 3), (3, 4), (4, 5)]))
+  In Python 2.7 we could write:
+
+    > fn = lambda (x, y): is_square(x * x + y * y)
+    > fn((3, 4))
+    5
+
+  but this is not allowed in Python 3.
+
+  Instead we can write:
+
+    > fn = unpack(lambda x, y: is_square(x * x + y * y))
+    > fn((3, 4))
+    5
+
+  to provide the same functionality.
+
+  >>> fn = unpack(lambda x, y: is_square(x * x + y * y))
+  >>> list(filter(fn, [(1, 2), (2, 3), (3, 4), (4, 5)]))
   [(3, 4)]
   """
   return lambda args: fn(*args)
@@ -1662,15 +1704,16 @@ def recurring(a, b, recur=0, base=10):
         s += int2base(d, base)
 
 
-# command line arguments (and the function to fetch them)
-_argv = [ None, None ]
+# command line arguments
 
 # fetch command line arguments from sys
-def argv(force=0):
-  if force or _argv[0] is None: _argv[0] = sys.argv[1:]
-  return _argv[0]
+@static(argv=None)
+def get_argv(force=0):
+  if force or argv.argv is None: argv.argv = sys.argv[1:]
+  return argv.argv
 
-_argv[1] = argv
+# alias 
+argv = get_argv
 
 # might have been better to use: arg(n, fn=identity, default=None, argv=None)
 def arg(v, n, fn=identity, argv=None):
@@ -1685,7 +1728,7 @@ def arg(v, n, fn=identity, argv=None):
   >>> arg(42, 1, int, ['56'])
   42
   """
-  if argv is None: argv = _argv[1]()
+  if argv is None: argv = get_argv()
   return (fn(argv[n]) if len(argv) > n else v)
 
 
@@ -3562,13 +3605,22 @@ def _word(w, base):
     m *= base
   return join((concat(('_', k) + (() if v == 1 else ('*', v))) for (k, v) in d.items()), sep=' + ')
 
+# simulate a function static variable
+#
+# it would be nice to do:
+#
+# def gensym(x):
+#   static i = 0
+#   i += 1
+#   return concat(x, i)
+#
+# but this achieves the same ends using function attributes
+#
 
-_gensym = [ 0 ]
-
+@static(i=0)
 def gensym(x):
-  _gensym[0] += 1
-  return concat(x, _gensym[0])
-
+  gensym.i += 1
+  return concat(x, gensym.i)
 
 # file.writelines does NOT include newline characters
 def writelines(fh, lines, sep=None, flush=1):
@@ -3578,6 +3630,21 @@ def writelines(fh, lines, sep=None, flush=1):
     fh.write(line)
     fh.write(sep)
   if flush: fh.flush()
+
+# split string <s> on any of the characters in <sep>
+_split_sep = ',|+'
+
+def _split(s, sep=_split_sep, maxsplit=0):
+  d = sep[0]
+  if len(sep) > 1:
+    # map all other separators to d
+    s = re.sub('[' + re.escape(sep[1:]) + ']', d, s)
+  if maxsplit == 0:
+    return s.split(d)
+  elif maxsplit > 0:
+    return s.split(d, maxsplit)
+  else:
+    return s.rsplit(d, -maxsplit)
 
 # a sequence of digit values may be specified (in decimal) as:
 #   "<d>-<d>" = a range of digits
@@ -3591,7 +3658,7 @@ def _digits(s):
     return irange(int(a), int(b))
   # "<d>,...,<d>" "<d>|...|<d>" "<d>+...+<d>"
   # "<d>"
-  return tuple(int(d) for d in re.split(r'[\+\|\,]', s))
+  return tuple(int(d) for d in _split(s, _split_sep))
 
 
 class SubstitutedExpression(object):
@@ -4188,6 +4255,7 @@ class SubstitutedExpression(object):
       for (k, v) in sorted(self.s2d.items(), key=lambda t: t[1]):
         args.append(sprintf("--assign={q}{k},{v}{q}"))
 
+    # we should probably make this from self.invalid
     if self.d2i:
       for (k, v) in sorted(self.d2i.items(), key=lambda t: t[0]):
         args.append(sprintf("--invalid={q}{k},{v}{q}", v=join(sorted(v))))
@@ -4316,14 +4384,14 @@ class SubstitutedExpression(object):
       # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
       # NOTE: <digits> are specified in decimal (not --base)
       if opt['d2i'] is None: opt['d2i'] = dict()
-      (ds, s) = v.split(',', 1)
+      (ds, s) = _split(v, maxsplit=-1)
       for i in _digits(ds):
         opt['d2i'][i] = opt['d2i'].get(i, '') + s
     elif k == 'D' or k == 'distinct':
       if v == '0' or v == '1':
         v = int(v)
       else:
-        v = v.split(',')
+        v = _split(v)
       opt['distinct'] = v
     elif k == 'A' or k == 'answer':
       opt['answer'] = v
@@ -5148,7 +5216,7 @@ class Football(object):
     if games is None:
       games = 'wldx'
     if points is None:
-      points = { 'w': 2, 'd': 1 }
+      points = dict(w=2, d=1)
     if swap is None:
       swap = { 'w': 'l', 'l': 'w' }
 
@@ -5156,6 +5224,9 @@ class Football(object):
     self._points = points
     self._swap = swap
     self._table = collections.namedtuple('Table', ('played',) + self._games + ('points',))
+
+  def swap(self, m):
+    return self._swap.get(m, m)
 
   # generate games
   def games(self, *gs, **kw):
