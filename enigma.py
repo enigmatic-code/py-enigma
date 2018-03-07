@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Feb 20 22:05:55 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar  7 14:37:58 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-02-15"
+__version__ = "2018-03-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -246,12 +246,25 @@ def is_pairwise_distinct(*args):
 
 pairwise_distinct = is_pairwise_distinct
 
-def seq_all_same(s):
+def seq_all_same(s, **kw):
+  """
+  >>> seq_all_same([1, 2, 3])
+  False
+  >>> seq_all_same([1, 1, 1, 1, 1, 1])
+  True
+  >>> seq_all_same([1, 1, 1, 1, 1, 1], value=4)
+  False
+  >>> seq_all_same(Primes(expandable=True))
+  False
+  """
   i = iter(s)
   try:
-    v = next(i)
-  except StopIteration:
-    return True
+    v = kw['value']
+  except KeyError:
+    try:
+      v = next(i)
+    except StopIteration:
+      return True
   return all(x == v for x in i)
 
 # same as distinct_values(args, 1)
@@ -2493,6 +2506,29 @@ def __int2words(n, scale='short', sep='', hyphen=' '):
 class Delay(object):
 
   def __init__(self, fn, *args, **kw):
+    """
+    create a delayed evaluation promise for fn(*args, **kw).
+
+    Note that if you want the arguments themselves to be lazily evaluated
+    you will need to use:
+
+      Delay(lambda: fn(expr1, expr2, opt1=expr3, opt2=expr4))
+
+    rather than:
+
+      Delay(fn, expr1, expr2, opt1=expr3, opt2=expr4)
+
+    example:
+
+      x = Delay(expensive, 1)
+      x.evaluated --> False
+      x.value --> returns expensive(1)
+      x.evaluated --> True
+      x.value --> returns expensive(1) again, without re-evaluating it
+      x.reset()
+      x.evaluated --> False
+      x.value --> returns expensive(1), but re-evaluates it
+    """
     self.fn = fn
     self.args = args
     self.kw = kw
@@ -2512,6 +2548,19 @@ class Delay(object):
       return self.evaluate()
     else:
       raise AttributeError
+
+  @classmethod
+  def iter(self, *args):
+    """
+    create an iterator that takes a sequence of Delay() objects,
+    and evaluates and returns each one as next() is called.
+
+    i = Delay.iter(Delay(expensive, 1), Delay(expensive, 2), Delay(expensive, 3))
+    next(i) --> evaluates and returns expensive(1)
+    next(i) --> evaluates and returns expensive(2)
+    next(i) --> evaluates and returns expensive(3)
+    """
+    return (x.value for x in args)
 
 ###############################################################################
 
@@ -3988,24 +4037,24 @@ class SubstitutedExpression(object):
           d[s] = set(x for x in ss if x != s)
       distinct = d
 
-    # generate the program
-    (prog, _, indent) = ('', '', '  ')
+    # generate the program (line by line)
+    (prog, _, indent) = ([], '', '  ')
 
     # wrap it all up as function solver
     solver = gensym('_substituted_expression_solver')
-    prog += sprintf("{_}def {solver}():\n")
+    prog.append(sprintf("{_}def {solver}():"))
     _ += indent
 
     # set initial values
     done = set()
     for (s, d) in s2d.items():
-      prog += sprintf("{_}_{s} = {d}\n")
+      prog.append(sprintf("{_}_{s} = {d}"))
       done.add(s)
 
     # look for words which can be made
     for w in words:
       if all(x in done for x in w):
-        prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
+        prog.append(sprintf("{_}_{w} = {x}", x=_word(w, base)))
 
     in_loop = False
 
@@ -4020,29 +4069,29 @@ class SubstitutedExpression(object):
         # allowable digits for s
         ds = valid[s]
         in_loop = True
-        prog += sprintf("{_}for _{s} in {ds}:\n")
+        prog.append(sprintf("{_}for _{s} in {ds}:"))
         _ += indent
         if done and s in distinct:
           # TODO: we should exclude initial values (that are excluded from ds) here
           check = join((('_' + s + ' != ' + '_' + x) for x in done if x in distinct[s]), sep=' and ')
           if check:
-            prog += sprintf("{_}if {check}:\n")
+            prog.append(sprintf("{_}if {check}:"))
             _ += indent
         done.add(s)
         # look for words which can now be made
         for w in words:
           if s in w and all(x in done for x in w):
-            prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
+            prog.append(sprintf("{_}_{w} = {x}", x=_word(w, base)))
 
       # calculate the expression
       if k != 0: # (but not for the answer expression)
         x = _replace_words(expr, (lambda w: '(' + '_' + w + ')'))
-        prog += sprintf("{_}try:\n")
-        prog += sprintf("{_}  x = int({x})\n")
-        prog += sprintf("{_}except NameError:\n") # catch undefined functions
-        prog += sprintf("{_}  raise\n")
-        prog += sprintf("{_}except:\n") # maybe "except (ArithmeticError, ValueError)"
-        prog += sprintf("{_}  {skip}\n", skip=('continue' if in_loop else 'pass'))
+        prog.append(sprintf("{_}try:"))
+        prog.append(sprintf("{_}  x = int({x})"))
+        prog.append(sprintf("{_}except NameError:")) # catch undefined functions
+        prog.append(sprintf("{_}  raise"))
+        prog.append(sprintf("{_}except:")) # maybe "except (ArithmeticError, ValueError)"
+        prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'pass')))
 
       # check the value
       if k == 3:
@@ -4050,18 +4099,18 @@ class SubstitutedExpression(object):
         for (j, y) in enumerate(val[::-1], start=-len(val)):
           if y in done:
             # this is a symbol with an assigned value
-            prog += sprintf("{_}y = x % {base}\n")
+            prog.append(sprintf("{_}y = x % {base}"))
             # check the value
-            prog += sprintf("{_}if y == _{y}:\n")
+            prog.append(sprintf("{_}if y == _{y}:"))
             _ += indent
-            prog += sprintf("{_}x //= {base}\n")          
+            prog.append(sprintf("{_}x //= {base}"))
             # and check x == 0 for the final value
             if j == -1:
-              prog += sprintf("{_}if x == 0:\n")
+              prog.append(sprintf("{_}if x == 0:"))
               _ += indent
           else:
             # this is a new symbol...
-            prog += sprintf("{_}_{y} = x % {base}\n")
+            prog.append(sprintf("{_}_{y} = x % {base}"))
             check = list()
             # check it is different from existing symbols
             if y in distinct:
@@ -4071,27 +4120,27 @@ class SubstitutedExpression(object):
               check.append('_' + y + ' != ' + str(v))
             if check:
               check = join(check, sep=' and ')
-              prog += sprintf("{_}if {check}:\n")
+              prog.append(sprintf("{_}if {check}:"))
               _ += indent
-            prog += sprintf("{_}x //= {base}\n")          
+            prog.append(sprintf("{_}x //= {base}"))    
             # and check x == 0 for the final value
             if j == -1:
-              prog += sprintf("{_}if x == 0:\n")
+              prog.append(sprintf("{_}if x == 0:"))
               _ += indent
             done.add(y)
             # look for words which can now be made
             for w in words:
               if y in w and all(x in done for x in w):
-                prog += sprintf("{_}_{w} = {x}\n", x=_word(w, base))
+                prog.append(sprintf("{_}_{w} = {x}", x=_word(w, base)))
 
       elif k == 1:
         # look for a True value
-        prog += sprintf("{_}if x:\n")
+        prog.append(sprintf("{_}if x:"))
         _ += indent
 
       elif k == 2:
         # it's a comparable value
-        prog += sprintf("{_}if x == {val}:\n")
+        prog.append(sprintf("{_}if x == {val}:"))
         _ += indent
 
     # yield solutions as dictionaries
@@ -4099,10 +4148,13 @@ class SubstitutedExpression(object):
     if answer:
       # compute the answer
       r = _replace_words(answer, (lambda w: '(' + '_' + w + ')'))
-      prog += sprintf("{_}r = {r}\n")
-      prog += sprintf("{_}yield ({{ {d} }}, r)\n")
+      prog.append(sprintf("{_}r = {r}"))
+      prog.append(sprintf("{_}yield ({{ {d} }}, r)"))
     else:
-      prog += sprintf("{_}yield {{ {d} }}\n")
+      prog.append(sprintf("{_}yield {{ {d} }}"))
+
+    # turn the program lines into a string
+    prog = join(prog, sep="\n")
 
     if verbose & 256:
       printf("-- [code language=\"python\"] --\n{prog}\n-- [/code] --")
