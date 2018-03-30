@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar  7 14:37:58 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Mar 30 21:28:13 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -70,6 +70,7 @@ intf                   - floor conversion of float to int
 invmod                 - multiplicative inverse of n modulo m
 ipartitions            - partition a sequence with repeated values by index
 irange                 - inclusive range iterator
+iroot                  - integer kth root function
 is_cube                - check a number is a perfect cube
 is_distinct            - check a value is distinct from other values
 is_duplicate           - check to see if value (as a string) contains duplicate characters
@@ -136,7 +137,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-03-07"
+__version__ = "2018-03-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -163,8 +164,11 @@ elif sys.version_info[0] > 2:
   basestring = str
   raw_input = input
 
-# useful routines that can be re-exported
+# useful constants
+nl = "\n"
 pi = math.pi
+
+# useful routines that can be re-exported
 sqrt = math.sqrt
 
 # add attributes to a function (to use as static variables)
@@ -501,7 +505,7 @@ def chunk(s, n=2):
     yield s
 
 
-def diff(a, b):
+def diff(a, b, *rest):
   """
   return the subsequence of <a> that excludes elements in <b>.
 
@@ -510,6 +514,7 @@ def diff(a, b):
   >>> join(diff('newhampshire', 'wham'))
   'nepsire'
   """
+  if rest: b = set(b).union(*rest)
   return tuple(x for x in a if x not in b)
 
 
@@ -1171,12 +1176,41 @@ def coprime_pairs(n=None, order=0):
 #   def is_power(n, m):
 #     i = int(n ** (1.0 / float(m)) + 0.5)
 #     return (i if i ** m == n else None)
-# but here we use Newton's method, which should work on arbitrary large integers
-# and we special case m = 2 (is_square)
+# but here we use a binary search, which should work on arbitrary large integers
 #
 # NOTE: that this will return 0 if n = 0 and None if n is not a perfect k-th power,
 # so [[ power(n, k) ]] will evaluate to True only for positive n
 # if you want to allow n to be 0 you should check: [[ power(n, k) is not None ]]
+
+def iroot(n, k):
+  """
+  compute the largest integer x such that x^k <= n.
+
+  i.e. x is the integer k-th root of n.
+
+  it is the exact root if: (x ** k == n)
+  (which is what is_power() does)
+  """
+  # binary search
+  if n < 0 or k < 1: return
+  if n >> k == 0: return int(n > 0)
+  a = 1 << ((n.bit_length() - 1) // k)
+  b = a << 1
+  #assert (a ** k <= n and b ** k > n)
+  # if this assertion fails we need:
+  #while not(b ** k > n): (a, b) = (b, b << 1)
+  while b - a > 1:
+    r = (a + b) // 2
+    x = r ** k
+    if x < n:
+      a = r
+    elif x > n:
+      b = r
+    else:
+      return r
+  return a
+
+
 def is_power(n, k):
   """
   check positive integer <n> is a perfect <k>th power of some integer.
@@ -1196,22 +1230,45 @@ def is_power(n, k):
   >>> (is_power(n ** 3, 3) is not None, is_power(n ** 3 + 1, 3) is not None)
   (True, False)
   """
-  if n == 0: return 0
-  # initial guess
-  try:
-    # make a sneaky close guess for non-huge numbers
-    a = int(n ** (1.0000000001 / float(k)))
-  except OverflowError:
-    # default initial guess
-    a = 1
-  # calculate successive approximations via Newton's method
-  k1 = k - 1
-  while True:
-    d = (n // (a ** k1) - a) // k
-    a += d
-    if -2 < d < 2: break
-  return (a if a ** k == n else None)
+  r = iroot(n, k)
+  return (r if r ** k == n else None)
 
+
+# calculate intf(sqrt(n))
+# see: https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_numeral_system_.28base_2.29
+def isqrt(n):
+  """
+  calculate intf(sqrt(n)).
+
+  >>> isqrt(9)
+  3
+  >>> isqrt(15)
+  3
+  >>> isqrt(16)
+  4
+  >>> isqrt(17)
+  4
+  """
+  if n < 0: return None
+  if n < 4: return int(n > 0)
+
+  r = 0
+  k = n.bit_length() - 2
+  b = 1 << (k + (k & 1))
+
+  #assert not(b > n)
+  ## if this assertion fails we need
+  #while b > n: b >>= 2
+
+  while b:
+    if n >= r + b:
+      n -= r + b
+      r = (r >> 1) + b
+    else:
+      r >>= 1
+    b >>= 2
+
+  return r
 
 # it would be more Pythonic to encapsulate is_square in a class with the initialisation
 # in __init__, and the actual call in __call__, and then instantiate an object to be
@@ -1243,19 +1300,9 @@ def is_square(n):
   # early rejection: check <square> mod <some value> against a precomputed cache
   # e.g. <square> mod 80 = 0, 1, 4, 9, 16, 20, 25, 36, 41, 49, 64, 65 (rejects 88% of numbers)
   if _is_square_reject[n % _is_square_mod]: return None
-  # make an initial guess
-  try:
-    # make a sneaky close guess for non-huge numbers
-    a = int(n ** 0.500000001)
-  except OverflowError:
-    # default initial guess
-    a = 1
-  # calculate successive approximations via Newton's method
-  while True:
-    d = (n // a - a) // 2
-    a += d
-    if -2 < d < 2: break
-  return (a if a * a == n else None)
+  # otherwise use isqrt and check the result
+  r = isqrt(n)
+  return (r if r * r == n else None)
 
 
 def is_cube(n):
@@ -1311,33 +1358,6 @@ def is_power_of(n, k):
   if k < 2: return None
   (i, m) = drop_factors(n, k)
   return (i if m == 1 else None)
-
-
-# calculate intf(sqrt(n)) using Newton's method
-def isqrt(n):
-  """
-  calculate intf(sqrt(n)) using Newton's method.
-
-  >>> isqrt(9)
-  3
-  >>> isqrt(15)
-  3
-  >>> isqrt(16)
-  4
-  >>> isqrt(17)
-  4
-  """
-  if n < 0: return None
-  if n < 4: return int(n > 0)
-  try:
-    a = int(n ** 0.500000001)
-  except OverflowError:
-    a = n
-  while True:
-    b = (a + n // a) // 2
-    if a <= b: break
-    a = b
-  return a
 
 
 def T(n):
@@ -3561,7 +3581,7 @@ class SubstitutedSum(object):
       "  --digits=<digit>,... or <digit>-<digit> (or -d...) = available digits",
       "  --invalid=<digits>,<letters> (or -i<ds>,<ls>) = invalid digit to letter assignments",
       "  --help (or -h) = show command-line usage",
-    ), sep="\n")
+    ), sep=nl)
 
     # process options (--<key>[=<value>] or -<k><v>)
     opt = dict(l2d=dict(), d2i=None)
@@ -3987,7 +4007,7 @@ class SubstitutedExpression(object):
 
     # output run parameters
     if self.verbose & 64:
-      print("--[code]--\n" + join(self.save(quote=1), sep="\n") + "\n--[/code]--\n")
+      print("--[code]--" + nl + join(self.save(quote=1), sep=nl) + nl + "--[/code]--" + nl)
 
     # valid digits for each symbol
     valid = dict((s, list(digits.difference(d for (x, d) in invalid if x == s))) for s in symbols)
@@ -4154,10 +4174,10 @@ class SubstitutedExpression(object):
       prog.append(sprintf("{_}yield {{ {d} }}"))
 
     # turn the program lines into a string
-    prog = join(prog, sep="\n")
+    prog = join(prog, sep=nl)
 
     if verbose & 256:
-      printf("-- [code language=\"python\"] --\n{prog}\n-- [/code] --")
+      printf("-- [code language=\"python\"] --{nl}{prog}{nl}-- [/code] --", nl=nl)
 
     # compile the solver
     # a bit of jiggery pokery to make this work in several Python versions
@@ -4542,7 +4562,7 @@ class SubstitutedExpression(object):
           return 0
 
     # failure, output usage message
-    print(join(cls._usage(), sep="\n"))
+    print(join(cls._usage(), sep=nl))
     return -1
 
 
@@ -6182,7 +6202,7 @@ def _enigma_update(url, check=1, download=0, rename=0):
         data = u.read(8192)
         if not data: break
         f.write(data)
-    print("\ndownload complete")
+    printf("{nl}download complete", nl=nl)
     if rename:
       printf("renaming \"{name}\" to \"enigma.py\"")
       os.rename(name, "enigma.py")
@@ -6319,7 +6339,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.14', python3='3.6.4')
+""".format(version=__version__, python='2.7.14', python3='3.6.5')
 
 if __name__ == "__main__":
 
