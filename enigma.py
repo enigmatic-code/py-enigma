@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Mar 30 21:28:13 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Apr  9 23:24:44 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -137,7 +137,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-03-22"
+__version__ = "2018-04-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1967,7 +1967,7 @@ def update(s, ps=(), vs=None):
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
-def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0):
+def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0, include_self=0):
   """
   this function generates the adjacency matrix for a grid with n
   columns and m rows, represented by a linear array of size n*m
@@ -1983,10 +1983,12 @@ def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0):
   with the 'deltas' parameter, it can be specified as a list of (x, y)
   deltas to use instead.
 
-  if 'deltas' is not specified the 'include_adjacent' and 'include_diagonal'
-  flags are used to specify which squares are adjacent to the target square.
+  if 'deltas' is not specified the 'include_adjacent',
+  'include_diagonal' and 'include_self' flags are used to specify
+  which squares are adjacent to the target square.
   'include_adjacent' includes the N, S, E, W squares
   'include_diagonal' includes the NW, NE, SW, SE squares
+  'include_self' includes the square itself
 
   >>> grid_adjacency(2, 2)
   [[1, 2], [0, 3], [0, 3], [1, 2]]
@@ -2000,6 +2002,7 @@ def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0):
     deltas = list()
     if include_adjacent: deltas.extend([(0, -1), (-1, 0), (1, 0), (0, 1)])
     if include_diagonal: deltas.extend([(-1, -1), (1, -1), (-1, 1), (1, 1)])
+    if include_self: deltas.append((0, 0))
   # construct the adjacency matrix
   t = n * m
   r = [None] * t
