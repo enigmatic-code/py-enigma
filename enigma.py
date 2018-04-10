@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Apr  9 23:24:44 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr 10 14:55:57 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -137,7 +137,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-04-09"
+__version__ = "2018-04-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2361,12 +2361,23 @@ def is_roman(x):
 # digits for use in converting bases
 _DIGITS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-def int2base(i, base=10, digits=_DIGITS):
+def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=_DIGITS):
   """
   convert an integer <i> to a string representation in the specified base <base>.
 
+  if the <width> parameter is specified the number of digits will be
+  padded to value of <width> using the <pad> character. if <width> is
+  positive pad characters will be added on the left, if negative they
+  are added on the right. The default pad character is the digit 0.
+
+  if the <group> parameter is specified the digits are grouped into
+  blocks of <group> digits and separated by the string <sep> (this
+  happens after the digits are padded to any specified <width>). if
+  <group> is positive the groups start from the right, if negative
+  they start from the left.
+
   By default this routine only handles single digits up 36 in any given base,
-  but the digits parameter can be specified to give the symbols for larger bases.
+  but the <digits> parameter can be specified to give the symbols for larger bases.
 
   >>> int2base(-42)
   '-42'
@@ -2380,6 +2391,8 @@ def int2base(i, base=10, digits=_DIGITS):
   'HELLO'
   >>> int(int2base(123456, base=14), base=14)
   123456
+  >>> int2base(84, width=9, group=3, sep="_", base=2)
+  '001_010_100'
   """
   assert base > 1
   if i == 0: return digits[0]
@@ -2388,6 +2401,12 @@ def int2base(i, base=10, digits=_DIGITS):
   while i > 0:
     (i, n) = divmod(i, base)
     r = digits[n] + r
+  if width is not None:
+    if pad is None: pad = digits[0]
+    r = (r.rjust(width, pad) if width > 0 else r.ljust(-width, pad))
+  if group is not None:
+    (s, group) = ((-1, group) if group > 0 else (1, -group))
+    r = join((join(x) for x in chunk(r[::s], group)), sep=sep[::s])[::s]
   return r
 
 def base2int(s, base=10, strip=0, digits=_DIGITS):
