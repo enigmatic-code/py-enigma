@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr 10 14:55:57 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr 10 15:23:38 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2395,12 +2395,16 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=_DIGI
   '001_010_100'
   """
   assert base > 1
-  if i == 0: return digits[0]
-  elif i < 0: return '-' + int2base(-i, base=base, digits=digits)
-  r = ''
-  while i > 0:
-    (i, n) = divmod(i, base)
-    r = digits[n] + r
+  if i == 0:
+    r = digits[0]
+  elif i < 0:
+    return '-' + int2base(-i, base=base, width=width, pad=pad, group=group, sep=sep, digits=digits)
+  else:
+    r = list()
+    while i > 0:
+      (i, n) = divmod(i, base)
+      r.insert(0, digits[n])
+    r = join(r)
   if width is not None:
     if pad is None: pad = digits[0]
     r = (r.rjust(width, pad) if width > 0 else r.ljust(-width, pad))
