@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr 10 15:23:38 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Apr 11 22:06:37 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -137,7 +137,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-04-10"
+__version__ = "2018-04-11"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3630,18 +3630,13 @@ class SubstitutedSum(object):
           opt['l2d'][l] = int(d)
         elif k == 'd' or k == 'digits':
           # --digits=<digit>,... or <digit>-<digit> (or -d)
-          if '-' in v:
-            (a, _, b) = v.partition('-')
-            opt['digits'] = irange(int(a), int(b))
-          else:
-            ds = v.split(',')
-            opt['digits'] = tuple(int(d) for d in ds)
+          opt['digits'] = _digits(v)
         elif k == 'i' or k == 'invalid':
           # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
           if opt['d2i'] is None: opt['d2i'] = dict()
-          (d, s) = v.split(',', 1)
-          for i in d:
-            opt['d2i'][int(i)] = s
+          (ds, s) = _split(v, maxsplit=-1)
+          for i in _digits(ds):
+            opt['d2i'][i] = opt['d2i'].get(i, '') + s
         else:
           raise ValueError
       except:
