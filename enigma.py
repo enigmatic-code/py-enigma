@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Apr 11 22:06:37 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Apr 12 08:17:26 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -48,6 +48,7 @@ egcd                   - extended gcd
 factor                 - the prime factorisation of a number
 factorial              - factorial function
 farey                  - generate Farey sequences of coprime pairs
+fib                    - generate fibonacci sequences
 filter2                - partition an iterator into values that satisfy a predicate, and those that do not
 filter_unique          - partition an iterator into values that are unique, and those that are not
 find                   - find the index of an object in an iterable
@@ -1170,6 +1171,30 @@ def coprime_pairs(n=None, order=0):
     yield (a, b)
     for p in filter(fn, ((2 * b - a, b), (2 * a + b, a), (2 * b + a, b))):
       _push(ps, p)
+
+def fib(*s):
+  """
+  generate Fibonacci type sequences.
+
+  The initial k terms are provided as sequence s, subsequent terms
+  are calculated as the sum of the preceeding k terms.
+
+  Standard Fibonacci numbers (OEIS A000045):
+  >>> first(fib(0, 1), 10)
+  [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+
+  Lucas numbers (OEIS A000032):
+  >>> first(fib(2, 1), 10)
+  [2, 1, 3, 4, 7, 11, 18, 29, 47, 76]
+
+  Tribonacci numbers (OEIS A001590):
+  >>> first(fib(0, 1, 0), 10)
+  [0, 1, 0, 1, 2, 3, 6, 11, 20, 37]
+  """
+  s = list(s)
+  while True:
+    s.append(sum(s))
+    yield s.pop(0)
 
 
 # if we don't overflow floats (happens around 2**53) this works...
