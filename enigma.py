@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Apr 12 08:17:26 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu May 10 08:29:02 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -23,7 +23,6 @@ The latest version is available at <http://www.magwag.plus.com/jim/enigma.html>.
 
 Currently this module provides the following functions and classes:
 
-alphametic             - an alias for substituted_expression()
 arg                    - extract command line arguments
 base2int               - convert a string in the specified base to an integer
 C                      - combinatorial function (nCk)
@@ -109,7 +108,7 @@ sprintf                - interpolate variables into a string
 sqrt                   - the (positive) square root of a number
 subseqs                - sub-sequences of an iterable
 substitute             - substitute symbols for digits in text
-substituted_expression - a substituted expression (Alphametic) solver
+substituted_expression - a substituted expression (alphametic/cryptarithm) solver
 substituted_sum        - a solver for substituted sums
 T, tri                 - T(n) is the nth triangular number
 tau                    - tau(n) is the number of divisors of n
@@ -122,7 +121,6 @@ unpack                 - return a function that unpacks its arguments
 update                 - return an updated copy of an object
 
 Accumulator            - a class for accumulating values
-Alphametic             - an alias for SubstitutedExpression
 CrossFigure            - a class for solving cross figure puzzles
 Delay                  - a class for the delayed evaluation of a function
 Football               - a class for solving football league table puzzles
@@ -130,7 +128,7 @@ MagicSquare            - a class for solving magic squares
 Polynomial             - a class for manipulating Polynomials
 Primes                 - a class for creating prime sieves
 SubstitutedDivision    - a class for solving substituted long division sums
-SubstitutedExpression  - a class for solving general substituted expression (Alphametic) problems
+SubstitutedExpression  - a class for solving general substituted expression (alphametic/cryptarithm) problems
 SubstitutedSum         - a class for solving substituted addition sums
 Timer                  - a class for measuring elapsed timings
 """
@@ -138,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-04-11"
+__version__ = "2018-05-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2623,15 +2621,17 @@ class Delay(object):
   @classmethod
   def iter(self, *args):
     """
-    create an iterator that takes a sequence of Delay() objects,
-    and evaluates and returns each one as next() is called.
+    create an iterator that takes a sequence of Delay() objects (or
+    callable objects with no arguments) and evaluates and returns each
+    one as next() is called.
 
     i = Delay.iter(Delay(expensive, 1), Delay(expensive, 2), Delay(expensive, 3))
     next(i) --> evaluates and returns expensive(1)
     next(i) --> evaluates and returns expensive(2)
     next(i) --> evaluates and returns expensive(3)
     """
-    return (x.value for x in args)
+    # use x.value for delay objects, and just try and call everything else
+    return ((x.value if type(x) is self else x()) for x in args)
 
 ###############################################################################
 
@@ -2947,6 +2947,10 @@ class _PrimeSieveE6(object):
   # range(a, b) - generate primes in the range [a, b) - is the same as generate() now
   range = generate
 
+  # irange = inclusive range
+  def irange(self, a, b):
+    return self.range(a, b + 1)
+
   # prime test (may throw IndexError if n is too large)
   def is_prime(self, n):
     """
@@ -3126,7 +3130,7 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk):
   """
   Return a suitable prime sieve object.
 
-  n - initial limit of the sieve (the sieve contains primes up to n)
+  n - initial limit of the sieve (the sieve contains primes less than n)
   expandable - should the sieve expand as necessary
   array - list implementation to use
   fn - function used to increase the limit on expanding sieves
@@ -6099,11 +6103,23 @@ def stop(files=None, files_extra=None, use_exit=0, verbose=1):
 
 # this allows you to get an interactive shell on a running Python process
 # by sending it SIGUSR1 (30), but is only enabled if "i" appears in
-# the environment variable $PY_ENIGMA.
+# the environment variable $PY_ENIGMA
+#
+# similarly it also enables you to set a function using status() that will
+# be called if SIGUSR2 (31) is sent
+#
+# if "v" appears in $PY_ENIGMA a message will be printed giving the PID
+# of the process (so you can do: "kill -SIGUSR1 <PID>")
+
+@static(fn=None)
+def status(fn):
+  status.fn = fn
 
 _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
 if 'i' in _PY_ENIGMA:
+
+  if 'v' in _PY_ENIGMA: printf("[_PY_ENIGMA: pid={pid}]", pid=os.getpid())
 
   # start an interactive shell using the environment of the specified frame
   def shell(frame=None, env=None):
@@ -6124,16 +6140,27 @@ if 'i' in _PY_ENIGMA:
 
   import signal
 
-  def _signal_handler(signum, frame):
+  # SIGUSR1 -> start an interactive shell
+
+  def _signal_handler_shell(signum, frame):
     printf("[interrupt ... (Ctrl-D to resume) ...]")
     shell(frame=frame)
     printf("[continuing ...]")
 
   if hasattr(signal, 'SIGUSR1'):
-    signal.signal(signal.SIGUSR1, _signal_handler)
-    if 'v' in _PY_ENIGMA: printf("[_PY_ENIGMA: pid = {pid}]", pid=os.getpid())
+    signal.signal(signal.SIGUSR1, _signal_handler_shell)
   else:
-    print("[_PY_ENIGMA: failed to install interrupt handler]")
+    print("[_PY_ENIGMA: failed to install handler for SIGUSR1]")
+
+  # SIGUSR2 -> report status
+
+  def _signal_handler_status(signum, frame):
+    if status.fn: status.fn()
+
+  if hasattr(signal, 'SIGUSR2'):
+    signal.signal(signal.SIGUSR2, _signal_handler_status)
+  else:
+    print("[_PY_ENIGMA: failed to install handler for SIGUSR2]")
 
 ###############################################################################
 
@@ -6353,7 +6380,7 @@ enigma.py has the following command-line usage:
     Supported solvers are:
       SubstitutedSum
       SubstitutedDivision
-      SubstitutedExpression / Alphametic
+      SubstitutedExpression
 
     For example, Enigma 327 can be solved using:
 
@@ -6385,7 +6412,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.14', python3='3.6.5')
+""".format(version=__version__, python='2.7.15', python3='3.6.5')
 
 if __name__ == "__main__":
 
