@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu May 10 08:29:02 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon May 28 14:14:49 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-05-10"
+__version__ = "2018-05-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -618,7 +618,7 @@ def unpack(fn):
 # count the number of occurrences of a predicate in an iterator
 # TODO: rename this so it doesn't clash with itertools.count
 
-def icount(i, p, t=None):
+def icount(i, p=(lambda x: True), t=None):
   """
   count the number of elements in iterator <i> that satisfy predicate <p>,
   the termination limit <t> controls how much of the iterator we visit,
@@ -4791,7 +4791,7 @@ class SubstitutedDivision(SubstitutedExpression):
             m b g
             -----
                 k
-                =
+            =====
 
   In this example there are the following intermediate (subtraction) sums:
 
@@ -5154,6 +5154,9 @@ class SubstitutedDivision(SubstitutedExpression):
     A solver parameter is used to stop X from taking on the value of 5.
 
     % python enigma.py SubstitutedDivision --invalid="5,X" "???0000 / ?? = ?????" "??? - ?? = ?" "?? - ?? = ??" "??? - ?X? = ??" "??? - ??? = ??" "??? - ??? = 0"
+    ???0000 / ?? = ????? (rem 0) [??? - ?? = ?, ?? - ?? = ??, ??? - ?X? = ??, ??? - ??? = ??, ??? - ??? = 0]
+    1050000 / 48 = 21875 (rem 0) [105 - 96 = 9, 90 - 48 = 42, 420 - 384 = 36, 360 - 336 = 24, 240 - 240 = 0] / X=8
+    [1 solution]
 
 
     [Enigma 16] <https://enigmaticcode.wordpress.com/2012/12/12/enigma-16-four-five-six-seven/>
