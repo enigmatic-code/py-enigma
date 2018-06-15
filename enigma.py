@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon May 28 14:14:49 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun 15 23:21:22 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-05-28"
+__version__ = "2018-06-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -152,12 +152,14 @@ import collections
 # maybe use the "six" module for some of this stuff
 if sys.version_info[0] == 2:
   # Python 2.x
+  _python = 2
   range = xrange
   reduce = reduce
   basestring = basestring
   raw_input = raw_input
 elif sys.version_info[0] > 2:
   # Python 3.x
+  _python = 3
   range = range
   reduce = functools.reduce
   basestring = str
@@ -618,7 +620,7 @@ def unpack(fn):
 # count the number of occurrences of a predicate in an iterator
 # TODO: rename this so it doesn't clash with itertools.count
 
-def icount(i, p=(lambda x: True), t=None):
+def icount(i, p=None, t=None):
   """
   count the number of elements in iterator <i> that satisfy predicate <p>,
   the termination limit <t> controls how much of the iterator we visit,
@@ -653,7 +655,23 @@ def icount(i, p=(lambda x: True), t=None):
   >>> icount(irange(1, 100), is_prime, 21) < 21
   False
 
+  If p is not specified a function that always returns True is used,
+  so you can use this function to count the number of items in a (finite) iterator:
+
+  >>> icount(Primes(1000))
+  168
+
   """
+  if p is None:
+    if t is None:
+      if hasattr(i, '__len__'):
+        return len(i)
+      else:
+        # a quick way to count an iterable
+        d = collections.deque(enumerate(i, start=1), maxlen=1)
+        return (d[0][0] if d else 0)
+    else:
+      p = (lambda x: True)
   n = 0
   for x in i:
     if p(x):
@@ -2767,6 +2785,17 @@ def poly_neg(p):
 def poly_sub(p, q):
   return poly_add(p, poly_neg(q))
 
+# divide two polynomials: div() is used for coefficient division
+def poly_divmod(p, q, div):
+  (d, r) = (poly_zero, p)
+  while True:
+    k = len(r) - len(q)
+    if k < 0: break
+    m = poly_from_pairs([(k, div(r[-1], q[-1]))])
+    d = poly_add(d, m)
+    r = poly_sub(r, poly_mul(m, q))
+  return (d, r)
+
 # evaluate a polynomial
 def poly_value(p, x):
   v = 0
@@ -3702,7 +3731,7 @@ import re
 
 # find words in string <s>
 def _find_words(s, r=1):
-  words = set(re.findall('{(\w+?)}', s))
+  words = set(re.findall(r'{(\w+?)}', s))
   if r:
     # return the words
     return words
@@ -3714,7 +3743,7 @@ def _find_words(s, r=1):
 def _replace_words(s, fn):
   # new style, with braces
   _fn = lambda m: fn(m.group(1))    
-  return re.sub('{(\w+?)}', _fn, s)
+  return re.sub(r'{(\w+?)}', _fn, s)
 
 # return an expression that evaluates word <w> in base <base>
 def _word(w, base):
@@ -6257,10 +6286,10 @@ def timed_run(*args):
 def _enigma_update(url, check=1, download=0, rename=0):
   print('checking for updates...')
 
-  if sys.version_info[0] == 2:
+  if _python == 2:
     # Python 2.x
     from urllib2 import urlopen, URLError
-  elif sys.version_info[0] > 2:
+  else:
     # Python 3.x
     from urllib.request import urlopen, URLError
 
