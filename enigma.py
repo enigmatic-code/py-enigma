@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun 15 23:21:22 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jun 16 07:57:54 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2733,7 +2733,7 @@ def poly_from_pairs(ps, p=None):
 
 # remove extraneous zero coefficients
 def poly_trim(p):
-  while p and p[-1] == 0: p.pop()
+  while len(p) > 1 and p[-1] == 0: p.pop()
   return p
 
 # we can multiply two polynomials
@@ -2785,16 +2785,34 @@ def poly_neg(p):
 def poly_sub(p, q):
   return poly_add(p, poly_neg(q))
 
-# divide two polynomials: div() is used for coefficient division
-def poly_divmod(p, q, div):
+# divide two polynomials
+# div() is used for coefficient division, if the leading coefficient of q is not 1
+# (you probably want to use a rational implementation such as fractions.Fraction)
+def poly_divmod(p, q, div=None):
+  fn = (identity if q[-1] == 1 else (lambda x: div(x, q[-1])))
   (d, r) = (poly_zero, p)
-  while True:
+  while r != poly_zero:
     k = len(r) - len(q)
     if k < 0: break
-    m = poly_from_pairs([(k, div(r[-1], q[-1]))])
+    m = poly_from_pairs([(k, fn(r[-1]))])
     d = poly_add(d, m)
     r = poly_sub(r, poly_mul(m, q))
   return (d, r)
+
+def poly_print(p):
+  r = list()
+  for (e, c) in enumerate(p):
+    if c == 0: continue
+    s = str(c)
+    if not(c < 0): s = '+' + s
+    if e == 0:
+      pass
+    elif e == 1:
+      s = s + 'x'
+    else:
+      s = s + 'x^' + str(e)
+    r.append(s)
+  return join(r[::-1], sep=" ") or "0"
 
 # evaluate a polynomial
 def poly_value(p, x):
@@ -2810,7 +2828,7 @@ def poly_value(p, x):
 class Polynomial(list):
 
   def __repr__(self):
-    return self.__class__.__name__ + list.__repr__(self)
+    return self.__class__.__name__ + "[" + poly_print(self) + "]"
 
   def __add__(self, other):
     return self.__class__(poly_add(self, other))
