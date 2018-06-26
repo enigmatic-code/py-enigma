@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jun 16 07:57:54 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jun 26 12:48:44 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-06-15"
+__version__ = "2018-06-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1782,8 +1782,8 @@ def recurring(a, b, recur=0, base=10):
 
 # fetch command line arguments from sys
 @static(argv=None)
-def get_argv(force=0):
-  if force or argv.argv is None: argv.argv = sys.argv[1:]
+def get_argv(force=0, args=None):
+  if force or argv.argv is None: argv.argv = (args if args is not None else sys.argv[1:])
   return argv.argv
 
 # alias 
@@ -2799,12 +2799,14 @@ def poly_divmod(p, q, div=None):
     r = poly_sub(r, poly_mul(m, q))
   return (d, r)
 
+# print a polynomial in a more friendly form
 def poly_print(p):
   r = list()
   for (e, c) in enumerate(p):
     if c == 0: continue
     s = str(c)
     if not(c < 0): s = '+' + s
+    s = '(' + s + ')'
     if e == 0:
       pass
     elif e == 1:
@@ -2812,7 +2814,7 @@ def poly_print(p):
     else:
       s = s + 'x^' + str(e)
     r.append(s)
-  return join(r[::-1], sep=" ") or "0"
+  return join(r[::-1], sep=" ") or "(0)"
 
 # evaluate a polynomial
 def poly_value(p, x):
@@ -2829,6 +2831,9 @@ class Polynomial(list):
 
   def __repr__(self):
     return self.__class__.__name__ + "[" + poly_print(self) + "]"
+
+  def __hash__(self):
+    return hash(tuple(self))
 
   def __add__(self, other):
     return self.__class__(poly_add(self, other))
@@ -6265,6 +6270,7 @@ def run(cmd, *args, **kw):
     if cmd.endswith(".py"):
       # use runpy for *.py
       import runpy
+      get_argv(force=1, args=args)
       sys.argv = [cmd] + list(args)
       if timer: timer = Timer(name=timer)
       r = runpy.run_path(cmd)
