@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jun 26 12:48:44 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 27 15:25:57 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-06-26"
+__version__ = "2018-06-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1188,12 +1188,16 @@ def coprime_pairs(n=None, order=0):
     for p in filter(fn, ((2 * b - a, b), (2 * a + b, a), (2 * b + a, b))):
       _push(ps, p)
 
-def fib(*s):
+def fib(*s, **kw):
   """
   generate Fibonacci type sequences.
 
-  The initial k terms are provided as sequence s, subsequent terms
-  are calculated as the sum of the preceeding k terms.
+  The initial k terms are provided as sequence s, subsequent terms are
+  calculated as a function of the preceeding k terms.
+
+  The default function being 'sum', but a different function can be
+  specified using the 'fn' parameter (which should be a function that
+  takes a sequence of k terms and computes the appropriate value).
 
   Standard Fibonacci numbers (OEIS A000045):
   >>> first(fib(0, 1), 10)
@@ -1207,9 +1211,10 @@ def fib(*s):
   >>> first(fib(0, 1, 0), 10)
   [0, 1, 0, 1, 2, 3, 6, 11, 20, 37]
   """
+  fn = kw.get('fn', sum)
   s = list(s)
   while True:
-    s.append(sum(s))
+    s.append(fn(s))
     yield s.pop(0)
 
 
