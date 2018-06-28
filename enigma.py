@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 27 15:25:57 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun 28 12:05:36 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1210,6 +1210,10 @@ def fib(*s, **kw):
   Tribonacci numbers (OEIS A001590):
   >>> first(fib(0, 1, 0), 10)
   [0, 1, 0, 1, 2, 3, 6, 11, 20, 37]
+
+  Powers of 2:
+  >>> first(fib(1, fn=unpack(lambda x: 2 * x)), 10)
+  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
   """
   fn = kw.get('fn', sum)
   s = list(s)
