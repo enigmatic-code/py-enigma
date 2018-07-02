@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jul  2 16:51:03 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jul  2 19:48:58 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1195,7 +1195,7 @@ def coprime_pairs(n=None, order=0):
 # generate primitive pythagorean triples (x, y, z) with hypotenuse not exceeding Z
 # if Z is None, then triples will be generated indefinitely
 # if order is True, then triples will be returned in order
-def pythagorean_primitive(Z=None, order=0):
+def _pythagorean_primitive(Z=None, order=0):
   fn = ((lambda z: z <= Z) if Z is not None else (lambda z: True))
   if order:
     # use a heap
@@ -1223,24 +1223,30 @@ def pythagorean_primitive(Z=None, order=0):
       if fn(z): _push(ts, ((z, x, y) if y < x else (z, y, x)))
 
 # generate pythagorean triples (x, y, z) with hypotenuse not exceeding Z
-# triples are generated in order
-def pythagorean_all(Z):
-  from heapq import heapify, heappush, heappop
-  # multiples of primitives
-  ms = list()
-  heapify(ms)
-  for (x, y, z) in pythagorean_primitive(Z, order=1):
-    # return any saved multiples less than (x, y, z)
-    while ms and ms[0] < (z, y, x):
+def _pythagorean_all(Z, order=0):
+  if order:
+    # use a heap to save the multiples
+    from heapq import heapify, heappush, heappop
+    # multiples of primitives
+    ms = list()
+    heapify(ms)
+    for (x, y, z) in _pythagorean_primitive(Z, order=1):
+      # return any saved multiples less than (x, y, z)
+      while ms and ms[0] < (z, y, x):
+        yield heappop(ms)[::-1]
+      # return (x, y, z)
+      yield (x, y, z)
+      # add in any new multiples
+      for k in irange(2, Z // z):
+        heappush(ms, (k * z, k * y, k * x))
+    # return any remaining multiples
+    while ms:
       yield heappop(ms)[::-1]
-    # return (x, y, z)
-    yield (x, y, z)
-    # add in any new multiples
-    for k in irange(2, Z // z):
-      heappush(ms, (k * z, k * y, k * x))
-  # return any remaining multiples
-  while ms:
-    yield heappop(ms)[::-1]
+  else:
+    # return the multiples with the primitives
+    for (x, y, z) in _pythagorean_primitive(Z, order=0):
+      for k in irange(1, Z // z):
+        yield (k * x, k * y, k * z)
 
 # generate pythagorean triples
 # n - specifies the maximum hypotenuse allowed
@@ -1269,11 +1275,11 @@ def pythagorean_triples(n=None, primitive=0, order=0):
   """
   if primitive:
     # primitive only triples
-    return pythagorean_primitive(n, order)
+    return _pythagorean_primitive(n, order)
   else:
     # include non-primitive
     assert n is not None
-    return pythagorean_all(n)
+    return _pythagorean_all(n, order)
 
 
 def fib(*s, **kw):
