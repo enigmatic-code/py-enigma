@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun 28 12:05:36 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jul  2 16:12:26 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -99,6 +99,7 @@ poly_*                 - routines manipulating polynomials, wrapped as Polynomia
 powerset               - the powerset of an iterator
 prime_factor           - generate terms in the prime factorisation of a number
 printf                 - print with interpolated variables
+pythagorean_triples    - generate Pythagorean triples
 recurring              - decimal representation of fractions
 repeat                 - repeatedly apply a function to a value
 repdigit               - number consisting of repeated digits
@@ -136,7 +137,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-06-27"
+__version__ = "2018-07-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1188,6 +1189,93 @@ def coprime_pairs(n=None, order=0):
     for p in filter(fn, ((2 * b - a, b), (2 * a + b, a), (2 * b + a, b))):
       _push(ps, p)
 
+# Pythagorean Triples:
+# see: https://en.wikipedia.org/wiki/Formulas_for_generating_Pythagorean_triples
+
+# generate primitive pythagorean triples (x, y, z) with hypotenuse not exceeding Z
+# if Z is None, then triples will be generated indefinitely
+# if order is True, then triples will be returned in order
+def pythagorean_primitive(Z=None, order=0):
+  if order:
+    # use a heap
+    from heapq import heapify, heappush, heappop
+    ts = list()
+    heapify(ts)
+    _push = heappush
+    _pop = heappop
+  else:
+    # just use a list
+    ts = list()
+    _push = lambda s, t: s.append(t)
+    _pop = lambda s: s.pop(0)
+  # initial triple
+  _push(ts, (5, 4, 3))
+  while ts:
+    (c, b, a) = _pop(ts)
+    if Z is not None and c > Z: continue
+    yield (a, b, c)
+    (a2, b2, c2, c3) = (a * 2, b * 2, c * 2, c * 3)
+    for (z, y, x) in (
+      (c3 + b2 - a2, c2 + b - a2, c2 + b2 - a),
+      (c3 + b2 + a2, c2 + b + a2, c2 + b2 + a),
+      (c3 - b2 + a2, c2 - b + a2, c2 - b2 + a),
+    ):
+      _push(ts, ((z, x, y) if y < x else (z, y, x)))
+
+# generate pythagorean triples (x, y, z) with hypotenuse not exceeding Z
+# triples are generated in order
+def pythagorean_all(Z):
+  from heapq import heapify, heappush, heappop
+  # multiples of primitives
+  ms = list()
+  heapify(ms)
+  for (x, y, z) in pythagorean_primitive(Z, order=1):
+    # return any saved multiples less than (x, y, z)
+    while ms and ms[0] < (z, y, x):
+      yield heappop(ms)[::-1]
+    # return (x, y, z)
+    yield (x, y, z)
+    # add in any new multiples
+    for k in irange(2, Z // z):
+      heappush(ms, (k * z, k * y, k * x))
+  # return any remaining multiples
+  while ms:
+    yield heappop(ms)[::-1]
+
+# generate pythagorean triples
+# n - specifies the maximum hypotenuse allowed
+# primitive - if set only primitive triples are generated
+# order - if set triples are generated in order
+# if primitive is False, then a value for n must be specified
+def pythagorean_triples(n=None, primitive=0, order=0):
+  """
+  generate pythagorean triples (x, y, z) where x < y < z
+
+  n - maximum allowed hypotenuse
+  primitive - if set only primitive triples are generated
+  order - if set triples are generated in order
+
+  order is by shortest z, then shortest y, then shortest x
+  (i.e. reverse lexicographic)
+
+  if 'primitive' is set, then n can be None, and primitive triples
+  will be generated indefinitely
+
+  >>> list(pythagorean_triples(20, primitive=0, order=1))
+  [(3, 4, 5), (6, 8, 10), (5, 12, 13), (9, 12, 15), (8, 15, 17), (12, 16, 20)]
+
+  >>> list(pythagorean_triples(20, primitive=1, order=1))
+  [(3, 4, 5), (5, 12, 13), (8, 15, 17)]
+  """
+  if primitive:
+    # primitive only triples
+    return pythagorean_primitive(n, order)
+  else:
+    # include non-primitive
+    assert n is not None
+    return pythagorean_all(n)
+
+
 def fib(*s, **kw):
   """
   generate Fibonacci type sequences.
@@ -1689,6 +1777,9 @@ def mlcm(a, *rest):
   90
   """
   return reduce(lcm, rest, a)
+
+def is_coprime(a, b):
+  return gcd(a, b) == 1
 
 
 def factorial(a, b=1):
@@ -6477,7 +6568,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.15', python3='3.6.5')
+""".format(version=__version__, python='2.7.15', python3='3.6.6')
 
 if __name__ == "__main__":
 
