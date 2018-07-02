@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jul  2 16:12:26 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jul  2 16:51:03 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1196,6 +1196,7 @@ def coprime_pairs(n=None, order=0):
 # if Z is None, then triples will be generated indefinitely
 # if order is True, then triples will be returned in order
 def pythagorean_primitive(Z=None, order=0):
+  fn = ((lambda z: z <= Z) if Z is not None else (lambda z: True))
   if order:
     # use a heap
     from heapq import heapify, heappush, heappop
@@ -1209,10 +1210,9 @@ def pythagorean_primitive(Z=None, order=0):
     _push = lambda s, t: s.append(t)
     _pop = lambda s: s.pop(0)
   # initial triple
-  _push(ts, (5, 4, 3))
+  if fn(5): _push(ts, (5, 4, 3))
   while ts:
     (c, b, a) = _pop(ts)
-    if Z is not None and c > Z: continue
     yield (a, b, c)
     (a2, b2, c2, c3) = (a * 2, b * 2, c * 2, c * 3)
     for (z, y, x) in (
@@ -1220,7 +1220,7 @@ def pythagorean_primitive(Z=None, order=0):
       (c3 + b2 + a2, c2 + b + a2, c2 + b2 + a),
       (c3 - b2 + a2, c2 - b + a2, c2 - b2 + a),
     ):
-      _push(ts, ((z, x, y) if y < x else (z, y, x)))
+      if fn(z): _push(ts, ((z, x, y) if y < x else (z, y, x)))
 
 # generate pythagorean triples (x, y, z) with hypotenuse not exceeding Z
 # triples are generated in order
@@ -1249,9 +1249,9 @@ def pythagorean_all(Z):
 # if primitive is False, then a value for n must be specified
 def pythagorean_triples(n=None, primitive=0, order=0):
   """
-  generate pythagorean triples (x, y, z) where x < y < z
+  generate pythagorean triples (x, y, z) where x < y < z and x^2 + y^2 = z^2.
 
-  n - maximum allowed hypotenuse
+  n - maximum allowed hypotenuse (z)
   primitive - if set only primitive triples are generated
   order - if set triples are generated in order
 
