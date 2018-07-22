@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jul  2 19:48:58 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 22 14:31:06 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -137,7 +137,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-07-02"
+__version__ = "2018-07-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -155,13 +155,13 @@ if sys.version_info[0] == 2:
   # Python 2.x
   _python = 2
   range = xrange
-  reduce = reduce
-  basestring = basestring
-  raw_input = raw_input
+  # reduce = reduce
+  # basestring = basestring
+  # raw_input = raw_input
 elif sys.version_info[0] > 2:
   # Python 3.x
   _python = 3
-  range = range
+  # range = range
   reduce = functools.reduce
   basestring = str
   raw_input = input
@@ -396,6 +396,8 @@ def nsplit(n, k=None, base=10):
   if the number has too many digits then the result includes only the
   rightmost digits.
 
+  the sign of the integer is ignored.
+
   >>> nsplit(12345)
   (1, 2, 3, 4, 5)
   >>> nsplit(57005, base=16)
@@ -409,6 +411,7 @@ def nsplit(n, k=None, base=10):
   >>> nsplit(111 ** 2, 3)
   (3, 2, 1)
   """
+  if n < 0: n = -n
   ds = list()
   while True:
     (n, r) = divmod(n, base)
@@ -1181,13 +1184,13 @@ def coprime_pairs(n=None, order=0):
     ps = list()
     _push = lambda ps, p: ps.append(p)
     _pop = lambda ps: ps.pop(0)
-  for p in filter(fn, ((2, 1), (3, 1))):
-    _push(ps, p)
+  for p in ((2, 1), (3, 1)):
+    if fn(p): _push(ps, p)
   while ps:
     (b, a) = _pop(ps)
     yield (a, b)
-    for p in filter(fn, ((2 * b - a, b), (2 * a + b, a), (2 * b + a, b))):
-      _push(ps, p)
+    for p in ((2 * b - a, b), (2 * a + b, a), (2 * b + a, b)):
+      if fn(p): _push(ps, p)
 
 # Pythagorean Triples:
 # see: https://en.wikipedia.org/wiki/Formulas_for_generating_Pythagorean_triples
@@ -1227,7 +1230,6 @@ def _pythagorean_all(Z, order=0):
   if order:
     # use a heap to save the multiples
     from heapq import heapify, heappush, heappop
-    # multiples of primitives
     ms = list()
     heapify(ms)
     for (x, y, z) in _pythagorean_primitive(Z, order=1):
@@ -1265,13 +1267,20 @@ def pythagorean_triples(n=None, primitive=0, order=0):
   (i.e. reverse lexicographic)
 
   if 'primitive' is set, then n can be None, and primitive triples
-  will be generated indefinitely
+  will be generated indefinitely (although it will eventually run out
+  of memory)
 
   >>> list(pythagorean_triples(20, primitive=0, order=1))
   [(3, 4, 5), (6, 8, 10), (5, 12, 13), (9, 12, 15), (8, 15, 17), (12, 16, 20)]
 
   >>> list(pythagorean_triples(20, primitive=1, order=1))
   [(3, 4, 5), (5, 12, 13), (8, 15, 17)]
+
+  >>> icount(pythagorean_triples(10000, primitive=1))
+  1593
+
+  >>> icount(pythagorean_triples(10000, primitive=0))
+  12471
   """
   if primitive:
     # primitive only triples
