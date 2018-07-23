@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 22 14:31:06 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jul 23 13:38:24 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -137,7 +137,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-07-22"
+__version__ = "2018-07-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6397,7 +6397,8 @@ def run(cmd, *args, **kw):
       (cmd, args) = parsefile(cmd, *args)
 
   # if cmd names a class
-  fn = globals().get(cmd)
+  alias = { 'Alphametic': 'SubstitutedExpression' }
+  fn = globals().get(alias.get(cmd, cmd))
   if fn:
     fn = getattr(fn, 'command_line')
     if fn:
