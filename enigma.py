@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jul 23 13:38:24 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 25 10:58:57 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -137,7 +137,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-07-23"
+__version__ = "2018-07-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -155,13 +155,13 @@ if sys.version_info[0] == 2:
   # Python 2.x
   _python = 2
   range = xrange
-  # reduce = reduce
-  # basestring = basestring
-  # raw_input = raw_input
+  reduce = reduce
+  basestring = basestring
+  raw_input = raw_input
 elif sys.version_info[0] > 2:
   # Python 3.x
   _python = 3
-  # range = range
+  range = range
   reduce = functools.reduce
   basestring = str
   raw_input = input
@@ -4781,6 +4781,35 @@ class SubstitutedExpression(object):
     # failure, output usage message
     print(join(cls._usage(), sep=nl))
     return -1
+
+  # class method to provide a REPL
+  @classmethod
+  def repl(cls):
+
+    while True:
+
+      # collect expressions
+      exprs = []
+      while True:
+        try:
+          expr = raw_input(sprintf("expr[{n}] (or enter) >>> ", n=len(exprs)))
+        except EOFError:
+          print("[done]")
+          return
+        expr = expr.strip()
+        if expr == "" or expr == ".": break
+        exprs.append(expr)
+
+      # solve alphametic expressions
+      if exprs:
+        try:
+          cls.command_line(exprs)
+        except Exception as e:
+          print(e)
+          print("[ERROR: try again]")
+        print()
+      
+  
 
 
 def substituted_expression(*args, **kw):
