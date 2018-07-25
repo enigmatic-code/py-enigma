@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 25 15:00:18 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 25 16:05:30 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -4784,7 +4784,16 @@ class SubstitutedExpression(object):
 
   # class method to provide a read/eval/print loop
   @classmethod
-  def repl(cls, args):
+  def repl(cls, args=()):
+    """
+    Provide a read/eval/print loop for evaluating alphametics.
+
+    Use the following command to invoke it:
+
+      % python enigma.py Alphametic.repl
+
+    (or "-m enigma" if enigma.py is on your PYTHONPATH).
+    """
 
     while True:
 
@@ -6425,7 +6434,7 @@ def run(cmd, *args, **kw):
       # otherwise, treat it as a run file
       (cmd, args) = parsefile(cmd, *args)
 
-  # if cmd names a class[.fn]
+  # if cmd names a class[.method]
   alias = { 'Alphametic': 'SubstitutedExpression' }
   (cmd, _, fn_name) = cmd.partition('.')
   if not fn_name: fn_name = 'command_line'
