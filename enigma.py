@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 25 10:58:57 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 25 15:00:18 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -4782,9 +4782,9 @@ class SubstitutedExpression(object):
     print(join(cls._usage(), sep=nl))
     return -1
 
-  # class method to provide a REPL
+  # class method to provide a read/eval/print loop
   @classmethod
-  def repl(cls):
+  def repl(cls, args):
 
     while True:
 
@@ -6425,11 +6425,13 @@ def run(cmd, *args, **kw):
       # otherwise, treat it as a run file
       (cmd, args) = parsefile(cmd, *args)
 
-  # if cmd names a class
+  # if cmd names a class[.fn]
   alias = { 'Alphametic': 'SubstitutedExpression' }
+  (cmd, _, fn_name) = cmd.partition('.')
+  if not fn_name: fn_name = 'command_line'
   fn = globals().get(alias.get(cmd, cmd))
   if fn:
-    fn = getattr(fn, 'command_line')
+    fn = getattr(fn, fn_name, None)
     if fn:
       if timer and not isinstance(timer, basestring): timer = 'timing'
       if timer: timer = Timer(name=timer)
@@ -6437,7 +6439,7 @@ def run(cmd, *args, **kw):
       if timer: timer.report()
       return
     else:
-      printf("enigma.py: {cmd}.command_line() not implemented")
+      printf("enigma.py: {cmd}.{fn_name}() not implemented")
 
   # if we get this far we can't find the solver
   printf("enigma.py: unable to run \"{cmd}\"")
