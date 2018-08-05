@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 25 16:05:30 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Aug  5 13:32:35 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -137,7 +137,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-07-25"
+__version__ = "2018-08-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -448,7 +448,7 @@ from fnmatch import fnmatch
 def match(v, t):
   """
   match a value (as a string) to a template (see fnmatch.fnmatch).
-  
+
   >>> match("abcd", "?b??")
   True
   >>> match("abcd", "a*")
@@ -463,7 +463,7 @@ def match(v, t):
 def number(s, base=10):
   """
   make an integer from a string, ignoring non-digit characters
-  
+
   >>> number('123,456,789')
   123456789
   >>> number('100,000,001')
@@ -506,7 +506,7 @@ def chunk(s, n=2):
   n = range(n)
   while True:
     s = tuple(next(i) for x in n)
-    if not len(s): break
+    if not s: break
     yield s
 
 
@@ -564,7 +564,7 @@ def filter_unique(s, f=identity, g=identity):
   and return a partition of s into those objects where f(x) implies a
   unique value for g(x), and those objects where f(x) implies multiple
   values for g(x).
-  
+
   returns the partition of the original sequence as
   (<unique values>, <non-unique values>)
 
@@ -715,10 +715,10 @@ def find(s, v):
   except ValueError:
     return -1
   except AttributeError:
-    for (i, x) in enumerate(s):
-      if x == v: return i
-    else:
-      return -1
+    pass
+  for (i, x) in enumerate(s):
+    if x == v: return i
+  return -1
 
 
 def _partitions(s, n):
@@ -761,7 +761,7 @@ def partitions(s, n, pad=0, value=None, distinct=None):
   if sequence <s> contains distinct elements then <distinct> can be
   set to True, if it is not set then <s> will be examined for repeated
   elements.
-  
+
   >>> list(partitions((1, 2, 3, 4), 2))
   [((1, 2), (3, 4)), ((1, 3), (2, 4)), ((1, 4), (2, 3))]
   """
@@ -977,7 +977,7 @@ def multiples(ps):
   for (m, n) in ps:
     t = list()
     p = m
-    for i in irange(1, n):
+    for _ in irange(1, n):
       t.extend(x * p for x in s)
       p *= m
     s.extend(t)
@@ -1041,7 +1041,7 @@ def _is_composite(a, d, n, s):
   x = pow(a, d, n)
   if x == 1:
     return 0
-  for i in range(s):
+  for _ in range(s):
     if x == n - 1:
       return 0
     x = (x * x) % n
@@ -1126,13 +1126,26 @@ def is_prime_mr(n, r=0):
 def tau(n):
   """
   count the number of divisors of a positive integer <n>.
-  
+
   tau(n) = len(divisors(n)) (but faster)
 
   >>> tau(factorial(12))
   792
   """
   return multiply(e + 1 for (_, e) in prime_factor(n))
+
+
+def is_square_free(n):
+  """
+  a positive integer is "square free" if it is not divisibly by
+  a perfect square greater than 1.
+
+  >>> is_square_free(8596)
+  False
+  >>> is_square_free(8970)
+  True
+  """
+  return n > 0 and all(e == 1 for (_, e) in prime_factor(n))
 
 
 def farey(n):
@@ -1217,13 +1230,20 @@ def _pythagorean_primitive(Z=None, order=0):
   while ts:
     (c, b, a) = _pop(ts)
     yield (a, b, c)
-    (a2, b2, c2, c3) = (a * 2, b * 2, c * 2, c * 3)
+    # my original formulation (using only addition/subtraction)
+    (a2, b2, c2) = (a + a, b + b, c + c)
+    c3 = c2 + c
     for (z, y, x) in (
       (c3 + b2 - a2, c2 + b - a2, c2 + b2 - a),
       (c3 + b2 + a2, c2 + b + a2, c2 + b2 + a),
       (c3 - b2 + a2, c2 - b + a2, c2 - b2 + a),
     ):
       if fn(z): _push(ts, ((z, x, y) if y < x else (z, y, x)))
+    ## alternatively: brian's (more compact) formulation
+    #t = 2 * (a + b + c)
+    #(u, v, w) = (t - 4 * b, t, t - 4 * a)
+    #for (z, y, x) in ((u + c, u + b, u - a), (v + c, v - b, v - a), (w + c, w - b, w + a)):
+    #  if fn(z): _push(ts, ((z, x, y) if y < x else (z, y, x)))
 
 # generate pythagorean triples (x, y, z) with hypotenuse not exceeding Z
 def _pythagorean_all(Z, order=0):
@@ -1901,7 +1921,7 @@ def get_argv(force=0, args=None):
   if force or argv.argv is None: argv.argv = (args if args is not None else sys.argv[1:])
   return argv.argv
 
-# alias 
+# alias
 argv = get_argv
 
 # might have been better to use: arg(n, fn=identity, default=None, argv=None)
@@ -1981,7 +2001,7 @@ def printf(fmt='', **kw):
   d = dict() # flush=1
   if s.endswith('\\'): (s, d['end']) = (s[:-1], '')
   print(s, **d)
-  
+
 
 
 # useful as a decorator for caching functions (@cached).
@@ -2810,7 +2830,7 @@ class Accumulator(object):
     self.value = (v if self.value is None else self.fn(self.value, v))
 
 
-  def accumulate_data(self, v, data, t=None): 
+  def accumulate_data(self, v, data, t=None):
     """
     Accumulate a value, and check the accumulated value against a target value,
     and if it matches record the data parameter.
@@ -3124,7 +3144,7 @@ class _PrimeSieveE6(object):
     check to see if the number is a prime.
 
     (may throw IndexError for numbers larger than the sieve).
-    """    
+    """
     if n < 2: return False # 0, 1 -> F
     if n < 4: return True # 2, 3 -> T
     (i, r) = divmod(n, 6)
@@ -3187,7 +3207,7 @@ class _PrimeSieveE6(object):
 
     Note: This will only consider primes up to the limit of the sieve,
     this is a complete factorisation for <n> up to the square of the
-    limit of the sieve.    
+    limit of the sieve.
     """
     return factor(n, fn=self.prime_factor)
 
@@ -3236,7 +3256,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
 
     the default function doubles the maximum at each expansion.
     """
-    self.chunk = fn    
+    self.chunk = fn
     _PrimeSieveE6.__init__(self, n, array=array)
 
   # expand the sieve up to n, or by the next chunk
@@ -3259,7 +3279,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     generate primes without limit, expanding the sieve as necessary.
 
     eventually the sieve will consume all available memory.
-    """    
+    """
     while True:
       # generate all primes currently in the sieve
       for p in _PrimeSieveE6.generate(self, start): yield p
@@ -3493,7 +3513,7 @@ class MagicSquare(object):
         self.become(new)
         return True
     raise Impossible
-  
+
   # solve the square
   def solve(self):
     """solve the puzzle, returns True if a solution is found"""
@@ -3623,7 +3643,7 @@ class SubstitutedSum(object):
   LBRLQQR + LBBBESL + LBRERQR + LBBBEVR = BBEKVMGL
   8308440 + 8333218 + 8302040 + 8333260 = 33276958 / B=3 E=2 G=5 K=7 L=8 M=9 Q=4 R=0 S=1 V=6
   """
-  
+
   def __init__(self, terms, result, base=10, digits=None, l2d=None, d2i=None):
     """
     create a substituted addition sum puzzle.
@@ -3655,7 +3675,7 @@ class SubstitutedSum(object):
     """
     generate solutions to the substituted addition sum puzzle.
 
-    solutions are returned as a dictionary assigning letters to digits. 
+    solutions are returned as a dictionary assigning letters to digits.
     """
     if verbose > 0:
       printf("{self.text}")
@@ -3699,7 +3719,7 @@ class SubstitutedSum(object):
   def chain(cls, sums, base=10, digits=None, l2d=None, d2i=None):
     """
     solve a sequence of substituted sum problems.
-    
+
     sums are specified as a sequence of: (<term>, <term>, ..., <result>)
     """
     # are we done?
@@ -3719,7 +3739,7 @@ class SubstitutedSum(object):
     for s in cls.chain(sums, base=base, digits=digits, l2d=l2d, d2i=d2i):
       printf("{t} / {s}",
         t=join((_DIGITS[s[x]] if x in s else x) for x in template),
-        s=join((k + '=' + str(s[k]) for k in sorted(s.keys())), sep= ' ')
+        s=join((k + '=' + str(s[k]) for k in sorted(s.keys())), sep=' ')
       )
 
   # class method to call from the command line
@@ -3746,7 +3766,7 @@ class SubstitutedSum(object):
     % python enigma.py SubstitutedSum --base=11 "FAREWELL + FREDALO = FLINTOFF"
     (FAREWELL + FREDALO = FLINTOFF)
     (61573788 + 657A189 = 68042966) / A=1 D=10 E=7 F=6 I=0 L=8 N=4 O=9 R=5 T=2 W=3
-    (6157A788 + 6573189 = 68042966) / A=1 D=3 E=7 F=6 I=0 L=8 N=4 O=9 R=5 T=2 W=10    
+    (6157A788 + 6573189 = 68042966) / A=1 D=3 E=7 F=6 I=0 L=8 N=4 O=9 R=5 T=2 W=10
 
 
     --assign=<letter>,<digit> (or -a<l>,<d>)
@@ -3758,9 +3778,9 @@ class SubstitutedSum(object):
     e.g. Enigma 1361 <https://enigmaticcode.wordpress.com/2013/02/20/enigma-1361-enigma-variation/>
     % python enigma.py SubstitutedSum --assign=O,0 "ELGAR + ENIGMA = NIMROD"
     (ELGAR + ENIGMA = NIMROD)
-    (71439 + 785463 = 856902) / A=3 D=2 E=7 G=4 I=5 L=1 M=6 N=8 O=0 R=9    
+    (71439 + 785463 = 856902) / A=3 D=2 E=7 G=4 I=5 L=1 M=6 N=8 O=0 R=9
 
-    
+
     --digits=<digit>,<digit>,... (or -d<d>,<d>,...)
 
     Specify the digits that can be assigned to unassigned letters.
@@ -3771,7 +3791,7 @@ class SubstitutedSum(object):
     % python enigma.py SubstitutedSum --digits=0,1,2,3,4,5,6,7,8 "WILKI + NSON = JONNY"
     (WILKI + NSON = JONNY)
     (48608 + 3723 = 52331) / I=8 J=5 K=0 L=6 N=3 O=2 S=7 W=4 Y=1
-    (48708 + 3623 = 52331) / I=8 J=5 K=0 L=7 N=3 O=2 S=6 W=4 Y=1    
+    (48708 + 3623 = 52331) / I=8 J=5 K=0 L=7 N=3 O=2 S=6 W=4 Y=1
 
 
     --invalid=<digits>,<letters> (or -i<ds>,<ls>)
@@ -3787,7 +3807,7 @@ class SubstitutedSum(object):
     Enigma 171 <https://enigmaticcode.wordpress.com/2014/02/23/enigma-171-addition-digits-all-wrong/>
     % python enigma.py SubstitutedSum -i0,016 -i1,1 -i3,3 -i5,5 -i6,6 -i7,7 -i8,8 -i9,9 "1939 + 1079 = 6856"
     (1939 + 1079 = 6856)
-    (2767 + 2137 = 4904) / 0=1 1=2 3=6 5=0 6=4 7=3 8=9 9=7    
+    (2767 + 2137 = 4904) / 0=1 1=2 3=6 5=0 6=4 7=3 8=9 9=7
 
 
     --help (or -h)
@@ -3880,7 +3900,7 @@ def _find_words(s, r=1):
 # replace words in string <s>
 def _replace_words(s, fn):
   # new style, with braces
-  _fn = lambda m: fn(m.group(1))    
+  _fn = lambda m: fn(m.group(1))
   return re.sub(r'{(\w+?)}', _fn, s)
 
 # return an expression that evaluates word <w> in base <base>
@@ -4168,7 +4188,7 @@ class SubstitutedExpression(object):
     # find the symbols in the (<expr>, <value>) pairs
     # xs = symbols in <expr>
     # vs = symbols in <value>
-    (xs, vs)  = (list(), list())
+    (xs, vs) = (list(), list())
     for (x, v, k) in exprs:
       xs.append(_find_words(x, r=0))
       vs.append(set(v) if k == 3 else set())
@@ -4359,7 +4379,7 @@ class SubstitutedExpression(object):
               check = join(check, sep=' and ')
               prog.append(sprintf("{_}if {check}:"))
               _ += indent
-            prog.append(sprintf("{_}x //= {base}"))    
+            prog.append(sprintf("{_}x //= {base}"))
             # and check x == 0 for the final value
             if j == -1:
               prog.append(sprintf("{_}if x == 0:"))
@@ -4443,7 +4463,7 @@ class SubstitutedExpression(object):
       n += 1
       if first and first == n: break
 
-  # output a solution as: "<template> / <solution>" 
+  # output a solution as: "<template> / <solution>"
   # <template> = the given template with digits substituted for symbols
   # <solution> = the assignment of symbols (given in <solution>) to digits (in base 10)
   def output_solution(self, d, template=None, solution=None):
@@ -4536,7 +4556,7 @@ class SubstitutedExpression(object):
           distinct = join(distinct, sep=",")
         distinct = q + distinct + q
       args.append(sprintf("--distinct={distinct}"))
-    
+
     if self.digits:
       args.append(sprintf("--digits={q}{digits}{q}", digits=join(self.digits, sep=",")))
 
@@ -4792,7 +4812,6 @@ class SubstitutedExpression(object):
 
       % python enigma.py Alphametic.repl
 
-    (or "-m enigma" if enigma.py is on your PYTHONPATH).
     """
 
     while True:
@@ -4817,8 +4836,8 @@ class SubstitutedExpression(object):
           print(e)
           print("[ERROR: try again]")
         print()
-      
-  
+
+
 
 
 def substituted_expression(*args, **kw):
@@ -5027,7 +5046,7 @@ class SubstitutedDivision(SubstitutedExpression):
     a long division sum is considered to have the following components:
 
       a / b = c remainder r
-      
+
       the dividend = a
       the divisor = b
       the result = c
@@ -5081,7 +5100,7 @@ class SubstitutedDivision(SubstitutedExpression):
       # arguments are passed as strings
       # args = ("{a} / {b} = {c}", ["{x} - {y} = {z}", ... ])
       split = args
-      
+
     elif len(args) == 1:
       # args are passed as a list of strings (probably from the command line)
       # args = (["{a} / {b} = {c}", "{x} - {y} = {z}", ...],)
@@ -5295,7 +5314,7 @@ class SubstitutedDivision(SubstitutedExpression):
       "options:",
       "  --extra=<expr> (or -E<expr>) = extra alphametic expression (option may be repeated)",
     ) + SubstitutedExpression._usage()[2:]
-      
+
 
   @classmethod
   def _getopt(cls, k, v, opt):
@@ -5325,7 +5344,7 @@ class SubstitutedDivision(SubstitutedExpression):
     be passed. if there is no remainder the final intermediate
     subtraction will look like "<x> - <y> = 0".
 
-    literal digits in the arguments stand for themselves, a ? 
+    literal digits in the arguments stand for themselves, a ?
     character stands for any digit, and a letter stands for a digit
     whose value is not known.
 
@@ -5341,7 +5360,7 @@ class SubstitutedDivision(SubstitutedExpression):
     % python enigma.py SubstitutedDivision "pkmkh / ?? = ???" "pkm - pmd = xp" "xpk - ?? = kh" "khh - mbg = k"
     7????? / ?? = ????? (rem 0) [7? - ?? = ??, ??? - ?? = ?, None, ??? - ?? = ??, ??? - ??7 = 0]
     760287 / 33 = 23039 (rem 0) [76 - 66 = 10, 100 - 99 = 1, None, 128 - 99 = 29, 297 - 297 = 0]
-    [1 solution]    
+    [1 solution]
 
 
     [Enigma 250] <https://enigmaticcode.wordpress.com/2015/01/13/enigma-250-a-couple-of-sevens/>
@@ -5373,7 +5392,7 @@ class SubstitutedDivision(SubstitutedExpression):
     6213 / 57 = 109 (rem 0) [62 - 57 = 5, None, 513 - 513 = 0] / A=5 B=5 C=6 D=7
     [1 solution]
     """
-    # this function is only here so we can set the docstring, so just call the parent class 
+    # this function is only here so we can set the docstring, so just call the parent class
     return super(SubstitutedDivision, cls).command_line(args)
 
 ###############################################################################
@@ -5778,7 +5797,7 @@ class Football(object):
     """
     solve a substituted table football problem where numbers in the
     table have been substituted for letters.
-    
+
     generates pairs (<matches>, <d>) where <matches> is a dict() of
     match outcomes indexed by team indices, so the value at (<i>, <j>)
     is the outcome for the match between the teams with indices <i>
@@ -5879,7 +5898,7 @@ class Football(object):
 
     matches - dict() of match outcomes. usually the result of a call
     to substituted_table().
-    
+
     scores - dict() of scores in the matches. usually the result of a
     call to substituted_table_goals().
 
@@ -6468,10 +6487,10 @@ def _enigma_update(url, check=1, download=0, rename=0):
 
   if _python == 2:
     # Python 2.x
-    from urllib2 import urlopen, URLError
+    from urllib2 import urlopen
   else:
     # Python 3.x
-    from urllib.request import urlopen, URLError
+    from urllib.request import urlopen
 
   u = urlopen(url + 'py-enigma-version.txt')
   v = u.readline(16).decode().strip()
@@ -6575,7 +6594,7 @@ enigma.py has the following command-line usage:
 
     Provides a quick summary of the command line usage:
 
-      % python enigma.py -h  
+      % python enigma.py -h
       [enigma.py version {version} (Python {python})]
       command line arguments:
         <class> <args> = run command_line(<args>) method on class
@@ -6602,11 +6621,11 @@ enigma.py has the following command-line usage:
 
 
     Enigma 440 can be solved using:
-      
+
     % python enigma.py SubstitutedDivision "????? / ?x = ??x" "??? - ?? = ?" "" "??? - ??x = 0"
     ????? / ?x = ??x (rem 0) [??? - ?? = ?, None, ??? - ??x = 0]
     10176 / 96 = 106 (rem 0) [101 - 96 = 5, None, 576 - 576 = 0] / x=6
-    [1 solution]    
+    [1 solution]
 
 
     Enigma 1530 can be solved using:
@@ -6620,7 +6639,7 @@ enigma.py has the following command-line usage:
     Alternatively the arguments to enigma.py can be placed in a text file
     and then executed with the --run / -r command, for example:
 
-    % python enigma.py --run enigma327.run 
+    % python enigma.py --run enigma327.run
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
@@ -6667,7 +6686,7 @@ if __name__ == "__main__":
   # -ud => always download latest version
   # -u[d]r => rename downloaded file to "enigma.py"
   if 'u' in args:
-    url='http://www.magwag.plus.com/jim/'
+    url = 'http://www.magwag.plus.com/jim/'
     try:
       _enigma_update(url, check=('c' in args['u']), download=('d' in args['u']), rename=('r' in args['u']))
     except IOError as e:
