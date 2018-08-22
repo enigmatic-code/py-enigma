@@ -10,6 +10,6 @@ from distutils.core import setup
 
 setup(
   name='enigma',
-  version='1.0',
+  #version='0.0', # dummy version for pip
   py_modules=['enigma'],
 )
