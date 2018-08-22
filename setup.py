@@ -4,6 +4,6 @@ from distutils.core import setup
 
 setup(
   name='enigma',
-  version='2018-08-05',
+  version='1.0',
   py_modules=['enigma'],
 )
