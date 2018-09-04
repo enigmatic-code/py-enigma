@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Sep  4 07:46:30 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep  4 07:59:28 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3017,7 +3017,7 @@ class Polynomial(list):
 
 _primes_array = bytearray
 _primes_size = 1024
-_primes_chunk = lambda n: (_primes_size if n < _primes_size else 2 * n)
+_primes_chunk = lambda n: 2 * n
 
 
 class _PrimeSieveE6(object):
@@ -3386,7 +3386,7 @@ def PrimesGenerator(n=None, array=_primes_array, fn=_primes_chunk):
   return Primes(n, expandable=1, array=array, fn=fn)
 
 # default expandable sieve
-primes = Primes(1, expandable=1, array=_primes_array, fn=_primes_chunk)
+primes = Primes(1, expandable=1, array=_primes_array, fn=(lambda n: _primes_size if n < _primes_size else 2 * n))
 
 ###############################################################################
 
