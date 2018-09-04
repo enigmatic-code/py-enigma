@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Sep  4 07:59:28 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep  4 08:21:59 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1075,7 +1075,7 @@ def is_prime_mr(n, r=0):
   2
   >>> is_prime_mr(316912650057057350374175801351)
   1
-  >>> is_prime_mr(332306998946228968225951765070086168)
+  >>> is_prime_mr(332306998946228968225951765070086171)
   0
   """
   # 0, 1 = not prime
