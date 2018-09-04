@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Aug  5 13:32:35 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep  4 07:46:30 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -137,7 +137,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-08-05"
+__version__ = "2018-09-04"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -551,6 +551,8 @@ def filter2(p, i):
   t = list((x, p(x)) for x in i)
   return (list(x for (x, v) in t if v), list(x for (x, v) in t if not v))
 
+# alias if you prefer the term partition
+partition = filter2
 
 def identity(x):
   """
@@ -588,6 +590,9 @@ def filter_unique(s, f=identity, g=identity):
   for (k, v) in u.items():
     (r1 if len(v) == 1 else r2).extend(r[k])
   return (r1, r2)
+
+# alias if you prefer the term partition
+partition_unique = filter_unique
 
 
 def unpack(fn):
@@ -2816,6 +2821,7 @@ class Accumulator(object):
     self.value = value
     self.data = data
 
+
   def __repr__(self):
     return 'Accumulator(value=' + repr(self.value) + ', data=' + repr(self.data) + ')'
 
@@ -3010,8 +3016,8 @@ class Polynomial(list):
 # Prime Sieves
 
 _primes_array = bytearray
-_primes_chunk = lambda n: 2 * n
 _primes_size = 1024
+_primes_chunk = lambda n: (_primes_size if n < _primes_size else 2 * n)
 
 
 class _PrimeSieveE6(object):
@@ -3378,6 +3384,9 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk):
 # backwards compatibility
 def PrimesGenerator(n=None, array=_primes_array, fn=_primes_chunk):
   return Primes(n, expandable=1, array=array, fn=fn)
+
+# default expandable sieve
+primes = Primes(1, expandable=1, array=_primes_array, fn=_primes_chunk)
 
 ###############################################################################
 
