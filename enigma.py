@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Sep  4 08:21:59 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Oct 23 07:55:48 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -134,10 +134,11 @@ SubstitutedSum         - a class for solving substituted addition sums
 Timer                  - a class for measuring elapsed timings
 """
 
-from __future__ import print_function
+# Python 3 style print() and /
+from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-09-04"
+__version__ = "2018-09-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -169,9 +170,6 @@ elif sys.version_info[0] > 2:
 # useful constants
 nl = "\n"
 pi = math.pi
-
-# useful routines that can be re-exported
-sqrt = math.sqrt
 
 # add attributes to a function (to use as static variables)
 # (but for better performance use global variables)
@@ -1352,7 +1350,7 @@ def fib(*s, **kw):
 
 # if we don't overflow floats (happens around 2**53) this works...
 #   def is_power(n, m):
-#     i = int(n ** (1.0 / float(m)) + 0.5)
+#     i = int(n ** (1.0 / m) + 0.5)
 #     return (i if i ** m == n else None)
 # but here we use a binary search, which should work on arbitrary large integers
 #
@@ -1410,6 +1408,19 @@ def is_power(n, k):
   """
   r = iroot(n, k)
   return (r if r ** k == n else None)
+
+
+def sqrt(a, b=None):
+  """
+  the (real) square root of a / b (or just a if b is None)
+
+  >>> sqrt(9)
+  3.0
+  >>> sqrt(9, 4)
+  1.5
+  """
+  # / is operator.truediv() here
+  return math.sqrt(a if b is None else a / b)
 
 
 # calculate intf(sqrt(n))
@@ -5170,11 +5181,11 @@ class SubstitutedDivision(SubstitutedExpression):
 
     # unify slots in the intermediate sums
     (i, j, prev) = (0, len(a) + 1 - len(subs), None)
-    for k in irange(0, len(subs) - 1):
-      if subs[k]:
-        slots.unify(([] if k == 0 else prev[2]) + a[i:j], subs[k][0])
+    for (k, v) in enumerate(subs):
+      if v:
+        slots.unify(([] if k == 0 else prev[2]) + a[i:j], v[0])
         i = j
-        prev = subs[k]
+        prev = v
       j += 1
 
     # if the sum comes out exactly there is no remainder
@@ -6448,25 +6459,44 @@ def run(cmd, *args, **kw):
   # if cmd names a file
   if os.path.isfile(cmd):
     if timer and not isinstance(timer, basestring): timer = os.path.basename(cmd)
-    if cmd.endswith(".py"):
-      # use runpy for *.py
-      import runpy
-      get_argv(force=1, args=args)
-      sys.argv = [cmd] + list(args)
-      if timer: timer = Timer(name=timer)
-      r = runpy.run_path(cmd)
+    if cmd.endswith(".run"):
+      # *.run => treat it as a run file
+      (cmd, args) = parsefile(cmd, *args)
+    else:
+      if cmd.endswith(".py"):
+        # use runpy for *.py
+        import runpy
+        get_argv(force=1, args=args)
+        sys.argv = [cmd] + list(args)
+        if timer: timer = Timer(name=timer)
+        r = runpy.run_path(cmd)
+      else:
+        # attempt to use a shebang line (see: run.py)
+        path = os.path.abspath(cmd)
+        with open(path, 'r') as fh:
+          import shlex
+          import subprocess
+          s = next(fh)
+          # find the shebang
+          shebang = "#!"
+          i = s.find(shebang)
+          assert i != -1, "interpreter not found"
+          cmd = s[i + len(shebang):].strip()
+          cmd = shlex.split(cmd)
+          cmd.append(path)
+          cmd.extend(args)
+        if timer: timer = Timer(name=timer)
+        subprocess.call(cmd)
+        r = 1
       if timer: timer.report()
       _run_exit = (0 if r else -1)
       return
-    else:
-      # otherwise, treat it as a run file
-      (cmd, args) = parsefile(cmd, *args)
 
   # if cmd names a class[.method]
   alias = { 'Alphametic': 'SubstitutedExpression' }
-  (cmd, _, fn_name) = cmd.partition('.')
+  (obj, _, fn_name) = cmd.partition('.')
   if not fn_name: fn_name = 'command_line'
-  fn = globals().get(alias.get(cmd, cmd))
+  fn = globals().get(alias.get(obj, obj))
   if fn:
     fn = getattr(fn, fn_name, None)
     if fn:
@@ -6476,7 +6506,7 @@ def run(cmd, *args, **kw):
       if timer: timer.report()
       return
     else:
-      printf("enigma.py: {cmd}.{fn_name}() not implemented")
+      printf("enigma.py: {obj}.{fn_name}() not implemented")
 
   # if we get this far we can't find the solver
   printf("enigma.py: unable to run \"{cmd}\"")
@@ -6652,7 +6682,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.15', python3='3.6.6')
+""".format(version=__version__, python='2.7.15', python3='3.6.7')
 
 if __name__ == "__main__":
 
