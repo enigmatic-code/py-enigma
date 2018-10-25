@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Oct 23 07:55:48 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct 25 15:44:10 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -138,7 +138,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-09-22"
+__version__ = "2018-10-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4010,7 +4010,7 @@ class SubstitutedExpression(object):
   See SubstitutedExpression.command_line() for more examples.
   """
 
-  def __init__(self, exprs, base=10, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None, template=None, solution=None, header=None, distinct=1, check=None, env=None, process=1, reorder=1, first=0, verbose=1):
+  def __init__(self, exprs, base=10, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None, template=None, solution=None, header=None, distinct=1, check=None, env=None, code=None, process=1, reorder=1, first=0, verbose=1):
     """
     create a substituted expression solver.
 
@@ -4034,6 +4034,7 @@ class SubstitutedExpression(object):
     distinct - symbols which should have distinct values (1 = all, 0 = none) (default: 1)
     check - a boolean function used to accept/reject solutions (default: None)
     env - additional environment for evaluation (default: None)
+    code - additional lines of code evaluated before solving (default: None)
 
     If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
     """
@@ -4051,6 +4052,7 @@ class SubstitutedExpression(object):
     self.distinct = distinct
     self.check = check
     self.env = env
+    self.code = code
 
     self.process = process
     self.reorder = reorder
@@ -4222,7 +4224,7 @@ class SubstitutedExpression(object):
     if isinstance(distinct, basestring): distinct = [distinct]
 
     # add the value of the symbols into the template
-    self.template = (template or _template)
+    self.template = (_template if template is None else template)
     if self.solution is None: self.solution = symbols
     if self.header is None: self.header = _replace_words(self.template, identity)
 
@@ -4254,6 +4256,7 @@ class SubstitutedExpression(object):
     answer = self.answer
     distinct = self.distinct
     env = self.env
+    code = self.code
     reorder = self.reorder
     verbose = self.verbose
 
@@ -4316,6 +4319,12 @@ class SubstitutedExpression(object):
 
     # generate the program (line by line)
     (prog, _, indent) = ([], '', '  ')
+
+    # start with any initialisation code
+    if code:
+      # code should be a sequence (of strings)
+      if isinstance(code, basestring): code = [code]
+      prog.extend(code)
 
     # wrap it all up as function solver
     solver = gensym('_substituted_expression_solver')
@@ -4552,7 +4561,7 @@ class SubstitutedExpression(object):
 
 
   # generate appropriate command line arguments to reconstruct this instance
-  def to_args(self, quote=0):
+  def to_args(self, quote=1):
 
     if quote == 0:
       q = ''
@@ -4604,6 +4613,14 @@ class SubstitutedExpression(object):
     if self.env is not None:
       raise ValueError("can't generate arg for \"env\" parameter")
 
+    code = self.code
+    if code is not None:
+      if isinstance(code, basestring):
+        code = [code]
+      for x in code:
+        if q: x = x.replace(q, "\\" + q) # TODO: check quoting works
+        args.append(sprintf("--code={q}{x}{q}"))
+
     if self.reorder is not None:
       args.append(sprintf("--reorder={self.reorder}"))
 
@@ -4625,7 +4642,7 @@ class SubstitutedExpression(object):
     return args
 
   # generate appropriate command line arguments to reconstruct this instance
-  def save(self, file=None, quote=0):
+  def save(self, file=None, quote=1):
 
     args = self.to_args(quote=quote)
     if not args: raise ValueError
@@ -4662,6 +4679,7 @@ class SubstitutedExpression(object):
       "  --solution=<string> (or -S<s>) = solution symbols",
       "  --header=<strong> (or -H<s>) = solution header",
       "  --distinct=<string> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
+      "  --code=<string> (or -C<s>) = initialisation code (can be used multiple times)",
       "  --first (or -1) = stop after the first solution",
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
       "  --verbose[=<n>] (or -v[<n>]) = verbosity (0 = off, 1 = solutions, 2+ = more)",
@@ -4722,6 +4740,9 @@ class SubstitutedExpression(object):
       else:
         v = _split(v)
       opt['distinct'] = v
+    elif k == 'C' or k == 'code':
+      if 'code' not in opt: opt['code'] = []
+      opt['code'].append(v)
     elif k == 'A' or k == 'answer':
       opt['answer'] = v
     elif k == '1' or k == 'first':
