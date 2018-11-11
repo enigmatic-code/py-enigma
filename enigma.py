@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct 25 15:44:10 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Nov 11 22:07:45 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -138,7 +138,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-10-25"
+__version__ = "2018-11-11"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -159,6 +159,7 @@ if sys.version_info[0] == 2:
   reduce = reduce
   basestring = basestring
   raw_input = raw_input
+  Sequence = collections.Sequence
 elif sys.version_info[0] > 2:
   # Python 3.x
   _python = 3
@@ -166,6 +167,7 @@ elif sys.version_info[0] > 2:
   reduce = functools.reduce
   basestring = str
   raw_input = input
+  from collections.abc import Sequence
 
 # useful constants
 nl = "\n"
@@ -489,7 +491,7 @@ def split(x, fn=None):
 
 
 # or you can use itertools.izip_longest(*[iter(l)]*n) for padded chunks
-def chunk(s, n=2):
+def chunk(s, n=2, fn=tuple):
   """
   iterate through iterable <s> in chunks of size <n>.
 
@@ -501,9 +503,8 @@ def chunk(s, n=2):
   [(1, 2, 3), (4, 5, 6), (7, 8)]
   """
   i = iter(s)
-  n = range(n)
   while True:
-    s = tuple(next(i) for x in n)
+    s = fn(itertools.islice(i, 0, n))
     if not s: break
     yield s
 
@@ -2079,7 +2080,7 @@ def _flatten_test(s):
   if isinstance(s, basestring):
     return None
   # do flatten other sequences
-  if isinstance(s, collections.Sequence):
+  if isinstance(s, Sequence):
     return s
   # otherwise don't flatten
   return None
@@ -4611,10 +4612,10 @@ class SubstitutedExpression(object):
       args.append(sprintf("--header={q}{self.header}{q}"))
 
     if self.env is not None:
-      raise ValueError("can't generate arg for \"env\" parameter")
+      raise ValueError("can't generate arg for \"env\" parameter (maybe use \"code\" instead)")
 
     code = self.code
-    if code is not None:
+    if code:
       if isinstance(code, basestring):
         code = [code]
       for x in code:
