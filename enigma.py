@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Nov 11 22:07:45 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Nov 11 22:17:18 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -167,7 +167,10 @@ elif sys.version_info[0] > 2:
   reduce = functools.reduce
   basestring = str
   raw_input = input
-  from collections.abc import Sequence
+  if sys.version_info[1] > 6:
+    from collections.abc import Sequence
+  else:
+    Sequence = collections.Sequence
 
 # useful constants
 nl = "\n"
