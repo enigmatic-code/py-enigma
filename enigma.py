@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Nov 11 22:17:18 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Nov 17 12:49:58 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -58,6 +58,7 @@ find_zero              - find where a function is zero
 first                  - return items from the start of an iterator
 flatten                - flatten a list of lists
 flattened              - fully flatten a nested structure
+fraction               - convert numerator / denominator to lowest terms
 gcd                    - greatest common divisor
 grid_adjacency         - adjacency matrix for an n x m grid
 hypot                  - calculate hypotenuse
@@ -138,7 +139,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-11-11"
+__version__ = "2018-11-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -168,6 +169,8 @@ elif sys.version_info[0] > 2:
   basestring = str
   raw_input = input
   if sys.version_info[1] > 6:
+    # Python 3.7
+    # not: [[ Sequence = collections.abc.Sequence ]]
     from collections.abc import Sequence
   else:
     Sequence = collections.Sequence
@@ -540,6 +543,7 @@ def powerset(i, min_size=0, max_size=None):
 subsets = powerset
 
 
+# like filter() but also returns the elements that don't satisfy the predicate
 # see also partition() recipe from itertools documentation
 # (but note that partition() returns (false, true) lists)
 def filter2(p, i):
@@ -1835,6 +1839,17 @@ def mlcm(a, *rest):
 
 def is_coprime(a, b):
   return gcd(a, b) == 1
+
+
+def fraction(a, b):
+  """
+  return the numberator and denominator of the fraction a/b in lowest terms
+
+  >>> fraction(286, 1001)
+  (2, 7)
+  """
+  g = gcd(a, b)
+  return (a // g, b // g)
 
 
 def factorial(a, b=1):
