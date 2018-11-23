@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Nov 17 12:49:58 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Nov 23 23:23:11 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -139,7 +139,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-11-17"
+__version__ = "2018-11-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -932,7 +932,7 @@ def factor(n, fn=prime_factor):
 
 def divisor_pairs(n):
   """
-  generate divisors (a, b) of positive integer n, such that a <= b and a * b = n.
+  generate divisors (a, b) of positive integer n, such that a =< b and a * b = n.
 
   the pairs are generated in order of increasing <a>.
 
@@ -988,7 +988,7 @@ def multiples(ps):
   for (m, n) in ps:
     t = list()
     p = m
-    for _ in irange(1, n):
+    for _ in range(n):
       t.extend(x * p for x in s)
       p *= m
     s.extend(t)
@@ -1010,7 +1010,7 @@ def divisors(n):
 
 def divisors_pairs(n):
   """
-  generate divisors pairs (a, b) with a <= b, such that a * b = n.
+  generate divisors pairs (a, b) with a =< b, such that a * b = n.
 
   pairs are generated in order, by determining the factors of n.
 
@@ -1162,7 +1162,7 @@ def is_square_free(n):
 def farey(n):
   """
   generate the Farey sequence F(n) - the sequence of coprime
-  pairs (a, b) where 0 < a < b <= n. pairs are generated
+  pairs (a, b) where 0 < a < b =< n. pairs are generated
   in numerical order when considered as fractions a/b.
 
   the pairs (0, 0) and (1, 1) usually present at the start
@@ -1179,7 +1179,7 @@ def farey(n):
 
 def coprime_pairs(n=None, order=0):
   """
-  generate coprime pairs (a, b) with 0 < a < b <= n.
+  generate coprime pairs (a, b) with 0 < a < b =< n.
 
   the list is complete and no element appears more than once.
 
@@ -1368,7 +1368,7 @@ def fib(*s, **kw):
 
 def iroot(n, k):
   """
-  compute the largest integer x such that x^k <= n.
+  compute the largest integer x such that x^k =< n.
 
   i.e. x is the integer k-th root of n.
 
@@ -1841,9 +1841,10 @@ def is_coprime(a, b):
   return gcd(a, b) == 1
 
 
+# for those times when fractions.Fraction is overkill
 def fraction(a, b):
   """
-  return the numberator and denominator of the fraction a/b in lowest terms
+  return the numerator and denominator of the fraction a/b in lowest terms
 
   >>> fraction(286, 1001)
   (2, 7)
@@ -2278,7 +2279,7 @@ def tuples(s, n=2):
   t = list()
   try:
     # collect the first tuple
-    for _ in irange(1, n):
+    for _ in range(n):
       t.append(next(i))
     while True:
       # return the tuple
@@ -5192,8 +5193,16 @@ class SubstitutedDivision(SubstitutedExpression):
       return join(s, sep=sep)
 
     # we use None instead of 0 if the result comes out exactly
-    if not(subs[-1][-1]) or subs[-1][-1] == '0': subs[-1][-1] = None
-    rem = subs[-1][-1]
+    # and extract the remainder
+    rem = []
+    for i in irange(-1, -len(subs), step=-1):
+      if subs[i]:
+        if (not(subs[i][-1]) or subs[i][-1] == '0'): subs[i][-1] = None
+        if subs[i][-1] is not None: rem.insert(0, subs[i][-1])
+        break
+      else:
+        rem.insert(0, a[i])
+    rem = (None if not rem else join(rem))
 
     # create the solution header (from the input parameters)
     header = sprintf("{a} / {b} = {c} (rem {r}) [{subs}]", r=fmt(rem), subs=fmt_subs(subs))
@@ -5250,7 +5259,7 @@ class SubstitutedDivision(SubstitutedExpression):
           printf("slot {k} = {vs}")
 
     # record the arguments required for a solution
-    self.args = (a, b, c, subs)
+    self.args = (a, b, c, subs, rem)
     self.input_symbols = dict((k, slots.symbol(slots.slot_find(IS, k, create=0))) for k in input_symbols)
 
     # assemble a SubstitutedExpression object
@@ -5260,7 +5269,7 @@ class SubstitutedDivision(SubstitutedExpression):
     if rem is None:
       expr.append(sprintf("{b} * {c} = {a}"))
     else:
-      expr.append(sprintf("{b} * {c} + {r} = {a}", r=subs[-1][-1]))
+      expr.append(sprintf("{b} * {c} + {rem} = {a}"))
 
     # the multiples
     for (s, r) in zip(subs, c):
@@ -5286,7 +5295,7 @@ class SubstitutedDivision(SubstitutedExpression):
     opt = dict()
     opt['symbols'] = slots.symbols_used()
     opt['distinct'] = kw.get('distinct', input_syms)
-    opt['template'] = sprintf("{{{a}}} / {{{b}}} = {{{c}}} (rem {r}) [{subs}]", r=fmt(subs[-1][-1], brace=1), subs=fmt_subs(subs, brace=1))
+    opt['template'] = sprintf("{{{a}}} / {{{b}}} = {{{c}}} (rem {r}) [{subs}]", r=fmt(rem, brace=1), subs=fmt_subs(subs, brace=1))
     opt['solution'] = input_syms
     opt['header'] = header
 
@@ -5332,11 +5341,13 @@ class SubstitutedDivision(SubstitutedExpression):
     if verbose is None: verbose = self.verbose
     answer = self.answer
     # solution templates
-    (ta, tb, tc, tsubs) = self.args
-    tr = tsubs[-1][-1]
+    (ta, tb, tc, tsubs, tr) = self.args
     if tr is None:
       tr = '0'
-      tsubs[-1][-1] = tr
+      for s in reversed(tsubs):
+        if s:
+          s[-1] = tr
+          break
     # find solutions (but disable solution output)
     for s in SubstitutedExpression.solve(self, verbose=(verbose & ~4)):
       if answer: (s, ans) = s
