@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Nov 24 00:26:06 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Nov 24 08:19:21 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -25,6 +25,7 @@ Currently this module provides the following functions and classes:
 
 arg                    - extract command line arguments
 base2int               - convert a string in the specified base to an integer
+base_digits            - get/set digits used in numerical base conversion
 C                      - combinatorial function (nCk)
 cached                 - decorator for caching functions
 cbrt                   - the (real) cube root of a number
@@ -139,7 +140,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-11-23"
+__version__ = "2018-11-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1911,7 +1912,7 @@ def M(n, k):
   return C(n + k - 1, k)
 
 
-def recurring(a, b, recur=0, base=10):
+def recurring(a, b, recur=0, base=10, digits=None):
   """
   find recurring decimal representation of the fraction <a> / <b>
   return strings (<integer-part>, <non-recurring-decimal-part>, <recurring-decimal-part>)
@@ -1937,7 +1938,7 @@ def recurring(a, b, recur=0, base=10):
     try:
       # have we had this dividend before?
       j = r[a]
-      return (int2base(i, base), s[:j], s[j:])
+      return (int2base(i, base, digits=digits), s[:j], s[j:])
     except KeyError:
       # no, we haven't
       r[a] = n
@@ -1946,7 +1947,7 @@ def recurring(a, b, recur=0, base=10):
       if recur and a == 0: (d, a) = (d - 1, b)
       if not(d == a == 0):
         # add to the digit string
-        s += int2base(d, base)
+        s += int2base(d, base, digits=digits)
 
 
 # command line arguments
@@ -2568,12 +2569,28 @@ def is_roman(x):
   return int2roman(i) == x
 
 
-
-
-# digits for use in converting bases
+# (default) digits for use in converting bases
 _DIGITS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=_DIGITS):
+@static(digits=_DIGITS)
+def base_digits(*args):
+  """
+  get or set the string of digits used to represent numbers.
+
+  with no arguments the current string of digits is returned.
+
+  with an argument the current string is set, and the new string
+  returned, if the argument is None (or any non-True value) then
+  the default string is used.
+
+  NOTE: this is a global setting and will affect all subsequent
+  base conversions.
+  """
+  assert len(args) < 2
+  if args: base_digits.digits = (args[0] or _DIGITS)
+  return base_digits.digits
+
+def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None):
   """
   convert an integer <i> to a string representation in the specified base <base>.
 
@@ -2606,7 +2623,8 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=_DIGI
   >>> int2base(84, width=9, group=3, sep="_", base=2)
   '001_010_100'
   """
-  assert base > 1
+  assert base > 1, "invalid base {base}".format(base=base)
+  if digits is None: digits = base_digits()
   if i == 0:
     r = digits[0]
   elif i < 0:
@@ -2625,7 +2643,7 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=_DIGI
     r = join((join(x) for x in chunk(r[::s], group)), sep=sep[::s])[::s]
   return r
 
-def base2int(s, base=10, strip=0, digits=_DIGITS):
+def base2int(s, base=10, strip=0, digits=None):
   """
   convert a string representation of an integer in the specified base to an integer.
 
@@ -2637,6 +2655,7 @@ def base2int(s, base=10, strip=0, digits=_DIGITS):
   29234652
   """
   assert base > 1, "invalid base {base}".format(base=base)
+  if digits is None: digits = base_digits()
   if len(digits) > base:
     digits = digits[:base]
   if s == digits[0]:
@@ -3616,7 +3635,7 @@ def _substituted_sum(terms, result, digits, l2d, d2i, n, carry=0, base=10):
     for r in _substituted_sum(terms, result, digits.difference(allocated), _l2d, d2i, n, c, base):
       yield r
 
-def substitute(s2d, text, digits=_DIGITS):
+def substitute(s2d, text, digits=None):
   """
   given a symbol-to-digit mapping <s2d> and some text <text>, return
   the text with the digits (as defined by the sequence <digits>)
@@ -3628,6 +3647,7 @@ def substitute(s2d, text, digits=_DIGITS):
   '9567 + 1085 = 10652'
   """
   if text is None: return None
+  if digits is None: digits = base_digits()
   return join((digits[s2d[x]] if x in s2d else x) for x in text)
 
 # friendly interface to the substituted sum solver
@@ -3726,14 +3746,14 @@ class SubstitutedSum(object):
         self.output_solution(s)
       yield s
 
-  def substitute(self, s, text, digits=_DIGITS):
+  def substitute(self, s, text, digits=None):
     """
     given a solution to the substituted sum and some text return the text with
     letters substituted for digits.
     """
     return substitute(s, text, digits=digits)
 
-  def output_solution(self, s, digits=_DIGITS):
+  def output_solution(self, s, digits=None):
     """
     given a solution to the substituted sum output the assignment of letters
     to digits and the sum with digits substituted for letters.
@@ -3774,11 +3794,12 @@ class SubstitutedSum(object):
 
   @classmethod
   def chain_go(cls, sums, base=10, digits=None, l2d=None, d2i=None):
+    digits = base_digits()
     template = join(('(' + join(s[:-1], sep=' + ') + ' = ' + s[-1] + ')' for s in sums), sep=' ')
     printf("{template}")
     for s in cls.chain(sums, base=base, digits=digits, l2d=l2d, d2i=d2i):
       printf("{t} / {s}",
-        t=join((_DIGITS[s[x]] if x in s else x) for x in template),
+        t=join((digits[s[x]] if x in s else x) for x in template),
         s=join((k + '=' + str(s[k]) for k in sorted(s.keys())), sep=' ')
       )
 
@@ -4572,7 +4593,7 @@ class SubstitutedExpression(object):
     return r
 
 
-  def substitute(self, s, text, digits=_DIGITS):
+  def substitute(self, s, text, digits=None):
     """
     given a solution to the substituted expression sum and some text,
     return the text with the letters substituted for digits.
