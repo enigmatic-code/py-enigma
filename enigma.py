@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Nov 23 23:23:11 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Nov 24 00:26:06 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -5342,12 +5342,11 @@ class SubstitutedDivision(SubstitutedExpression):
     answer = self.answer
     # solution templates
     (ta, tb, tc, tsubs, tr) = self.args
-    if tr is None:
-      tr = '0'
-      for s in reversed(tsubs):
-        if s:
-          s[-1] = tr
-          break
+    if tr is None: tr = '0'
+    for s in reversed(tsubs):
+      if s:
+        if s[-1] is None: s[-1] = '0'
+        break
     # find solutions (but disable solution output)
     for s in SubstitutedExpression.solve(self, verbose=(verbose & ~4)):
       if answer: (s, ans) = s
