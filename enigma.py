@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Nov 24 08:19:21 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Nov 27 09:22:08 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -59,6 +59,7 @@ find_zero              - find where a function is zero
 first                  - return items from the start of an iterator
 flatten                - flatten a list of lists
 flattened              - fully flatten a nested structure
+format_recurring       - output the result from recurring()
 fraction               - convert numerator / denominator to lowest terms
 gcd                    - greatest common divisor
 grid_adjacency         - adjacency matrix for an n x m grid
@@ -140,7 +141,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-11-24"
+__version__ = "2018-11-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1914,8 +1915,8 @@ def M(n, k):
 
 def recurring(a, b, recur=0, base=10, digits=None):
   """
-  find recurring decimal representation of the fraction <a> / <b>
-  return strings (<integer-part>, <non-recurring-decimal-part>, <recurring-decimal-part>)
+  find recurring representation of the fraction <a> / <b> in the specified base.
+  return strings (<integer-part>, <non-recurring-part>, <recurring-part>)
   if you want rationals that normally terminate represented as non-terminating set <recur>
 
   >>> recurring(1, 7)
@@ -1949,6 +1950,25 @@ def recurring(a, b, recur=0, base=10, digits=None):
         # add to the digit string
         s += int2base(d, base, digits=digits)
 
+# Python 3.6: ...(*args, dp='.')
+def format_recurring(*args, **kw):
+  """
+  format the (i, nr, rr) return from recurring() as a string
+
+  >>> format_recurring(recurring(1, 7))
+  '0.(142857)...'
+  >>> format_recurring(recurring(3, 2))
+  '1.5'
+  >>> format_recurring(recurring(3, 2, recur=1))
+  '1.4(9)...'
+  >>> format_recurring(recurring(5, 17, base=16))
+  '0.(4B)...'
+  """
+  dp = kw.get('dp', '.')
+  if len(args) == 1: args = args[0]
+  (i, nr, rr) = args
+  rr = ('(' + rr + ')...' if rr else '')
+  return i + dp + nr + rr
 
 # command line arguments
 
@@ -2575,13 +2595,13 @@ _DIGITS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 @static(digits=_DIGITS)
 def base_digits(*args):
   """
-  get or set the string of digits used to represent numbers.
+  get or set the default string of digits used to represent numbers.
 
   with no arguments the current string of digits is returned.
 
   with an argument the current string is set, and the new string
   returned, if the argument is None (or any non-True value) then
-  the default string is used.
+  the standard default string is used (0-9 then A-Z).
 
   NOTE: this is a global setting and will affect all subsequent
   base conversions.
