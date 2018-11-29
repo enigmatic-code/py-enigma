@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Nov 27 09:22:08 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Nov 29 22:57:19 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -141,7 +141,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-11-27"
+__version__ = "2018-11-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1928,6 +1928,11 @@ def recurring(a, b, recur=0, base=10, digits=None):
   >>> recurring(5, 17, base=16)
   ('0', '', '4B')
   """
+  # check input fraction
+  if b == 0 or (recur and a == 0): raise ValueError("invalid input fraction: {a} / {b} [recur={recur}]".format(a=a, b=b, recur=bool(recur)))
+  neg = 0
+  if b < 0: (a, b) = (-a, -b)
+  if a < 0: (a, neg) = (-a, 1)
   # the integer part
   (i, a) = divmod(a, b)
   if recur and a == 0: (i, a) = (i - 1, b)
@@ -1939,7 +1944,9 @@ def recurring(a, b, recur=0, base=10, digits=None):
     try:
       # have we had this dividend before?
       j = r[a]
-      return (int2base(i, base, digits=digits), s[:j], s[j:])
+      (i, nr, rr) = (int2base(i, base, digits=digits), s[:j], s[j:])
+      if neg and (nr or rr or i != '0'): i = '-' + i
+      return (i, nr, rr)
     except KeyError:
       # no, we haven't
       r[a] = n
@@ -1968,7 +1975,7 @@ def format_recurring(*args, **kw):
   if len(args) == 1: args = args[0]
   (i, nr, rr) = args
   rr = ('(' + rr + ')...' if rr else '')
-  return i + dp + nr + rr
+  return (i + dp + nr + rr if nr or rr else i)
 
 # command line arguments
 
