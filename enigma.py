@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Nov 29 22:57:19 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Dec 15 08:06:50 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -26,6 +26,7 @@ Currently this module provides the following functions and classes:
 arg                    - extract command line arguments
 base2int               - convert a string in the specified base to an integer
 base_digits            - get/set digits used in numerical base conversion
+bit_permutations       - generate bit permutations
 C                      - combinatorial function (nCk)
 cached                 - decorator for caching functions
 cbrt                   - the (real) cube root of a number
@@ -141,7 +142,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-11-29"
+__version__ = "2018-12-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -178,6 +179,7 @@ elif sys.version_info[0] > 2:
     Sequence = collections.Sequence
 
 # useful constants
+enigma = sys.modules[__name__]
 nl = "\n"
 pi = math.pi
 
@@ -862,7 +864,7 @@ def uniq1(i, fn=None):
 
 # we use math.pow in sqrt(), cbrt() rather than ** to avoid generating complex numbers
 
-F13 = 1.0 / 3.0
+_F13 = 1.0 / 3.0
 
 def cbrt(x):
   """
@@ -873,7 +875,7 @@ def cbrt(x):
   >>> cbrt(-27.0)
   -3.0
   """
-  return (-math.pow(-x, F13) if x < 0 else math.pow(x, F13))
+  return (-math.pow(-x, _F13) if x < 0 else math.pow(x, _F13))
 
 def prime_factor(n):
   """
@@ -1600,7 +1602,7 @@ def is_triangular(n):
   False
   """
   i = int(trirt(n) + 0.5)
-  return (i if i * (i + 1) == n * 2 else None)
+  return (i if i * (i + 1) == 2 * n else None)
 
 
 def digrt(n, base=10):
@@ -1929,7 +1931,9 @@ def recurring(a, b, recur=0, base=10, digits=None):
   ('0', '', '4B')
   """
   # check input fraction
-  if b == 0 or (recur and a == 0): raise ValueError("invalid input fraction: {a} / {b} [recur={recur}]".format(a=a, b=b, recur=bool(recur)))
+  if b == 0 or (recur and a == 0):
+    raise ValueError("invalid input fraction: {a} / {b} [recur={recur}]".format(a=a, b=b, recur=bool(recur)))
+  # sort out arguments
   neg = 0
   if b < 0: (a, b) = (-a, -b)
   if a < 0: (a, neg) = (-a, 1)
@@ -2367,6 +2371,33 @@ def subseqs(iterable, min_size=0, max_size=None):
     for s in itertools.combinations(l, r):
       yield s
 
+# bit permutations
+# see: https://enigmaticcode.wordpress.com/2017/05/20/bit-twiddling/
+def bit_permutations(a, b=None):
+  """
+  generate numbers in in order that have the same number of bits
+  set in their binary representation.
+
+  numbers start at <a> and are generated while they are smaller
+  than <b>.
+
+  to generate all numbers with k bits start start with:
+
+    a = 2 ** k - 1
+    a = (1 << k) - 1
+
+  >>> list(bit_permutations(3, 20))
+  [3, 5, 6, 9, 10, 12, 17, 18]
+  >>> first(bit_permutations(1), 11)
+  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+  """
+  if a == 0:
+    yield a
+    return
+  while b is None or a < b:
+    yield a
+    t = (a | (a - 1)) + 1
+    a = t | ((((t & -t) // (a & -a)) >> 1) - 1)    
 
 ###############################################################################
 
@@ -4966,7 +4997,7 @@ def substituted_expression(*args, **kw):
 # (EQ, d) = slot has value of digit d
 # (NE, d) = slot is not digit d
 # (IS, x) = slot has input symbol x
-(UN, EQ, NE, IS) = ('UN', 'EQ', 'NE', 'IS')
+(_UN, _EQ, _NE, _IS) = ('UN', 'EQ', 'NE', 'IS')
 
 _SYMBOLS_UL = _SYMBOLS + _SYMBOLS.lower()
 
@@ -4998,15 +5029,15 @@ class Slots(object):
     ps = self._s2p[i] # properties for slot i
     for (k, v) in props:
 
-      if k == EQ:
+      if k == _EQ:
         # incompatible with (NE, v)
-        if (NE, v) in ps: raise ValueError("property mismatch")
+        if (_NE, v) in ps: raise ValueError("property mismatch")
         # incompatible with (EQ, u) where u != v
-        if any(k1 == EQ and v1 != v for (k1, v1) in ps): raise ValueError("property mismatch")
+        if any(k1 == _EQ and v1 != v for (k1, v1) in ps): raise ValueError("property mismatch")
 
-      elif k == NE:
+      elif k == _NE:
         # incompatible with (EQ, v)
-        if (EQ, v) in ps: raise ValueError("property mismatch")
+        if (_EQ, v) in ps: raise ValueError("property mismatch")
 
       # add the properties
       ps.add((k, v))
@@ -5037,11 +5068,11 @@ class Slots(object):
 
     if s in '0123456789':
       # integer literal, use the same slot for the same literal
-      return self.slot_find(EQ, int(s))
+      return self.slot_find(_EQ, int(s))
 
     if s in symbols:
       # a symbol, use the same slot for the same input symbol
-      return self.slot_find(IS, s)
+      return self.slot_find(_IS, s)
 
     # unrecognised input symbol
     raise ValueError(sprintf("_allocate: invalid input symbol <{s}>"))
@@ -5053,7 +5084,7 @@ class Slots(object):
 
   # find the leader for this slot
   def _slot(self, i):
-    return self.slot_find(UN, i, create=0) or i
+    return self.slot_find(_UN, i, create=0) or i
 
   # unify two slots <i> and <j>
   def _unify(self, i, j):
@@ -5064,7 +5095,7 @@ class Slots(object):
     # copy any properties from slot j to slot i
     self.slot_setprops(i, *(self._s2p[j]))
     # mark slot j as being unified with i
-    self.slot_setprops(i, (UN, j))
+    self.slot_setprops(i, (_UN, j))
 
   # unify two sequence of slots <s> and <t>
   def unify(self, s, t):
@@ -5075,13 +5106,13 @@ class Slots(object):
   # return the symbol for a slot
   def symbol(self, i):
     # use the (lowest) symbol from an IS property
-    vs = sorted(v for (k, v) in self._s2p[self._slot(i)] if k == IS)
+    vs = sorted(v for (k, v) in self._s2p[self._slot(i)] if k == _IS)
     if vs:
       return vs[0]
     # use the next unallocated symbol
     for v in self.symbols:
-      if not self.slot_find(IS, v, create=0):
-        self.slot_setprops(i, (IS, v))
+      if not self.slot_find(_IS, v, create=0):
+        self.slot_setprops(i, (_IS, v))
         return v
     raise ValueError("symbol pool exhausted")
 
@@ -5098,7 +5129,7 @@ class Slots(object):
 
   # return a string of the symbols currently assigned
   def symbols_used(self):
-    return join(sorted(v for (v, ss) in self.prop_items(IS)))
+    return join(sorted(v for (v, ss) in self.prop_items(_IS)))
 
 # a named tuple for the results (now includes "subs" field)
 # (s is the solution from SubstituteExpression, with eliminated symbols reinstated)
@@ -5266,15 +5297,15 @@ class SubstitutedDivision(SubstitutedExpression):
     # no leading zeros (or singleton zeros)
     for s in flatten([(a, b, c)] + subs):
       if s is None: continue
-      slots.slot_setprops(s[0], (NE, 0))
+      slots.slot_setprops(s[0], (_NE, 0))
 
     # an empty intermediate implies zero in the result
     # (and non-empty intermediates implies non-zero in the result)
     for (s, r) in zip(subs, c):
       if not s:
-        slots._unify(r, slots.slot_find(EQ, 0))
+        slots._unify(r, slots.slot_find(_EQ, 0))
       else:
-        slots.slot_setprops(r, (NE, 0))
+        slots.slot_setprops(r, (_NE, 0))
 
     # unify slots in the intermediate sums
     (i, j, prev) = (0, len(a) + 1 - len(subs), None)
@@ -5308,7 +5339,7 @@ class SubstitutedDivision(SubstitutedExpression):
 
     # record the arguments required for a solution
     self.args = (a, b, c, subs, rem)
-    self.input_symbols = dict((k, slots.symbol(slots.slot_find(IS, k, create=0))) for k in input_symbols)
+    self.input_symbols = dict((k, slots.symbol(slots.slot_find(_IS, k, create=0))) for k in input_symbols)
 
     # assemble a SubstitutedExpression object
     expr = list()
@@ -5349,7 +5380,7 @@ class SubstitutedDivision(SubstitutedExpression):
 
     # initial values
     s2d = kw.get('s2d', dict())
-    for (v, ss) in slots.prop_items(EQ):
+    for (v, ss) in slots.prop_items(_EQ):
       for s in ss:
         s2d[slots.symbol(s)] = v
     opt['s2d'] = s2d
@@ -5359,7 +5390,7 @@ class SubstitutedDivision(SubstitutedExpression):
     if kw.get('d2i', None):
       for (k, v) in kw['d2i'].items():
         d2i[k].update(self.input_symbols[s] for s in v)
-    for (v, ss) in slots.prop_items(NE):
+    for (v, ss) in slots.prop_items(_NE):
       for s in ss:
         d2i[v].add(slots.symbol(s))
     opt['d2i'] = dict((k, join(sorted(v))) for (k, v) in d2i.items())
@@ -6737,7 +6768,7 @@ enigma.py has the following command-line usage:
         <class> <args> = run command_line(<args>) method on class
         [-r | --run] <file> [<additional-args>] = run the solver and args specified in <file>
         -t[v] = run tests [v = verbose]
-        -u[cd] = check for updates [c = only check, d = always download]
+        -u[cdr] = check for updates [c = only check, d = always download, r = rename]
         -h = this help
 
   Solvers that support the command_line() class method can be invoked
@@ -6780,7 +6811,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.15', python3='3.6.7')
+""".format(version=__version__, python='2.7.15', python3='3.7.1')
 
 if __name__ == "__main__":
 
