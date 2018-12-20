@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Dec 15 08:06:50 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Dec 20 08:22:00 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -30,6 +30,7 @@ bit_permutations       - generate bit permutations
 C                      - combinatorial function (nCk)
 cached                 - decorator for caching functions
 cbrt                   - the (real) cube root of a number
+choose                 - choose a sequence of values satisfying some functions
 chunk                  - go through an iterable in chunks
 compare                - comparator function
 concat                 - concatenate a list of values into a string
@@ -138,11 +139,11 @@ SubstitutedSum         - a class for solving substituted addition sums
 Timer                  - a class for measuring elapsed timings
 """
 
-# Python 3 style print() and /
+# Python 3 style print() and division
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-12-15"
+__version__ = "2018-12-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -154,6 +155,7 @@ import math
 import functools
 import itertools
 import collections
+import copy
 
 # maybe use the "six" module for some of this stuff
 if sys.version_info[0] == 2:
@@ -699,8 +701,7 @@ def icount(i, p=None, t=None):
   return n
 
 
-# find, like index(), but return -1 instead of throwing an error
-
+# find: like index(), but return -1 instead of throwing an error
 def find(s, v):
   """
   find the first index of a value in a sequence, return -1 if not found.
@@ -792,6 +793,37 @@ def partitions(s, n, pad=0, value=None, distinct=None):
     fn = (_partitions if distinct else ipartitions)
     # or in Python 3: [[ yield from fn(s, n) ]]
     for p in fn(s, n): yield p
+
+
+# see: [ https://enigmaticcode.wordpress.com/2017/05/17/tantalizer-482-lapses-from-grace/#comment-7169 ]
+# choose: choose values from <vs> satisfying <fns> in turn
+# distinct - true if values must be distinct
+# s - initial sequence (that supports 'copy()' and 'append()')
+def choose(vs, fns, s=None, distinct=0):
+  """
+  choose values from <vs> satisfying <fns> in turn.
+
+  if all values are acceptable then a value of None can be passed in <fns>.
+
+  set 'distinct' if all values should be distinct.
+
+  >>> list(choose([1, 2, 3], [None, (lambda a, b: abs(a - b) == 1), (lambda a, b, c: abs(b - c) == 1)]))
+  [[1, 2, 1], [1, 2, 3], [2, 1, 2], [2, 3, 2], [3, 2, 1], [3, 2, 3]]
+  """
+  if s is None: s = list()
+  # are we done?
+  if not fns:
+    yield s
+  else:
+    # choose the next value
+    fn = fns[0]
+    for v in vs:
+      if not(distinct) or v not in s:
+        s1 = copy.copy(s)
+        s1.append(v)
+        if fn is None or fn(*s1):
+          # choose the rest [[Python 3: yield from ...]]
+          for z in choose(vs, fns[1:], s1, distinct): yield z
 
 
 def first(i, count=1, skip=0, fn=list):
@@ -2189,7 +2221,7 @@ def update(s, ps=(), vs=None):
   >>> update([0, 1, 2, 3], [(2, 'foo')])
   [0, 1, 'foo', 3]
 
-  >>> update({ 'a': 1, 'b': 2, 'c': 3 }, 'bc', (4, 9)) == { 'a': 1, 'b': 4, 'c': 9 }
+  >>> update(dict(a=1, b=2, c=3), 'bc', (4, 9)) == dict(a=1, b=4, c=9)
   True
   """
   if vs is not None: ps = zip(ps, vs)
@@ -2375,11 +2407,11 @@ def subseqs(iterable, min_size=0, max_size=None):
 # see: https://enigmaticcode.wordpress.com/2017/05/20/bit-twiddling/
 def bit_permutations(a, b=None):
   """
-  generate numbers in in order that have the same number of bits
-  set in their binary representation.
+  generate numbers in order that have the same number of bits set in
+  their binary representation.
 
-  numbers start at <a> and are generated while they are smaller
-  than <b>.
+  numbers start at <a> and are generated while they are smaller than
+  <b>.
 
   to generate all numbers with k bits start start with:
 
@@ -3502,8 +3534,6 @@ primes = Primes(1, expandable=1, array=_primes_array, fn=(lambda n: _primes_size
 
 # this is probably a bit of overkill but it works and I already had the code written
 
-import copy
-
 class Impossible(Exception): pass
 class Solved(Exception): pass
 
@@ -3852,12 +3882,11 @@ class SubstitutedSum(object):
 
   @classmethod
   def chain_go(cls, sums, base=10, digits=None, l2d=None, d2i=None):
-    digits = base_digits()
     template = join(('(' + join(s[:-1], sep=' + ') + ' = ' + s[-1] + ')' for s in sums), sep=' ')
     printf("{template}")
     for s in cls.chain(sums, base=base, digits=digits, l2d=l2d, d2i=d2i):
       printf("{t} / {s}",
-        t=join((digits[s[x]] if x in s else x) for x in template),
+        t=substitute(s, template),
         s=join((k + '=' + str(s[k]) for k in sorted(s.keys())), sep=' ')
       )
 
