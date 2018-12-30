@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Dec 20 08:22:00 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Dec 30 20:45:41 2018 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2710,7 +2710,7 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   'HELLO'
   >>> int(int2base(123456, base=14), base=14)
   123456
-  >>> int2base(84, width=9, group=3, sep="_", base=2)
+  >>> int2base(84, base=2, width=9, group=3, sep="_")
   '001_010_100'
   """
   assert base > 1, "invalid base {base}".format(base=base)
@@ -3924,7 +3924,7 @@ class SubstitutedSum(object):
     There can be multiple --assign options.
 
     e.g. Enigma 1361 <https://enigmaticcode.wordpress.com/2013/02/20/enigma-1361-enigma-variation/>
-    % python enigma.py SubstitutedSum --assign=O,0 "ELGAR + ENIGMA = NIMROD"
+    % python enigma.py SubstitutedSum --assign="O,0" "ELGAR + ENIGMA = NIMROD"
     (ELGAR + ENIGMA = NIMROD)
     (71439 + 785463 = 856902) / A=3 D=2 E=7 G=4 I=5 L=1 M=6 N=8 O=0 R=9
 
@@ -3936,7 +3936,7 @@ class SubstitutedSum(object):
     have specified a --base=<n> option)
 
     e.g. Enigma 1272 <https://enigmaticcode.wordpress.com/2014/12/09/enigma-1272-jonny-wilkinson/>
-    % python enigma.py SubstitutedSum --digits=0,1,2,3,4,5,6,7,8 "WILKI + NSON = JONNY"
+    % python enigma.py SubstitutedSum --digits="0-8" "WILKI + NSON = JONNY"
     (WILKI + NSON = JONNY)
     (48608 + 3723 = 52331) / I=8 J=5 K=0 L=6 N=3 O=2 S=7 W=4 Y=1
     (48708 + 3623 = 52331) / I=8 J=5 K=0 L=7 N=3 O=2 S=6 W=4 Y=1
@@ -6840,7 +6840,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.15', python3='3.7.1')
+""".format(version=__version__, python='2.7.15', python3='3.7.2')
 
 if __name__ == "__main__":
 
