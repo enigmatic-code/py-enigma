@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Dec 30 20:45:41 2018 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jan 21 12:44:10 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -143,7 +143,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2018-12-19"
+__version__ = "2019-01-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2025,20 +2025,26 @@ def get_argv(force=0, args=None):
 argv = get_argv
 
 # might have been better to use: arg(n, fn=identity, default=None, argv=None)
-def arg(v, n, fn=identity, argv=None):
+# if 'p' is in PY_ENIGMA, then we will prompt
+def arg(v, n, fn=identity, prompt=None, argv=None):
   """
   if command line argument <n> is specified return fn(argv[n])
   otherwise return default value <v>
 
   if argv is None (the default), then the value of sysv.argv[1:] is used
 
-  >>> arg(42, 0, int, ['56'])
+  >>> arg(42, 0, int, argv=['56'])
   56
-  >>> arg(42, 1, int, ['56'])
+  >>> arg(42, 1, int, argv=['56'])
   42
   """
   if argv is None: argv = get_argv()
-  return (fn(argv[n]) if len(argv) > n else v)
+  r = (fn(argv[n]) if n < len(argv) else v)
+  if 'p' in _PY_ENIGMA:
+    if not prompt: prompt = sprintf("arg {n}")
+    s = raw_input(sprintf("{prompt} [{r}] > "))
+    if s: r = fn(s)
+  return r
 
 
 # printf / sprintf variable interpolation
@@ -2082,7 +2088,8 @@ def sprintf(fmt='', **kw):
   >>> sprintf("a={a} b={b} c={c}", c=42)
   'a=1 b=2 c=42'
   """
-  return _sprintf(fmt, sys._getframe(1).f_locals, kw)
+  f = sys._getframe(1)
+  return _sprintf(fmt, f.f_locals, kw)
 
 # print with variables interpolated into the format string
 def printf(fmt='', **kw):
@@ -4805,7 +4812,7 @@ class SubstitutedExpression(object):
       "  --answer=<expr> (or -A<expr>) = count answers according to <expr>",
       "  --template=<string> (or -T<s>) = solution template",
       "  --solution=<string> (or -S<s>) = solution symbols",
-      "  --header=<strong> (or -H<s>) = solution header",
+      "  --header=<string> (or -H<s>) = solution header",
       "  --distinct=<string> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
       "  --code=<string> (or -C<s>) = initialisation code (can be used multiple times)",
       "  --first (or -1) = stop after the first solution",
@@ -5404,8 +5411,8 @@ class SubstitutedDivision(SubstitutedExpression):
     opt['symbols'] = slots.symbols_used()
     opt['distinct'] = kw.get('distinct', input_syms)
     opt['template'] = sprintf("{{{a}}} / {{{b}}} = {{{c}}} (rem {r}) [{subs}]", r=fmt(rem, brace=1), subs=fmt_subs(subs, brace=1))
-    opt['solution'] = input_syms
-    opt['header'] = header
+    opt['solution'] = kw.get('solution', input_syms)
+    opt['header'] = kw.get('header', header)
 
     # initial values
     s2d = kw.get('s2d', dict())
@@ -5420,11 +5427,12 @@ class SubstitutedDivision(SubstitutedExpression):
       for (k, v) in kw['d2i'].items():
         d2i[k].update(self.input_symbols[s] for s in v)
     for (v, ss) in slots.prop_items(_NE):
+      if 'digits' in kw and v not in kw['digits']: continue
       for s in ss:
         d2i[v].add(slots.symbol(s))
     opt['d2i'] = dict((k, join(sorted(v))) for (k, v) in d2i.items())
 
-    # other options
+    # verbatim options
     for v in ('digits', 'answer', 'verbose'):
       if v in kw:
         opt[v] = kw[v]
@@ -5897,6 +5905,35 @@ class Football(object):
     if ts is None: ts = [0] * len(ss)
     return tuple(('x' if s is None else 'ldw'[compare(s[0 ^ t], s[1 ^ t]) + 1]) for (s, t) in zip(ss, ts))
 
+  # extract values from a dictionary relevant to team t
+  # return (<vs>, <ts>)
+  def extract(self, d, t):
+    """
+    Extract values from dictionary <d> that are relevant to team <t>.
+
+    A pair (<vs>, <ts>) is returned.
+    <vs> is the list of relevant values.
+    <ts> is the index of the team in the corresponding key
+
+    Given a dictionary of matches outcomes <matches> the table row for
+    team A can be constructed with:
+
+    (gs, ts) = football.extract(matches, A)
+    tableA = football.table(gs, ts)
+
+    Similarly, with a dictionary of scores <scores>, goals for /
+    against can be calculated this:
+
+    (ss, ts) = football.extract(scores, A)
+    (forA, againstA) = football.goals(ss, ts)
+    """
+    (vs, ts) = (list(), list())
+    for (k, v) in d.items():
+      i = find(k, t)
+      if i != -1:
+        vs.append(v)
+        ts.append(i)
+    return (vs, ts)
 
 
   # solver for a table with substituted values
@@ -6524,7 +6561,7 @@ _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
 if 'i' in _PY_ENIGMA:
 
-  if 'v' in _PY_ENIGMA: printf("[_PY_ENIGMA: pid={pid}]", pid=os.getpid())
+  if 'v' in _PY_ENIGMA: printf("[PY_ENIGMA: pid={pid}]", pid=os.getpid())
 
   # start an interactive shell using the environment of the specified frame
   def shell(frame=None, env=None):
@@ -6555,7 +6592,7 @@ if 'i' in _PY_ENIGMA:
   if hasattr(signal, 'SIGUSR1'):
     signal.signal(signal.SIGUSR1, _signal_handler_shell)
   else:
-    print("[_PY_ENIGMA: failed to install handler for SIGUSR1]")
+    print("[PY_ENIGMA: failed to install handler for SIGUSR1]")
 
   # SIGUSR2 -> report status
 
@@ -6565,7 +6602,7 @@ if 'i' in _PY_ENIGMA:
   if hasattr(signal, 'SIGUSR2'):
     signal.signal(signal.SIGUSR2, _signal_handler_status)
   else:
-    print("[_PY_ENIGMA: failed to install handler for SIGUSR2]")
+    print("[PY_ENIGMA: failed to install handler for SIGUSR2]")
 
 ###############################################################################
 
@@ -6602,12 +6639,17 @@ _run_exit = None
 # always returns None, but sets _run_exit
 def run(cmd, *args, **kw):
 
-  global _run_exit
+  global _run_exit, _PY_ENIGMA
   _run_exit = None
 
-  timer = kw.get('timed')
+  timed = kw.get('timed')
+  prompt = kw.get('prompt')
   #interact = kw.get('interact')
 
+  if prompt: timed = 0
+  if 'p' in _PY_ENIGMA: timed = prompt = 0
+  saved = None
+  
   # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
   if cmd == '-r' or cmd == '--run':
     (cmd, args) = (args[0], args[1:])
@@ -6616,7 +6658,7 @@ def run(cmd, *args, **kw):
 
   # if cmd names a file
   if os.path.isfile(cmd):
-    if timer and not isinstance(timer, basestring): timer = os.path.basename(cmd)
+    if timed and not isinstance(timed, basestring): timed = os.path.basename(cmd)
     if cmd.endswith(".run"):
       # *.run => treat it as a run file
       (cmd, args) = parsefile(cmd, *args)
@@ -6626,8 +6668,16 @@ def run(cmd, *args, **kw):
         import runpy
         get_argv(force=1, args=args)
         sys.argv = [cmd] + list(args)
-        if timer: timer = Timer(name=timer)
-        r = runpy.run_path(cmd)
+        if prompt:
+          saved = (_PY_ENIGMA,)
+          _PY_ENIGMA += 'p'
+        try:
+          if timed: timed = Timer(name=timed)
+          r = runpy.run_path(cmd)
+          if timed: timed.report()
+        finally:
+          if saved:
+            (_PY_ENIGMA,) = saved
       else:
         # attempt to use a shebang line (see: run.py)
         path = os.path.abspath(cmd)
@@ -6643,11 +6693,18 @@ def run(cmd, *args, **kw):
           cmd = shlex.split(cmd)
           cmd.append(path)
           cmd.extend(args)
-        if timer: timer = Timer(name=timer)
-        subprocess.call(cmd)
-        r = 1
-      if timer: timer.report()
-      _run_exit = (0 if r else -1)
+        if prompt:
+          saved = (_PY_ENIGMA,)
+          _PY_ENIGMA += 'p'
+        try:
+          if timed: timed = Timer(name=timed)
+          subprocess.call(cmd)
+          if timed: timed.report()
+          r = 1
+        finally:
+          if saved:
+            (_PY_ENIGMA,) = saved
+        _run_exit = (0 if r else -1)
       return
 
   # if cmd names a class[.method]
@@ -6658,10 +6715,17 @@ def run(cmd, *args, **kw):
   if fn:
     fn = getattr(fn, fn_name, None)
     if fn:
-      if timer and not isinstance(timer, basestring): timer = 'timing'
-      if timer: timer = Timer(name=timer)
-      _run_exit = (fn(list(args)) or 0)
-      if timer: timer.report()
+      if timed and not isinstance(timed, basestring): timed = 'timing'
+      if prompt:
+        saved = (_PY_ENIGMA,)
+        _PY_ENIGMA += 'p'
+      try:
+        if timed: timed = Timer(name=timed)
+        _run_exit = (fn(list(args)) or 0)
+        if timed: timed.report()
+      finally:
+        if saved:
+          (_PY_ENIGMA,) = saved
       return
     else:
       printf("enigma.py: {obj}.{fn_name}() not implemented")
