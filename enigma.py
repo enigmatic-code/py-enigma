@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan 21 12:44:10 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jan 22 17:02:36 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -143,7 +143,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-01-21"
+__version__ = "2019-01-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -461,16 +461,36 @@ def match(v, t):
   """
   match a value (as a string) to a template (see fnmatch.fnmatch).
 
+  to make matching numbers easier if the template starts with a minus
+  sign ('-') then so must the value. if the template starts with a
+  plus sign ('+') then the value must not start with a minus sign. so
+  to match a 4-digit positive number use '+????' as a template.
+
   >>> match("abcd", "?b??")
   True
   >>> match("abcd", "a*")
   True
   >>> match("abcd", "?b?")
   False
-  >>> match(1234, '?2??')
+  >>> match(1234, '+?2??')
+  True
+  >>> match(-1234, '-??3?')
+  True
+  >>> match(-123, '???3')
   True
   """
-  return fnmatch(str(v), t)
+  v = str(v)
+  if t.startswith('-'):
+    if v.startswith('-'):
+      (v, t) = (v[1:], t[1:])
+    else:
+      return False
+  elif t.startswith('+'):
+    if v.startswith('-'):
+      return False
+    else:
+      t = t[1:]
+  return fnmatch(v, t)
 
 def number(s, base=10):
   """
