@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jan 22 17:02:36 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jan 30 07:56:58 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -41,6 +41,7 @@ diff                   - sequence difference
 digrt                  - the digital root of a number
 divc                   - ceiling division
 divf                   - floor division
+div                    - exact division
 divisor                - generate the divisors of a number
 divisor_pairs          - generate pairs of divisors of a number
 divisors               - the divisors of a number
@@ -143,7 +144,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-01-22"
+__version__ = "2019-01-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1769,6 +1770,19 @@ def divc(a, b):
 cdiv = divc
 
 
+def div(a, b):
+  """
+  returns (a // b) if b exactly divides a, otherwise None
+
+  >>> div(1001, 13)
+  77
+  >>> bool(div(101, 13))
+  False
+  """
+  (d, r) = divmod(a, b)
+  return (d if r == 0 else None)
+
+
 def is_duplicate(*s):
   """
   check to see if arguments (as strings) contain duplicate characters.
@@ -2071,10 +2085,13 @@ def arg(v, n, fn=identity, prompt=None, argv=None):
 # (see also the "say" module)
 
 # this works in all version of Python
-def __sprintf(fmt, vs, kw):
-  if kw: vs = update(vs, kw)
-  # in Python3 [[ fmt.format_map(vs) ]] might be better
-  return fmt.format(**vs)
+# 
+def __sprintf(fmt, vs):
+  return fmt.format(**vs) 
+
+# Python3 has str.format_map(vs)
+def __sprintf3(fmt, vs):
+  return fmt.format_map(vs)
 
 # in Python v3.6.x we are getting f"..." strings which can do this job
 #
@@ -2090,12 +2107,25 @@ def __sprintf(fmt, vs, kw):
 #
 # printf("... {a} + {b} = {a + b} ...", a=2, b=3)  ->  "... 2 + 3 = 5 ..."
 
-def __sprintf36(fmt, vs, kw):
-  if kw: vs = update(vs, kw)
+def __sprintf36(fmt, vs):
   return eval('f' + repr(fmt), vs)
 
-# in Python 3.6.x try the new version
-_sprintf = (__sprintf36 if sys.version_info[0:2] > (3, 5) else __sprintf)
+_sprintf_fn = __sprintf
+if _python > 2: _sprintf_fn = __sprintf3
+if sys.version_info[0:2] > (3, 5): _sprintf_fn = __sprintf36
+
+def _sprintf(fmt, vs, frame):
+  # first try using the locals of the frame
+  d = frame.f_locals
+  if vs: d = update(d, vs)
+  try:
+    return _sprintf_fn(fmt, d)
+  except (NameError, KeyError):
+    pass
+  # if that fails, try adding in the globals too
+  d = update(frame.f_globals, frame.f_locals)
+  if vs: d = update(d, vs)
+  return _sprintf_fn(fmt, d)
 
 # print with variables interpolated into the format string
 def sprintf(fmt='', **kw):
@@ -2108,13 +2138,12 @@ def sprintf(fmt='', **kw):
   >>> sprintf("a={a} b={b} c={c}", c=42)
   'a=1 b=2 c=42'
   """
-  f = sys._getframe(1)
-  return _sprintf(fmt, f.f_locals, kw)
+  return _sprintf(fmt, kw, sys._getframe(1))
 
-# print with variables interpolated into the format string
+# print with local variables interpolated into the format string
 def printf(fmt='', **kw):
   """
-  print format string <fmt> with interpolated variables and keyword arguments.
+  print format string <fmt> with interpolated local variables and keyword arguments.
 
   the final newline can be suppressed by ending the string with '\'.
 
@@ -2124,7 +2153,7 @@ def printf(fmt='', **kw):
   >>> printf("a={a} b={b} c={c}", c=42)
   a=1 b=2 c=42
   """
-  s = _sprintf(fmt, sys._getframe(1).f_locals, kw)
+  s = _sprintf(fmt, kw, sys._getframe(1))
   d = dict() # flush=1
   if s.endswith('\\'): (s, d['end']) = (s[:-1], '')
   print(s, **d)
@@ -2141,6 +2170,7 @@ def cached(f):
   @functools.wraps(f)
   def _cached(*k):
     try:
+      #printf("[{f.__name__}: cache hit, {k}")
       return c[k]
     except KeyError:
       r = c[k] = f(*k)
@@ -3785,7 +3815,7 @@ def substituted_sum(terms, result, digits=None, l2d=None, d2i=None, base=10):
   digits = set(digits).difference(l2d.values())
   if d2i is None:
     d2i = dict()
-    d2i[0] = join(uniq(x[0] for x in itertools.chain(terms, [result]) if len(x) > 1))
+    d2i[0] = set(x[0] for x in itertools.chain(terms, [result]) if len(x) > 1)
   # number of columns in sum
   n = len(result)
   # make sure the terms are the same length as the result
@@ -4027,7 +4057,7 @@ class SubstitutedSum(object):
           if opt['d2i'] is None: opt['d2i'] = dict()
           (ds, s) = _split(v, maxsplit=-1)
           for i in _digits(ds):
-            opt['d2i'][i] = opt['d2i'].get(i, '') + s
+            opt['d2i'][i] = opt['d2i'].get(i, set()).union(s)
         else:
           raise ValueError
       except:
@@ -4598,7 +4628,7 @@ class SubstitutedExpression(object):
     prog = join(prog, sep=nl)
 
     if verbose & 256:
-      printf("-- [code language=\"python\"] --{nl}{prog}{nl}-- [/code] --", nl=nl)
+      printf("-- [code language=\"python\"] --{nl}{prog}{nl}-- [/code] --")
 
     # compile the solver
     # a bit of jiggery pokery to make this work in several Python versions
@@ -4690,9 +4720,7 @@ class SubstitutedExpression(object):
       else:
         r += 1
 
-    # stop the timer
-    if verbose & 32:
-      t.stop()
+    if verbose & 32: t.stop()
 
     # output solutions
     if verbose & 16:
@@ -4703,6 +4731,8 @@ class SubstitutedExpression(object):
           printf("{answer} = {k} [{v} solution{s}]", s=('' if v == 1 else 's'))
       else:
         printf("[{r} solution{s}]", s=('' if r == 1 else 's'))
+
+    if verbose & 32: t.report()
 
     return r
 
@@ -4888,7 +4918,7 @@ class SubstitutedExpression(object):
       if opt['d2i'] is None: opt['d2i'] = dict()
       (ds, s) = _split(v, maxsplit=-1)
       for i in _digits(ds):
-        opt['d2i'][i] = opt['d2i'].get(i, '') + s
+        opt['d2i'][i] = opt['d2i'].get(i, set()).union(s)
     elif k == 'D' or k == 'distinct':
       if v == '0' or v == '1':
         v = int(v)
@@ -5000,7 +5030,7 @@ class SubstitutedExpression(object):
 
   # class method to provide a read/eval/print loop
   @classmethod
-  def repl(cls, args=()):
+  def repl(cls, args=(), timed=1):
     """
     Provide a read/eval/print loop for evaluating alphametics.
 
@@ -5009,6 +5039,9 @@ class SubstitutedExpression(object):
       % python enigma.py Alphametic.repl
 
     """
+
+    v = (4 | 8 | 16)
+    if timed: v |= 32
 
     while True:
 
@@ -5023,6 +5056,9 @@ class SubstitutedExpression(object):
         expr = expr.strip()
         if expr == "" or expr == ".": break
         exprs.append(expr)
+
+      if not any(x.startswith("--verbose") or x.startswith("-v") for x in exprs):
+        exprs.insert(0, sprintf("--verbose={v}"))
 
       # solve alphametic expressions
       if exprs:
@@ -5450,7 +5486,7 @@ class SubstitutedDivision(SubstitutedExpression):
       if 'digits' in kw and v not in kw['digits']: continue
       for s in ss:
         d2i[v].add(slots.symbol(s))
-    opt['d2i'] = dict((k, join(sorted(v))) for (k, v) in d2i.items())
+    opt['d2i'] = d2i
 
     # verbatim options
     for v in ('digits', 'answer', 'verbose'):
@@ -6322,12 +6358,13 @@ class Timer(object):
     if self._report and not(force): return self._report
     if self._t1 is None: self.stop()
     e = self.elapsed()
-    self._report = "[{n}] elapsed time: {e:.7f}s ({f})".format(n=self._name, e=e, f=self.format(e))
+    self._report = sprintf("[{n}] elapsed time: {e:.7f}s ({f})", n=self._name, f=self.format(e))
     print(self._report, file=self._file)
 
   def printf(self, fmt='', **kw):
     e = self.elapsed()
-    print('[{n} {e}] {s}'.format(n=self._name, e=self.format(e), s=_sprintf(fmt, sys._getframe(1).f_locals, kw)))
+    s = _sprintf(fmt, kw, sys._getframe(1))
+    printf("[{n} {e}] {s}", n=self._name, e=self.format(e))
 
   def __enter__(self):
     return self
@@ -6787,7 +6824,7 @@ def _enigma_update(url, check=1, download=0, rename=0):
         data = u.read(8192)
         if not data: break
         f.write(data)
-    printf("{nl}download complete", nl=nl)
+    printf("{nl}download complete")
     if rename:
       printf("renaming \"{name}\" to \"enigma.py\"")
       os.rename(name, "enigma.py")
