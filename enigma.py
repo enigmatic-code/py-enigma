@@ -6,12 +6,12 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jan 30 07:56:58 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb 10 09:23:06 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
 #
-# (c) Copyright 2009-2018, Jim Randell, all rights reserved.
+# (c) Copyright 2009-2019, Jim Randell, all rights reserved.
 #
 ###############################################################################
 # -*- mode: Python; py-indent-offset: 2; -*-
@@ -144,7 +144,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-01-29"
+__version__ = "2019-02-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -575,7 +575,7 @@ subsets = powerset
 # (but note that partition() returns (false, true) lists)
 def filter2(p, i):
   """
-  use a predicate to partition an iterable it those elements that
+  use a predicate to partition an iterable into those elements that
   satisfy the predicate, and those that do not.
 
   >>> filter2(lambda n: n % 2 == 0, irange(1, 10))
@@ -1782,6 +1782,8 @@ def div(a, b):
   (d, r) = divmod(a, b)
   return (d if r == 0 else None)
 
+is_multiple = div
+
 
 def is_duplicate(*s):
   """
@@ -2060,6 +2062,7 @@ argv = get_argv
 
 # might have been better to use: arg(n, fn=identity, default=None, argv=None)
 # if 'p' is in PY_ENIGMA, then we will prompt
+# if 'v' is in PY_ENIGMA, then we will print values
 def arg(v, n, fn=identity, prompt=None, argv=None):
   """
   if command line argument <n> is specified return fn(argv[n])
@@ -2075,9 +2078,12 @@ def arg(v, n, fn=identity, prompt=None, argv=None):
   if argv is None: argv = get_argv()
   r = (fn(argv[n]) if n < len(argv) else v)
   if 'p' in _PY_ENIGMA:
-    if not prompt: prompt = sprintf("arg {n}")
-    s = raw_input(sprintf("{prompt} [{r}] > "))
+    if not prompt: prompt = "value"
+    s = raw_input(sprintf("arg{n}: {prompt} [{r}] > "))
     if s: r = fn(s)
+  if 'v' in _PY_ENIGMA:
+    if not prompt: prompt = "value"
+    printf("[arg{n}: {prompt} = {r!r}]")
   return r
 
 
@@ -5051,7 +5057,7 @@ class SubstitutedExpression(object):
         try:
           expr = raw_input(sprintf("expr[{n}] (or enter) >>> ", n=len(exprs)))
         except EOFError:
-          print("[done]")
+          print("\n[done]")
           return
         expr = expr.strip()
         if expr == "" or expr == ".": break
@@ -6695,16 +6701,30 @@ _run_exit = None
 # run command line arguments
 # always returns None, but sets _run_exit
 def run(cmd, *args, **kw):
+  """
+  run with command line arguments
+
+  <cmd> can be a class in enigma.py that accepts a command line,
+  or it can be a run file, Python program or other scripts
+
+  <args> are the command line arguments to be provided
+
+  additional options are:
+
+    timed - if set, time the execution of <cmd>
+
+    flags - 'p' = enable prompts, 'v' = enable verbose
+  """
 
   global _run_exit, _PY_ENIGMA
   _run_exit = None
 
   timed = kw.get('timed')
-  prompt = kw.get('prompt')
+  flags = kw.get('flags', '')
   #interact = kw.get('interact')
 
-  if prompt: timed = 0
-  if 'p' in _PY_ENIGMA: timed = prompt = 0
+  # enabling 'prompt' disables timing
+  if 'p' in _PY_ENIGMA or 'p' in flags: timed = 0
   saved = None
   
   # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
@@ -6725,16 +6745,16 @@ def run(cmd, *args, **kw):
         import runpy
         get_argv(force=1, args=args)
         sys.argv = [cmd] + list(args)
-        if prompt:
-          saved = (_PY_ENIGMA,)
-          _PY_ENIGMA += 'p'
+        if flags:
+          saved = [_PY_ENIGMA]
+          _PY_ENIGMA = join(sorted(uniq(_PY_ENIGMA + flags)))
         try:
           if timed: timed = Timer(name=timed)
           r = runpy.run_path(cmd)
           if timed: timed.report()
         finally:
           if saved:
-            (_PY_ENIGMA,) = saved
+            [_PY_ENIGMA] = saved
       else:
         # attempt to use a shebang line (see: run.py)
         path = os.path.abspath(cmd)
@@ -6750,9 +6770,9 @@ def run(cmd, *args, **kw):
           cmd = shlex.split(cmd)
           cmd.append(path)
           cmd.extend(args)
-        if prompt:
-          saved = (_PY_ENIGMA,)
-          _PY_ENIGMA += 'p'
+        if flags:
+          saved = [_PY_ENIGMA]
+          _PY_ENIGMA = join(sorted(uniq(_PY_ENIGMA + flags)))
         try:
           if timed: timed = Timer(name=timed)
           subprocess.call(cmd)
@@ -6760,7 +6780,7 @@ def run(cmd, *args, **kw):
           r = 1
         finally:
           if saved:
-            (_PY_ENIGMA,) = saved
+            [PY_ENIGMA] = saved
         _run_exit = (0 if r else -1)
       return
 
@@ -6773,16 +6793,16 @@ def run(cmd, *args, **kw):
     fn = getattr(fn, fn_name, None)
     if fn:
       if timed and not isinstance(timed, basestring): timed = 'timing'
-      if prompt:
-        saved = (_PY_ENIGMA,)
-        _PY_ENIGMA += 'p'
+      if flags:
+        saved = [_PY_ENIGMA]
+        _PY_ENIGMA = join(sorted(uniq(_PY_ENIGMA + flags)))
       try:
         if timed: timed = Timer(name=timed)
         _run_exit = (fn(list(args)) or 0)
         if timed: timed.report()
       finally:
         if saved:
-          (_PY_ENIGMA,) = saved
+          [_PY_ENIGMA] = saved
       return
     else:
       printf("enigma.py: {obj}.{fn_name}() not implemented")
