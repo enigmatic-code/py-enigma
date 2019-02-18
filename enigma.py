@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb 10 09:23:06 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb 18 07:53:46 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -23,7 +23,7 @@ The latest version is available at <http://www.magwag.plus.com/jim/enigma.html>.
 
 Currently this module provides the following functions and classes:
 
-arg                    - extract command line arguments
+arg, args              - extract command line arguments
 base2int               - convert a string in the specified base to an integer
 base_digits            - get/set digits used in numerical base conversion
 bit_permutations       - generate bit permutations
@@ -144,7 +144,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-02-07"
+__version__ = "2019-02-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2079,13 +2079,26 @@ def arg(v, n, fn=identity, prompt=None, argv=None):
   r = (fn(argv[n]) if n < len(argv) else v)
   if 'p' in _PY_ENIGMA:
     if not prompt: prompt = "value"
-    s = raw_input(sprintf("arg{n}: {prompt} [{r}] > "))
+    s = raw_input(sprintf("arg{n}: {prompt} [{r}] > ")).strip()
     if s: r = fn(s)
   if 'v' in _PY_ENIGMA:
     if not prompt: prompt = "value"
     printf("[arg{n}: {prompt} = {r!r}]")
   return r
 
+# get a list of similar arguments
+# if no arguments are collected the value of <vs> is returned
+def args(vs, n, fn=identity, prompt=None, argv=None):
+  if argv is None: argv = get_argv()
+  rs = (list(fn(v) for v in argv[n:]) or vs)
+  if 'p' in _PY_ENIGMA:
+    if not prompt: prompt = "values"
+    s = raw_input(sprintf("args: {prompt} [{rs}] > ")).strip()
+    if s: rs = list(fn(v) for v in re.split(',\s*|\s+', s))
+  if 'v' in _PY_ENIGMA:
+    if not prompt: prompt = "values"
+    printf("[args: {prompt} = {rs!r}]")
+  return rs
 
 # printf / sprintf variable interpolation
 # (see also the "say" module)
@@ -4324,8 +4337,8 @@ class SubstitutedExpression(object):
 
         # convert implicit (without braces) into explicit (with braces)
         if symbols:
+          if isinstance(v, basestring) and '{' not in v and '{' not in expr and all(x in symbols for x in v): v = '{' + v + '}'
           expr = fix(expr)
-          if isinstance(v, basestring) and '{' not in v and all(x in symbols for x in v): v = '{' + v + '}'
 
         # value is either an alphabetic or a numeric literal
         if isinstance(v, basestring) and '{' not in v:
@@ -5289,7 +5302,7 @@ class SubstitutedDivision(SubstitutedExpression):
       the divisor = b
       the result = c
 
-      along with a set of intermediate substractions of the form:
+      along with a set of intermediate subtractions of the form:
 
       x - y = z
 
