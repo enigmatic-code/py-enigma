@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb 18 07:53:46 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 23 22:37:40 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -144,7 +144,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-02-18"
+__version__ = "2019-02-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2618,10 +2618,10 @@ def find_zero(f, a, b, t=1e-9, ft=1e-6):
   >>> r = find_zero(lambda x: x ** 2 + 4, 0.0, 10.0) # doctest: +IGNORE_EXCEPTION_DETAIL
   Traceback (most recent call last):
     ...
-  AssertionError: Value not found
+  ValueError: Value not found
   """
   r = find_min(f, a, b, t, m=abs)
-  assert not(ft < abs(r.fv)), "Value not found"
+  if ft < abs(r.fv): raise ValueError("Value not found")
   r.ft = ft
   return r
 
