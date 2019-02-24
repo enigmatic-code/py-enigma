@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 23 22:37:40 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb 24 13:39:43 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -672,29 +672,35 @@ def icount(i, p=None, t=None):
 
   icount(i, p, n + 1) == n
 
+  which is what icount_exactly(i, p, n) does.
+
   This will examine all elements of <i> to verify there are exactly 4 primes
   less than 10:
-  >>> icount(irange(1, 10), is_prime, 5) == 4
+  >>> icount_exactly(irange(1, 10), is_prime, 4)
   True
 
   But this will stop after testing 73 (the 21st prime):
-  >>> icount(irange(1, 100), is_prime, 21) == 20
+  >>> icount_exactly(irange(1, 100), is_prime, 20)
   False
 
   To find if at least <n> elements of <i> satisfy <p> use:
 
   icount(i, p, n) == n
 
+  This is what icount_at_least(i, p, n) does.
+
   The following will stop testing at 71 (the 20th prime):
-  >>> icount(irange(1, 100), is_prime, 20) == 20
+  >>> icount_at_least(irange(1, 100), is_prime, 20)
   True
 
   To find if at most <n> elements of <i> satisfy <p> use:
 
   icount(i, p, n + 1) < n + 1
 
+  This is what icount_at_most(i, p, n) does.
+
   The following will stop testing at 73 (the 21st prime):
-  >>> icount(irange(1, 100), is_prime, 21) < 21
+  >>> icount_at_most(irange(1, 100), is_prime, 20)
   False
 
   If p is not specified a function that always returns True is used,
@@ -721,6 +727,10 @@ def icount(i, p=None, t=None):
       if n == t: break
   return n
 
+# icount recipes
+icount_exactly = lambda i, p, n: icount(i, p, n + 1) == n
+icount_at_least = lambda i, p, n: icount(i, p, n) == n
+icount_at_most = lambda i, p, n: icount(i, p, n + 1) < n + 1
 
 # find: like index(), but return -1 instead of throwing an error
 def find(s, v):
