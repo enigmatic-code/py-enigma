@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb 24 13:39:43 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Feb 27 11:44:25 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -144,7 +144,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-02-23"
+__version__ = "2019-02-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6599,6 +6599,101 @@ def __grouping():
 
 
 grouping = namespace('grouping', __grouping())
+
+###############################################################################
+
+# matrix routines (see Enigma 287)
+
+def __matrix():
+
+  # given two matrices A and B, returns (det(A), X) st A * X = B
+  # A must be square, and the elements must support __truediv__
+  def _gauss(A, B):
+
+    n = len(A)
+    p = len(B[0])
+    det = 1
+
+    for i in range(0, n - 1):
+
+      k = i
+      for j in range(i + 1, n):
+        if abs(A[j][i]) > abs(A[k][i]):
+          k = j
+
+      if k != i:
+        (A[i], A[k]) = (A[k], A[i])
+        (B[i], B[k]) = (B[k], B[i])
+        det = -det
+
+      for j in range(i + 1, n):
+        t = A[j][i] / A[i][i] # note use of /
+        for k in range(i + 1, n):
+          A[j][k] -= t * A[i][k]
+        for k in range(p):
+          B[j][k] -= t * B[i][k]
+
+    for i in range(n - 1, -1, -1):
+      for j in range(i + 1, n):
+        t = A[i][j]
+        for k in range(p):
+          B[i][k] -= t * B[j][k]
+
+      t = 1 / A[i][i] # note use of /
+      det *= A[i][i]
+      for j in range(p):
+        B[i][j] *= t
+
+    return (det, B)
+
+
+  import fractions
+
+  # map <fn> over all elements of (2d) matrix <M>
+  def map2d(M, fn):
+    return list(list(fn(x) for x in r) for r in M)
+
+  # default B is the identity matrix corresponding to A in this case X is the inverse of A
+  def gauss(A, B=None, F=fractions.Fraction):
+
+    # check A is square
+    n = len(A)
+    assert all(len(r) == n for r in A)
+
+    # if B is None, use the identity matrix
+    if B is None:
+      B = list([0] * n for _ in range(0, n))
+      for i in range(0, n):
+        B[i][i] = 1
+
+    # convert A and B (so that the elements supports __truediv__)
+    if F is not None:
+      A = map2d(A, F)
+      B = map2d(B, F)
+
+    # solve it
+    try:
+      return _gauss(A, B)
+    except ZeroDivisionError:
+      return (0, None)
+
+
+  # solve a system of linear equations
+  # A is the matrix of coefficients of the variables, B is the sequence of constants
+  # for this to work the equations must be independent
+  def linear(A, B, F=fractions.Fraction):
+    # turn B into a matrix of constants
+    B = list([k] for k in B)
+    # solve the system
+    (det, X) = gauss(A, B, F)
+    if X is None: return None
+    # return the values of the variables
+    return list(r[0] for r in X)
+
+  # return the namespace
+  return locals()
+
+matrix = namespace('matrix', __matrix())
 
 ###############################################################################
 
