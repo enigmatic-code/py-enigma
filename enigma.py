@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Feb 27 11:44:25 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Feb 28 12:28:57 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -144,7 +144,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-02-27"
+__version__ = "2019-02-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1413,7 +1413,7 @@ def fib(*s, **kw):
   [0, 1, 0, 1, 2, 3, 6, 11, 20, 37]
 
   Powers of 2:
-  >>> first(fib(1, fn=unpack(lambda x: 2 * x)), 10)
+  >>> first(fib(1, fn=unpack(lambda x: x + x)), 10)
   [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
   """
   fn = kw.get('fn', sum)
@@ -1793,6 +1793,16 @@ def div(a, b):
   return (d if r == 0 else None)
 
 is_multiple = div
+
+def fdiv(a, b):
+  """
+  float result of <a> divided by <b>.
+
+  >>> fdiv(3, 2)
+  1.5
+  """
+  return float(a) / float(b)
+
 
 
 def is_duplicate(*s):
@@ -6651,6 +6661,7 @@ def __matrix():
 
   # map <fn> over all elements of (2d) matrix <M>
   def map2d(M, fn):
+    if fn is None: fn = identity
     return list(list(fn(x) for x in r) for r in M)
 
   # default B is the identity matrix corresponding to A in this case X is the inverse of A
@@ -6667,9 +6678,8 @@ def __matrix():
         B[i][i] = 1
 
     # convert A and B (so that the elements supports __truediv__)
-    if F is not None:
-      A = map2d(A, F)
-      B = map2d(B, F)
+    A = map2d(A, F)
+    B = map2d(B, F)
 
     # solve it
     try:
