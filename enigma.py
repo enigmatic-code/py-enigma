@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Feb 28 12:28:57 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Mar  5 13:58:49 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -144,7 +144,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-02-28"
+__version__ = "2019-03-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1800,6 +1800,9 @@ def fdiv(a, b):
 
   >>> fdiv(3, 2)
   1.5
+
+  >>> fdiv(9, 3)
+  3.0
   """
   return float(a) / float(b)
 
@@ -2860,6 +2863,10 @@ def base2int(s, base=10, strip=0, digits=None):
     i *= base
     i += v
   return i
+
+def digit_map(a=0, b=9, digits=None):
+  if digits is None: digits = base_digits()
+  return dict((digits[i], i) for i in irange(a, b))
 
 
 _numbers = {
@@ -4859,7 +4866,7 @@ class SubstitutedExpression(object):
       if k == 1:
         args.append(q + x + q)
       elif k == 2:
-        args.append(q + x + " = " + str(v) + q)
+        args.append(q + x + " = " + int2base(v, self.base) + q)
       elif k == 3:
         args.append(q + x + " = {" + v + "}" + q)
 
