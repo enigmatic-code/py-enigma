@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Mar  5 13:58:49 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Mar  8 12:34:45 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -144,7 +144,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-03-05"
+__version__ = "2019-03-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5084,7 +5084,11 @@ class SubstitutedExpression(object):
 
       % python enigma.py Alphametic.repl
 
+    timed=1 will time the evaluation.
+
     """
+
+    import readline
 
     v = (4 | 8 | 16)
     if timed: v |= 32
