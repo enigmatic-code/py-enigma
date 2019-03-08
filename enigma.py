@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Mar  8 12:34:45 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Mar  8 12:58:06 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -5088,7 +5088,10 @@ class SubstitutedExpression(object):
 
     """
 
-    import readline
+    try:
+      import readline
+    except ImportError:
+      pass
 
     v = (4 | 8 | 16)
     if timed: v |= 32
