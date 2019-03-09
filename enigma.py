@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar  9 07:08:49 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar  9 13:50:27 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -144,7 +144,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-03-08"
+__version__ = "2019-03-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3557,9 +3557,11 @@ class _PrimeSieveE6X(_PrimeSieveE6):
 
     the sieve is expanded as necessary beforehand.
     """
+    # have we asked for unlimited generation?
+    if not b: return self.generate(a)
+    # otherwise, upper limit is provided
     self.extend(b)
     return _PrimeSieveE6.range(self, a, b)
-
 
 # create a suitable prime sieve
 def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk):
