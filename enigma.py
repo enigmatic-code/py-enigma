@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar  9 13:50:27 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Mar 18 09:12:40 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -23,7 +23,8 @@ The latest version is available at <http://www.magwag.plus.com/jim/enigma.html>.
 
 Currently this module provides the following functions and classes:
 
-arg, args              - extract command line arguments
+arg                    - extract an arguments from the command line
+args                   - extract a list of arguments from the command line
 base2int               - convert a string in the specified base to an integer
 base_digits            - get/set digits used in numerical base conversion
 bit_permutations       - generate bit permutations
@@ -38,6 +39,7 @@ coprime_pairs          - generate coprime pairs
 cslice                 - cumulative slices of an array
 csum                   - cumulative sum
 diff                   - sequence difference
+digit_map              - create a map of digits to corresponding integer values
 digrt                  - the digital root of a number
 divc                   - ceiling division
 divf                   - floor division
@@ -144,7 +146,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-03-09"
+__version__ = "2019-03-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2865,6 +2867,15 @@ def base2int(s, base=10, strip=0, digits=None):
   return i
 
 def digit_map(a=0, b=9, digits=None):
+  """
+  create a map (dict) mapping individual digits to their numerical value.
+
+  the symbols used for the digits can be provided, otherwise the default
+  list set via base_digits() is used
+
+  >>> digit_map(1, 3) == { '1': 1, '2': 2, '3': 3 }
+  True
+  """
   if digits is None: digits = base_digits()
   return dict((digits[i], i) for i in irange(a, b))
 
