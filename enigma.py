@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Mar 18 09:12:40 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Mar 22 07:49:04 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -23,7 +23,7 @@ The latest version is available at <http://www.magwag.plus.com/jim/enigma.html>.
 
 Currently this module provides the following functions and classes:
 
-arg                    - extract an arguments from the command line
+arg                    - extract an argument from the command line
 args                   - extract a list of arguments from the command line
 base2int               - convert a string in the specified base to an integer
 base_digits            - get/set digits used in numerical base conversion
@@ -146,7 +146,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-03-18"
+__version__ = "2019-03-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3074,10 +3074,11 @@ class Accumulator(object):
     self.fn = fn
     self.value = value
     self.data = data
+    self.count = 0
 
 
   def __repr__(self):
-    return 'Accumulator(value=' + repr(self.value) + ', data=' + repr(self.data) + ')'
+    return 'Accumulator(value=' + repr(self.value) + ', data=' + repr(self.data) + ', count=' + str(self.count) + ')'
 
   def accumulate(self, v=1):
     """
@@ -3088,6 +3089,7 @@ class Accumulator(object):
     function which is called as fn(<current-value>, v).
     """
     self.value = (v if self.value is None else self.fn(self.value, v))
+    self.count += 1
 
 
   def accumulate_data(self, v, data, t=None):
@@ -5892,8 +5894,8 @@ class Football(object):
 
     Usually used like this:
 
-    for (ab, bc, bd) in football.games(repeat=3):
-      print(ab, bc, bd)
+      for (ab, bc, bd) in football.games(repeat=3):
+        print(ab, bc, bd)
 
     This will generate possible match outcomes for <ab>, <bc> and
     <bd>. Each outcome will be chosen from the <games> parameter
@@ -5902,8 +5904,8 @@ class Football(object):
 
     Or you can specify specific outcomes:
 
-    for (ab, bc, bd) in football.games('wd', 'dl', 'wl'):
-      print(ab, bc, bd)
+      for (ab, bc, bd) in football.games('wd', 'dl', 'wl'):
+        print(ab, bc, bd)
 
     If no arguments are specified then a single outcome is assumed:
 
@@ -5929,12 +5931,12 @@ class Football(object):
 
     For example, to compute a table for team B:
 
+      B = football.table([ab, bc, bd], [1, 0, 0])
+      print(B.played, B.w, B.d, B.l, B.points)
+
     The returned table object has attributes named by the possible
     match outcomes (by default, .w, .d, .l, .x) and also .played (the
     total number of games played) and .points (calculated points).
-
-    B = football.table([ab, bc, bd], [1, 0, 0])
-    print(B.played, B.w, B.d, B.l, B.points)
     """
     r = dict((x, 0) for x in self._games)
     played = points = 0
@@ -5963,8 +5965,8 @@ class Football(object):
 
     For example if team B has 9 goals for and 6 goal against:
 
-    for (AB, BC, BD) in football.scores([ab, bc, bd], [1, 0, 0], 9, 6):
-      print(AB, BC, BD)
+      for (AB, BC, BD) in football.scores([ab, bc, bd], [1, 0, 0], 9, 6):
+        print(AB, BC, BD)
     """
     if pss:
       (pf, pa) = self.goals(pss, pts)
@@ -6040,14 +6042,14 @@ class Football(object):
     Given a dictionary of matches outcomes <matches> the table row for
     team A can be constructed with:
 
-    (gs, ts) = football.extract(matches, A)
-    tableA = football.table(gs, ts)
+      (gs, ts) = football.extract(matches, A)
+      tableA = football.table(gs, ts)
 
     Similarly, with a dictionary of scores <scores>, goals for /
     against can be calculated this:
 
-    (ss, ts) = football.extract(scores, A)
-    (forA, againstA) = football.goals(ss, ts)
+      (ss, ts) = football.extract(scores, A)
+      (forA, againstA) = football.goals(ss, ts)
     """
     (vs, ts) = (list(), list())
     for (k, v) in d.items():
