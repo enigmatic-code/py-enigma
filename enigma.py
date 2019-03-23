@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Mar 22 07:49:04 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 23 14:47:44 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -146,7 +146,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-03-22"
+__version__ = "2019-03-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3063,9 +3063,11 @@ class Accumulator(object):
   >>> for x in irange(1, 9): a.accumulate(x)
   >>> a.value
   45
+  >>> fdiv(a.value, a.count)
+  5.0
   """
 
-  def __init__(self, fn=operator.add, value=None, data=None):
+  def __init__(self, fn=operator.add, value=None, data=None, count=0):
     """
     create an Accumulator.
 
@@ -3074,7 +3076,7 @@ class Accumulator(object):
     self.fn = fn
     self.value = value
     self.data = data
-    self.count = 0
+    self.count = count
 
 
   def __repr__(self):
@@ -6689,7 +6691,7 @@ def __matrix():
   import fractions
 
   # map <fn> over all elements of (2d) matrix <M>
-  def map2d(M, fn):
+  def map2d(fn, M):
     if fn is None: fn = identity
     return list(list(fn(x) for x in r) for r in M)
 
@@ -6707,8 +6709,8 @@ def __matrix():
         B[i][i] = 1
 
     # convert A and B (so that the elements supports __truediv__)
-    A = map2d(A, F)
-    B = map2d(B, F)
+    A = map2d(F, A)
+    B = map2d(F, B)
 
     # solve it
     try:
@@ -6718,16 +6720,70 @@ def __matrix():
 
 
   # solve a system of linear equations
-  # A is the matrix of coefficients of the variables, B is the sequence of constants
-  # for this to work the equations must be independent
-  def linear(A, B, F=fractions.Fraction):
-    # turn B into a matrix of constants
-    B = list([k] for k in B)
-    # solve the system
-    (det, X) = gauss(A, B, F)
-    if X is None: return None
-    # return the values of the variables
-    return list(r[0] for r in X)
+  # A is the matrix of coefficients of the variables (n equations in m variables)
+  # B is the sequence of constants (or a single constant that will be replicated)
+  # F is the field to operate over (must support __truediv__)
+  def linear(A, B=0, F=fractions.Fraction):
+
+    # verify A
+    n = len(A)
+    m = len(A[0])
+    assert all(len(x) == m for x in A)
+
+    # make B into a viable matrix
+    # if B is a scalar value, replicate it n times
+    if not isinstance(B, Sequence): B = [B] * n
+
+    A = map2d(F, A)
+    B = list(map(F, B))
+
+    # for each column i
+    i = 0
+    while i < m:
+      if n < m: raise ValueError("incomplete")
+
+      # choose the row with the largest value in the column i
+      j = max(range(i, n), key=(lambda j: abs(A[j][i])))
+
+      # if necessary bring it to row i
+      if j != i: (A[i], A[j], B[i], B[j]) = (A[j], A[i], B[j], B[i])
+
+      # scale equation i so the co-efficient in column i is 1
+      v = A[i][i]
+      if v != 1:
+        for k in range(i, m):
+          A[i][k] /= v
+        B[i] /= v
+
+      # eliminate co-efficients in row i
+      rs = list()
+      for j in range(0, n):
+        if j != i:
+          t = A[j][i]
+          if t != 0:
+            for k in range(i, m):
+              A[j][k] -= t * A[i][k]
+            B[j] -= t * B[i]
+            # if all coefficients are 0
+            if all(A[j][k] == 0 for k in range(0, m)):
+              if B[j] == 0:
+                rs.insert(0, j)
+              else:
+                # the system is inconsistent
+                raise ValueError("inconsistent")
+      # delete any dependent rows
+      if rs:
+        for j in rs:
+          del A[j]
+          del B[j]
+        n -= len(rs)
+
+      # next column
+      i += 1
+
+    assert len(B) == m
+    return B
+
 
   # return the namespace
   return locals()
