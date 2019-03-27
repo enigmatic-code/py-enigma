@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 23 14:47:44 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 27 08:11:46 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -146,7 +146,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-03-23"
+__version__ = "2019-03-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5456,7 +5456,7 @@ class SubstitutedDivision(SubstitutedExpression):
     subs = list(slots.allocate(x) for x in subs)
     assert len(c) == len(subs), "result/intermediate mismatch"
 
-    # no leading zeros (or singleton zeros)
+    # no leading zeros (or singleton zeros, except for remainder)
     for s in flatten([(a, b, c)] + subs):
       if s is None: continue
       slots.slot_setprops(s[0], (_NE, 0))
@@ -5489,6 +5489,7 @@ class SubstitutedDivision(SubstitutedExpression):
     # assign symbols for the slots
     (a, b, c) = slots.label((a, b, c))
     subs = list(slots.label(s) for s in subs)
+    if rem is not None: rem = subs[-1][-1]
 
     # output the slot information
     if 0:
@@ -6738,8 +6739,8 @@ def __matrix():
     B = list(map(F, B))
 
     # for each column i
-    i = 0
-    while i < m:
+    for i in itertools.count(0):
+      if not(i < m): break
       if n < m: raise ValueError("incomplete")
 
       # choose the row with the largest value in the column i
@@ -6750,6 +6751,7 @@ def __matrix():
 
       # scale equation i so the co-efficient in column i is 1
       v = A[i][i]
+      if v == 0: raise ValueError("incomplete")
       if v != 1:
         for k in range(i, m):
           A[i][k] /= v
@@ -6777,9 +6779,6 @@ def __matrix():
           del A[j]
           del B[j]
         n -= len(rs)
-
-      # next column
-      i += 1
 
     assert len(B) == m
     return B
