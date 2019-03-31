@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 27 08:11:46 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Mar 31 08:49:02 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -146,7 +146,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-03-27"
+__version__ = "2019-03-31"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4144,6 +4144,24 @@ class SubstitutedSum(object):
 
 # Generic Substituted Expression Solver
 
+# be aware that the generated code can fall foul of restrictions in the Python
+# interpreter.
+#
+# the standard Python interpreter will throw:
+#
+#   "SystemError: too many statically nested blocks"; or:
+#   "SyntaxError: too many statically nested blocks"
+#
+# if there are more than 20 levels of nested loops.
+#
+# and it will also throw:
+#
+#   "IndentationError: too many levels of indentation"
+#
+# if there are more than 100 level of indentation.
+#
+# the PyPy interpreter has neither of these limitations
+
 # TODO: think about negative values
 #
 # TODO: consider ordering the symbols, so we can calculate words sooner.
@@ -7193,7 +7211,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.16', python3='3.7.2')
+""".format(version=__version__, python='2.7.16', python3='3.7.3')
 
 if __name__ == "__main__":
 
