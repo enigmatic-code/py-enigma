@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Mar 31 08:49:02 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Apr  4 20:40:29 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -146,7 +146,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-03-31"
+__version__ = "2019-04-04"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -215,7 +215,10 @@ def compare(a, b):
   """
   return (b < a) - (a < b)
 
-
+# it's probably quicker (and shorter) to just use:
+#   X not in args
+# rather than:
+#   is_distinct(X, args)
 def is_distinct(value, *args):
   """
   check <value> is distinct from values in <args>
@@ -2975,6 +2978,29 @@ def __int2words(n, scale='short', sep='', hyphen=' '):
   if r < 100: return x + ' and ' + _int2words(r, scale, sep, hyphen)
   return x + sep + ' ' + _int2words(r, scale, sep, hyphen)
 
+# convert an integer to BCD (binary coded decimal)
+# same as: nconcat(nsplit(n, base=10), base=16)
+def int2bcd(n, base=10, bits_per_digit=4):
+  """
+  convert integer n into BCD (Binary Coded Decimal)
+
+  the base and bits_per_integer can be specified (if desired)
+
+  >>> int2bcd(123456789)
+  4886718345
+  >>> int2bcd(123456789) == 0x123456789
+  True
+  """
+  s = 1
+  if n < 0: (s, n) = (-1, -n)
+  r = k = 0
+  while True:
+    (n, x) = divmod(n, base)
+    r += (x << k)
+    if n == 0: break
+    k += bits_per_digit
+  return s * r
+
 ###############################################################################
 
 # specialised classes:
@@ -3104,6 +3130,16 @@ class Accumulator(object):
     """
     self.accumulate(v)
     if self.value == (v if t is None else t): self.data = data
+
+  def accumulate_from(self, s):
+    for v in s:
+      self.accumulate(v)
+    return self
+
+  def accumulate_data_from(self, s):
+    for (v, d) in s:
+      self.accumulate_data(v, d)
+    return self
 
 
 ###############################################################################
@@ -4158,7 +4194,7 @@ class SubstitutedSum(object):
 #
 #   "IndentationError: too many levels of indentation"
 #
-# if there are more than 100 level of indentation.
+# if there are more than 100 levels of indentation.
 #
 # the PyPy interpreter has neither of these limitations
 
@@ -5052,6 +5088,12 @@ class SubstitutedExpression(object):
         raise ValueError(sprintf("[{cls.__name__}] invalid option: {arg}"))
     return opt
 
+  # class method to make an object from a file
+  @classmethod
+  def from_file(cls, file):
+    (cmd, args) = parsefile(file)
+    assert cmd == cls.__name__
+    return cls(args)
 
   # class method to call from the command line
   @classmethod
