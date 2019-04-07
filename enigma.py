@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Apr  4 20:40:29 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Apr  7 16:36:17 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -146,7 +146,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-04-04"
+__version__ = "2019-04-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2986,9 +2986,9 @@ def int2bcd(n, base=10, bits_per_digit=4):
 
   the base and bits_per_integer can be specified (if desired)
 
-  >>> int2bcd(123456789)
-  4886718345
-  >>> int2bcd(123456789) == 0x123456789
+  >>> int2bcd(123456)
+  1193046
+  >>> int2bcd(123456) == 0x123456
   True
   """
   s = 1
@@ -3132,11 +3132,17 @@ class Accumulator(object):
     if self.value == (v if t is None else t): self.data = data
 
   def accumulate_from(self, s):
+    """
+    Accumulate values from iterable object <s>.
+    """
     for v in s:
       self.accumulate(v)
     return self
 
   def accumulate_data_from(self, s):
+    """
+    Accumulate values and data from iterable object <s>.
+    """
     for (v, d) in s:
       self.accumulate_data(v, d)
     return self
@@ -3285,8 +3291,7 @@ class Polynomial(list):
   def __sub__(self, other):
     return self.__class__(poly_sub(self, other))
 
-  def __call__(self, x):
-    return poly_value(self, x)
+  __call__ = poly_value
 
   def to_pairs(self):
     for p in enumerate(self):
@@ -5620,7 +5625,7 @@ class SubstitutedDivision(SubstitutedExpression):
     opt['d2i'] = d2i
 
     # verbatim options
-    for v in ('digits', 'answer', 'verbose'):
+    for v in ('digits', 'answer', 'code', 'verbose'):
       if v in kw:
         opt[v] = kw[v]
 
