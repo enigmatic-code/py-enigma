@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Apr  7 16:36:17 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Apr  8 13:27:37 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -146,7 +146,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-04-07"
+__version__ = "2019-04-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3012,6 +3012,9 @@ def int2bcd(n, base=10, bits_per_digit=4):
 # delayed evaluation (see also lazypy)
 class Delay(object):
 
+  # set to force immediate evaluation
+  immediate = 0
+
   def __init__(self, fn, *args, **kw):
     """
     create a delayed evaluation promise for fn(*args, **kw).
@@ -3040,6 +3043,10 @@ class Delay(object):
     self.args = args
     self.kw = kw
     self.evaluated = False
+    if self.immediate: self.evaluate()
+
+  def __repr__(self):
+    return self.__class__.__name__ + '(value=' + (repr(self.value) if self.evaluated else '<delayed>') + ')'
 
   def evaluate(self):
     self.value = self.fn(*(self.args), **(self.kw))
