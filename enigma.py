@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Apr  8 13:27:37 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr 23 10:33:38 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -146,7 +146,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-04-08"
+__version__ = "2019-04-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -561,7 +561,7 @@ def diff(a, b, *rest):
 
 
 # recipe itertools documentation
-def powerset(i, min_size=0, max_size=None):
+def powerset(i, size=None, min_size=0, max_size=None):
   """
   generate the powerset (i.e. all subsets) of an iterator.
 
@@ -569,7 +569,8 @@ def powerset(i, min_size=0, max_size=None):
   [(), (1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)]
   """
   s = list(i)
-  if max_size is None: max_size = len(s)
+  if size is not None: min_size = max_size = size
+  elif max_size is None: max_size = len(s)
   return itertools.chain.from_iterable(itertools.combinations(s, n) for n in irange(min_size, max_size))
 
 subsets = powerset
@@ -1794,8 +1795,10 @@ def div(a, b):
   >>> bool(div(101, 13))
   False
   """
+  if b == 0: return None
   (d, r) = divmod(a, b)
-  return (d if r == 0 else None)
+  if r != 0: return None
+  return d
 
 is_multiple = div
 
