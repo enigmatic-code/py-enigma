@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr 23 10:33:38 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr 23 15:26:29 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -104,7 +104,6 @@ P                      - permutations function (nPk)
 partitions             - partition a sequence of distinct values into tuples
 pi                     - float approximation to pi
 poly_*                 - routines manipulating polynomials, wrapped as Polynomial
-powerset               - the powerset of an iterator
 prime_factor           - generate terms in the prime factorisation of a number
 printf                 - print with interpolated variables
 pythagorean_triples    - generate Pythagorean triples
@@ -116,6 +115,7 @@ split                  - split a value into characters
 sprintf                - interpolate variables into a string
 sqrt                   - the (positive) square root of a number
 subseqs                - sub-sequences of an iterable
+subsets                - generate subsets of an iterator
 substitute             - substitute symbols for digits in text
 substituted_expression - a substituted expression (alphametic/cryptarithm) solver
 substituted_sum        - a solver for substituted sums
@@ -561,19 +561,33 @@ def diff(a, b, *rest):
 
 
 # recipe itertools documentation
-def powerset(i, size=None, min_size=0, max_size=None):
+def subsets(i, size=None, min_size=0, max_size=None, permute=0):
   """
-  generate the powerset (i.e. all subsets) of an iterator.
+  generate subsets of a (finite) iterator.
 
-  >>> list(powerset((1, 2, 3)))
+  'min_size' and 'max_size' can be used to limit the size of the subset,
+  or 'size' can be specified to produce subsets of a particular size.
+
+  if permute=1 is specified all permutations of each subset will be
+  generated.
+
+  >>> list(subsets((1, 2, 3)))
   [(), (1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)]
+
+  >>> list(subsets((1, 2, 3), size=2))
+  [(1, 2), (1, 3), (2, 3)]  
+
+  >>> list(subsets((1, 2, 3), size=2, permute=1))
+  [(1, 2), (1, 3), (2, 1), (2, 3), (3, 1), (3, 2)]
   """
   s = list(i)
   if size is not None: min_size = max_size = size
   elif max_size is None: max_size = len(s)
-  return itertools.chain.from_iterable(itertools.combinations(s, n) for n in irange(min_size, max_size))
+  select = itertools.combinations
+  if permute: select = (permute if callable(permute) else itertools.permutations)
+  return itertools.chain.from_iterable(select(s, n) for n in irange(min_size, max_size))
 
-subsets = powerset
+powerset = subsets
 
 
 # like filter() but also returns the elements that don't satisfy the predicate
