@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr 23 15:26:29 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr 23 15:33:41 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -563,7 +563,7 @@ def diff(a, b, *rest):
 # recipe itertools documentation
 def subsets(i, size=None, min_size=0, max_size=None, permute=0):
   """
-  generate subsets of a (finite) iterator.
+  generate tuples representing the subsets of a (finite) iterator.
 
   'min_size' and 'max_size' can be used to limit the size of the subset,
   or 'size' can be specified to produce subsets of a particular size.
