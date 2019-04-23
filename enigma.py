@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr 23 15:33:41 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr 23 15:44:23 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -575,7 +575,7 @@ def subsets(i, size=None, min_size=0, max_size=None, permute=0):
   [(), (1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)]
 
   >>> list(subsets((1, 2, 3), size=2))
-  [(1, 2), (1, 3), (2, 3)]  
+  [(1, 2), (1, 3), (2, 3)]
 
   >>> list(subsets((1, 2, 3), size=2, permute=1))
   [(1, 2), (1, 3), (2, 1), (2, 3), (3, 1), (3, 2)]
