@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr 23 15:44:23 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Apr 24 11:33:34 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -146,7 +146,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-04-23"
+__version__ = "2019-04-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -565,7 +565,7 @@ def subsets(i, size=None, min_size=0, max_size=None, permute=0):
   """
   generate tuples representing the subsets of a (finite) iterator.
 
-  'min_size' and 'max_size' can be used to limit the size of the subset,
+  'min_size' and 'max_size' can be used to limit the size of the subsets,
   or 'size' can be specified to produce subsets of a particular size.
 
   if permute=1 is specified all permutations of each subset will be
@@ -3140,8 +3140,8 @@ class Accumulator(object):
     Otherwise it is combined with the current value using the accumulation
     function which is called as fn(<current-value>, v).
     """
-    self.value = (v if self.value is None else self.fn(self.value, v))
     self.count += 1
+    self.value = (v if self.value is None else self.fn(self.value, v))
 
 
   def accumulate_data(self, v, data, t=None):
@@ -5583,7 +5583,7 @@ class SubstitutedDivision(SubstitutedExpression):
     # output the slot information
     if 0:
       for (k, vs) in slots._s2p.items():
-        u = slots._p2s[UN][k]
+        u = slots._p2s[_UN][k]
         if u:
           printf("slot {k} -> slot {u}")
         else:
