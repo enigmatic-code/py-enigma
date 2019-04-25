@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Apr 24 11:33:34 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Apr 25 12:27:12 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -107,6 +107,7 @@ poly_*                 - routines manipulating polynomials, wrapped as Polynomia
 prime_factor           - generate terms in the prime factorisation of a number
 printf                 - print with interpolated variables
 pythagorean_triples    - generate Pythagorean triples
+reciprocals            - generate reciprocals that sum to a given fraction
 recurring              - decimal representation of fractions
 repeat                 - repeatedly apply a function to a value
 repdigit               - number consisting of repeated digits
@@ -146,7 +147,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-04-24"
+__version__ = "2019-04-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2093,6 +2094,35 @@ def format_recurring(*args, **kw):
   (i, nr, rr) = args
   rr = ('(' + rr + ')...' if rr else '')
   return (i + dp + nr + rr if nr or rr else i)
+
+# see: Enigma 348
+def reciprocals(k, b=1, a=1, m=1, g=0):
+  """
+  generate k whole numbers (d1, d2, ..., dk) such that 1/d1 + 1/d2 + ... + 1/dk = a/b
+  the numbers are generated as an ordered list
+  m = minimum allowed number
+  g = minimum allowed gap between numbers
+
+  e.g. sums of 3 reciprocals that sum to 1
+  1/2 + 1/3 + 1/6 = 1
+  1/2 + 1/4 + 1/4 = 1
+  1/3 + 1/3 + 1/3 = 1
+  >>> list(reciprocals(3, 1))
+  [[2, 3, 6], [2, 4, 4], [3, 3, 3]]
+  """
+  # are we done?
+  if k == 1:
+    (d, r) = divmod(b, a)
+    if r == 0 and not(d < m):
+      yield [d]
+  else:
+    # find a suitable reciprocal
+    for d in irange(m, divf(k * b, a)):
+      if not(b < a * d): continue
+      # and solve for the remaining fraction
+      for ds in reciprocals(k - 1, b * d, a * d - b, d + g, g):
+        yield [d] + ds
+
 
 # command line arguments
 
