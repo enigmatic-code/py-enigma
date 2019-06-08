@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Apr 25 12:27:12 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jun  8 10:43:33 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -133,6 +133,7 @@ update                 - return an updated copy of an object
 Accumulator            - a class for accumulating values
 CrossFigure            - a class for solving cross figure puzzles
 Delay                  - a class for the delayed evaluation of a function
+DominoGrid             - a class for solving domino grid puzzles
 Football               - a class for solving football league table puzzles
 MagicSquare            - a class for solving magic squares
 Polynomial             - a class for manipulating Polynomials
@@ -147,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-04-25"
+__version__ = "2019-06-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -594,7 +595,7 @@ powerset = subsets
 # like filter() but also returns the elements that don't satisfy the predicate
 # see also partition() recipe from itertools documentation
 # (but note that partition() returns (false, true) lists)
-def filter2(p, i):
+def filter2(p, i, fn=list):
   """
   use a predicate to partition an iterable into those elements that
   satisfy the predicate, and those that do not.
@@ -603,7 +604,7 @@ def filter2(p, i):
   ([2, 4, 6, 8, 10], [1, 3, 5, 7, 9])
   """
   t = list((x, p(x)) for x in i)
-  return (list(x for (x, v) in t if v), list(x for (x, v) in t if not v))
+  return (fn(x for (x, v) in t if v), fn(x for (x, v) in t if not v))
 
 # alias if you prefer the term partition
 partition = filter2
@@ -1115,7 +1116,7 @@ def is_prime(n):
   return True if the positive integer <n> is prime.
 
   Note: for numbers up to 2^64 is_prime_mr() is a fast, accurate prime
-  test. for larger numbers it is probabilistically accurate.
+  test. (And for larger numbers it is probabilistically accurate).
 
   >>> is_prime(101)
   True
@@ -1809,6 +1810,8 @@ def div(a, b):
   77
   >>> bool(div(101, 13))
   False
+  >>> div(42, 0) is None
+  True
   """
   if b == 0: return None
   (d, r) = divmod(a, b)
@@ -2169,7 +2172,7 @@ def args(vs, n, fn=identity, prompt=None, argv=None):
   if 'p' in _PY_ENIGMA:
     if not prompt: prompt = "values"
     s = raw_input(sprintf("args: {prompt} [{rs}] > ")).strip()
-    if s: rs = list(fn(v) for v in re.split(',\s*|\s+', s))
+    if s: rs = list(fn(v) for v in re.split(r',\s*|\s+', s))
   if 'v' in _PY_ENIGMA:
     if not prompt: prompt = "values"
     printf("[args: {prompt} = {rs!r}]")
@@ -2179,9 +2182,8 @@ def args(vs, n, fn=identity, prompt=None, argv=None):
 # (see also the "say" module)
 
 # this works in all version of Python
-# 
 def __sprintf(fmt, vs):
-  return fmt.format(**vs) 
+  return fmt.format(**vs)
 
 # Python3 has str.format_map(vs)
 def __sprintf3(fmt, vs):
@@ -2580,7 +2582,7 @@ def bit_permutations(a, b=None):
   while b is None or a < b:
     yield a
     t = (a | (a - 1)) + 1
-    a = t | ((((t & -t) // (a & -a)) >> 1) - 1)    
+    a = t | ((((t & -t) // (a & -a)) >> 1) - 1)
 
 ###############################################################################
 
@@ -3847,7 +3849,7 @@ class MagicSquare(object):
       if z == 0 and sum(ns) != self.s: raise Impossible
       if z != 1: continue
       v = self.s - sum(ns)
-      if not v in self.numbers: raise Impossible
+      if v not in self.numbers: raise Impossible
       i = ns.index(0)
       self.set(line[i], v)
       return True
@@ -5965,7 +5967,7 @@ class CrossFigure(object):
 
 class Football(object):
   """
-  Useful utility routines for solving Football League Table puzzles.
+  Utility routines for solving Football League Table puzzles.
 
   For usage examples see:
   Enigma 7 <http://enigmaticcode.wordpress.com/2012/11/24/enigma-7-football-substitutes/#comment-2911>
@@ -6211,7 +6213,7 @@ class Football(object):
           if d[x] != v: return None
         else:
           # is this a valid value?
-          if not(v in vs): return None
+          if v not in vs: return None
           # is this number already assigned to a different letter?
           if v in d.values(): return None
           # assign the new value
@@ -6391,6 +6393,91 @@ class Football(object):
       printf("{d}", d=join((join((k, d[k]), sep='=') for k in sorted(d.keys())), sep=' '))
     if end is not None:
       printf("{end}")
+
+###############################################################################
+
+# Domino Grid solver (see Enigma 179, Enigma 303, Enigma 342, ...)
+
+class DominoGrid(object):
+
+  def __init__(self, N, M, grid):
+    # checks
+    n = len(grid)
+    assert n == N * M
+    (D, r) = divmod(n - grid.count(None), 2)
+    assert r == 0
+    self.grid = grid
+    self.N = N # columns
+    self.M = M # rows
+    self.D = D # number of dominoes
+
+  # solve the grid
+  # fixed can contiain pairs of indices of fixed dominoes  
+  def solve(self, fixed=None):
+    (N, M, D, grid) = (self.N, self.M, self.D, self.grid)
+
+    # g = grid
+    # n = label of next domino (1 to D)
+    # ds = dominoes already placed
+    def _solve(g, n, ds):
+      # are we done?
+      if n > D:
+        # output the pairings
+        yield g
+      else:
+        # find the next unassigned square
+        for (i, d) in enumerate(g):
+          if d < 0: continue
+          (y, x) = divmod(i, N)
+          # find placements for the domino
+          js = list()
+          # horizontally
+          if x < N - 1 and not(g[i + 1] < 0): js.append(i + 1)
+          # vertically
+          if y < M - 1 and not(g[i + N] < 0): js.append(i + N)
+          # try possible placements
+          for j in js:
+            d = ordered(g[i], g[j])
+            if d not in ds:
+              for s in _solve(update(g, [i, j], [-n, -n]), n + 1, ds.union([d])): yield s
+          break
+
+    # fixed can contain initial placements of dominoes
+    (n, ds) = (1, set())
+    if fixed:
+      for (i, j) in fixed:
+        assert abs(i - j) in (1, N)
+        d = ordered(grid[i], grid[j])
+        assert d not in ds
+        grid = update(grid, [i, j], [-n, -n])
+        ds.add(d)
+        n += 1
+
+    # solve for the remaining dominoes
+    return _solve(grid, n, ds)
+
+  # output a solution grid
+  def output_solution(self, s, prefix=''):
+    (N, M, grid) = (self.N, self.M, self.grid)
+
+    s1 = s2 = ''
+    for (i, a) in enumerate(grid):
+      (r, c) = divmod(i, N)
+      if r + 1 < M:
+        s2 += ('| ' if a is not None and s[i] == s[i + N] else '  ')
+      s1 += ('.' if a is None else str(a))
+      if c + 1 < N:
+        s1 += ('-' if a is not None and s[i] == s[i + 1] else ' ')
+      else:
+        print(prefix + s1)
+        print(prefix + s2)
+        s1 = s2 = ''
+
+  # solve a grid and output solutions
+  def go(self, fixed=None, sep='', prefix=''):
+    for s in self.solve(fixed):
+      self.output_solution(s, prefix=prefix)
+      print(sep)
 
 ###############################################################################
 
@@ -6689,7 +6776,7 @@ def __template_system():
 
 
     # if no values are provided use the longest template
-    if values == None:
+    if values is None:
       (i, values) = max(enumerate(templates), key=lambda v: len(v[1]))
       templates = templates[:i] + templates[i + 1:]
 
@@ -6740,6 +6827,25 @@ def __grouping():
     for gs in groups(vs, fn):
       output_groups(gs, sep, end)
 
+  # a k-gang has a leader x, and k followers chosen from a sequence ys
+  # pairwise they satisfy the selection function <fn>
+  # return a set of followers for leader x
+  def gang(k, x, ys, fn):
+    # select possible followers
+    for vs in subsets((y for y in ys if fn(x, y)), size=k):
+      if fn(*vs):
+        yield vs
+
+  # find multiple k-gangs for leaders in xs, followers in ys
+  def gangs(k, xs, ys, fn, gs=[]):
+    # are we done?
+    if not xs:
+      yield gs
+    else:
+      # find a gang for the first leader
+      for g in gang(k, xs[0], ys, fn):
+        # and solve for the rest
+        for s in gangs(k, xs[1:], diff(ys, g), fn, gs + [g]): yield s
 
   # useful selection functions
 
@@ -6840,10 +6946,21 @@ def __matrix():
 
 
   # solve a system of linear equations
-  # A is the matrix of coefficients of the variables (n equations in m variables)
-  # B is the sequence of constants (or a single constant that will be replicated)
-  # F is the field to operate over (must support __truediv__)
   def linear(A, B=0, F=fractions.Fraction):
+    """
+    solve a system of linear equations.
+
+      A x = B
+
+    A is the matrix of coefficients of the variables (n equations in m variables)
+    B is the the vector of constants (a sequence of a single value that will be replicated)
+    F is the field to operate over (which must support __truediv__)
+
+    If the system is underspecified an "incomplete" error is raised.
+    If the system is inconsistent an "inconsistent" error is raised.
+
+    Otherwise a sequence of the solution values x is returned (which will be in the field F)
+    """
 
     # verify A
     n = len(A)
@@ -6957,7 +7074,7 @@ if 'i' in _PY_ENIGMA:
 
   if 'v' in _PY_ENIGMA: printf("[PY_ENIGMA: pid={pid}]", pid=os.getpid())
 
-  # start an interactive shell using the environment of the specified frame
+  # start an interactive Python shell using the environment of the specified frame
   def shell(frame=None, env=None):
     vs = dict()
     if frame:
@@ -6997,6 +7114,10 @@ if 'i' in _PY_ENIGMA:
     signal.signal(signal.SIGUSR2, _signal_handler_status)
   else:
     print("[PY_ENIGMA: failed to install handler for SIGUSR2]")
+
+# shortcuts to send signals
+sigusr1 = lambda pid: os.kill(pid, signal.SIGUSR1)
+sigusr2 = lambda pid: os.kill(pid, signal.SIGUSR2)
 
 ###############################################################################
 
@@ -7057,7 +7178,7 @@ def run(cmd, *args, **kw):
   # enabling 'prompt' disables timing
   if 'p' in _PY_ENIGMA or 'p' in flags: timed = 0
   saved = None
-  
+
   # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
   if cmd == '-r' or cmd == '--run':
     (cmd, args) = (args[0], args[1:])
