@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun  9 09:07:41 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun  9 09:21:18 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -579,7 +579,7 @@ def subsets(i, size=None, min_size=0, max_size=None, select='C'):
 
   the way the subsequences are selected can be controlled with the
   'select' parameter:
-     'C' = combinations,
+     'C' = combinations (default),
      'P' = permutations,
      'R' = combinations with replacement,
      'M' = product,
@@ -614,6 +614,7 @@ def subsets(i, size=None, min_size=0, max_size=None, select='C'):
     for x in select(s, k): yield x
 
 powerset = subsets
+subseqs = subsets
 
 
 # like filter() but also returns the elements that don't satisfy the predicate
