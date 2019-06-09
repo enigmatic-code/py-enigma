@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jun  8 10:43:33 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun  9 09:07:41 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -116,7 +116,7 @@ split                  - split a value into characters
 sprintf                - interpolate variables into a string
 sqrt                   - the (positive) square root of a number
 subseqs                - sub-sequences of an iterable
-subsets                - generate subsets of an iterator
+subsets                - generate subsequences of an iterator
 substitute             - substitute symbols for digits in text
 substituted_expression - a substituted expression (alphametic/cryptarithm) solver
 substituted_sum        - a solver for substituted sums
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-06-08"
+__version__ = "2019-06-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -562,32 +562,56 @@ def diff(a, b, *rest):
   return tuple(x for x in a if x not in b)
 
 
-# recipe itertools documentation
-def subsets(i, size=None, min_size=0, max_size=None, permute=0):
+_subsets_select_fn = {
+  'C': itertools.combinations,
+  'P': itertools.permutations,
+  'R': itertools.combinations_with_replacement,
+  'M': lambda s, k: itertools.product(s, repeat=k)
+}
+
+def subsets(i, size=None, min_size=0, max_size=None, select='C'):
   """
-  generate tuples representing the subsets of a (finite) iterator.
+  generate tuples representing the subsequences of a (finite) iterator.
 
-  'min_size' and 'max_size' can be used to limit the size of the subsets,
-  or 'size' can be specified to produce subsets of a particular size.
+  'min_size' and 'max_size' can be used to limit the size of the
+  subsequences or 'size' can be specified to produce subsequences of a
+  particular size.
 
-  if permute=1 is specified all permutations of each subset will be
-  generated.
+  the way the subsequences are selected can be controlled with the
+  'select' parameter:
+     'C' = combinations,
+     'P' = permutations,
+     'R' = combinations with replacement,
+     'M' = product,
+  or you can provide your own function.
 
   >>> list(subsets((1, 2, 3)))
   [(), (1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)]
 
-  >>> list(subsets((1, 2, 3), size=2))
+  >>> list(subsets((1, 2, 3), size=2, select='C'))
   [(1, 2), (1, 3), (2, 3)]
 
-  >>> list(subsets((1, 2, 3), size=2, permute=1))
+  >>> list(subsets((1, 2, 3), size=2, select='P'))
   [(1, 2), (1, 3), (2, 1), (2, 3), (3, 1), (3, 2)]
+
+  >>> list(subsets((1, 2, 3), size=2, select='R'))
+  [(1, 1), (1, 2), (1, 3), (2, 2), (2, 3), (3, 3)]
+
+  >>> list(subsets((1, 2, 3), size=2, select='M'))
+  [(1, 1), (1, 2), (1, 3), (2, 1), (2, 2), (2, 3), (3, 1), (3, 2), (3, 3)]
   """
   s = list(i)
-  if size is not None: min_size = max_size = size
-  elif max_size is None: max_size = len(s)
-  select = itertools.combinations
-  if permute: select = (permute if callable(permute) else itertools.permutations)
-  return itertools.chain.from_iterable(select(s, n) for n in irange(min_size, max_size))
+  # choose appropriate size parameters
+  if size is not None:
+    min_size = max_size = size
+  elif max_size is None:
+    max_size = len(s)
+  # choose an appropriate select function
+  if not callable(select): select = _subsets_select_fn[select]
+  # generate the subsets
+  for k in irange(min_size, max_size):
+    # [yield from ... in Python 3]
+    for x in select(s, k): yield x
 
 powerset = subsets
 
