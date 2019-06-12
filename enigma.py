@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun  9 09:21:18 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 12 10:28:28 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-06-09"
+__version__ = "2019-06-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -562,13 +562,7 @@ def diff(a, b, *rest):
   return tuple(x for x in a if x not in b)
 
 
-_subsets_select_fn = {
-  'C': itertools.combinations,
-  'P': itertools.permutations,
-  'R': itertools.combinations_with_replacement,
-  'M': lambda s, k: itertools.product(s, repeat=k)
-}
-
+@static(select_fn=None)
 def subsets(i, size=None, min_size=0, max_size=None, select='C'):
   """
   generate tuples representing the subsequences of a (finite) iterator.
@@ -577,8 +571,8 @@ def subsets(i, size=None, min_size=0, max_size=None, select='C'):
   subsequences or 'size' can be specified to produce subsequences of a
   particular size.
 
-  the way the subsequences are selected can be controlled with the
-  'select' parameter:
+  the way the elements of the subsequences are selected can be
+  controlled with the 'select' parameter:
      'C' = combinations (default),
      'P' = permutations,
      'R' = combinations with replacement,
@@ -607,12 +601,21 @@ def subsets(i, size=None, min_size=0, max_size=None, select='C'):
   elif max_size is None:
     max_size = len(s)
   # choose an appropriate select function
-  if not callable(select): select = _subsets_select_fn[select]
+  if not callable(select): select = subsets.select_fn[select]
   # generate the subsets
   for k in irange(min_size, max_size):
     # [yield from ... in Python 3]
     for x in select(s, k): yield x
 
+# select functions
+subsets.select_fn = {
+  'C': itertools.combinations,
+  'P': itertools.permutations,
+  'R': itertools.combinations_with_replacement,
+  'M': lambda s, k: itertools.product(s, repeat=k)
+}
+
+# aliases
 powerset = subsets
 subseqs = subsets
 
@@ -6207,6 +6210,10 @@ class Football(object):
         vs.append(v)
         ts.append(i)
     return (vs, ts)
+
+  # shortcuts to extract table row and goals for/against
+  extract_table = lambda self, ms, t: self.table(*self.extract(ms, t))
+  extract_goals = lambda self, ss, t: self.goals(*self.extract(ss, t))
 
 
   # solver for a table with substituted values
