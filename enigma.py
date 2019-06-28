@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 12 10:28:28 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun 28 21:22:31 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-06-12"
+__version__ = "2019-06-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -562,6 +562,7 @@ def diff(a, b, *rest):
   return tuple(x for x in a if x not in b)
 
 
+# subsets (or subseqs) wraps various itertools methods (which can save an import)
 @static(select_fn=None)
 def subsets(i, size=None, min_size=0, max_size=None, select='C'):
   """
@@ -578,6 +579,8 @@ def subsets(i, size=None, min_size=0, max_size=None, select='C'):
      'R' = combinations with replacement,
      'M' = product,
   or you can provide your own function.
+
+  aliases: subseqs(), powerset().
 
   >>> list(subsets((1, 2, 3)))
   [(), (1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)]
@@ -607,7 +610,7 @@ def subsets(i, size=None, min_size=0, max_size=None, select='C'):
     # [yield from ... in Python 3]
     for x in select(s, k): yield x
 
-# select functions
+# provide selection functions
 subsets.select_fn = {
   'C': itertools.combinations,
   'P': itertools.permutations,
@@ -622,11 +625,13 @@ subseqs = subsets
 
 # like filter() but also returns the elements that don't satisfy the predicate
 # see also partition() recipe from itertools documentation
-# (but note that partition() returns (false, true) lists)
+# (but note that itertools.partition() returns (false, true) lists)
 def filter2(p, i, fn=list):
   """
   use a predicate to partition an iterable into those elements that
   satisfy the predicate, and those that do not.
+
+  alias: partition()
 
   >>> filter2(lambda n: n % 2 == 0, irange(1, 10))
   ([2, 4, 6, 8, 10], [1, 3, 5, 7, 9])
@@ -634,7 +639,7 @@ def filter2(p, i, fn=list):
   t = list((x, p(x)) for x in i)
   return (fn(x for (x, v) in t if v), fn(x for (x, v) in t if not v))
 
-# alias if you prefer the term partition
+# alias if you prefer the term partition (but don't confuse it with partitions())
 partition = filter2
 
 def identity(x):
@@ -654,6 +659,8 @@ def filter_unique(s, f=identity, g=identity):
   (<unique values>, <non-unique values>)
 
   See: Enigma 265 <https://enigmaticcode.wordpress.com/2015/03/14/enigma-265-the-parable-of-the-wise-fool/#comment-4167>
+
+  alias: partition_unique()
 
   "If I told you the first number you could deduce the second"
   >>> filter_unique([(1, 1), (1, 3), (2, 1), (3, 1), (3, 2), (3, 3)], (lambda v: v[0]))[0]
@@ -710,8 +717,6 @@ def unpack(fn):
 
 
 # count the number of occurrences of a predicate in an iterator
-# TODO: rename this so it doesn't clash with itertools.count
-
 def icount(i, p=None, t=None):
   """
   count the number of elements in iterator <i> that satisfy predicate <p>,
@@ -3223,12 +3228,18 @@ class Accumulator(object):
       self.accumulate(v)
     return self
 
-  def accumulate_data_from(self, s):
+  def accumulate_data_from(self, s, value=0, data=1):
     """
     Accumulate values and data from iterable object <s>.
+
+    <value>, <data> can be an index into elements from <s>
+    or a function to extract the appropriate value from an element.
     """
-    for (v, d) in s:
-      self.accumulate_data(v, d)
+    fn = lambda i: (lambda x: x[i])
+    if not callable(value): value = fn(value)
+    if not callable(data): data = fn(data)
+    for x in s:
+      self.accumulate_data(value(x), data(x))
     return self
 
 
@@ -6859,6 +6870,7 @@ def __grouping():
     for gs in groups(vs, fn):
       output_groups(gs, sep, end)
 
+
   # a k-gang has a leader x, and k followers chosen from a sequence ys
   # pairwise they satisfy the selection function <fn>
   # return a set of followers for leader x
@@ -6878,6 +6890,12 @@ def __grouping():
       for g in gang(k, xs[0], ys, fn):
         # and solve for the rest
         for s in gangs(k, xs[1:], diff(ys, g), fn, gs + [g]): yield s
+
+  def output_gangs(xs, ys, sep=", ", end=""):
+    for (x, y) in zip(xs, ys):
+      print(x + ": " + sep.join(y))
+    print(end)
+
 
   # useful selection functions
 
