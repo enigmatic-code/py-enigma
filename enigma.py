@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun 28 21:22:31 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul  3 13:43:16 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-06-28"
+__version__ = "2019-07-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -615,7 +615,7 @@ subsets.select_fn = {
   'C': itertools.combinations,
   'P': itertools.permutations,
   'R': itertools.combinations_with_replacement,
-  'M': lambda s, k: itertools.product(s, repeat=k)
+  'M': lambda s, k: itertools.product(s, repeat=k),
 }
 
 # aliases
@@ -4716,7 +4716,8 @@ class SubstitutedExpression(object):
       d = dict()
       for ss in distinct:
         for s in ss:
-          d[s] = set(x for x in ss if x != s)
+          if s not in d: d[s] = set()
+          d[s].update(x for x in ss if x != s)
       distinct = d
 
     # generate the program (line by line)
@@ -5133,6 +5134,7 @@ class SubstitutedExpression(object):
       # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
       # NOTE: <digits> are specified in decimal (not --base)
       if opt['d2i'] is None: opt['d2i'] = dict()
+      if v == '': return True # empty value will allow leading zeros
       (ds, s) = _split(v, maxsplit=-1)
       for i in _digits(ds):
         opt['d2i'][i] = opt['d2i'].get(i, set()).union(s)
