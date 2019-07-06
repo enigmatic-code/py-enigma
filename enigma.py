@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul  3 13:43:16 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul  6 08:48:42 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-07-02"
+__version__ = "2019-07-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1209,13 +1209,14 @@ def is_prime_mr(n, r=0):
   # 0, 1 = not prime
   if n < 2:
     return 0
+
   # 2, 3 = definitely prime
   if n < 4:
     return 2
 
   # all other primes have a residue mod 6 of 1 or 5
-  r = n % 6
-  if r != 1 and r != 5:
+  x = n % 6
+  if x != 1 and x != 5:
     return 0
 
   # compute 2^s.d = n - 1
@@ -1594,12 +1595,7 @@ def isqrt(n):
 # the is_square() function (i.e. [[ is_square = _is_square_class(80) ]]), but it is
 # more efficient (and perhaps more readable) to just use normal variables, although
 # if you're using PyPy the class based version is just as fast (if not slightly faster)
-
-# experimentally 80, 48, 72, 32 are good values (24, 16 also work OK)
-_is_square_mod = 80
-_is_square_residues = set((i * i) % _is_square_mod for i in range(_is_square_mod))
-_is_square_reject = list(i not in _is_square_residues for i in range(_is_square_mod))
-
+@static(mod=None, residues=None, reject=None)
 def is_square(n):
   """
   check positive integer <n> is a perfect square.
@@ -1618,10 +1614,15 @@ def is_square(n):
   if n < 2: return n
   # early rejection: check <square> mod <some value> against a precomputed cache
   # e.g. <square> mod 80 = 0, 1, 4, 9, 16, 20, 25, 36, 41, 49, 64, 65 (rejects 88% of numbers)
-  if _is_square_reject[n % _is_square_mod]: return None
+  if is_square.reject[n % is_square.mod]: return None
   # otherwise use isqrt and check the result
   r = isqrt(n)
   return (r if r * r == n else None)
+
+# experimentally 80, 48, 72, 32 are good values (24, 16 also work OK)
+is_square.mod = 80
+is_square.residues = set((i * i) % is_square.mod for i in range(is_square.mod))
+is_square.reject = list(i not in is_square.residues for i in range(is_square.mod))
 
 
 def is_cube(n):
@@ -2239,22 +2240,23 @@ def __sprintf3(fmt, vs):
 def __sprintf36(fmt, vs):
   return eval('f' + repr(fmt), vs)
 
-_sprintf_fn = __sprintf
-if _python > 2: _sprintf_fn = __sprintf3
-if sys.version_info[0:2] > (3, 5): _sprintf_fn = __sprintf36
-
+@static(fn=None)
 def _sprintf(fmt, vs, frame):
   # first try using the locals of the frame
   d = frame.f_locals
   if vs: d = update(d, vs)
   try:
-    return _sprintf_fn(fmt, d)
+    return _sprintf.fn(fmt, d)
   except (NameError, KeyError):
     pass
   # if that fails, try adding in the globals too
   d = update(frame.f_globals, frame.f_locals)
   if vs: d = update(d, vs)
-  return _sprintf_fn(fmt, d)
+  return _sprintf.fn(fmt, d)
+
+_sprintf.fn = __sprintf
+if _python > 2: _sprintf.fn = __sprintf3
+if sys.version_info[0:2] > (3, 5): _sprintf.fn = __sprintf36
 
 # print with variables interpolated into the format string
 def sprintf(fmt='', **kw):
@@ -7324,8 +7326,27 @@ def timed_run(*args):
 # check for updates to enigma.py
 # check = only check the current version
 # download = always download the latest version
-def _enigma_update(url, check=1, download=0, rename=0):
+@static(url='http://www.magwag.plus.com/jim/')
+def enigma_update(url=None, check=1, download=0, rename=0):
+  """
+  check enigma.py version, and download the latest version if
+  necessary.
+
+  this function is called by the -u command line option.
+
+    % python enigma.py -u
+    [enigma.py version 2019-07-06 (Python 3.7.3)]
+    checking for updates...
+    latest version is 2019-07-06
+    enigma.py is up to date  
+
+  check - set to check current version against latest
+  download - set to always download latest version
+  rename - set to rename downloaded file to enigma.py
+  """
   print('checking for updates...')
+
+  if url is None: url = enigma_update.url
 
   if _python == 2:
     # Python 2.x
@@ -7528,9 +7549,8 @@ if __name__ == "__main__":
   # -ud => always download latest version
   # -u[d]r => rename downloaded file to "enigma.py"
   if 'u' in args:
-    url = 'http://www.magwag.plus.com/jim/'
     try:
-      _enigma_update(url, check=('c' in args['u']), download=('d' in args['u']), rename=('r' in args['u']))
+      enigma_update(check=('c' in args['u']), download=('d' in args['u']), rename=('r' in args['u']))
     except IOError as e:
       print(e)
-      printf("failed to download update from {url}")
+      printf("failed to download update from {enigma_update.url}")
