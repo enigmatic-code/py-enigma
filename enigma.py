@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul  6 09:15:27 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul  6 16:54:19 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,6 +165,8 @@ import copy
 # maybe use the "six" module for some of this stuff
 if sys.version_info[0] == 2:
   # Python 2.x
+  if sys.version_info[1] < 7:
+    print("[enigma.py] WARNING: Python {v} is very old. Things may not work.".format(v=sys.version.split(None, 1)[0]))
   _python = 2
   range = xrange
   reduce = reduce
@@ -610,12 +612,12 @@ def subsets(i, size=None, min_size=0, max_size=None, select='C'):
     # [yield from ... in Python 3]
     for x in select(s, k): yield x
 
-# provide selection functions
+# provide selection functions (where available)
 subsets.select_fn = {
-  'C': itertools.combinations,
-  'P': itertools.permutations,
-  'R': itertools.combinations_with_replacement,
-  'M': lambda s, k: itertools.product(s, repeat=k),
+  'C': getattr(itertools, 'combinations', None),
+  'P': getattr(itertools, 'permutations', None),
+  'R': getattr(itertools, 'combinations_with_replacement', None),
+  'M': lambda s, k: getattr(itertools, 'product', None)(s, repeat=k),
 }
 
 # aliases
@@ -3145,7 +3147,7 @@ class Delay(object):
     if key == 'value':
       return self.evaluate()
     else:
-      raise AttributeError
+      raise AttributeError()
 
   @classmethod
   def iter(self, *args):
@@ -3883,14 +3885,14 @@ class MagicSquare(object):
 
   def complete(self):
     """strategy to complete missing squares where there is only one possibility"""
-    if not self.numbers: raise Solved
+    if not self.numbers: raise Solved()
     for line in self.lines:
       ns = tuple(self.square[i] for i in line)
       z = ns.count(0)
-      if z == 0 and sum(ns) != self.s: raise Impossible
+      if z == 0 and sum(ns) != self.s: raise Impossible()
       if z != 1: continue
       v = self.s - sum(ns)
-      if v not in self.numbers: raise Impossible
+      if v not in self.numbers: raise Impossible()
       i = ns.index(0)
       self.set(line[i], v)
       return True
@@ -3909,7 +3911,7 @@ class MagicSquare(object):
 
   def hypothetical(self):
     """strategy that guesses a square and sees if the puzzle can be completed"""
-    if not self.numbers: raise Solved
+    if not self.numbers: raise Solved()
     i = self.square.index(0)
     for v in self.numbers:
       new = self.clone()
@@ -3917,7 +3919,7 @@ class MagicSquare(object):
       if new.solve():
         self.become(new)
         return True
-    raise Impossible
+    raise Impossible()
 
   # solve the square
   def solve(self):
@@ -4260,7 +4262,7 @@ class SubstitutedSum(object):
           for i in _digits(ds):
             opt['d2i'][i] = opt['d2i'].get(i, set()).union(s)
         else:
-          raise ValueError
+          raise ValueError()
       except:
         printf("{cls.__name__}: invalid option: {arg}")
         return -1
@@ -5050,7 +5052,7 @@ class SubstitutedExpression(object):
   def save(self, file=None, quote=1):
 
     args = self.to_args(quote=quote)
-    if not args: raise ValueError
+    if not args: raise ValueError()
 
     args.insert(0, "SubstitutedExpression") # self.__class__.__name__
 
@@ -5160,7 +5162,7 @@ class SubstitutedExpression(object):
 
     else:
       # unrecognised option
-      raise ValueError
+      raise ValueError()
 
     return True
 
@@ -7119,8 +7121,9 @@ def stop(files=None, files_extra=None, use_exit=0, verbose=1):
 # of the process (so you can do: "kill -SIGUSR1 <PID>")
 
 @static(fn=None)
-def status(fn):
+def status(fn, atexit=0):
   status.fn = fn
+  if atexit: atexit.register(fn)
 
 _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
@@ -7323,30 +7326,28 @@ def timed_run(*args):
 
 ###############################################################################
 
-# check for updates to enigma.py
+# implementation of command line options
+
+# help (-h)
+def _enigma_help():
+  print('command line arguments:')
+  print('  <class> <args> = run command_line(<args>) method on class')
+  print('  [-r | --run] <file> [<additional-args>] = run the solver and args specified in <file>')
+  print('  -t[v] = run tests [v = verbose]')
+  print('  -u[cdr] = check for updates [c = only check, d = always download, r = rename after download]')
+  print('  -h = this help')
+
+
+# run doctests (-t)
+def _enigma_test(verbose=0):
+  import doctest
+  return doctest.testmod(enigma, verbose=verbose)
+
+
+# check for updates to enigma.py (-u)
 # check = only check the current version
 # download = always download the latest version
-@static(url='http://www.magwag.plus.com/jim/')
-def _enigma_update(url=None, check=1, download=0, rename=0):
-  """
-  check enigma.py version, and download the latest version if
-  necessary.
-
-  this function is called by the -u command line option.
-
-    % python enigma.py -u
-    [enigma.py version 2019-07-06 (Python 3.7.3)]
-    checking for updates...
-    latest version is 2019-07-06
-    enigma.py is up to date  
-
-  check - set to check current version against latest
-  download - set to always download latest version
-  rename - set to rename downloaded file to enigma.py
-  """
-  print('checking for updates...')
-
-  if url is None: url = _enigma_update.url
+def __enigma_update(url, check=1, download=0, rename=0):
 
   if _python == 2:
     # Python 2.x
@@ -7377,6 +7378,35 @@ def _enigma_update(url=None, check=1, download=0, rename=0):
     print("enigma.py is NOT up to date")
   else:
     print("enigma.py is up to date")
+
+
+@static(url='http://www.magwag.plus.com/jim/')
+def _enigma_update(url=None, check=1, download=0, rename=0):
+  """
+  check enigma.py version, and download the latest version if
+  necessary.
+
+  this function is called by the -u command line option.
+
+    % python enigma.py -u
+    [enigma.py version 2019-07-06 (Python 3.7.3)]
+    checking for updates...
+    latest version is 2019-07-06
+    enigma.py is up to date  
+
+  check - set to check current version against latest
+  download - set to always download latest version
+  rename - set to rename downloaded file to enigma.py
+  """
+  print('checking for updates...')
+
+  if url is None: url = _enigma_update.url
+
+  try:
+    __enigma_update(url, check=check, download=download, rename=rename)
+  except IOError as e:
+    print(e)
+    printf("ERROR: failed to download update from {_enigma_update.url}")
 
 
 __doc__ += """
@@ -7531,26 +7561,16 @@ if __name__ == "__main__":
 
   # -h => help
   if 'h' in args:
-    print('command line arguments:')
-    print('  <class> <args> = run command_line(<args>) method on class')
-    print('  [-r | --run] <file> [<additional-args>] = run the solver and args specified in <file>')
-    print('  -t[v] = run tests [v = verbose]')
-    print('  -u[cdr] = check for updates [c = only check, d = always download, r = rename after download]')
-    print('  -h = this help')
+    _enigma_help()
 
   # -t => run tests
   # -tv => in verbose mode
   if 't' in args:
-    import doctest
-    doctest.testmod(verbose=('v' in args['t']))
+    _enigma_test(verbose=('v' in args['t']))
 
   # -u => check for updates, and download newer version
   # -uc => just check for updates (don't download)
   # -ud => always download latest version
   # -u[d]r => rename downloaded file to "enigma.py"
   if 'u' in args:
-    try:
-      _enigma_update(check=('c' in args['u']), download=('d' in args['u']), rename=('r' in args['u']))
-    except IOError as e:
-      print(e)
-      printf("failed to download update from {_enigma_update.url}")
+    _enigma_update(check=('c' in args['u']), download=('d' in args['u']), rename=('r' in args['u']))
