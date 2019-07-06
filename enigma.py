@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul  6 08:48:42 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul  6 09:15:27 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -7327,7 +7327,7 @@ def timed_run(*args):
 # check = only check the current version
 # download = always download the latest version
 @static(url='http://www.magwag.plus.com/jim/')
-def enigma_update(url=None, check=1, download=0, rename=0):
+def _enigma_update(url=None, check=1, download=0, rename=0):
   """
   check enigma.py version, and download the latest version if
   necessary.
@@ -7346,7 +7346,7 @@ def enigma_update(url=None, check=1, download=0, rename=0):
   """
   print('checking for updates...')
 
-  if url is None: url = enigma_update.url
+  if url is None: url = _enigma_update.url
 
   if _python == 2:
     # Python 2.x
@@ -7550,7 +7550,7 @@ if __name__ == "__main__":
   # -u[d]r => rename downloaded file to "enigma.py"
   if 'u' in args:
     try:
-      enigma_update(check=('c' in args['u']), download=('d' in args['u']), rename=('r' in args['u']))
+      _enigma_update(check=('c' in args['u']), download=('d' in args['u']), rename=('r' in args['u']))
     except IOError as e:
       print(e)
-      printf("failed to download update from {enigma_update.url}")
+      printf("failed to download update from {_enigma_update.url}")
