@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul  6 16:54:19 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul 13 08:50:54 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-07-06"
+__version__ = "2019-07-11"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1068,6 +1068,9 @@ def divisor_pairs(n):
   >>> list(divisor_pairs(101))
   [(1, 101)]
   """
+  if n == 0:
+    yield (0, 0)
+    return
   a = 1
   while True:
     (b, r) = divmod(n, a)
@@ -1129,6 +1132,7 @@ def divisors(n):
   >>> divisors(101)
   [1, 101]
   """
+  if n == 0: return [0]
   return multiples(prime_factor(n))
 
 
@@ -1140,6 +1144,9 @@ def divisors_pairs(n):
 
   this is probably faster than divisor_pairs() if you want all divisors.
   """
+  if n == 0:
+    yield (0, 0)
+    return
   for a in divisors(n):
     b = n // a
     if a > b: break
@@ -7389,7 +7396,7 @@ def _enigma_update(url=None, check=1, download=0, rename=0):
   this function is called by the -u command line option.
 
     % python enigma.py -u
-    [enigma.py version 2019-07-06 (Python 3.7.3)]
+    [enigma.py version 2019-07-06 (Python 3.7.4)]
     checking for updates...
     latest version is 2019-07-06
     enigma.py is up to date  
@@ -7536,7 +7543,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.16', python3='3.7.3')
+""".format(version=__version__, python='2.7.16', python3='3.7.4')
 
 if __name__ == "__main__":
 
