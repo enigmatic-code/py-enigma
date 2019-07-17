@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul 13 08:50:54 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 17 13:38:14 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-07-11"
+__version__ = "2019-07-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -191,6 +191,7 @@ elif sys.version_info[0] > 2:
 enigma = sys.modules[__name__]
 nl = "\n"
 pi = math.pi
+inf = float('+inf')
 
 # add attributes to a function (to use as static variables)
 # (but for better performance use global variables)
@@ -602,9 +603,13 @@ def subsets(i, size=None, min_size=0, max_size=None, select='C'):
   s = list(i)
   # choose appropriate size parameters
   if size is not None:
+    if callable(size): size = size(s)
     min_size = max_size = size
   elif max_size is None:
     max_size = len(s)
+  else:
+    if callable(min_size): min_size = min_size(s)
+    if callable(max_size): max_size = max_size(s)
   # choose an appropriate select function
   if not callable(select): select = subsets.select_fn[select]
   # generate the subsets
@@ -919,8 +924,8 @@ def first(i, count=1, skip=0, fn=list):
   return the first <count> items in iterator <i> (skipping the initial
   <skip> items) as a list.
 
-  if you import itertools this would be a way to find the first 10 primes:
-  >>> first((n for n in itertools.count(1) if is_prime(n)), count=10)
+  this would be a way to find the first 10 primes:
+  >>> first((n for n in irange(1, inf) if is_prime(n)), count=10)
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
   """
   r = itertools.islice(i, skip, skip + count)
@@ -1053,6 +1058,21 @@ def factor(n, fn=prime_factor):
     factors.extend([p] * e)
   return factors
 
+# divsors are based on:
+#
+#  (a, b) is a divisor pair of n iff: a, b in [0, n] and a.b = n
+#
+# the set of divisors is the set of numbers that appear in the divisor pairs
+#
+# and these are returned in order,
+#
+# so:
+#
+#  divisor pairs 6 = (1, 6) (2, 3); divisors 6 = (1, 2, 3, 6)
+#  divisor pairs 4 = (1, 4) (2, 2); divisors 4 = (1, 2, 4)
+#  divisor pairs 2 = (1, 2); divisors 2 = (1, 2)
+#  divisor pairs 1 = (1, 1); divisors 1 = (1)
+#  divisor pairs 0 = (0, 0); divisors 0 = (0)
 
 def divisor_pairs(n):
   """
@@ -1123,7 +1143,7 @@ def multiples(ps):
   return s
 
 
-def divisors(n):
+def divisors(n, fn=prime_factor):
   """
   return the divisors of positive integer <n> as a sorted list.
 
@@ -1133,10 +1153,10 @@ def divisors(n):
   [1, 101]
   """
   if n == 0: return [0]
-  return multiples(prime_factor(n))
+  return multiples(fn(n))
 
 
-def divisors_pairs(n):
+def divisors_pairs(n, fn=prime_factor):
   """
   generate divisors pairs (a, b) with a =< b, such that a * b = n.
 
@@ -1147,7 +1167,7 @@ def divisors_pairs(n):
   if n == 0:
     yield (0, 0)
     return
-  for a in divisors(n):
+  for a in divisors(n, fn=fn):
     b = n // a
     if a > b: break
     yield (a, b)
@@ -1266,7 +1286,7 @@ def is_prime_mr(n, r=0):
   return 1
 
 
-def tau(n):
+def tau(n, fn=prime_factor):
   """
   count the number of divisors of a positive integer <n>.
 
@@ -1275,10 +1295,10 @@ def tau(n):
   >>> tau(factorial(12))
   792
   """
-  return multiply(e + 1 for (_, e) in prime_factor(n))
+  return multiply(e + 1 for (_, e) in fn(n))
 
 
-def is_square_free(n):
+def is_square_free(n, fn=prime_factor):
   """
   a positive integer is "square free" if it is not divisibly by
   a perfect square greater than 1.
@@ -1288,7 +1308,7 @@ def is_square_free(n):
   >>> is_square_free(8970)
   True
   """
-  return n > 0 and all(e == 1 for (_, e) in prime_factor(n))
+  return n > 0 and all(e == 1 for (_, e) in fn(n))
 
 
 def farey(n):
@@ -2320,12 +2340,17 @@ def cached(f):
 
 
 # inclusive range iterator
+@static(inf=inf) # so b=irange.inf can be used
 def irange(a, b=None, step=1):
   """
   a range iterator that includes both integer endpoints, <a> and <b>.
 
-  if only one endpoint is specified then this is taken as the highest value,
-  and a lowest value of 1 is used (so irange(n) produces n integers from 1 to n).
+  if only one endpoint is specified then this is taken as the highest
+  value, and a lowest value of 1 is used (so irange(n) produces n
+  integers from 1 to n).
+
+  if <b> is specified as inf (or -inf for negative steps) the iterator
+  generate will values indefinitely.
 
   >>> list(irange(1, 9))
   [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -2336,8 +2361,15 @@ def irange(a, b=None, step=1):
   >>> list(irange(9))
   [1, 2, 3, 4, 5, 6, 7, 8, 9]
   """
-  if b is None: (a, b) = (1, a)
-  return range(a, b + (1 if step > 0 else -1), step)
+  if step == 0: raise ValueError("irange: step cannot be 0")
+  if b == inf:
+    if step < 0: return range(0)
+  elif b == -inf:
+    if step > 0: return range(0)
+  else:
+    if b is None: (a, b) = (1, a)
+    return range(a, b + (1 if step > 0 else -1), step)
+  return itertools.count(start=a, step=step)
 
 
 # flatten a list of lists
@@ -2581,24 +2613,7 @@ def contains(seq, subseq):
     i += 1
   return -1
 
-# subseqs: generate the subsequences of an iterator
-def subseqs(iterable, min_size=0, max_size=None):
-  """
-  generate the subsequences of an iterable.
-  min_size and max_size can be used to limit the length of the sub-sequences.
-
-  >>> list(subseqs((1, 2, 3)))
-  [(), (1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)]
-  >>> list(subseqs((1, 2, 3), min_size=1, max_size=2))
-  [(1,), (2,), (3,), (1, 2), (1, 3), (2, 3)]
-  """
-  l = list(iterable)
-  n = len(l)
-  r_min = min(min_size, n)
-  r_max = (n if max_size is None else min(max_size, n))
-  for r in irange(r_min, r_max):
-    for s in itertools.combinations(l, r):
-      yield s
+# subseqs: generate the subsequences of an iterator -> replaced by subsets()
 
 # bit permutations
 # see: https://enigmaticcode.wordpress.com/2017/05/20/bit-twiddling/
@@ -3477,6 +3492,8 @@ class _PrimeSieveE6(object):
     # now extend the sieve to the required size
     self.extend(n)
 
+  def __repr__(self):
+    return self.__class__.__name__ + '(max=' + repr(self.max) + ')'
 
   def extend(self, n):
     """
@@ -3611,6 +3628,8 @@ class _PrimeSieveE6(object):
         else:
           t += 1
 
+  # functions that can use self.prime_factor() instead of simple prime_factor()
+
   # return a list of the factors of n
   def factor(self, n):
     """
@@ -3621,6 +3640,18 @@ class _PrimeSieveE6(object):
     limit of the sieve.
     """
     return factor(n, fn=self.prime_factor)
+
+  def divisors(self, n):
+    return divisors(n, fn=self.prime_factor)
+
+  def divisors_pairs(self, n):
+    return divisors_pairs(n, fn=self.prime_factor)
+
+  def tau(self, n):
+    return tau(n, fn=self.prime_factor)
+
+  def is_square_free(self, n):
+    return is_square_free(n, fn=self.prime_factor)
 
 # an expandable version of the sieve
 
