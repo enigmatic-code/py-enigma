@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 17 13:38:14 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 24 17:39:05 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-07-17"
+__version__ = "2019-07-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -191,6 +191,7 @@ elif sys.version_info[0] > 2:
 enigma = sys.modules[__name__]
 nl = "\n"
 pi = math.pi
+two_pi = 2.0 * pi
 inf = float('+inf')
 
 # add attributes to a function (to use as static variables)
@@ -1497,7 +1498,7 @@ def fib(*s, **kw):
   >>> first(fib(0, 1, 0), 10)
   [0, 1, 0, 1, 2, 3, 6, 11, 20, 37]
 
-  Powers of 2:
+  Powers of 2 (using addition):
   >>> first(fib(1, fn=unpack(lambda x: x + x)), 10)
   [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
   """
