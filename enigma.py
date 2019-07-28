@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 24 17:39:05 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 28 09:24:20 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-07-23"
+__version__ = "2019-07-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -566,9 +566,87 @@ def diff(a, b, *rest):
   return tuple(x for x in a if x not in b)
 
 
+# unique combinations:
+# like uniq(combinations(s, k) but more efficient
+def uC(s, k):
+  if k == 0:
+    yield ()
+  else:
+    seen = set()
+    for (i, x) in enumerate(s):
+      if x not in seen:
+        for t in uC(s[i + 1:], k - 1): yield (x,) + t
+        seen.add(x)
+
+def ucombinations(s, k=None):
+  s = list(s)
+  if k is None: k = len(s)
+  return uC(s, k)
+
+# a multiset object with len() that counts the number of elements
+class multiset(dict):
+
+  # the multiset s is passed in as one of:
+  #  a dict of <item> -> <count> values
+  #  a sequence of (<item>, <count>) values
+  #  a sequence of <item> values, which will be counted (using collections.Counter)
+  def __init__(self, *args, **kw):
+    if len(args) == 1 and len(kw) == 0 and not isinstance(args[0], dict):
+      try:
+        args = (dict(args[0]),)
+      except (TypeError, ValueError):
+        args = (collections.Counter(*args),)
+    dict.__init__(self, *args, **kw)
+
+  # count the all elements in the multiset
+  # (for number of different elements use: [[ len(s.keys()) ]])
+  def __len__(self):
+    return sum(self.values())
+
+  # all elements
+  def elements(self):
+    for (k, v) in self.items():
+      for _ in range(v):
+        yield k
+
+def mcombinations(s, k=None):
+  s = sorted(multiset(s).elements())
+  if k is None: k = len(s)
+  return uC(s, k)
+
+# multiset permutations:
+# a bit like uniq(permutations(s, k)) but more efficient, however items
+# will not be generated in the same order
+#
+# there are more sophisticated algorithms, but this one does the job:
+#
+#  >>> with Timer(): icount(uniq(subsets("mississippi", select="P")))
+#  107899
+#  [timing] elapsed time: 68.9407666s (68.94s)
+#
+#  >>> with Timer(): icount(subsets("mississippi", select="mP"))
+#  107899
+#  [timing] elapsed time: 0.5661372s (566.14ms)
+#
+def mP(d, n):
+  if n == 0:
+    yield ()
+  else:
+    for (k, v) in d.items():
+      if v > 0:
+        d[k] -= 1
+        for t in mP(d, n - 1): yield (k,) + t
+        d[k] += 1
+
+def mpermutations(s, k=None):
+  s = multiset(s)
+  if k is None: k = len(s)
+  return mP(s, k)
+
+
 # subsets (or subseqs) wraps various itertools methods (which can save an import)
-@static(select_fn=None)
-def subsets(i, size=None, min_size=0, max_size=None, select='C'):
+@static(select_fn=dict(), prepare_fn=dict())
+def subsets(s, size=None, min_size=0, max_size=None, select='C', prepare=None):
   """
   generate tuples representing the subsequences of a (finite) iterator.
 
@@ -582,6 +660,9 @@ def subsets(i, size=None, min_size=0, max_size=None, select='C'):
      'P' = permutations,
      'R' = combinations with replacement,
      'M' = product,
+     'uC' = unique combinations
+     'mC' = multiset combinations
+     'mP' = multiset permutations
   or you can provide your own function.
 
   aliases: subseqs(), powerset().
@@ -601,7 +682,8 @@ def subsets(i, size=None, min_size=0, max_size=None, select='C'):
   >>> list(subsets((1, 2, 3), size=2, select='M'))
   [(1, 1), (1, 2), (1, 3), (2, 1), (2, 2), (2, 3), (3, 1), (3, 2), (3, 3)]
   """
-  s = list(i)
+  if prepare is None: prepare = (list if callable(select) else subsets.prepare_fn.get(select, list))
+  s = prepare(s)
   # choose appropriate size parameters
   if size is not None:
     if callable(size): size = size(s)
@@ -615,16 +697,23 @@ def subsets(i, size=None, min_size=0, max_size=None, select='C'):
   if not callable(select): select = subsets.select_fn[select]
   # generate the subsets
   for k in irange(min_size, max_size):
-    # [yield from ... in Python 3]
-    for x in select(s, k): yield x
+    for x in select(s, k): yield tuple(x)
 
 # provide selection functions (where available)
-subsets.select_fn = {
-  'C': getattr(itertools, 'combinations', None),
-  'P': getattr(itertools, 'permutations', None),
-  'R': getattr(itertools, 'combinations_with_replacement', None),
-  'M': lambda s, k: getattr(itertools, 'product', None)(s, repeat=k),
-}
+# [[ maybe 'R' should be 'M', and 'M' should be 'X' ]]
+for (k, v, p) in (
+    ('C', getattr(itertools, 'combinations', None), None),
+    ('P', getattr(itertools, 'permutations', None), None),
+    ('R', getattr(itertools, 'combinations_with_replacement', None), None),
+    ('M', (lambda fn: ((lambda s, k: fn(s, repeat=k)) if fn else None))(getattr(itertools, 'product', None)), None),
+    ('uC', uC, None),
+    ('mC', uC, (lambda s: sorted(multiset(s).elements()))),
+    ('mP', mP, multiset),
+  ):
+  if v:
+    subsets.select_fn[k] = v
+    setattr(subsets, k, v)
+    if p: subsets.prepare_fn[k] = p
 
 # aliases
 powerset = subsets
@@ -2082,7 +2171,7 @@ def C(n, k):
   else:
     return math.factorial(n) // math.factorial(k) // math.factorial(n - k)
 
-
+# NOTE: this corresponds to [[ select='R' ]] in subsets(), not [[ select='M' ]]
 def M(n, k):
   """
   multichoose function: n M k.
