@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 28 09:24:20 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 28 12:49:22 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -598,19 +598,20 @@ class multiset(dict):
         args = (collections.Counter(*args),)
     dict.__init__(self, *args, **kw)
 
-  # count the all elements in the multiset
-  # (for number of different elements use: [[ len(s.keys()) ]])
+  # count all elements in the multiset
+  # (for number of unique elements use: [[ len(s.keys()) ]])
   def __len__(self):
     return sum(self.values())
 
-  # all elements
-  def elements(self):
+  # all elements of the multiset
+  # (for unique elements use: [[ s.keys() ]])
+  def __iter__(self):
     for (k, v) in self.items():
       for _ in range(v):
         yield k
 
 def mcombinations(s, k=None):
-  s = sorted(multiset(s).elements())
+  s = sorted(multiset(s))
   if k is None: k = len(s)
   return uC(s, k)
 
@@ -707,7 +708,7 @@ for (k, v, p) in (
     ('R', getattr(itertools, 'combinations_with_replacement', None), None),
     ('M', (lambda fn: ((lambda s, k: fn(s, repeat=k)) if fn else None))(getattr(itertools, 'product', None)), None),
     ('uC', uC, None),
-    ('mC', uC, (lambda s: sorted(multiset(s).elements()))),
+    ('mC', uC, (lambda s: sorted(multiset(s)))),
     ('mP', mP, multiset),
   ):
   if v:
