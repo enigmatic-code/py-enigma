@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jul 30 09:46:46 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jul 30 16:20:47 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-07-29"
+__version__ = "2019-07-30"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -592,16 +592,22 @@ class multiset(dict):
   #  a dict of <item> -> <count> values
   #  a sequence of (<item>, <count>) values
   #  a sequence of <item> values
-  def __init__(self, *args, **kw):
-    collect = []
-    if len(args) == 1 and len(kw) == 0 and not isinstance(args[0], dict):
-      try:
-        args = (dict(args[0]),)
-      except (TypeError, ValueError):
-        collect = args[0]
-        args = ()
-    dict.__init__(self, *args, **kw)
-    for x in collect: self.add(x)
+  def __init__(self, v=None, **kw):
+    dict.__init__(self)
+    if v is None:
+      pass
+    elif isinstance(v, dict):
+      # from a dict
+      for (x, n) in v.items(): self.add(x, n)
+    else:
+      # from a sequence
+      for x in v:
+        try:
+          self.add(*x)
+        except TypeError:
+          self.add(x)
+    # add in any keyword items
+    for (x, n) in kw.items(): self.add(x, n)
 
   # count all elements in the multiset
   # (for number of unique elements use: [[ len(s.keys()) ]])
@@ -617,23 +623,20 @@ class multiset(dict):
 
   # add an item
   def add(self, item, count=1):
-    assert not(count < 0)
+    try:
+      count += self[item]
+    except KeyError:
+      pass
+    if count < 0: raise ValueError(sprintf("negative count: {item} -> {count}"))
     if count > 0:
-      try:
-        self[item] += count
-      except KeyError:
-        self[item] = count
+      self[item] = count
+    else:
+      del self[item]
 
   # remove an item
   def remove(self, item, count=1):
-    assert not(count < 0)
-    if count > 0:
-      n = self[item]
-      if count > n: raise KeyError(item)
-      if count < n:
-        self[item] -= count
-      else:
-        del self[item]
+    if count != 0:
+      self.add(item, -count)
 
   # like self.items(), but in value order
   def most_common(self, n=None):
@@ -7013,7 +7016,7 @@ def __grouping():
   def groups(vs, fn=None, s=[]):
     # are we done?
     if not vs[0]:
-      yield s
+      yield tuple(s)
     else:
       # otherwise choose the next group to go with category 0
       for v in itertools.product(*(enumerate(x) for x in vs[1:])):
