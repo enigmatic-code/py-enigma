@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 28 12:49:22 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jul 30 09:46:46 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-07-27"
+__version__ = "2019-07-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -583,20 +583,25 @@ def ucombinations(s, k=None):
   if k is None: k = len(s)
   return uC(s, k)
 
-# a multiset object with len() that counts the number of elements
+# a (partial) multiset implementation with len() that counts the number of elements
+# the multiset is implemented as a dict mapping <item> -> <count>
+# it can be used as an alternative to collections.Counter
 class multiset(dict):
 
   # the multiset s is passed in as one of:
   #  a dict of <item> -> <count> values
   #  a sequence of (<item>, <count>) values
-  #  a sequence of <item> values, which will be counted (using collections.Counter)
+  #  a sequence of <item> values
   def __init__(self, *args, **kw):
+    collect = []
     if len(args) == 1 and len(kw) == 0 and not isinstance(args[0], dict):
       try:
         args = (dict(args[0]),)
       except (TypeError, ValueError):
-        args = (collections.Counter(*args),)
+        collect = args[0]
+        args = ()
     dict.__init__(self, *args, **kw)
+    for x in collect: self.add(x)
 
   # count all elements in the multiset
   # (for number of unique elements use: [[ len(s.keys()) ]])
@@ -609,6 +614,33 @@ class multiset(dict):
     for (k, v) in self.items():
       for _ in range(v):
         yield k
+
+  # add an item
+  def add(self, item, count=1):
+    assert not(count < 0)
+    if count > 0:
+      try:
+        self[item] += count
+      except KeyError:
+        self[item] = count
+
+  # remove an item
+  def remove(self, item, count=1):
+    assert not(count < 0)
+    if count > 0:
+      n = self[item]
+      if count > n: raise KeyError(item)
+      if count < n:
+        self[item] -= count
+      else:
+        del self[item]
+
+  # like self.items(), but in value order
+  def most_common(self, n=None):
+    s = sorted(self.items(), key=lambda t: t[::-1], reverse=True)
+    return (s if n is None else s[:n])
+
+  # TODO: provide a complete implementation of multisets
 
 def mcombinations(s, k=None):
   s = sorted(multiset(s))
@@ -5050,14 +5082,14 @@ class SubstitutedExpression(object):
     first - if set to True will stop after the first solution is output
 
     returns the number of solutions found, but if the "answer" parameter
-    was set during init() returns a collections.Counter() object counting
+    was set during init() returns a multiset() object counting
     the number of times each answer occurs.
     """
     if verbose is None: verbose = self.verbose
 
     # collect answers (either total number or collected by "answer")
     answer = self.answer
-    r = (collections.Counter() if answer else 0)
+    r = (multiset() if answer else 0)
 
     # measure internal time
     if verbose & 32:
@@ -5067,7 +5099,7 @@ class SubstitutedExpression(object):
     # solve the problem, counting the answers
     for s in self.solve(check=check, first=first, verbose=verbose):
       if answer:
-        r[s[1]] += 1
+        r.add(s[1])
       else:
         r += 1
 
