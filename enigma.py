@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jul 30 16:20:47 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug 16 09:26:18 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-07-30"
+__version__ = "2019-08-16"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -625,13 +625,13 @@ class multiset(dict):
   def add(self, item, count=1):
     try:
       count += self[item]
+      if count == 0:
+        del self[item]
+        return
     except KeyError:
       pass
     if count < 0: raise ValueError(sprintf("negative count: {item} -> {count}"))
-    if count > 0:
-      self[item] = count
-    else:
-      del self[item]
+    if count > 0: self[item] = count
 
   # remove an item
   def remove(self, item, count=1):
@@ -644,6 +644,18 @@ class multiset(dict):
     return (s if n is None else s[:n])
 
   # TODO: provide a complete implementation of multisets
+
+  # is multiset m a subset of self?
+  def issuperset(self, m):
+    if not isinstance(m, dict): m = multiset(m)
+    return not any(self.get(item, 0) < count for (item, count) in m.items())
+
+  # difference between self and m
+  # (m may contain items that are not in self, they are ignored)
+  def difference(self, m):
+    if not isinstance(m, dict): m = multiset(m)
+    return multiset((item, count - m.get(item, 0)) for (item, count) in self.items())
+    
 
 def mcombinations(s, k=None):
   s = sorted(multiset(s))
@@ -814,7 +826,7 @@ def filter_unique(s, f=identity, g=identity):
     (r1 if len(v) == 1 else r2).extend(r[k])
   return (r1, r2)
 
-# alias if you prefer the term partition
+# alias if you prefer the term partition (but don't confuse it with partitions())
 partition_unique = filter_unique
 
 
