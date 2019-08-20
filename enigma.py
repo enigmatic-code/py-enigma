@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug 16 09:26:18 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Aug 20 13:54:53 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -206,7 +206,8 @@ def static(**kw):
 # useful routines for solving Enigma puzzles
 
 # like cmp() in Python 2, but results are always -1, 0, +1.
-def compare(a, b):
+# vs can be a triple of values to return instead, default corresponds to (-1, 0, +1)
+def compare(a, b, vs=None):
   """
   return -1 if a < b, 0 if a == b and +1 if a > b.
 
@@ -219,7 +220,8 @@ def compare(a, b):
   >>> compare('evil', 'EVIL')
   1
   """
-  return (b < a) - (a < b)
+  r = (b < a) - (a < b)
+  return (vs[r + 1] if vs else r)
 
 # it's probably quicker (and shorter) to just use:
 #   X not in args
@@ -643,19 +645,70 @@ class multiset(dict):
     s = sorted(self.items(), key=lambda t: t[::-1], reverse=True)
     return (s if n is None else s[:n])
 
-  # TODO: provide a complete implementation of multisets
+  # provide some useful operations on multisets
 
-  # is multiset m a subset of self?
-  def issuperset(self, m):
+  # update self with some other multisets (item counts are summed)
+  def update(self, *rest):
+    for m in rest:
+      if not isinstance(m, dict): m = multiset(m)
+      for (item, count) in m.items(): self.add(item, count)
+    return self
+
+  # combine self and some other multisets (item counts are summed)
+  def combine(self, *rest):
+    return multiset(self).update(*rest)
+
+  # union update of self and some other multiset (maximal item counts are retained)
+  def union_update(self, *rest):
+    for m in rest:
+      if not isinstance(m, dict): m = multiset(m)
+      for (item, count) in m.items(): self[item] = max(count, self.get(item, 0))
+    return self
+
+  # union of self and some other multiset (maximal item counts are retained)
+  def union(self, *rest):
+    return multiset(self).union_update(*rest)
+
+  # intersection of self and some other multisets (minimal item counts are retained)
+  def intersection(self, *rest):
+    r = multiset(self)
+    for m in rest:
+      if not isinstance(m, dict): m = multiset(m)
+      r = multiset((item, min(count, r.get(item, 0))) for (item, count) in m.items())
+    return r
+
+  # differences between self and m
+  # return (self - m, m - self)
+  def differences(self, m):
     if not isinstance(m, dict): m = multiset(m)
-    return not any(self.get(item, 0) < count for (item, count) in m.items())
+    (d1, d2) = (multiset(), multiset())
+    for item in set(self.keys()).union(m.keys()):
+      count = self.get(item, 0) - m.get(item, 0)
+      if count > 0:
+        d1.add(item, count)
+      elif count < 0:
+        d2.add(item, -count)
+    return (d1, d2)
 
   # difference between self and m
   # (m may contain items that are not in self, they are ignored)
   def difference(self, m):
-    if not isinstance(m, dict): m = multiset(m)
-    return multiset((item, count - m.get(item, 0)) for (item, count) in self.items())
-    
+    return self.differences(m)[0]
+
+  # is multiset m a subset of self?
+  def issuperset(self, m):
+    (d1, d2) = self.differences(m)
+    return not d2
+
+  # is multiset m a superset of self?
+  def issubset(self, m):
+    (d1, d2) = self.differences(m)
+    return not d1
+
+  # absolute difference in item counts of the two multisets
+  def symmetric_difference(self, m):
+    (d1, d2) = self.differences(m)
+    return d1.update(d2)
 
 def mcombinations(s, k=None):
   s = sorted(multiset(s))
