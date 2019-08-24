@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug 24 11:57:40 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Aug 24 14:33:45 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1844,23 +1844,30 @@ is_square.mod = 80
 is_square.residues = set((i * i) % is_square.mod for i in range(is_square.mod))
 is_square.reject = list(i not in is_square.residues for i in range(is_square.mod))
 
-def is_not_none(fn):
-  """
-  turn a function into a predicate that is the equivalent of:
+# compose functions in order (forward functional composition, "and then")
+# so: fcompose(f, g, h)(x) == h(g(f(x)))
+def fcompose(f, *gs):
+  # special case for 1 or 2 functions
+  n = len(gs)
+  if n == 0:
+    return f
+  if n == 1:
+    return (lambda *args, **kw: gs[0](f(*args, **kw)))
+  # general case
+  def fn(*args, **kw):
+    r = f(*args, **kw)
+    for g in gs:
+      r = g(r)
+    return r
+  return fn
 
-    fn(<args>) is not None
+# compose functions in reverse order (reverse functional composition, "after")
+# so: rcompose(f, g, h)(x) = f(g(h(x)))
+def rcompose(*fns):
+  return fcompose(*(reversed(fns)))
 
-  >>> is_square(0)
-  0
-  >>> is_square(0) == False
-  True
-  >>> p = is_not_none(is_square)
-  >>> p(0)
-  True
-  """
-  return (lambda *args, **kw: fn(*args, **kw) is not None)
-
-is_square_p = is_not_none(is_square)
+is_not_none = (lambda x: x is not None)
+is_square_p = fcompose(is_square, is_not_none)
 
 def is_cube(n):
   """
@@ -1875,7 +1882,7 @@ def is_cube(n):
   """
   return is_power(n, 3)
 
-is_cube_p = is_not_none(is_cube)
+is_cube_p = fcompose(is_cube, is_not_none)
 
 
 # keep the old names as aliases
