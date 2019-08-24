@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Aug 20 13:54:53 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Aug 24 11:57:40 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -148,7 +148,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-08-16"
+__version__ = "2019-08-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1844,6 +1844,23 @@ is_square.mod = 80
 is_square.residues = set((i * i) % is_square.mod for i in range(is_square.mod))
 is_square.reject = list(i not in is_square.residues for i in range(is_square.mod))
 
+def is_not_none(fn):
+  """
+  turn a function into a predicate that is the equivalent of:
+
+    fn(<args>) is not None
+
+  >>> is_square(0)
+  0
+  >>> is_square(0) == False
+  True
+  >>> p = is_not_none(is_square)
+  >>> p(0)
+  True
+  """
+  return (lambda *args, **kw: fn(*args, **kw) is not None)
+
+is_square_p = is_not_none(is_square)
 
 def is_cube(n):
   """
@@ -1857,6 +1874,9 @@ def is_cube(n):
   0
   """
   return is_power(n, 3)
+
+is_cube_p = is_not_none(is_cube)
+
 
 # keep the old names as aliases
 power = is_power
