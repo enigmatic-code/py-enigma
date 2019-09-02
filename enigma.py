@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug 24 14:33:45 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Sep  2 10:31:56 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -136,7 +136,8 @@ Delay                  - a class for the delayed evaluation of a function
 DominoGrid             - a class for solving domino grid puzzles
 Football               - a class for solving football league table puzzles
 MagicSquare            - a class for solving magic squares
-Polynomial             - a class for manipulating Polynomials
+multiset               - a class for manipulating multisets
+Polynomial             - a class for manipulating polynomials
 Primes                 - a class for creating prime sieves
 SubstitutedDivision    - a class for solving substituted long division sums
 SubstitutedExpression  - a class for solving general substituted expression (alphametic/cryptarithm) problems
@@ -148,7 +149,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-08-24"
+__version__ = "2019-09-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -585,16 +586,37 @@ def ucombinations(s, k=None):
   if k is None: k = len(s)
   return uC(s, k)
 
-# a (partial) multiset implementation with len() that counts the number of elements
 # the multiset is implemented as a dict mapping <item> -> <count>
-# it can be used as an alternative to collections.Counter
 class multiset(dict):
+  """
+  an implementation of multisets.
 
-  # the multiset s is passed in as one of:
-  #  a dict of <item> -> <count> values
-  #  a sequence of (<item>, <count>) values
-  #  a sequence of <item> values
+  it can be used as an alternative to collections.Counter(), but note
+  the following differences:
+
+    len() counts the number of elements (not the number of distinct elements)
+
+    iterating through a multiset provide all elements (not just distinct elements)
+  """
+
   def __init__(self, v=None, **kw):
+    """
+    create a multiset from one of the following:
+
+      a dict of <item> -> <count> values
+
+      a sequence of (<item>, <count>) values
+
+      a sequence of individual items (may have repeats)
+
+    so these are different ways of making the same multiset:
+
+      multiset("banana")
+      multiset(a=3, b=1, n=2)
+      multiset([('a', 3), ('b', 1), ('n', 2)])
+      multiset(['b', 'a', 'n', 'a', 'n', 'a'])
+      multiset(dict(a=3, b=1, n=2))
+    """
     dict.__init__(self)
     if v is None:
       pass
@@ -614,17 +636,42 @@ class multiset(dict):
   # count all elements in the multiset
   # (for number of unique elements use: [[ len(s.keys()) ]])
   def __len__(self):
+    """
+    count all the elements in a multiset.
+
+    to count the number of distinct elements use: len(s.keys())
+
+    >>> len(multiset("banana"))
+    6
+    >>> len(multiset("banana").keys())
+    3
+    """
     return sum(self.values())
 
   # all elements of the multiset
   # (for unique elements use: [[ s.keys() ]])
   def __iter__(self):
+    """
+    iterate through all elements of the multiset.
+
+    for distinct elements use: s.keys()
+
+    >>> sorted(multiset("banana"))
+    ['a', 'a', 'a', 'b', 'n', 'n']
+    >>> sorted(multiset("banana").keys())
+    ['a', 'b', 'n']
+    """
     for (k, v) in self.items():
       for _ in range(v):
         yield k
 
   # add an item
   def add(self, item, count=1):
+    """
+    add an item to a multiset.
+
+    count can be negative to remove items.
+    """
     try:
       count += self[item]
       if count == 0:
@@ -637,8 +684,7 @@ class multiset(dict):
 
   # remove an item
   def remove(self, item, count=1):
-    if count != 0:
-      self.add(item, -count)
+    self.add(item, -count)
 
   # like self.items(), but in value order
   def most_common(self, n=None):
@@ -2005,7 +2051,7 @@ def repdigit(n, d=1, base=10):
   return d * (base ** n - 1) // (base - 1)
 
 
-def hypot(*v):
+def hypot(*vs):
   """
   return hypotenuse of a right angled triangle with shorter sides <a> and <b>.
 
@@ -2014,7 +2060,7 @@ def hypot(*v):
   >>> hypot(3.0, 4.0)
   5.0
   """
-  return sqrt(sum(x * x for x in v))
+  return sqrt(sum(v * v for v in vs))
 
 
 def intf(x):
