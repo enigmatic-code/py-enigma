@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Sep  2 10:31:56 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Sep  8 13:15:49 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -149,7 +149,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-09-01"
+__version__ = "2019-09-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -596,10 +596,10 @@ class multiset(dict):
 
     len() counts the number of elements (not the number of distinct elements)
 
-    iterating through a multiset provide all elements (not just distinct elements)
+    iterating through a multiset provides all elements (not just distinct elements)
   """
 
-  def __init__(self, v=None, **kw):
+  def __init__(self, *vs, **kw):
     """
     create a multiset from one of the following:
 
@@ -618,20 +618,22 @@ class multiset(dict):
       multiset(dict(a=3, b=1, n=2))
     """
     dict.__init__(self)
-    if v is None:
-      pass
-    elif isinstance(v, dict):
-      # from a dict
-      for (x, n) in v.items(): self.add(x, n)
-    else:
-      # from a sequence
-      for x in v:
-        try:
-          self.add(*x)
-        except TypeError:
-          self.add(x)
+    # deal with any initialisation objects
+    for v in vs:
+      if isinstance(v, dict):
+        # from a dict
+        for (x, n) in v.items(): self.add(x, n)
+      else:
+        # from a sequence
+        for x in v:
+          try:
+            self.add(*x)
+          except TypeError:
+            self.add(x)
     # add in any keyword items
-    for (x, n) in kw.items(): self.add(x, n)
+    if kw:
+      for (x, n) in kw.items():
+        self.add(x, n)
 
   # count all elements in the multiset
   # (for number of unique elements use: [[ len(s.keys()) ]])
