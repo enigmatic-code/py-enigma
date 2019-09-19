@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Sep  8 13:15:49 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 19 16:43:30 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -149,7 +149,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-09-07"
+__version__ = "2019-09-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -301,7 +301,7 @@ def seq_all_same(s, **kw):
   return all(x == v for x in i)
 
 # same as distinct_values(args, 1)
-def all_same(*args):
+def all_same(*args, **kw):
   """
   check all arguments have the same value
 
@@ -314,7 +314,7 @@ def all_same(*args):
   >>> all_same()
   True
   """
-  return seq_all_same(args)
+  return seq_all_same(args, **kw)
 
 all_different = is_pairwise_distinct
 
@@ -555,6 +555,15 @@ def chunk(s, n=2, fn=tuple):
     if not s: break
     yield s
 
+# set union of a bunch of sequences
+def union(ss):
+  return set().union(*ss)
+
+# set intersection of a bunch of sequences
+def intersect(ss):
+  i = iter(ss)
+  s = set(next(i))
+  return s.intersection(*i)
 
 def diff(a, b, *rest):
   """
@@ -608,6 +617,9 @@ class multiset(dict):
       a sequence of (<item>, <count>) values
 
       a sequence of individual items (may have repeats)
+
+    multiple initialisation arguments may be provided, the
+    items from each are added into the multiset.
 
     so these are different ways of making the same multiset:
 
@@ -6422,7 +6434,7 @@ class Football(object):
     return self._table(*((played,) + tuple(r[x] for x in self._games) + (points,)))
 
   # generate possible score lines
-  def scores(self, gs, ts, f, a, pss=None, pts=None, s=[]):
+  def scores(self, gs, ts, f, a, pss=None, pts=None, min_goals=0, s=[]):
     """
     Generate possible score lines for a sequence of match outcomes <gs>,
     team assignments <ts>, and total goals for <f> and against <a>.
@@ -6431,6 +6443,8 @@ class Football(object):
     corresponding team assignments <pts> can be specified, in which case
     the goals scored in these matches will be subtracted from <f> and
     <a> before the score lines are calculated.
+
+    <min_goals> is the minimum number of goals scored by each team.
 
     A sequence of scores matching the input templates will be
     produced. Each score is a tuple (<team 0>, <team 1>) for a played
@@ -6444,9 +6458,9 @@ class Football(object):
     if pss:
       (pf, pa) = self.goals(pss, pts)
       (f, a) = (f - pf, a - pa)
-    return self._scores(gs, ts, f, a, [])
+    return self._scores(gs, ts, f, a, min_goals, [])
 
-  def _scores(self, gs, ts, f, a, s):
+  def _scores(self, gs, ts, f, a, min_goals, s):
     # are we done?
     if not gs:
       if f == a == 0:
@@ -6460,26 +6474,26 @@ class Football(object):
       # is it unplayed?
       if g == 'x':
         # [Python 3]: yield from ...
-        for r in self._scores(gs, ts, f, a, s + [None]): yield r
+        for r in self._scores(gs, ts, f, a, min_goals, s + [None]): yield r
       # is it a draw?
       elif g == 'd':
-        for i in irange(0, min(f, a)):
+        for i in irange(min_goals, min(f, a)):
           # [Python 3]: yield from ...
-          for r in self._scores(gs, ts, f - i, a - i, s + [(i, i)]): yield r
+          for r in self._scores(gs, ts, f - i, a - i, min_goals, s + [(i, i)]): yield r
       # is it a win?
       elif g == 'w':
-        for j in irange(0, a):
+        for j in irange(min_goals, a):
           for i in irange(j + 1, f):
             s0 = ((j, i) if t else (i, j))
             # [Python 3]: yield from ...
-            for r in self._scores(gs, ts, f - i, a - j, s + [s0]): yield r
+            for r in self._scores(gs, ts, f - i, a - j, min_goals, s + [s0]): yield r
       # is it a loss?
       elif g == 'l':
-        for i in irange(0, f):
+        for i in irange(min_goals, f):
           for j in irange(i + 1, a):
             s0 = ((j, i) if t else (i, j))
             # [Python 3]: yield from
-            for r in self._scores(gs, ts, f - i, a - j, s + [s0]): yield r
+            for r in self._scores(gs, ts, f - i, a - j, min_goals, s + [s0]): yield r
 
   # compute goals for, against
   def goals(self, ss, ts):
@@ -6649,13 +6663,13 @@ class Football(object):
     for z in self._substituted_table(table, n, teams, matches, d, vs): yield z
 
 
-  def _substituted_table_goals(self, gf, ga, matches, d, teams, scores):
+  def _substituted_table_goals(self, gf, ga, matches, d, teams, scores, min_goals):
     # are we done?
     if not teams:
       yield scores
       return
 
-    # deal with team t
+    # deal with the first team
     t = teams[0]
 
     # matches for team t
@@ -6666,21 +6680,21 @@ class Football(object):
       # check the values
       (f, a) = self.goals(list(scores[m] for m in ms), list(m.index(t) for m in ms))
       if f == d[gf[t]] and a == d[ga[t]]:
-        for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores): yield z
+        for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores, min_goals): yield z
       return
 
     # matches we already have scores for
     sms = list(m for m in ms if m in scores)
     # find possible scores for each remaining match
-    for s in self.scores(list(matches[m] for m in rs), list(m.index(t) for m in rs), d[gf[t]], d[ga[t]], list(scores[m] for m in sms), list(m.index(t) for m in sms)):
+    for s in self.scores(list(matches[m] for m in rs), list(m.index(t) for m in rs), d[gf[t]], d[ga[t]], list(scores[m] for m in sms), list(m.index(t) for m in sms), min_goals):
       scores2 = update(scores, rs, s)
-      for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores2): yield z
+      for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores2, min_goals): yield z
 
-  # gf, ga - goals for, goals against
+  # gf, ga - goals for, goals against (map: team -> symbol)
   # matches - match outcomes
   # teams - order teams are processed in
   # scores - score lines
-  def substituted_table_goals(self, gf, ga, matches, d=None, teams=None, scores=None):
+  def substituted_table_goals(self, gf, ga, matches, d=None, teams=None, scores=None, min_goals=0):
     """
     determine the scores in matches from a substituted table football problem.
 
@@ -6689,7 +6703,7 @@ class Football(object):
     score of None is returned).
 
     gf, ga - goals for, goals against columns in the table. specified
-    as symbols that index into the dict() <d> to give the actual
+    as maps of teams to symbols that index into <d> to give the actual
     values.
 
     matches - the match outcomes. usually this will be the result of a
@@ -6698,14 +6712,16 @@ class Football(object):
     teams - the order the teams are processed in.
 
     scores - known scores. usually this is empty.
+
+    min_goals - minumum number of goals for each team in a match (usually 0).
     """
-    if d is None: d = dict((str(i), i) for i in irange(0, 9))
-    if teams is None: teams = list(range(0, len(gf)))
+    if d is None: d = digit_map(0, 9)
+    if teams is None: teams = (list(gf.keys()) if hasattr(gf, 'keys') else list(range(0, len(gf))))
     if scores is None: scores = dict()
     # fill out unplayed matches
     for (k, v) in matches.items():
       if v == 'x': scores[k] = None
-    for z in self._substituted_table_goals(gf, ga, matches, d, teams, scores): yield z
+    for z in self._substituted_table_goals(gf, ga, matches, d, teams, scores, min_goals): yield z
 
 
   def output_matches(self, matches, scores=None, teams=None, d=None, start=None, end=''):
