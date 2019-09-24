@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 19 16:43:30 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep 24 09:59:36 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -149,7 +149,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-09-15"
+__version__ = "2019-09-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -628,24 +628,83 @@ class multiset(dict):
       multiset([('a', 3), ('b', 1), ('n', 2)])
       multiset(['b', 'a', 'n', 'a', 'n', 'a'])
       multiset(dict(a=3, b=1, n=2))
+
+    for more control over the initialisation of the multiset you can
+    use: from_dict(), from_pairs(), from_seq() class methods or the
+    corresponding: update_from_dict(), update_from_pairs(),
+    update_from_seq() object methods.
     """
     dict.__init__(self)
     # deal with any initialisation objects
     for v in vs:
       if isinstance(v, dict):
         # from a dict
-        for (x, n) in v.items(): self.add(x, n)
+        self.update_from_dict(v)
       else:
         # from a sequence
-        for x in v:
-          try:
-            self.add(*x)
-          except TypeError:
-            self.add(x)
+        try:
+          s = multiset().update_from_pairs(v)
+          self.update_from_dict(s)
+        except TypeError:
+          self.update_from_seq(v)
     # add in any keyword items
     if kw:
       for (x, n) in kw.items():
         self.add(x, n)
+
+  def update_from_seq(self, vs):
+    """
+    update a multiset from a sequence of items.
+    """
+    for x in vs:
+      self.add(x)
+    return self
+
+  def update_from_pairs(self, vs):
+    """
+    update a multiset from a sequence of (<item>, <count>) pairs.
+    """
+    for (x, n) in vs:
+      self.add(x, n)
+    return self
+
+  def update_from_dict(self, d):
+    """
+    update a multiset from a dict of <item> -> <count> values.
+    """
+    return self.update_from_pairs(d.items())
+
+  @classmethod
+  def from_dict(cls, *vs):
+    """
+    create a multiset from a dict of <item> -> <count> values
+    (or multiple dicts).
+    """
+    m = multiset()
+    for v in vs:
+      m.update_from_dict(v)
+    return m
+
+  @classmethod
+  def from_pairs(self, *vs):
+    """
+    create a multiset from a sequence of (<item>, <count>) pairs
+    (or multiple sequences).
+    """
+    m = multiset()
+    for v in vs:
+      m.update_from_pairs(v)
+    return m
+
+  @classmethod
+  def from_seq(self, *vs):
+    """
+    create a multiset from a sequence of items (or multiple sequences).
+    """
+    m = multiset()
+    for v in vs:
+      m.update_from_seq(v)
+    return m
 
   # count all elements in the multiset
   # (for number of unique elements use: [[ len(s.keys()) ]])
@@ -711,7 +770,7 @@ class multiset(dict):
   def update(self, *rest):
     for m in rest:
       if not isinstance(m, dict): m = multiset(m)
-      for (item, count) in m.items(): self.add(item, count)
+      self.update_from_dict(m)
     return self
 
   # combine self and some other multisets (item counts are summed)
@@ -3328,7 +3387,7 @@ def _int2words(n, scale='short', sep='', hyphen=' '):
   try:
     return __int2words(n, scale, sep, hyphen)
   except IndexError:
-    raise ValueError('Number too large')
+    raise ValueError(sprintf('Number too large (scale: {scale})'))
 
 # from http://en.wikipedia.org/wiki/Names_of_large_numbers
 _larger = [
@@ -3359,7 +3418,8 @@ def __int2words(n, scale='short', sep='', hyphen=' '):
     raise ValueError('Unsupported scale type: ' + scale)
   i = (len(str(n)) - 1) // g
   (d, r) = divmod(n, p ** i)
-  x = _int2words(d, scale, sep, hyphen) + ' ' + _larger[i - k]
+  w = _larger[i - k]
+  x = _int2words(d, scale, sep, hyphen) + ' ' + w
   if r == 0: return x
   if r < 100: return x + ' and ' + _int2words(r, scale, sep, hyphen)
   return x + sep + ' ' + _int2words(r, scale, sep, hyphen)
@@ -7441,9 +7501,9 @@ def stop(files=None, files_extra=None, use_exit=0, verbose=1):
 # of the process (so you can do: "kill -SIGUSR1 <PID>")
 
 @static(fn=None)
-def status(fn, atexit=0):
+def status(fn, at_exit=0):
   status.fn = fn
-  if atexit: atexit.register(fn)
+  if at_exit: atexit.register(fn)
 
 _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
