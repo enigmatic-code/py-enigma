@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Sep 24 09:59:36 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep 24 10:08:43 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -645,7 +645,7 @@ class multiset(dict):
         try:
           s = multiset().update_from_pairs(v)
           self.update_from_dict(s)
-        except TypeError:
+        except (TypeError, ValueError):
           self.update_from_seq(v)
     # add in any keyword items
     if kw:
