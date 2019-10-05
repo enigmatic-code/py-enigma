@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Sep 24 10:08:43 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Oct  5 15:46:56 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -149,7 +149,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-09-22"
+__version__ = "2019-10-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -249,6 +249,16 @@ def distinct_values(s, n=None):
   return len(set(s)) == n
 
 def seq_all_different(s):
+  """
+  check all elements of <s> are pairwise distinct
+
+  >>> seq_all_different([0, 1, 2, 3])
+  True
+  >>> seq_all_different([2, 1, 2, 3])
+  False
+  >>> seq_all_different(p % 100 for p in Primes())
+  False
+  """
   seen = set()
   for x in s:
     if x in seen: return False
@@ -645,7 +655,7 @@ class multiset(dict):
         try:
           s = multiset().update_from_pairs(v)
           self.update_from_dict(s)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError): # maybe more, or maybe just Error
           self.update_from_seq(v)
     # add in any keyword items
     if kw:
@@ -876,10 +886,10 @@ def subsets(s, size=None, min_size=0, max_size=None, select='C', prepare=None):
 
   the way the elements of the subsequences are selected can be
   controlled with the 'select' parameter:
-     'C' = combinations (default),
-     'P' = permutations,
-     'R' = combinations with replacement,
-     'M' = product,
+     'C' = combinations (default)
+     'P' = permutations
+     'R' = combinations with replacement
+     'M' = product
      'uC' = unique combinations
      'mC' = multiset combinations
      'mP' = multiset permutations
@@ -2170,34 +2180,36 @@ ceil = intc
 
 def divf(a, b):
   """
-  floor division. (equivalent to Python's a // b).
+  floor division. (similar to Python's a // b).
+  always returns an int.
 
   >>> divf(100, 10)
   10
   >>> divf(101, 10)
   10
   >>> divf(101.1, 10)
-  10.0
+  10
   >>> divf(4.5, 1)
-  4.0
+  4
   """
-  return a // b
+  return int(a // b)
 
 
 def divc(a, b):
   """
   ceiling division.
+  always returns an int.
 
   >>> divc(100, 10)
   10
   >>> divc(101, 10)
   11
   >>> divc(101.1, 10)
-  11.0
+  11
   >>> divc(4.5, 1)
-  5.0
+  5
   """
-  return -(-a // b)
+  return -int(-a // b)
 
 cdiv = divc
 
@@ -7616,8 +7628,9 @@ def run(cmd, *args, **kw):
   if 'p' in _PY_ENIGMA or 'p' in flags: timed = 0
   saved = None
 
-  # an alternative way to run a solver is to use "-r / --run <file> <additional-args>"
-  if cmd == '-r' or cmd == '--run':
+  # an alternative way to run a solver is to use "-r[t] / --run[:timed] <file> <additional-args>"
+  if cmd.startswith('-r') or cmd.startswith('--run'):
+    if cmd == "-rt" or cmd == "--run:timed": timed = 1
     (cmd, args) = (args[0], args[1:])
   elif cmd.startswith('-'):
     return
@@ -7644,6 +7657,7 @@ def run(cmd, *args, **kw):
         finally:
           if saved:
             [_PY_ENIGMA] = saved
+        _run_exit = (0 if r else -1)
       else:
         # attempt to use a shebang line (see: run.py)
         path = os.path.abspath(cmd)
@@ -7712,7 +7726,7 @@ def timed_run(*args):
 def _enigma_help():
   print('command line arguments:')
   print('  <class> <args> = run command_line(<args>) method on class')
-  print('  [-r | --run] <file> [<additional-args>] = run the solver and args specified in <file>')
+  print('  [-r[t] | --run[:timed]] <file> [<additional-args>] = run the solver and args specified in <file>')
   print('  -t[v] = run tests [v = verbose]')
   print('  -u[cdr] = check for updates [c = only check, d = always download, r = rename after download]')
   print('  -h = this help')
