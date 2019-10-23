@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Oct  5 15:46:56 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Oct 23 10:25:41 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -149,7 +149,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-10-05"
+__version__ = "2019-10-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -767,10 +767,18 @@ class multiset(dict):
 
   # remove an item
   def remove(self, item, count=1):
+    """
+    remove an item from a multiset.
+    """
     self.add(item, -count)
 
   # like self.items(), but in value order
   def most_common(self, n=None):
+    """
+    return the items of the multiset in order of the most common.
+
+    if n is specifed only the first n items are returned.
+    """
     s = sorted(self.items(), key=lambda t: t[::-1], reverse=True)
     return (s if n is None else s[:n])
 
@@ -809,6 +817,11 @@ class multiset(dict):
   # differences between self and m
   # return (self - m, m - self)
   def differences(self, m):
+    """
+    return the differences between self and another multiset m.
+
+    returns (self - m, m - self)
+    """
     if not isinstance(m, dict): m = multiset(m)
     (d1, d2) = (multiset(), multiset())
     for item in set(self.keys()).union(m.keys()):
@@ -822,6 +835,9 @@ class multiset(dict):
   # difference between self and m
   # (m may contain items that are not in self, they are ignored)
   def difference(self, m):
+    """
+    return (self - m)
+    """
     return self.differences(m)[0]
 
   # is multiset m a subset of self?
@@ -838,6 +854,10 @@ class multiset(dict):
   def symmetric_difference(self, m):
     (d1, d2) = self.differences(m)
     return d1.update(d2)
+
+  # copy a multiset
+  def copy(self):
+    return multiset.from_dict(self)
 
 def mcombinations(s, k=None):
   s = sorted(multiset(s))
@@ -2157,7 +2177,7 @@ def intf(x):
   >>> intf(-1.5)
   -2
   """
-  return int(x) if x > 0 or x.is_integer() else int(x) - 1
+  return (int(x) if x > 0 or x.is_integer() else int(x) - 1)
 
 floor = intf
 
@@ -2991,6 +3011,49 @@ def bit_permutations(a, b=None):
     yield a
     t = (a | (a - 1)) + 1
     a = t | ((((t & -t) // (a & -a)) >> 1) - 1)
+
+
+# for "coin puzzles" (see also: denominations.py)
+
+# simple express:
+
+# express total <t> using denominations <ds>
+# optional: using quantities chosen from <qs>
+# or: minimum quantity <min_q>
+# <ds> and <qs> should be increasing sequences
+def express(t, ds, qs=None, min_q=0, s=[]):
+  if qs:
+    return express_quantaties(t, ds, qs, s)
+  else:
+    return express_denominations(t, ds, min_q, s)
+
+# express total <t> using denominations <ds>, min quantity <min_q>
+def express_denominations(t, ds, min_q=0, s=[]):
+  if t == 0:
+    if not(ds):
+      yield s
+    elif min_q == 0:
+      yield s + [0] * len(ds)
+  elif ds:
+    d = ds[0]
+    for i in irange(min_q, t // d):
+      for r in express_denominations(t - d * i, ds[1:], min_q, s + [i]): yield r
+
+# express total <t> using denominations <ds>, quantities chosen from <qs>
+def express_quantities(t, ds, qs, s=[]):
+  if t == 0:
+    if not(ds):
+      yield s
+    elif 0 in qs:
+      yield s + [0] * len(ds)
+  elif ds:
+    d = ds[0]
+    for i in qs:
+      if d * i > t: break
+      for r in express_quantities(t - d * i, ds[1:], qs, s + [i]): yield r
+
+# denominations.py also includes an implementation of the Boecker-Liptak Money Changing algorithm,
+# but it has not been necessary to bring it to bear on Enigma style puzzles yet.
 
 ###############################################################################
 
@@ -7783,7 +7846,7 @@ def _enigma_update(url=None, check=1, download=0, rename=0):
   this function is called by the -u command line option.
 
     % python enigma.py -u
-    [enigma.py version 2019-07-06 (Python 3.7.4)]
+    [enigma.py version 2019-07-06 (Python 3.7.5)]
     checking for updates...
     latest version is 2019-07-06
     enigma.py is up to date  
@@ -7930,7 +7993,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.16', python3='3.7.4')
+""".format(version=__version__, python='2.7.16', python3='3.7.5')
 
 if __name__ == "__main__":
 
