@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Oct 23 10:25:41 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Oct 25 08:33:15 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -50,6 +50,7 @@ divisors               - the divisors of a number
 divisors_pairs         - generate pairs of divisors of a number
 drop_factors           - reduce a number by removing factors
 egcd                   - extended gcd
+express                - express an amount using specific denominations
 factor                 - the prime factorisation of a number
 factorial              - factorial function
 farey                  - generate Farey sequences of coprime pairs
@@ -149,7 +150,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-10-23"
+__version__ = "2019-10-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3022,6 +3023,7 @@ def bit_permutations(a, b=None):
 # or: minimum quantity <min_q>
 # <ds> and <qs> should be increasing sequences
 def express(t, ds, qs=None, min_q=0, s=[]):
+  ds = list(ds)
   if qs:
     return express_quantaties(t, ds, qs, s)
   else:
@@ -3052,7 +3054,7 @@ def express_quantities(t, ds, qs, s=[]):
       if d * i > t: break
       for r in express_quantities(t - d * i, ds[1:], qs, s + [i]): yield r
 
-# denominations.py also includes an implementation of the Boecker-Liptak Money Changing algorithm,
+# I also have an implementation of the Boecker-Liptak Money Changing algorithm,
 # but it has not been necessary to bring it to bear on Enigma style puzzles yet.
 
 ###############################################################################
