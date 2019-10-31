@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Oct 25 08:33:15 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct 31 13:03:16 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -108,6 +108,7 @@ poly_*                 - routines manipulating polynomials, wrapped as Polynomia
 prime_factor           - generate terms in the prime factorisation of a number
 printf                 - print with interpolated variables
 pythagorean_triples    - generate Pythagorean triples
+quadratic              - determine roots of a quadratic equation
 reciprocals            - generate reciprocals that sum to a given fraction
 recurring              - decimal representation of fractions
 repeat                 - repeatedly apply a function to a value
@@ -150,7 +151,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-10-24"
+__version__ = "2019-10-31"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2165,6 +2166,33 @@ def hypot(*vs):
   5.0
   """
   return sqrt(sum(v * v for v in vs))
+
+
+# find roots of a quadratic equation
+# domain = "Z" (integer), "Q" (rational), "F" (float), "C" (complex float)
+def quadratic(a, b, c, domain="Q"):
+  d = b * b - 4 * a * c
+
+  if domain != "C" and d < 0: return
+
+  if domain in "CF":
+    r = d ** 0.5
+    yield 0.5 * (r - b) / a
+    yield -0.5 * (r + b) / a
+
+  elif domain in "QZ":
+    from fractions import Fraction as F
+    d = F(d)
+    p = is_square(d.numerator)
+    q = is_square(d.denominator)
+    if not(p is None or q is None):
+      r = F(p, q)
+      xs = ([F(r - b, 2 * a), F(r + b, -2 * a)] if r != 0 else [F(b, -2 * a)])
+      for x in xs:
+        if domain == 'Q':
+          yield x
+        elif domain == 'Z' and x.denominator == 1:
+          yield x.numerator
 
 
 def intf(x):
