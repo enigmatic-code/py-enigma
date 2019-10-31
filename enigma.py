@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct 31 13:03:16 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct 31 13:42:02 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2171,14 +2171,29 @@ def hypot(*vs):
 # find roots of a quadratic equation
 # domain = "Z" (integer), "Q" (rational), "F" (float), "C" (complex float)
 def quadratic(a, b, c, domain="Q"):
+  """
+  find roots of the equation:
+
+     a.x^2 + b.x + c = 0
+
+  in the specified domain:
+
+    "Z" finds integer solutions
+    "Q" finds rational solutions
+    "F" finds float solutions
+    "C" finds complex solutions
+  """
   d = b * b - 4 * a * c
 
   if domain != "C" and d < 0: return
 
   if domain in "CF":
     r = d ** 0.5
-    yield 0.5 * (r - b) / a
-    yield -0.5 * (r + b) / a
+    if r == 0.0:
+      yield (-0.5 * b) / a
+    else:
+      yield (-0.5 * (b - r)) / a
+      yield (-0.5 * (b + r)) / a
 
   elif domain in "QZ":
     from fractions import Fraction as F
