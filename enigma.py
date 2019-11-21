@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct 31 13:42:02 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Nov 21 09:27:21 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -151,7 +151,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-10-31"
+__version__ = "2019-11-11"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -184,7 +184,7 @@ elif sys.version_info[0] > 2:
   basestring = str
   raw_input = input
   if sys.version_info[1] > 6:
-    # Python 3.7
+    # Python 3.7 onwards
     # not: [[ Sequence = collections.abc.Sequence ]]
     from collections.abc import Sequence
   else:
@@ -856,6 +856,19 @@ class multiset(dict):
   def symmetric_difference(self, m):
     (d1, d2) = self.differences(m)
     return d1.update(d2)
+
+  # generate subsets of a multiset
+  def subsets(self, size=None, min_size=0, max_size=None):
+    if size is not None:
+      min_size = max_size = size
+    elif max_size is None:
+      max_size = len(self)
+    # distinct elements
+    ks = list(self.keys())
+    # choose the number of elements for each key
+    for ns in itertools.product(*(irange(0, self[k]) for k in ks)):
+      if min_size <= sum(ns) <= max_size:
+        yield multiset.from_pairs(zip(ks, ns))
 
   # copy a multiset
   def copy(self):
@@ -3060,12 +3073,24 @@ def bit_permutations(a, b=None):
 # for "coin puzzles" (see also: denominations.py)
 
 # simple express:
-
-# express total <t> using denominations <ds>
-# optional: using quantities chosen from <qs>
-# or: minimum quantity <min_q>
-# <ds> and <qs> should be increasing sequences
 def express(t, ds, qs=None, min_q=0, s=[]):
+  """
+  express total <t> using denominations <ds>.
+
+  optional: using quantities chosen from <qs>
+  or: minimum quantity <min_q>
+
+  <ds> and <qs> should be increasing sequences.
+
+  generated values are the quantaties for each denomination in <ds>.
+
+  >>> list(express(20, (3, 5, 7)))
+  [[0, 4, 0], [1, 2, 1], [2, 0, 2], [5, 1, 0]]
+
+  the number of ways to change 1 pound into smaller coins
+  >>> icount(express(100, (1, 2, 5, 10, 20, 50)))
+  4562
+  """
   ds = list(ds)
   if qs:
     return express_quantaties(t, ds, qs, s)
@@ -8038,7 +8063,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.16', python3='3.7.5')
+""".format(version=__version__, python='2.7.16', python3='3.8.0')
 
 if __name__ == "__main__":
 
