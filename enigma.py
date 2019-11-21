@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Nov 21 09:27:21 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Nov 21 22:36:29 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3087,13 +3087,19 @@ def express(t, ds, qs=None, min_q=0, s=[]):
   >>> list(express(20, (3, 5, 7)))
   [[0, 4, 0], [1, 2, 1], [2, 0, 2], [5, 1, 0]]
 
+  >>> list(express(20, (3, 5, 7), min_q=1))
+  [[1, 2, 1]]
+
+  >>> list(express(20, (3, 5, 7), qs=(0, 1, 2)))
+  [[1, 2, 1], [2, 0, 2]]
+
   the number of ways to change 1 pound into smaller coins
   >>> icount(express(100, (1, 2, 5, 10, 20, 50)))
   4562
   """
   ds = list(ds)
   if qs:
-    return express_quantaties(t, ds, qs, s)
+    return express_quantities(t, ds, qs, s)
   else:
     return express_denominations(t, ds, min_q, s)
 
