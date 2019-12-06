@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Nov 21 22:36:59 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Dec  6 21:48:11 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -151,7 +151,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-11-21"
+__version__ = "2019-11-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -911,7 +911,7 @@ def mpermutations(s, k=None):
 
 # subsets (or subseqs) wraps various itertools methods (which can save an import)
 @static(select_fn=dict(), prepare_fn=dict())
-def subsets(s, size=None, min_size=0, max_size=None, select='C', prepare=None):
+def subsets(s, size=None, min_size=0, max_size=None, select='C', prepare=None, fn=tuple):
   """
   generate tuples representing the subsequences of a (finite) iterator.
 
@@ -962,7 +962,7 @@ def subsets(s, size=None, min_size=0, max_size=None, select='C', prepare=None):
   if not callable(select): select = subsets.select_fn[select]
   # generate the subsets
   for k in irange(min_size, max_size):
-    for x in select(s, k): yield tuple(x)
+    for x in select(s, k): yield fn(x)
 
 # provide selection functions (where available)
 # [[ maybe 'R' should be 'M', and 'M' should be 'X' ]]
@@ -5307,7 +5307,7 @@ class SubstitutedExpression(object):
       if k != 0: # (but not for the answer expression)
         x = _replace_words(expr, (lambda w: '(' + '_' + w + ')'))
         prog.append(sprintf("{_}try:"))
-        prog.append(sprintf("{_}  x = int({x})"))
+        prog.append(sprintf("{_}  __x = int({x})"))
         prog.append(sprintf("{_}except NameError:")) # catch undefined functions
         prog.append(sprintf("{_}  raise"))
         prog.append(sprintf("{_}except:")) # maybe "except (ArithmeticError, ValueError)"
@@ -5319,18 +5319,18 @@ class SubstitutedExpression(object):
         for (j, y) in enumerate(val[::-1], start=-len(val)):
           if y in done:
             # this is a symbol with an assigned value
-            prog.append(sprintf("{_}y = x % {base}"))
+            prog.append(sprintf("{_}y = __x % {base}"))
             # check the value
             prog.append(sprintf("{_}if y == _{y}:"))
             _ += indent
-            prog.append(sprintf("{_}x //= {base}"))
+            prog.append(sprintf("{_}__x //= {base}"))
             # and check x == 0 for the final value
             if j == -1:
-              prog.append(sprintf("{_}if x == 0:"))
+              prog.append(sprintf("{_}if __x == 0:"))
               _ += indent
           else:
             # this is a new symbol...
-            prog.append(sprintf("{_}_{y} = x % {base}"))
+            prog.append(sprintf("{_}_{y} = __x % {base}"))
             check = list()
             # check it is different from existing symbols
             if y in distinct:
@@ -5342,10 +5342,10 @@ class SubstitutedExpression(object):
               check = join(check, sep=' and ')
               prog.append(sprintf("{_}if {check}:"))
               _ += indent
-            prog.append(sprintf("{_}x //= {base}"))
+            prog.append(sprintf("{_}__x //= {base}"))
             # and check x == 0 for the final value
             if j == -1:
-              prog.append(sprintf("{_}if x == 0:"))
+              prog.append(sprintf("{_}if __x == 0:"))
               _ += indent
             done.add(y)
             # look for words which can now be made
@@ -5355,12 +5355,12 @@ class SubstitutedExpression(object):
 
       elif k == 1:
         # look for a True value
-        prog.append(sprintf("{_}if x:"))
+        prog.append(sprintf("{_}if __x:"))
         _ += indent
 
       elif k == 2:
         # it's a comparable value
-        prog.append(sprintf("{_}if x == {val}:"))
+        prog.append(sprintf("{_}if __x == {val}:"))
         _ += indent
 
     # yield solutions as dictionaries
@@ -5368,8 +5368,8 @@ class SubstitutedExpression(object):
     if answer:
       # compute the answer
       r = _replace_words(answer, (lambda w: '(' + '_' + w + ')'))
-      prog.append(sprintf("{_}r = {r}"))
-      prog.append(sprintf("{_}yield ({{ {d} }}, r)"))
+      prog.append(sprintf("{_}__r = {r}"))
+      prog.append(sprintf("{_}yield ({{ {d} }}, __r)"))
     else:
       prog.append(sprintf("{_}yield {{ {d} }}"))
 
@@ -5387,7 +5387,17 @@ class SubstitutedExpression(object):
     #   solve = ns[solver]
     if not env: env = dict()
     gs = update(globals(), env)
-    code = compile(prog, '<string>', 'exec')
+    try:
+      code = compile(prog, '<string>', 'exec')
+    except:
+      # the program failed to compile
+      # this can be because the supplied expressions do not form valid Python
+      # or due to an issue in the Python interpreter itself
+      # (e.g. in standard Python you can't have more than 20 nested blocks,
+      # or more than 100 indent levels - PyPy does not have these limitations)
+      printf("SubstitutedExpression: compilation error from Python interpreter [{sys.executable}]")
+      if not(verbose & 256): printf("(use verbosity level 256 to output code before compilation)")
+      raise
     eval(code, gs)
 
     self._solver = gs[solver]
