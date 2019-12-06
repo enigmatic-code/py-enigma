@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Dec  6 21:48:11 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Dec  6 23:25:12 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -151,7 +151,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-11-06"
+__version__ = "2019-12-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
