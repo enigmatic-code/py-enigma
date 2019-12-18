@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Dec  6 23:25:12 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Dec 17 22:31:23 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -84,6 +84,7 @@ is_cube                - check a number is a perfect cube
 is_distinct            - check a value is distinct from other values
 is_duplicate           - check to see if value (as a string) contains duplicate characters
 is_pairwise_distinct   - check all arguments are distinct
+is_palindrome          - check a sequence is palindromic
 is_power               - check if n = i^k for some integer i
 is_power_of            - check if n = k^i for some integer i
 is_prime               - simple prime test
@@ -151,7 +152,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-12-06"
+__version__ = "2019-12-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2201,12 +2202,12 @@ def quadratic(a, b, c, domain="Q"):
   if domain != "C" and d < 0: return
 
   if domain in "CF":
-    r = d ** 0.5
-    if r == 0.0:
+    if d == 0:
       yield (-0.5 * b) / a
     else:
-      yield (-0.5 * (b - r)) / a
+      r = d ** 0.5
       yield (-0.5 * (b + r)) / a
+      yield (-0.5 * (b - r)) / a
 
   elif domain in "QZ":
     from fractions import Fraction as F
@@ -2215,7 +2216,7 @@ def quadratic(a, b, c, domain="Q"):
     q = is_square(d.denominator)
     if not(p is None or q is None):
       r = F(p, q)
-      xs = ([F(r - b, 2 * a), F(r + b, -2 * a)] if r != 0 else [F(b, -2 * a)])
+      xs = ([F(r - b, -2 * a), F(r + b, 2 * a)] if r != 0 else [F(b, -2 * a)])
       for x in xs:
         if domain == 'Q':
           yield x
@@ -2340,6 +2341,30 @@ def is_duplicate(*s):
   #return True if re.search(r'(.).*\1', str(s)) else False
 
 duplicate = is_duplicate
+
+# iterative version of:
+# is_palindrome = lambda s: len(s) < 2 or (s[0] == s[-1] and is_palindrome(s[1:-1]))
+def is_palindrome(s):
+  """
+  check to see if sequence <s> is palindromic.
+
+  >>> is_palindrome([1, 2, 3, 2, 1])
+  True
+  >>> is_palindrome("ABBA")
+  True
+  >>> first(n for n in irange(0, inf) if not is_palindrome(nsplit(11 ** n)))
+  [5]
+  """
+  s = list(s)
+  j = len(s)
+  if j < 2: return True
+  i = 0
+  j -= 1
+  while i < j:
+    if s[i] != s[j]: return False
+    i += 1
+    j -= 1
+  return True
 
 def multiply(s):
   """
@@ -2764,6 +2789,18 @@ def cached(f):
       return r
   return _cached
 
+def catch(fn, *args, **kw):
+  """
+  evaluate the function with the given arguments,
+  but if it throws an exception return None instead.
+
+  >>> catch(divmod, 7, 0) is None
+  True
+  """
+  try:
+    return fn(*args, **kw)
+  except:
+    return
 
 # inclusive range iterator
 @static(inf=inf) # so b=irange.inf can be used
@@ -3875,6 +3912,24 @@ def poly_value(p, x):
     v += n
   return v
 
+# derivative of a polynomial
+def poly_derivative(p, k=1):
+  for _ in irange(1, k):
+    p = poly_from_pairs((e - 1, e * c) for (e, c) in enumerate(p) if e > 0)
+  return p
+
+# polynomial interpolation from a number of points
+def poly_interpolate(ps):
+  ps = list(ps)
+  k = len(ps) - 1
+  (A, B) = (list(), list())
+  for (x, y) in ps:
+    A.append([1, x] + [x ** i for i in irange(2, k)])
+    B.append(y)
+  try:
+    return poly_trim(matrix.linear(A, B))
+  except ValueError:
+    return
 
 # wrap the whole lot up in a class
 
@@ -3908,6 +3963,9 @@ class Polynomial(list):
       if p[1] != 0:
         yield p
 
+  def derivative(self, k=1):
+    return self.__class__(poly_derivative(self, k))
+
   @classmethod
   def from_pairs(self, ps):
     return self(poly_from_pairs(ps))
@@ -3919,6 +3977,12 @@ class Polynomial(list):
   @classmethod
   def zero(self):
     return self(poly_zero)
+
+  @classmethod
+  def interpolate(self, ps):
+    r = poly_interpolate(ps)
+    if r is None: return
+    return self(r)
 
 ###############################################################################
 
@@ -4856,13 +4920,16 @@ def _replace_words(s, fn):
   _fn = lambda m: fn(m.group(1))
   return re.sub(r'{(\w+?)}', _fn, s)
 
+# local variable used to represent symbol x
+sym = lambda x: '__' + x
+
 # return an expression that evaluates word <w> in base <base>
 def _word(w, base):
   (m, d) = (1, dict())
   for x in w[::-1]:
     d[x] = d.get(x, 0) + m
     m *= base
-  return join((concat(('_', k) + (() if v == 1 else ('*', v))) for (k, v) in d.items()), sep=' + ')
+  return join((concat((sym(k),) + (() if v == 1 else ('*', v))) for (k, v) in d.items()), sep=' + ')
 
 # simulate a function static variable
 #
@@ -5253,6 +5320,7 @@ class SubstitutedExpression(object):
 
     # generate the program (line by line)
     (prog, _, indent) = ([], '', '  ')
+    (vx, vy, vr) = ('_x', '_y', '_r') # local variables (that don't clash with sym(x))
 
     # start with any initialisation code
     if code:
@@ -5268,13 +5336,13 @@ class SubstitutedExpression(object):
     # set initial values
     done = set()
     for (s, d) in s2d.items():
-      prog.append(sprintf("{_}_{s} = {d}"))
+      prog.append(sprintf("{_}{s} = {d}", s=sym(s)))
       done.add(s)
 
     # look for words which can be made
     for w in words:
       if all(x in done for x in w):
-        prog.append(sprintf("{_}_{w} = {x}", x=_word(w, base)))
+        prog.append(sprintf("{_}{w} = {x}", w=sym(w), x=_word(w, base)))
 
     in_loop = False
 
@@ -5289,11 +5357,11 @@ class SubstitutedExpression(object):
         # allowable digits for s
         ds = valid[s]
         in_loop = True
-        prog.append(sprintf("{_}for _{s} in {ds}:"))
+        prog.append(sprintf("{_}for {s} in {ds}:", s=sym(s)))
         _ += indent
         if done and s in distinct:
           # TODO: we should exclude initial values (that are excluded from ds) here
-          check = join((('_' + s + ' != ' + '_' + x) for x in done if x in distinct[s]), sep=' and ')
+          check = join(((sym(s) + ' != ' + sym(x)) for x in done if x in distinct[s]), sep=' and ')
           if check:
             prog.append(sprintf("{_}if {check}:"))
             _ += indent
@@ -5301,13 +5369,13 @@ class SubstitutedExpression(object):
         # look for words which can now be made
         for w in words:
           if s in w and all(x in done for x in w):
-            prog.append(sprintf("{_}_{w} = {x}", x=_word(w, base)))
+            prog.append(sprintf("{_}{w} = {x}", w=sym(w), x=_word(w, base)))
 
       # calculate the expression
       if k != 0: # (but not for the answer expression)
-        x = _replace_words(expr, (lambda w: '(' + '_' + w + ')'))
+        x = _replace_words(expr, (lambda w: '(' + sym(w) + ')'))
         prog.append(sprintf("{_}try:"))
-        prog.append(sprintf("{_}  __x = int({x})"))
+        prog.append(sprintf("{_}  {vx} = int({x})"))
         prog.append(sprintf("{_}except NameError:")) # catch undefined functions
         prog.append(sprintf("{_}  raise"))
         prog.append(sprintf("{_}except:")) # maybe "except (ArithmeticError, ValueError)"
@@ -5319,57 +5387,57 @@ class SubstitutedExpression(object):
         for (j, y) in enumerate(val[::-1], start=-len(val)):
           if y in done:
             # this is a symbol with an assigned value
-            prog.append(sprintf("{_}y = __x % {base}"))
+            prog.append(sprintf("{_}{vy} = {vx} % {base}"))
             # check the value
-            prog.append(sprintf("{_}if y == _{y}:"))
+            prog.append(sprintf("{_}if {vy} == {y}:", y=sym(y)))
             _ += indent
-            prog.append(sprintf("{_}__x //= {base}"))
+            prog.append(sprintf("{_}{vx} //= {base}"))
             # and check x == 0 for the final value
             if j == -1:
-              prog.append(sprintf("{_}if __x == 0:"))
+              prog.append(sprintf("{_}if {vx} == 0:"))
               _ += indent
           else:
             # this is a new symbol...
-            prog.append(sprintf("{_}_{y} = __x % {base}"))
+            prog.append(sprintf("{_}{y} = {vx} % {base}", y=sym(y)))
             check = list()
             # check it is different from existing symbols
             if y in distinct:
-              check.extend((('_' + y + ' != ' + '_' + x) for x in done if x in distinct[y]))
+              check.extend(((sym(y) + ' != ' + sym(x)) for x in done if x in distinct[y]))
             # check any invalid values for this symbol
             for v in idigits.union(v for (s, v) in invalid if y == s):
-              check.append('_' + y + ' != ' + str(v))
+              check.append(sym(y) + ' != ' + str(v))
             if check:
               check = join(check, sep=' and ')
               prog.append(sprintf("{_}if {check}:"))
               _ += indent
-            prog.append(sprintf("{_}__x //= {base}"))
+            prog.append(sprintf("{_}{vx} //= {base}"))
             # and check x == 0 for the final value
             if j == -1:
-              prog.append(sprintf("{_}if __x == 0:"))
+              prog.append(sprintf("{_}if {vx} == 0:"))
               _ += indent
             done.add(y)
             # look for words which can now be made
             for w in words:
               if y in w and all(x in done for x in w):
-                prog.append(sprintf("{_}_{w} = {x}", x=_word(w, base)))
+                prog.append(sprintf("{_}{w} = {x}", w=sym(w), x=_word(w, base)))
 
       elif k == 1:
         # look for a True value
-        prog.append(sprintf("{_}if __x:"))
+        prog.append(sprintf("{_}if {vx}:"))
         _ += indent
 
       elif k == 2:
         # it's a comparable value
-        prog.append(sprintf("{_}if __x == {val}:"))
+        prog.append(sprintf("{_}if {vx} == {val}:"))
         _ += indent
 
     # yield solutions as dictionaries
-    d = join((("'" + s + "': _" + s) for s in sorted(done)), sep=', ')
+    d = join((("'" + s + "': " + sym(s)) for s in sorted(done)), sep=', ')
     if answer:
       # compute the answer
-      r = _replace_words(answer, (lambda w: '(' + '_' + w + ')'))
-      prog.append(sprintf("{_}__r = {r}"))
-      prog.append(sprintf("{_}yield ({{ {d} }}, __r)"))
+      r = _replace_words(answer, (lambda w: '(' + sym(w) + ')'))
+      prog.append(sprintf("{_}{vr} = {r}"))
+      prog.append(sprintf("{_}yield ({{ {d} }}, {vr})"))
     else:
       prog.append(sprintf("{_}yield {{ {d} }}"))
 
