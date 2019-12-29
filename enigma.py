@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Dec 17 22:31:23 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Dec 29 10:38:10 2019 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -152,7 +152,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-12-15"
+__version__ = "2019-12-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2196,6 +2196,9 @@ def quadratic(a, b, c, domain="Q"):
     "Q" finds rational solutions
     "F" finds float solutions
     "C" finds complex solutions
+
+  >>> sorted(quadratic(1, 1, -6, domain="Z"))
+  [-3, 2]
   """
   d = b * b - 4 * a * c
 
@@ -2216,7 +2219,7 @@ def quadratic(a, b, c, domain="Q"):
     q = is_square(d.denominator)
     if not(p is None or q is None):
       r = F(p, q)
-      xs = ([F(r - b, -2 * a), F(r + b, 2 * a)] if r != 0 else [F(b, -2 * a)])
+      xs = ([F(r + b, -2 * a), F(r - b, 2 * a)] if r != 0 else [F(b, -2 * a)])
       for x in xs:
         if domain == 'Q':
           yield x
@@ -8147,7 +8150,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.16', python3='3.8.0')
+""".format(version=__version__, python='2.7.17', python3='3.8.1')
 
 if __name__ == "__main__":
 
