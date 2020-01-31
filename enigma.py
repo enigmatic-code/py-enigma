@@ -6,12 +6,12 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Dec 29 10:38:10 2019 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jan 31 15:54:08 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
 #
-# (c) Copyright 2009-2019, Jim Randell, all rights reserved.
+# (c) Copyright 2009-2020, Jim Randell, all rights reserved.
 #
 ###############################################################################
 # -*- mode: Python; py-indent-offset: 2; -*-
@@ -152,7 +152,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2019-12-23"
+__version__ = "2020-01-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -762,18 +762,19 @@ class multiset(dict):
       count += self[item]
       if count == 0:
         del self[item]
-        return
+        return self
     except KeyError:
       pass
     if count < 0: raise ValueError(sprintf("negative count: {item} -> {count}"))
     if count > 0: self[item] = count
+    return self
 
   # remove an item
   def remove(self, item, count=1):
     """
     remove an item from a multiset.
     """
-    self.add(item, -count)
+    return self.add(item, -count)
 
   # like self.items(), but in value order
   def most_common(self, n=None):
@@ -1941,6 +1942,7 @@ def sqrt(a, b=None):
 
 # calculate intf(sqrt(n))
 # see: https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_numeral_system_.28base_2.29
+# NOTE: Python 3.8 has math.isqrt()
 def isqrt(n):
   """
   calculate intf(sqrt(n)).
@@ -5071,6 +5073,26 @@ class SubstitutedExpression(object):
     if process: self._process()
 
 
+  # verbose flags
+  #   4 = output solutions
+  #   8 = output header template
+  #  16 = output solution count
+  #  32 = output timing
+  #  64 = output parameters
+  # 128 = output solver info
+  # 256 = output code
+  # ---
+  # 508 = all of the above
+  def _verbose(self, n):
+    # old style verbose flags (1, 2, 3)
+    if n < 4:
+      v1 = (4 | 8 | 16) # header + solutions + count
+      v2 = (v1 | 128) # + solver info
+      v3 = (v2 | 32 | 256) # + timing + code
+      return (0, v1, v2, v3)[n]
+    # otherwise
+    return n
+
   # sort out calling methods
   def _process(self):
 
@@ -5087,21 +5109,7 @@ class SubstitutedExpression(object):
     verbose = self.verbose
 
     # sort out verbose argument
-    #   4 = output solutions
-    #   8 = output header template
-    #  16 = output solution count
-    #  32 = output timing
-    #  64 = output parameters
-    # 128 = output solver info
-    # 256 = output code
-    # ---
-    # 508 = all of the above
-    if verbose and verbose < 4:
-      # old style verbose flags (1, 2, 3)
-      v1 = (4 | 8 | 16) # header + solutions + count
-      v2 = (v1 | 128) # + solver info
-      v3 = (v2 | 32 | 256) # + timing + code
-      verbose = (0, v1, v2, v3)[verbose]
+    if verbose: verbose = self._verbose(verbose)
 
     # the symbols to replace (for implicit expressions)
     if symbols is None: symbols = _SYMBOLS
@@ -5494,7 +5502,7 @@ class SubstitutedExpression(object):
     header = self.header
     if check is None: check = self.check
     if first is None: first = self.first
-    if verbose is None: verbose = self.verbose
+    verbose = (self.verbose if verbose is None else self._verbose(verbose))
 
     if verbose & 8 and header: print(header)
 
@@ -5532,7 +5540,7 @@ class SubstitutedExpression(object):
     was set during init() returns a multiset() object counting
     the number of times each answer occurs.
     """
-    if verbose is None: verbose = self.verbose
+    verbose = (self.verbose if verbose is None else self._verbose(verbose))
 
     # collect answers (either total number or collected by "answer")
     answer = self.answer
@@ -6355,7 +6363,7 @@ class SubstitutedDivision(SubstitutedExpression):
     first - if set to True only the first solution is returned
     verbose - an integer controlling the output of solutions and additional information
     """
-    if verbose is None: verbose = self.verbose
+    verbose = (self.verbose if verbose is None else self._verbose(verbose))
     answer = self.answer
     # solution templates
     (ta, tb, tc, tsubs, tr) = self.args
