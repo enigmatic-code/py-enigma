@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jan 31 15:54:08 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Feb 21 16:12:28 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -152,7 +152,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-01-12"
+__version__ = "2020-02-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1940,9 +1940,11 @@ def sqrt(a, b=None):
   return math.sqrt(a if b is None else a / b)
 
 
+# Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt())
+_isqrt = getattr(math, 'isqrt', None)
+
 # calculate intf(sqrt(n))
 # see: https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_numeral_system_.28base_2.29
-# NOTE: Python 3.8 has math.isqrt()
 def isqrt(n):
   """
   calculate intf(sqrt(n)).
@@ -1958,6 +1960,7 @@ def isqrt(n):
   """
   if n < 0: return None
   if n < 4: return int(n > 0)
+  if _isqrt: return _isqrt(n) # use math.isqrt() if available
 
   r = 0
   k = n.bit_length() - 2
@@ -3721,7 +3724,6 @@ class Delay(object):
 
 # Value Accumulator
 
-
 class Accumulator(object):
 
   """
@@ -3798,7 +3800,6 @@ class Accumulator(object):
     for x in s:
       self.accumulate_data(value(x), data(x))
     return self
-
 
 ###############################################################################
 
@@ -4037,7 +4038,7 @@ class _PrimeSieveE6(object):
   #
   # to check numbers up to (but not including) n we need a sieve of size: (n // 3) + (n % 6 == 2)
 
-  def __init__(self, n, array=_primes_array):
+  def __init__(self, n, array=_primes_array, verbose=0):
     """
     make a sieve of primes up to n
     """
@@ -4047,6 +4048,8 @@ class _PrimeSieveE6(object):
     # singleton arrays for True and False values
     self.T = array([1])
     self.F = array([0])
+    # other parameters
+    self.verbose = verbose
     # now extend the sieve to the required size
     self.extend(n)
 
@@ -4058,7 +4061,7 @@ class _PrimeSieveE6(object):
     extend the sieve up to (at least) n
     """
     if not(n > self.max): return
-    #printf("_PrimeSieveE6: expanding to {n}")
+    if self.verbose: printf("[{x}: expanding to {n}]", x=self.__class__.__name__)
 
     # extend the sieve to the right size
     s = self.sieve
@@ -4247,7 +4250,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
   >>> primes.max
   17000023
   """
-  def __init__(self, n, array=_primes_array, fn=_primes_chunk):
+  def __init__(self, n, array=_primes_array, fn=_primes_chunk, verbose=0):
     """
     make a sieve of primes with an initial maximum of <n>.
 
@@ -4257,7 +4260,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     the default function doubles the maximum at each expansion.
     """
     self.chunk = fn
-    _PrimeSieveE6.__init__(self, n, array=array)
+    _PrimeSieveE6.__init__(self, n, array=array, verbose=verbose)
 
   # expand the sieve up to n, or by the next chunk
   def extend(self, n=None):
@@ -4315,7 +4318,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     return _PrimeSieveE6.range(self, a, b)
 
 # create a suitable prime sieve
-def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk):
+def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=0):
   """
   Return a suitable prime sieve object.
 
@@ -4373,9 +4376,9 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk):
   if n is None: (n, expandable) = (_primes_size, True)
   # return an appropriate object
   if expandable:
-    return _PrimeSieveE6X(n, array=array, fn=fn)
+    return _PrimeSieveE6X(n, array=array, fn=fn, verbose=verbose)
   else:
-    return _PrimeSieveE6(n, array=array)
+    return _PrimeSieveE6(n, array=array, verbose=verbose)
 
 # backwards compatibility
 def PrimesGenerator(n=None, array=_primes_array, fn=_primes_chunk):
@@ -7467,9 +7470,13 @@ template_system = namespace('template_system', __template_system())
 
 def __grouping():
 
-  # group the lists of elements in <vs> into groups (one element from each list)
-  # such that the values in the groups satisfy the selection function <fn>
-  def groups(vs, fn=None, s=[]):
+  def groups(vs, fn, s=[]):
+    """
+    group the lists of elements in <vs> into groups (one element from each list)
+    such that the values in the groups satisfy the selection function <fn>
+
+    returns a sequence of groups.
+    """
     # are we done?
     if not vs[0]:
       yield tuple(s)
@@ -7487,12 +7494,19 @@ def __grouping():
 
   # output a grouping
   def output_groups(gs, sep=", ", end=""):
+    """
+    output a sequence of groups <gs>
+    """
     for g in gs:
       print(sep.join(g))
     print(end)
 
-  # output all groupings
   def solve(vs, fn, sep=", ", end=""):
+    """
+    group the lists of elements in <vs> into groups (one element from each list)
+    such that the values in the groups satisfy the selection function <fn>,
+    and as each collection of groups is found output them.
+    """
     for gs in groups(vs, fn):
       output_groups(gs, sep, end)
 
@@ -7501,6 +7515,13 @@ def __grouping():
   # pairwise they satisfy the selection function <fn>
   # return a set of followers for leader x
   def gang(k, x, ys, fn):
+    """
+    select a <k>-gang for leader <x> by choosing <k> follows from <ys>.
+    The selection function holds for each (<x>, <y>) pair and for the
+    entire group of <k> followers.
+
+    returns the group of <k> followers for leader <x>.
+    """
     # select possible followers
     for vs in subsets((y for y in ys if fn(x, y)), size=k):
       if fn(*vs):
@@ -7508,6 +7529,14 @@ def __grouping():
 
   # find multiple k-gangs for leaders in xs, followers in ys
   def gangs(k, xs, ys, fn, gs=[]):
+    """
+    form the elements of <xs> and <ys> into a collection of <k>-gangs, where
+    each gang has a leader chosen from <xs> and <k> followers chosen from <ys>,
+    such that the selection function <fn> is satisfied for each (<leader>, <follower>)
+    pair, and also is satisfied for the entire group of <k> followers.
+
+    returns the groups of <k> followers for each leader in <xs>.
+    """
     # are we done?
     if not xs:
       yield gs
@@ -7523,6 +7552,10 @@ def __grouping():
     print(end)
 
 
+  def solve_gangs(k, xs, ys, fn, sep=", ", end=""):
+    for gs in gangs(k, xs, ys, fn):
+      output_gangs(xs, gs)
+
   # useful selection functions
 
   # return the set of letters in a string
@@ -7530,12 +7563,19 @@ def __grouping():
     return set(x for x in s.lower() if x.isalpha())
 
   # return a check function that checks each pair of values shares exactly <k> letters
-  def share_letters(k):
+  def share_letters(k, cache=1):
+    """
+    return a function that checks each pair of values passed shares
+    exactly <k> letters.
+
+    use the <cache> parameter to control whether the function is
+    cached or not.
+    """
     fn = ((lambda x: x == k) if type(k) is int else k)
     # check each pair of values shares exactly <k> different letters
     def check(*vs):
       return all(fn(len(letters(a).intersection(letters(b)))) for (a, b) in itertools.combinations(vs, 2))
-    return check
+    return (cached(check) if cache else check)
 
   # return the namespace
   return locals()
