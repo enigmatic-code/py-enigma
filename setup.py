@@ -1,10 +1,18 @@
 # this file allows enigma.py to be installed directly from GitHub
 #
-# using the following requirements.txt file:
+# using Poetry, add the following in pyproject.toml file:
 #
+# --
+# enigma = { git = "https://github.com/enigmatic-code/py-enigma.git" }
+# --
+#
+#
+# [[[ Formerly adding this to requirements.txt worked:
 # --
 # git+https://github.com/enigmatic-code/py-enigma.git#egg=enigma
 # --
+# but not any more. ]]]
+
 
 from setuptools import setup
 
