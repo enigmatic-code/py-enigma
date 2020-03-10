@@ -3,7 +3,8 @@
 # using Poetry, add the following in pyproject.toml file:
 #
 # --
-# enigma = { git = "https://github.com/enigmatic-code/py-enigma.git" }
+# [tool.poetry.dependencies.enigma]
+# git = "https://github.com/enigmatic-code/py-enigma.git"
 # --
 #
 #
