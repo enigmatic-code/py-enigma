@@ -6,7 +6,7 @@
 # git+https://github.com/enigmatic-code/py-enigma.git#egg=enigma
 # --
 
-from distutils.core import setup
+from setuptools import setup
 
 # minimal setup config
 setup(name='enigma', py_modules=['enigma'])
