@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Feb 28 08:44:14 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 11 07:40:52 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -33,6 +33,7 @@ cached                 - decorator for caching functions
 cbrt                   - the (real) cube root of a number
 choose                 - choose a sequence of values satisfying some functions
 chunk                  - go through an iterable in chunks
+collect                - collect items according to accept/reject criteria
 compare                - comparator function
 concat                 - concatenate a list of values into a string
 coprime_pairs          - generate coprime pairs
@@ -152,7 +153,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-02-29"
+__version__ = "2020-03-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1047,6 +1048,31 @@ def filter_unique(s, f=identity, g=identity):
 
 # alias if you prefer the term partition (but don't confuse it with partitions())
 partition_unique = filter_unique
+
+
+
+def _collect(s, accept, reject, every):
+  for x in s:
+    if (accept is None or accept(x)) and (reject is None or not(reject(x))):
+      yield x
+    elif every:
+      raise ValueError()    
+
+def collect(s, accept=None, reject=None, every=0, fn=list):
+  """
+  collect items from sequence <s> that are accepted by the <accept>
+  function (if defined), and not rejected by the <reject> function (if
+  defined).
+
+  return the items that pass the tests (using <fn>)
+
+  if every=1 then every item must be collected, otherwise None is
+  returned.
+  """
+  try:
+    return fn(_collect(s, accept, reject, every))
+  except ValueError:
+    return None
 
 
 def unpack(fn):
@@ -7883,6 +7909,8 @@ def run(cmd, *args, **kw):
     timed - if set, time the execution of <cmd>
 
     flags - 'p' = enable prompts, 'v' = enable verbose
+
+    interpreter - interpreter to use
   """
 
   global _run_exit, _PY_ENIGMA
@@ -7890,6 +7918,7 @@ def run(cmd, *args, **kw):
 
   timed = kw.get('timed')
   flags = kw.get('flags', '')
+  interp = kw.get('interpreter')
   #interact = kw.get('interact')
 
   # enabling 'prompt' disables timing
@@ -7910,7 +7939,7 @@ def run(cmd, *args, **kw):
       # *.run => treat it as a run file
       (cmd, args) = parsefile(cmd, *args)
     else:
-      if cmd.endswith(".py"):
+      if cmd.endswith(".py") and not interp:
         # use runpy for *.py
         import runpy
         get_argv(force=1, args=args)
@@ -7927,20 +7956,24 @@ def run(cmd, *args, **kw):
             [_PY_ENIGMA] = saved
         _run_exit = (0 if r else -1)
       else:
+        import shlex
+        import subprocess
         # attempt to use a shebang line (see: run.py)
         path = os.path.abspath(cmd)
-        with open(path, 'r') as fh:
-          import shlex
-          import subprocess
-          s = next(fh)
-          # find the shebang
-          shebang = "#!"
-          i = s.find(shebang)
-          assert i != -1, "interpreter not found"
-          cmd = s[i + len(shebang):].strip()
-          cmd = shlex.split(cmd)
-          cmd.append(path)
-          cmd.extend(args)
+        if interp:
+          cmd = interp.strip()
+        else:
+          with open(path, 'r') as fh:
+            s = next(fh)
+            # find the shebang
+            shebang = "#!"
+            i = s.find(shebang)
+            assert i != -1, "interpreter not found"
+            cmd = s[i + len(shebang):].strip()
+        cmd = shlex.split(cmd)
+        cmd.append(path)
+        cmd.extend(args)
+          
         if flags:
           saved = [_PY_ENIGMA]
           _PY_ENIGMA = join(sorted(uniq(_PY_ENIGMA + flags)))
