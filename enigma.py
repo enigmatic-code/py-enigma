@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 11 07:40:52 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 21 10:25:59 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -97,6 +97,7 @@ isqrt                  - intf(sqrt(x))
 join                   - concatenate strings
 lcm                    - lowest common multiple
 M                      - multichoose function (nMk)
+map2str                - format a map for output
 mgcd                   - multiple gcd
 multiply               - the product of numbers in a sequence
 nconcat                - concatenate single digits into an integer
@@ -153,7 +154,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-03-10"
+__version__ = "2020-03-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3668,6 +3669,30 @@ def int2bcd(n, base=10, bits_per_digit=4):
     if n == 0: break
     k += bits_per_digit
   return s * r
+
+# convert a map to a string: "(a=1, b=2, c=3)"
+def map2str(m, sort=1, enc="()", sep=", ", arr="="):
+  """
+  convert a map into a string (usually for output).
+
+  the map may be a dict() type object or a collection of (key, value)
+  pairs.
+
+  >>> map2str(dict(a=1, b=2, c=3))
+  '(a=1, b=2, c=3)'
+  >>> map2str(multiset("banana"))
+  '(a=3, b=1, n=2)'
+  >>> map2str(zip("abc", irange(1, 3)))
+  '(a=1, b=2, c=3)'
+  """
+  fn = (sorted if sort else identity)
+  if isinstance(m, dict):
+    # dict
+    s = join((concat(k, arr, m[k]) for k in fn(m.keys())), sep=sep)
+  else:
+    # (k, v) pairs
+    s = join((concat(k, arr, v) for (k, v) in fn(m)), sep=sep)
+  return (enc[0] + s + enc[1] if enc else s)
 
 ###############################################################################
 
