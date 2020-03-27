@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 21 10:25:59 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Mar 27 08:59:58 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -154,7 +154,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-03-21"
+__version__ = "2020-03-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3224,7 +3224,7 @@ class Record(object):
       yield (k, d[k])
 
   def __repr__(self):
-    return self.__class__.__name__ + '(' + join((k + '=' + repr(v) for (k, v) in self), sep=', ') + ')'
+    return self.__class__.__name__ + map2str((k, repr(v)) for (k, v) in self)
 
   def map(self):
     return self.__dict__
@@ -4160,7 +4160,7 @@ class _PrimeSieveE6(object):
 
     (this will require less memory than list())
     """
-    if end is None: end = self.max
+    if end is None or end is inf: end = self.max
     if start < 3 and end > 2: yield 2
     if start < 4 and end > 3: yield 3
     s = self.sieve
@@ -4176,7 +4176,8 @@ class _PrimeSieveE6(object):
 
   # irange = inclusive range
   def irange(self, a, b):
-    return self.range(a, b + 1)
+    if not(b is None or b is inf): b += 1
+    return self.range(a, b)
 
   # prime test (may throw IndexError if n is too large)
   def is_prime(self, n):
@@ -4363,7 +4364,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     the sieve is expanded as necessary beforehand.
     """
     # have we asked for unlimited generation?
-    if not b: return self.generate(a)
+    if b is None or b is inf: return self.generate(a)
     # otherwise, upper limit is provided
     self.extend(b)
     return _PrimeSieveE6.range(self, a, b)
@@ -4760,7 +4761,7 @@ class SubstitutedSum(object):
       # print the sum with digits substituted in
       t=substitute(s, self.text, digits=digits),
       # output the assignments in letter order
-      s=join((k + '=' + str(s[k]) for k in sorted(s.keys())), sep=' ')
+      s=map2str(s, sep=" ", enc="")
     )
 
   solution = output_solution
@@ -4797,7 +4798,7 @@ class SubstitutedSum(object):
     for s in cls.chain(sums, base=base, digits=digits, l2d=l2d, d2i=d2i):
       printf("{t} / {s}",
         t=substitute(s, template),
-        s=join((k + '=' + str(s[k]) for k in sorted(s.keys())), sep=' ')
+        s=map2str(s, sep=" ", enc="")
       )
 
   # class method to call from the command line
@@ -5580,7 +5581,8 @@ class SubstitutedExpression(object):
     if template:
       ss.append(_replace_words(template, (lambda w: substitute(d, w))))
     if solution:
-      ss.append(join(((k + '=' + int2base(d[k], base=10)) for k in solution), sep=' '))
+      # or: (k, int2base(d[k], base=10))
+      ss.append(map2str(((k, d[k]) for k in solution), sep=" ", enc=""))
     print(join(ss, sep=' / '))
 
 
@@ -7113,7 +7115,7 @@ class Football(object):
         k = tuple(teams[t] for t in k)
       printf("{k} = ({m}) {s}", k=join(k, sep=' vs '))
     if d is not None:
-      printf("{d}", d=join((join((k, d[k]), sep='=') for k in sorted(d.keys())), sep=' '))
+      printf("{d}", d=map2str(d, sep=" ", enc=""))
     if end is not None:
       printf("{end}")
 
@@ -7974,7 +7976,7 @@ def run(cmd, *args, **kw):
           _PY_ENIGMA = join(sorted(uniq(_PY_ENIGMA + flags)))
         try:
           if timed: timed = Timer(name=timed)
-          r = runpy.run_path(cmd)
+          r = runpy.run_path(cmd, run_name="__main__")
           if timed: timed.report()
         finally:
           if saved:
