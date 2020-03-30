@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Mar 27 08:59:58 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Mar 30 09:56:51 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -80,6 +80,7 @@ intf                   - floor conversion of float to int
 invmod                 - multiplicative inverse of n modulo m
 ipartitions            - partition a sequence with repeated values by index
 irange                 - inclusive range iterator
+irangef                - inclusive range iterator with fractional steps
 iroot                  - integer kth root function
 is_cube                - check a number is a perfect cube
 is_distinct            - check a value is distinct from other values
@@ -154,7 +155,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-03-22"
+__version__ = "2020-03-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2869,6 +2870,11 @@ def irange(a, b=None, step=1):
     return range(a, b + (1 if step > 0 else -1), step)
   return itertools.count(start=a, step=step)
 
+# inclusive range iterator that allows a fractional step
+def irangef(a, b, step=1):
+  n = (inf if b == inf else divf(b - a, step))
+  for i in irange(0, n):
+    yield a + i * step
 
 # flatten a list of lists
 def flatten(s, fn=list):
