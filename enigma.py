@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Mar 30 09:56:51 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Apr  3 09:39:11 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -155,7 +155,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-03-29"
+__version__ = "2020-04-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -349,7 +349,7 @@ def ordered(*args, **kw):
 
 # I would prefer join() to be a method of sequences: s.join(sep='')
 # but for now we define a utility function
-def join(s, sep=''):
+def join(s, sep='', enc=''):
   """
   join the items in sequence <s> as strings, separated by separator <sep>.
 
@@ -368,7 +368,9 @@ def join(s, sep=''):
   >>> join([5, 700, 5])
   '57005'
   """
-  return str.join(sep, (str(x) for x in s))
+  r = str.join(sep, (str(x) for x in s))
+  if enc: r = enc[0] + r + enc[1]
+  return r
 
 def concat(*args, **kw):
   """
@@ -387,14 +389,15 @@ def concat(*args, **kw):
   '1,2,3,4,5'
   """
   sep = kw.get('sep', '')
+  enc = kw.get('enc', '')
   if len(args) == 1:
     try:
-      return str.join(sep, (str(x) for x in args[0]))
+      return join(args[0], sep=sep, enc=enc)
     except TypeError:
       pass
     except:
       raise
-  return str.join(sep, (str(x) for x in args))
+  return join(args, sep=sep, enc=enc)
 
 
 def nconcat(*digits, **kw):
@@ -658,6 +661,7 @@ class multiset(dict):
         self.update_from_dict(v)
       else:
         # from a sequence
+        v = list(v)
         try:
           s = multiset().update_from_pairs(v)
           self.update_from_dict(s)
@@ -2872,6 +2876,13 @@ def irange(a, b=None, step=1):
 
 # inclusive range iterator that allows a fractional step
 def irangef(a, b, step=1):
+  """
+  inclusive range iterator that allows the endpoints and the
+  step to be fractional values.
+
+  >>> list(irangef(1, 2.5, step=0.5))
+  [1.0, 1.5, 2.0, 2.5]
+  """
   n = (inf if b == inf else divf(b - a, step))
   for i in irange(0, n):
     yield a + i * step
@@ -2889,6 +2900,8 @@ def flatten(s, fn=list):
   ['abc', 'def', 'ghi']
   """
   return fn(j for i in s if i is not None for j in i)
+
+chain = lambda *s: flatten(s)
 
 # do we flatten this?
 def _flatten_test(s):
