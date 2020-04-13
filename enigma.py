@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Apr  3 09:39:11 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Apr 12 12:25:50 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -107,6 +107,7 @@ nsplit                 - split an integer into single digits
 number                 - create an integer from a string ignoring non-digits
 P                      - permutations function (nPk)
 partitions             - partition a sequence of distinct values into tuples
+peek                   - return an element of a container
 pi                     - float approximation to pi
 poly_*                 - routines manipulating polynomials, wrapped as Polynomial
 prime_factor           - generate terms in the prime factorisation of a number
@@ -155,7 +156,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-04-01"
+__version__ = "2020-04-03"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -557,7 +558,7 @@ def split(x, fn=None):
 
 
 # or you can use itertools.izip_longest(*[iter(l)]*n) for padded chunks
-def chunk(s, n=2, fn=tuple):
+def chunk(s, n=2, pad=0, value=None, fn=tuple):
   """
   iterate through iterable <s> in chunks of size <n>.
 
@@ -572,17 +573,42 @@ def chunk(s, n=2, fn=tuple):
   while True:
     s = fn(itertools.islice(i, 0, n))
     if not s: break
-    yield s
+    x = (n - len(s) if pad else 0)
+    yield (s if x == 0 else s + fn([value] * x))
 
 # set union of a bunch of sequences
-def union(ss):
-  return set().union(*ss)
+def union(ss, fn=set):
+  return fn().union(*ss)
 
 # set intersection of a bunch of sequences
-def intersect(ss):
+def intersect(ss, fn=set):
   i = iter(ss)
-  s = set(next(i))
-  return s.intersection(*i)
+  try:
+    s = fn(next(i))
+  except StopIteration:
+    pass
+  else:
+    return s.intersection(*i)
+  raise ValueError("empty intersection")
+
+# return an element of a container
+def peek(s):
+  """
+  return an element of a container.
+
+  empty containers raise a ValueError.
+
+  >>> peek(set([1]))
+  1
+  >>> peek([1, 2, 3])
+  1
+  >>> peek("banana")
+  'b'
+  """
+  for x in s:
+    return x
+  raise ValueError("empty container")
+    
 
 def diff(a, b, *rest):
   """
@@ -758,6 +784,10 @@ class multiset(dict):
       for _ in range(v):
         yield k
 
+  # return a count of the item
+  def count(self, item):
+    return self.get(item, 0)
+
   # add an item
   def add(self, item, count=1):
     """
@@ -917,6 +947,17 @@ def mpermutations(s, k=None):
   if k is None: k = len(s)
   return mP(s, k)
 
+def derangements(s, k=None):
+  s = list(s)
+  if k is None: k = len(s)
+  for p in itertools.permutations(s, k):
+    if not any(x == s[i] for (i, x) in enumerate(p)):
+      yield p
+
+# can be cached() if necessary
+def subfactorial(n):
+  if n == 0: return 1
+  return n * subfactorial(n - 1) + (-1 if n % 2 else 1)
 
 # subsets (or subseqs) wraps various itertools methods (which can save an import)
 @static(select_fn=dict(), prepare_fn=dict())
@@ -932,6 +973,7 @@ def subsets(s, size=None, min_size=0, max_size=None, select='C', prepare=None, f
   controlled with the 'select' parameter:
      'C' = combinations (default)
      'P' = permutations
+     'D' = derangements
      'R' = combinations with replacement
      'M' = product
      'uC' = unique combinations
@@ -978,6 +1020,7 @@ def subsets(s, size=None, min_size=0, max_size=None, select='C', prepare=None, f
 for (k, v, p) in (
     ('C', getattr(itertools, 'combinations', None), None),
     ('P', getattr(itertools, 'permutations', None), None),
+    ('D', derangements, None),
     ('R', getattr(itertools, 'combinations_with_replacement', None), None),
     ('M', (lambda fn: ((lambda s, k: fn(s, repeat=k)) if fn else None))(getattr(itertools, 'product', None)), None),
     ('uC', uC, None),
@@ -1764,7 +1807,7 @@ def coprime_pairs(n=None, order=0):
 # if Z is None, then triples will be generated indefinitely
 # if order is True, then triples will be returned in order
 def _pythagorean_primitive(Z=None, order=0):
-  fn = ((lambda z: z <= Z) if Z is not None else (lambda z: True))
+  fn = ((lambda z: True) if Z is None else (lambda z: z <= Z))
   if order:
     # use a heap
     from heapq import heapify, heappush, heappop
@@ -1786,12 +1829,12 @@ def _pythagorean_primitive(Z=None, order=0):
     (a2, b2, c2) = (a + a, b + b, c + c)
     c3 = c2 + c
     for (z, y, x) in (
+      (c3 - b2 + a2, c2 - b + a2, c2 - b2 + a),
       (c3 + b2 - a2, c2 + b - a2, c2 + b2 - a),
       (c3 + b2 + a2, c2 + b + a2, c2 + b2 + a),
-      (c3 - b2 + a2, c2 - b + a2, c2 - b2 + a),
     ):
       if fn(z): _push(ts, ((z, x, y) if y < x else (z, y, x)))
-    ## alternatively: brian's (more compact) formulation
+    ## alternatively: Brian's (more compact, but slower) formulation
     #t = 2 * (a + b + c)
     #(u, v, w) = (t - 4 * b, t, t - 4 * a)
     #for (z, y, x) in ((u + c, u + b, u - a), (v + c, v - b, v - a), (w + c, w - b, w + a)):
@@ -4131,7 +4174,7 @@ class _PrimeSieveE6(object):
     extend the sieve up to (at least) n
     """
     if not(n > self.max): return
-    if self.verbose: printf("[{x}: expanding to {n}]", x=self.__class__.__name__)
+    #if self.verbose: printf("[{x}: expanding to {n}]", x=self.__class__.__name__)
 
     # extend the sieve to the right size
     s = self.sieve
@@ -4158,7 +4201,7 @@ class _PrimeSieveE6(object):
         #printf("eliminating {p} {ns}", ns=tuple((z * 3) + (z & 1) + 1 for z in irange(j, h-1, step=k)))
 
     self.max = n
-    #printf("[_PrimeSieveE6: extended to {n}: {b} bytes used]", b=s.__sizeof__())
+    if self.verbose: printf("[{x}: expanded to {n}: {b} bytes used]", x=self.__class__.__name__, b=s.__sizeof__())
 
   # return a list of primes (more space)
   def list(self):
@@ -8189,8 +8232,8 @@ enigma.py has the following command-line usage:
 
     The enigma.py module can be used to check for updates. Running
     with the -u flag will check if there is a new version of the
-    module available (requires a function internet connection), and if
-    there is it will download it.
+    module available (requires a functioning internet connection), and
+    if there is it will download it.
 
     If the module can be updated you will see something like this:
 
