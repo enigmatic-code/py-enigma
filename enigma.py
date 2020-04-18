@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Apr 12 12:25:50 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Apr 18 12:42:59 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -156,7 +156,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-04-03"
+__version__ = "2020-04-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1364,15 +1364,18 @@ def first(i, count=1, skip=0, fn=list):
   return (r if fn is None else fn(r))
 
 
-def repeat(fn, v=0):
+def repeat(fn, v=0, k=inf):
   """
   generate repeated applications of function <fn> to value <v>.
 
-  >>> first(repeat(lambda x: x + 1), 10)
+  >>> list(repeat((lambda x: x + 1), 0, 10))
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
   """
+  i = 0
   while True:
     yield v
+    i += 1
+    if i == k: break
     v = fn(v)
 
 def uniq(i, fn=None):
@@ -2944,7 +2947,18 @@ def flatten(s, fn=list):
   """
   return fn(j for i in s if i is not None for j in i)
 
-chain = lambda *s: flatten(s)
+# chain(a, b, c) = flatten([a, b, c])
+def chain(*s, **kw):
+  """
+  a convenience function for calling flatten():
+
+    chain(a, b, c) = flatten([a, b, c])
+
+
+  >>> chain("abc", (1, 2, 3), None, [4, 5, 6], fn=tuple)
+  ('a', 'b', 'c', 1, 2, 3, 4, 5, 6)
+  """
+  return flatten(s, **kw)
 
 # do we flatten this?
 def _flatten_test(s):
@@ -3913,6 +3927,33 @@ class Accumulator(object):
     for x in s:
       self.accumulate_data(value(x), data(x))
     return self
+
+# multiple accumulators: e.g. MultiAccumulator(fns=[min, max])
+class MultiAccumulator(object):
+
+  def __init__(self, fns):
+    self.multi = list(Accumulator(fn) for fn in fns)
+
+  def accumulate(self, v):
+    for x in self.multi:
+      x.accumulate(v)
+
+  def accumulate_data(self, v, data):
+    for x in self.multi:
+      x.accumulate_data(v, data)
+
+  def accumulate_from(self, s):
+    s = list(s)
+    for x in self.multi:
+      x.accumulate_from(s)
+
+  def accumulate_data_from(self, s, value=0, data=1):
+    s = list(s)
+    for x in self.multi:
+      x.accumulate_data_from(s, value=value, data=data)
+
+  def __getitem__(self, i):
+    return self.multi[i]
 
 ###############################################################################
 
