@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Apr 18 12:42:59 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Apr 22 10:17:13 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -31,6 +31,7 @@ bit_permutations       - generate bit permutations
 C                      - combinatorial function (nCk)
 cached                 - decorator for caching functions
 cbrt                   - the (real) cube root of a number
+chain                  - see: flatten()
 choose                 - choose a sequence of values satisfying some functions
 chunk                  - go through an iterable in chunks
 collect                - collect items according to accept/reject criteria
@@ -156,7 +157,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-04-13"
+__version__ = "2020-04-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -767,6 +768,9 @@ class multiset(dict):
     """
     return sum(self.values())
 
+  # faster than using __len__
+  __bool__ = __nonzero__ = lambda self: (dict.__len__(self) > 0)
+
   # all elements of the multiset
   # (for unique elements use: [[ s.keys() ]])
   def __iter__(self):
@@ -895,6 +899,10 @@ class multiset(dict):
   def symmetric_difference(self, m):
     (d1, d2) = self.differences(m)
     return d1.update(d2)
+
+  # multiply item counts
+  def multiply(self, n):
+    return multiset.from_pairs((k, n * v) for (k, v) in self.items())
 
   # generate subsets of a multiset
   def subsets(self, size=None, min_size=0, max_size=None):
@@ -1152,7 +1160,7 @@ def unpack(fn):
   >>> list(filter(fn, [(1, 2), (2, 3), (3, 4), (4, 5)]))
   [(3, 4)]
   """
-  return lambda args: fn(*args)
+  return lambda args, kw=None: (fn(*args, **kw) if kw else fn(*args))
 
 
 # count the number of occurrences of a predicate in an iterator
@@ -2938,6 +2946,8 @@ def flatten(s, fn=list):
   """
   flatten a list of lists (actually an iterator of iterators).
 
+  the function: chain(*s) = flatten(s) is provided as a convenience.
+
   >>> flatten([[1, 2], [3, 4, 5], [6, 7, 8, 9]])
   [1, 2, 3, 4, 5, 6, 7, 8, 9]
   >>> flatten(((1, 2), (3, 4, 5), (6, 7, 8, 9)), fn=tuple)
@@ -2948,17 +2958,18 @@ def flatten(s, fn=list):
   return fn(j for i in s if i is not None for j in i)
 
 # chain(a, b, c) = flatten([a, b, c])
+# so: unpack(chain) = flatten
 def chain(*s, **kw):
   """
   a convenience function for calling flatten():
 
-    chain(a, b, c) = flatten([a, b, c])
-
+  chain(a, b, c, ...) = flatten([a, b, c, ...], fn=iter)
 
   >>> chain("abc", (1, 2, 3), None, [4, 5, 6], fn=tuple)
   ('a', 'b', 'c', 1, 2, 3, 4, 5, 6)
   """
-  return flatten(s, **kw)
+  fn = kw.get("fn", iter)
+  return flatten(s, fn=fn)
 
 # do we flatten this?
 def _flatten_test(s):
@@ -8361,7 +8372,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.17', python3='3.8.2')
+""".format(version=__version__, python='2.7.18', python3='3.8.2')
 
 if __name__ == "__main__":
 
