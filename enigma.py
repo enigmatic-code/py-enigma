@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Apr 22 10:17:13 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu May  7 10:44:18 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -34,6 +34,7 @@ cbrt                   - the (real) cube root of a number
 chain                  - see: flatten()
 choose                 - choose a sequence of values satisfying some functions
 chunk                  - go through an iterable in chunks
+clock                  - clock arithmetic variant on mod()
 collect                - collect items according to accept/reject criteria
 compare                - comparator function
 concat                 - concatenate a list of values into a string
@@ -71,6 +72,7 @@ format_recurring       - output the result from recurring()
 fraction               - convert numerator / denominator to lowest terms
 gcd                    - greatest common divisor
 grid_adjacency         - adjacency matrix for an n x m grid
+group                  - collect values of a sequences into groups
 hypot                  - calculate hypotenuse
 icount                 - count the number of elements of an iterator that satisfy a predicate
 int2base               - convert an integer to a string in the specified base
@@ -101,6 +103,7 @@ lcm                    - lowest common multiple
 M                      - multichoose function (nMk)
 map2str                - format a map for output
 mgcd                   - multiple gcd
+mod                    - return a function to find residues modulo m
 multiply               - the product of numbers in a sequence
 nconcat                - concatenate single digits into an integer
 nreverse               - reverse the digits in an integer
@@ -157,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-04-19"
+__version__ = "2020-05-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -206,6 +209,24 @@ inf = float('+inf')
 # add attributes to a function (to use as static variables)
 # (but for better performance use global variables)
 def static(**kw):
+  """
+  simulates static variables in a function by adding attributes to it.
+
+  e.g.:
+
+    @static(n=0)
+    def solve(x):
+      for r in _solve(x):
+        if check(r):
+          solve.n += 1
+          printf("solution {n} = {r}")
+
+    solve(1)
+    solve(10)
+    solve(100)
+
+  (for better performance you can use global variables)
+  """
   def decorate(fn):
     for (k, v) in kw.items():
       setattr(fn, k, v)
@@ -213,6 +234,24 @@ def static(**kw):
   return decorate
 
 # useful routines for solving Enigma puzzles
+
+def mod(m):
+  """
+  return a function to compute residues modulo <m>.
+
+  >>> list(map(mod(2), irange(0, 9)))
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+  """
+  return (lambda n: n % m)
+
+def clock(m):
+  """
+  like mod(m) except instead of 0 the function returns <m>.
+
+  >>> list(map(clock(12), irange(0, 23)))
+  [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  """
+  return (lambda n: (n % m) or m)
 
 # like cmp() in Python 2, but results are always -1, 0, +1.
 # vs can be a triple of values to return instead, default corresponds to (-1, 0, +1)
@@ -699,12 +738,12 @@ class multiset(dict):
       for (x, n) in kw.items():
         self.add(x, n)
 
-  def update_from_seq(self, vs):
+  def update_from_seq(self, vs, count=1):
     """
     update a multiset from a sequence of items.
     """
     for x in vs:
-      self.add(x)
+      self.add(x, count=count)
     return self
 
   def update_from_pairs(self, vs):
@@ -744,13 +783,14 @@ class multiset(dict):
     return m
 
   @classmethod
-  def from_seq(self, *vs):
+  def from_seq(self, *vs, **kw):
     """
     create a multiset from a sequence of items (or multiple sequences).
     """
+    count = kw.get('count', 1)
     m = multiset()
     for v in vs:
-      m.update_from_seq(v)
+      m.update_from_seq(v, count=count)
     return m
 
   # count all elements in the multiset
@@ -1131,6 +1171,25 @@ def collect(s, accept=None, reject=None, every=0, fn=list):
   except ValueError:
     return None
 
+def group(s, by=identity, fn=identity):
+  """
+  group the items of sequence <s> together using the <by> function.
+
+  items in the same group return the same value when passed to <by>.
+
+  a dict() is returned where the keys of the dict are the values of
+  the <by> function applied to the items of the sequence, and the
+  values of the dict are the grouped items (collected using <fn>,
+  which by default will collect the items in a list, in the order of
+  the original sequence <s>).
+
+  >>> group(irange(0, 9), by=mod(2))
+  {0: [0, 2, 4, 6, 8], 1: [1, 3, 5, 7, 9]}
+  """
+  d = collections.defaultdict(list)
+  for x in s:
+    d[by(x)].append(x)
+  return dict((k, fn(v)) for (k, v) in d.items())
 
 def unpack(fn):
   """
@@ -2632,7 +2691,7 @@ def M(n, k):
   multichoose function: n M k.
 
   the number of unordered k-length selections from n elements where
-  elements may be repeated.
+  elements may be chosen multiple times.
 
   >>> M(10, 3)
   220
