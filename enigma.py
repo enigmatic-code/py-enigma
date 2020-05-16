@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu May  7 10:44:18 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat May 16 22:00:05 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-05-02"
+__version__ = "2020-05-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -212,18 +212,21 @@ def static(**kw):
   """
   simulates static variables in a function by adding attributes to it.
 
+  static variable <v> in function <f> is accessed as <f.v>.
+
   e.g.:
 
     @static(n=0)
-    def solve(x):
-      for r in _solve(x):
-        if check(r):
-          solve.n += 1
-          printf("solution {n} = {r}")
+    def gensym(x):
+      gensym.n += 1
+      return concat(x, gensym.n)
 
-    solve(1)
-    solve(10)
-    solve(100)
+    >> gensym('foo')
+    'foo1'
+    >> gensym('bar')
+    'bar2'
+    >> gensym('baz')
+    'baz3'
 
   (for better performance you can use global variables)
   """
@@ -1065,20 +1068,23 @@ def subsets(s, size=None, min_size=0, max_size=None, select='C', prepare=None, f
 
 # provide selection functions (where available)
 # [[ maybe 'R' should be 'M', and 'M' should be 'X' ]]
-for (k, v, p) in (
-    ('C', getattr(itertools, 'combinations', None), None),
-    ('P', getattr(itertools, 'permutations', None), None),
-    ('D', derangements, None),
-    ('R', getattr(itertools, 'combinations_with_replacement', None), None),
-    ('M', (lambda fn: ((lambda s, k: fn(s, repeat=k)) if fn else None))(getattr(itertools, 'product', None)), None),
-    ('uC', uC, None),
-    ('mC', uC, (lambda s: sorted(multiset(s)))),
-    ('mP', mP, multiset),
-  ):
-  if v:
-    subsets.select_fn[k] = v
-    setattr(subsets, k, v)
-    if p: subsets.prepare_fn[k] = p
+def _subsets_init():
+  for (k, v, p) in (
+      ('C', getattr(itertools, 'combinations', None), None),
+      ('P', getattr(itertools, 'permutations', None), None),
+      ('D', derangements, None),
+      ('R', getattr(itertools, 'combinations_with_replacement', None), None),
+      ('M', (lambda fn: ((lambda s, k: fn(s, repeat=k)) if fn else None))(getattr(itertools, 'product', None)), None),
+      ('uC', uC, None),
+      ('mC', uC, (lambda s: sorted(multiset(s)))),
+      ('mP', mP, multiset),
+    ):
+    if v:
+      subsets.select_fn[k] = v
+      setattr(subsets, k, v)
+      if p: subsets.prepare_fn[k] = p
+
+_subsets_init()
 
 # aliases
 powerset = subsets
@@ -2799,8 +2805,8 @@ def reciprocals(k, b=1, a=1, m=1, g=0):
 # fetch command line arguments from sys
 @static(argv=None)
 def get_argv(force=0, args=None):
-  if force or argv.argv is None: argv.argv = (args if args is not None else sys.argv[1:])
-  return argv.argv
+  if force or get_argv.argv is None: get_argv.argv = (args if args is not None else sys.argv[1:])
+  return get_argv.argv
 
 # alias
 argv = get_argv
@@ -5154,7 +5160,7 @@ def _replace_words(s, fn):
   return re.sub(r'{(\w+?)}', _fn, s)
 
 # local variable used to represent symbol x
-sym = lambda x: '__' + x
+sym = lambda x: '_' + x
 
 # return an expression that evaluates word <w> in base <base>
 def _word(w, base):
@@ -5164,20 +5170,16 @@ def _word(w, base):
     m *= base
   return join((concat((sym(k),) + (() if v == 1 else ('*', v))) for (k, v) in d.items()), sep=' + ')
 
-# simulate a function static variable
-#
-# it would be nice to do:
-#
-# def gensym(x):
-#   static i = 0
-#   i += 1
-#   return concat(x, i)
-#
-# but this achieves the same ends using function attributes
-#
-
 @static(i=0)
 def gensym(x):
+  """
+  generate a unique string starting with <x>.
+
+  >> gensym('foo')
+  'foo1'
+  >> gensym('foo')
+  'foo2'
+  """
   gensym.i += 1
   return concat(x, gensym.i)
 
@@ -5559,7 +5561,7 @@ class SubstitutedExpression(object):
 
     # generate the program (line by line)
     (prog, _, indent) = ([], '', '  ')
-    (vx, vy, vr) = ('_x', '_y', '_r') # local variables (that don't clash with sym(x))
+    (vx, vy, vr) = ('x', 'y', 'r') # local variables (that don't clash with sym(x))
 
     # start with any initialisation code
     if code:
@@ -8431,7 +8433,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.8.2')
+""".format(version=__version__, python='2.7.18', python3='3.8.3')
 
 if __name__ == "__main__":
 
