@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat May 16 22:00:05 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon May 18 18:32:34 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-05-09"
+__version__ = "2020-05-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -789,6 +789,9 @@ class multiset(dict):
   def from_seq(self, *vs, **kw):
     """
     create a multiset from a sequence of items (or multiple sequences).
+
+    A keyword argument of 'count' specifies the multiplicity of each
+    element of the sequence inserted into the multiset.
     """
     count = kw.get('count', 1)
     m = multiset()
@@ -2940,7 +2943,7 @@ def cached(f):
   @functools.wraps(f)
   def _cached(*k):
     try:
-      #printf("[{f.__name__}: cache hit, {k}")
+      #if k in c: printf("[{f.__name__}: cache hit, {k}")
       return c[k]
     except KeyError:
       r = c[k] = f(*k)
@@ -8240,7 +8243,6 @@ def _enigma_test(verbose=0):
   import doctest
   return doctest.testmod(enigma, verbose=verbose)
 
-
 # check for updates to enigma.py (-u)
 # check = only check the current version
 # download = always download the latest version
@@ -8253,11 +8255,21 @@ def __enigma_update(url, check=1, download=0, rename=0):
     # Python 3.x
     from urllib.request import urlopen
 
+  # py-enigma-version.txt = "<version>[ <md5sum>]"
   u = urlopen(url + 'py-enigma-version.txt')
-  v = u.readline(16).decode().strip()
+  readline = lambda f: f.readline(64).decode().strip()
+  # line 1 = "<version>"
+  v = readline(u)
+  check = None
+  # line 2 = "md5=<md5sum>"
+  s = readline(u)
+  if s:
+    if s.startswith("md5="): check = s[4:]
   printf("latest version is {v}")
 
   if (__version__ < v and not check) or download:
+    import hashlib
+    h = hashlib.md5()
     name = v + '-enigma.py'
     printf("downloading latest version to \"{name}\"")
     with open(name, 'wb') as f:
@@ -8267,7 +8279,10 @@ def __enigma_update(url, check=1, download=0, rename=0):
         data = u.read(8192)
         if not data: break
         f.write(data)
+        h.update(data)
     printf("{nl}download complete")
+    if check and check != h.hexdigest():
+      raise IOError("checksum failure")
     if rename:
       printf("renaming \"{name}\" to \"enigma.py\"")
       os.rename(name, "enigma.py")
@@ -8277,7 +8292,7 @@ def __enigma_update(url, check=1, download=0, rename=0):
     print("enigma.py is up to date")
 
 
-@static(url='http://www.magwag.plus.com/jim/')
+@static(url='https://raw.githubusercontent.com/enigmatic-code/py-enigma/master/') # was: @static(url='http://www.magwag.plus.com/jim/')
 def _enigma_update(url=None, check=1, download=0, rename=0):
   """
   check enigma.py version, and download the latest version if
