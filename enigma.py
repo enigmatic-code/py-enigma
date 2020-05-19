@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue May 19 17:27:37 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue May 19 17:41:00 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -8260,11 +8260,11 @@ def __enigma_update(url, check=1, download=0, rename=0):
   readline = lambda f: f.readline(64).decode().strip()
   # line 1 = "<version>"
   v = readline(u)
-  check = None
+  cksum = None
   # line 2 = "md5=<md5sum>"
   s = readline(u)
   if s:
-    if s.startswith("md5="): check = s[4:]
+    if s.startswith("md5="): cksum = s[4:]
   printf("latest version is {v}")
 
   if (__version__ < v and not check) or download:
@@ -8281,8 +8281,8 @@ def __enigma_update(url, check=1, download=0, rename=0):
         f.write(data)
         h.update(data)
     printf("{nl}download complete")
-    if check:
-      if check == h.hexdigest():
+    if cksum:
+      if cksum == h.hexdigest():
         printf("checksum verified")
       else:
         raise IOError("checksum failure")
