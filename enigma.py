@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon May 18 18:32:34 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue May 19 17:27:37 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-05-18"
+__version__ = "2020-05-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -8281,8 +8281,11 @@ def __enigma_update(url, check=1, download=0, rename=0):
         f.write(data)
         h.update(data)
     printf("{nl}download complete")
-    if check and check != h.hexdigest():
-      raise IOError("checksum failure")
+    if check:
+      if check == h.hexdigest():
+        printf("checksum verified")
+      else:
+        raise IOError("checksum failure")
     if rename:
       printf("renaming \"{name}\" to \"enigma.py\"")
       os.rename(name, "enigma.py")
@@ -8372,6 +8375,7 @@ enigma.py has the following command-line usage:
       downloading latest version to "{version}-enigma.py"
       ........
       download complete
+      checksum verified
       renaming "{version}-enigma.py" to "enigma.py"
 
     Note that the updated version is downloaded to a file named
