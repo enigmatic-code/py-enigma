@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue May 19 17:41:00 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed May 20 10:49:00 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-05-19"
+__version__ = "2020-05-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -8246,7 +8246,10 @@ def _enigma_test(verbose=0):
 # check for updates to enigma.py (-u)
 # check = only check the current version
 # download = always download the latest version
-def __enigma_update(url, check=1, download=0, rename=0):
+# verbose = 0, 1, 2
+def __enigma_update(url, check=1, download=0, rename=0, verbose=1):
+
+  if verbose > 1: printf("update: url = {url}")
 
   if _python == 2:
     # Python 2.x
@@ -8256,47 +8259,52 @@ def __enigma_update(url, check=1, download=0, rename=0):
     from urllib.request import urlopen
 
   # py-enigma-version.txt = "<version>[ <md5sum>]"
+  if verbose > 1: printf("update: downloading {url}py-enigma-version.txt ...")
   u = urlopen(url + 'py-enigma-version.txt')
   readline = lambda f: f.readline(64).decode().strip()
   # line 1 = "<version>"
   v = readline(u)
+  if verbose > 1: printf("update: version = {v}")
   cksum = None
   # line 2 = "md5=<md5sum>"
   s = readline(u)
   if s:
     if s.startswith("md5="): cksum = s[4:]
-  printf("latest version is {v}")
+    if verbose > 1: printf("update: cksum = {cksum}")
+  if verbose > 0: printf("latest version is {v}")
 
   if (__version__ < v and not check) or download:
     import hashlib
     h = hashlib.md5()
     name = v + '-enigma.py'
-    printf("downloading latest version to \"{name}\"")
+    if verbose > 0: printf("downloading latest version to \"{name}\"")
     with open(name, 'wb') as f:
+      if verbose > 1: printf("update: downloading {url}enigma.py ...")
       u = urlopen(url + 'enigma.py')
       while True:
-        print('.', end='')
+        if verbose > 0: print('.', end='')
         data = u.read(8192)
         if not data: break
         f.write(data)
         h.update(data)
-    printf("{nl}download complete")
+    if verbose > 0: printf("{nl}download complete")
+    if verbose > 1: printf("update: download checksum = {h}", h=h.hexdigest())
     if cksum:
       if cksum == h.hexdigest():
-        printf("checksum verified")
+        if verbose > 0: printf("checksum verified")
       else:
         raise IOError("checksum failure")
     if rename:
-      printf("renaming \"{name}\" to \"enigma.py\"")
+      if verbose > 0: printf("renaming \"{name}\" to \"enigma.py\"")
       os.rename(name, "enigma.py")
   elif __version__ < v:
-    print("enigma.py is NOT up to date")
+    if verbose > 0: print("enigma.py is NOT up to date")
   else:
-    print("enigma.py is up to date")
+    if verbose > 0: print("enigma.py is up to date")
 
 
 @static(url='https://raw.githubusercontent.com/enigmatic-code/py-enigma/master/') # was: @static(url='http://www.magwag.plus.com/jim/')
-def _enigma_update(url=None, check=1, download=0, rename=0):
+def _enigma_update(url=None, check=1, download=0, rename=0, quiet=0, verbose=0):
   """
   check enigma.py version, and download the latest version if
   necessary.
@@ -8313,12 +8321,13 @@ def _enigma_update(url=None, check=1, download=0, rename=0):
   download - set to always download latest version
   rename - set to rename downloaded file to enigma.py
   """
-  print('checking for updates...')
+  if not quiet: print('checking for updates...')
 
   if url is None: url = _enigma_update.url
 
   try:
-    __enigma_update(url, check=check, download=download, rename=rename)
+    v = (2 if verbose else 0 if quiet else 1)
+    __enigma_update(url, check=check, download=download, rename=rename, verbose=v)
   except IOError as e:
     print(e)
     printf("ERROR: failed to download update from {_enigma_update.url}")
@@ -8489,4 +8498,5 @@ if __name__ == "__main__":
   # -ud => always download latest version
   # -u[d]r => rename downloaded file to "enigma.py"
   if 'u' in args:
-    _enigma_update(check=('c' in args['u']), download=('d' in args['u']), rename=('r' in args['u']))
+    kw = dict((w, w[0] in args['u']) for w in ('check', 'download', 'rename', 'quiet', 'verbose'))
+    _enigma_update(**kw)
