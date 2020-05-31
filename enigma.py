@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed May 20 10:49:00 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May 31 13:53:12 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-05-20"
+__version__ = "2020-05-31"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -635,7 +635,7 @@ def intersect(ss, fn=set):
   raise ValueError("empty intersection")
 
 # return an element of a container
-def peek(s):
+def peek(s, k=0):
   """
   return an element of a container.
 
@@ -648,8 +648,9 @@ def peek(s):
   >>> peek("banana")
   'b'
   """
-  for x in s:
-    return x
+  for (i, x) in enumerate(s):
+    if i == k:
+      return x
   raise ValueError("empty container")
     
 
@@ -8246,7 +8247,7 @@ def _enigma_test(verbose=0):
 # check for updates to enigma.py (-u)
 # check = only check the current version
 # download = always download the latest version
-# verbose = 0, 1, 2
+# verbose = 0 (quiet), 1 (normal), 2 (verbose)
 def __enigma_update(url, check=1, download=0, rename=0, verbose=1):
 
   if verbose > 1: printf("update: url = {url}")
@@ -8259,7 +8260,7 @@ def __enigma_update(url, check=1, download=0, rename=0, verbose=1):
     from urllib.request import urlopen
 
   # py-enigma-version.txt = "<version>[ <md5sum>]"
-  if verbose > 1: printf("update: downloading {url}py-enigma-version.txt ...")
+  if verbose > 1: printf("update: downloading [ {url}py-enigma-version.txt ] ...")
   u = urlopen(url + 'py-enigma-version.txt')
   readline = lambda f: f.readline(64).decode().strip()
   # line 1 = "<version>"
@@ -8279,7 +8280,7 @@ def __enigma_update(url, check=1, download=0, rename=0, verbose=1):
     name = v + '-enigma.py'
     if verbose > 0: printf("downloading latest version to \"{name}\"")
     with open(name, 'wb') as f:
-      if verbose > 1: printf("update: downloading {url}enigma.py ...")
+      if verbose > 1: printf("update: downloading [ {url}enigma.py ] ...")
       u = urlopen(url + 'enigma.py')
       while True:
         if verbose > 0: print('.', end='')
@@ -8301,6 +8302,7 @@ def __enigma_update(url, check=1, download=0, rename=0, verbose=1):
     if verbose > 0: print("enigma.py is NOT up to date")
   else:
     if verbose > 0: print("enigma.py is up to date")
+    # TODO: maybe verify checksum of local file matches
 
 
 @static(url='https://raw.githubusercontent.com/enigmatic-code/py-enigma/master/') # was: @static(url='http://www.magwag.plus.com/jim/')
