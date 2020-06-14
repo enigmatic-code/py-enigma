@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 14 14:05:50 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 14 18:18:04 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2658,13 +2658,25 @@ def is_coprime(a, b):
 
 
 # for those times when fractions.Fraction is overkill
-def fraction(a, b):
+def fraction(a, b, *rest):
   """
   return the numerator and denominator of the fraction a/b in lowest terms
 
+  if more than 2 arguments are specified the sum of the arguments as
+  (numerator, denominator) pairs is determined, so:
+
+      fraction(a, b, c, d, e, f, ...) -> a/b + c/d + e/f + ...
+
   >>> fraction(286, 1001)
   (2, 7)
+  >>> fraction(1, 2, 1, 3, 1, 6)
+  (1, 1)
+  >>> fraction(1, 2, 3, 4, 5, 6)
+  (25, 12)
   """
+  if rest:
+    for (c, d) in chunk(rest, 2):
+      (a, b) = (a * d + b * c, b * d)
   g = gcd(a, b)
   return (a // g, b // g)
 
@@ -5583,7 +5595,7 @@ class SubstitutedExpression(object):
 
     # generate the program (line by line)
     (prog, _, indent) = ([], '', '  ')
-    (vx, vy, vr) = ('__x', '__y', '__r') # local variables (that don't clash with sym(x))
+    (vx, vy, vr) = ('_x_', '_y_', '_r_') # local variables (that don't clash with sym(x))
 
     # start with any initialisation code
     if code:
