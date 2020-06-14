@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 31 13:53:12 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 14 14:05:50 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-05-31"
+__version__ = "2020-06-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -635,11 +635,17 @@ def intersect(ss, fn=set):
   raise ValueError("empty intersection")
 
 # return an element of a container
-def peek(s, k=0):
+def peek(s, k=0, **kw):
   """
   return an element of a container.
 
-  empty containers raise a ValueError.
+  empty containers return the specified 'default' value, or raise a
+  ValueError.
+
+  if k is specified the first k values chosen are discarded
+  (so, for a sequence, you will get s[k]).
+
+  note that if the container is an iterator, items will be consumed.
 
   >>> peek(set([1]))
   1
@@ -647,10 +653,20 @@ def peek(s, k=0):
   1
   >>> peek("banana")
   'b'
+  >>> peek("banana", 4)
+  'n'
+  >>> peek(Primes(), 10)
+  31
+  >>> peek(p for p in Primes() if p % 17 == 1)
+  103
   """
   for (i, x) in enumerate(s):
     if i == k:
       return x
+  try:
+    return kw['default']
+  except KeyError:
+    pass
   raise ValueError("empty container")
     
 
@@ -1436,6 +1452,8 @@ def first(i, count=1, skip=0, fn=list):
   this would be a way to find the first 10 primes:
   >>> first((n for n in irange(1, inf) if is_prime(n)), count=10)
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
+  >>> first(p for p in Primes() if p % 17 == 1)
+  [103]
   """
   r = itertools.islice(i, skip, skip + count)
   return (r if fn is None else fn(r))
@@ -5565,7 +5583,7 @@ class SubstitutedExpression(object):
 
     # generate the program (line by line)
     (prog, _, indent) = ([], '', '  ')
-    (vx, vy, vr) = ('x', 'y', 'r') # local variables (that don't clash with sym(x))
+    (vx, vy, vr) = ('__x', '__y', '__r') # local variables (that don't clash with sym(x))
 
     # start with any initialisation code
     if code:
@@ -7748,7 +7766,7 @@ def __grouping():
   # return a set of followers for leader x
   def gang(k, x, ys, fn):
     """
-    select a <k>-gang for leader <x> by choosing <k> follows from <ys>.
+    select a <k>-gang for leader <x> by choosing <k> followers from <ys>.
     The selection function holds for each (<x>, <y>) pair and for the
     entire group of <k> followers.
 
@@ -7765,7 +7783,7 @@ def __grouping():
     form the elements of <xs> and <ys> into a collection of <k>-gangs, where
     each gang has a leader chosen from <xs> and <k> followers chosen from <ys>,
     such that the selection function <fn> is satisfied for each (<leader>, <follower>)
-    pair, and also is satisfied for the entire group of <k> followers.
+    pair, and also is satisfied pairwise for the entire group of <k> followers.
 
     returns the groups of <k> followers for each leader in <xs>.
     """
