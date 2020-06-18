@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 14 18:18:04 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun 18 09:57:28 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-06-14"
+__version__ = "2020-06-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7346,8 +7346,10 @@ class DominoGrid(object):
     self.D = D # number of dominoes
 
   # solve the grid
-  # fixed can contiain pairs of indices of fixed dominoes  
-  def solve(self, fixed=None):
+  # fixed = pairs of indices of fixed dominoes
+  # used = dominoes not available for use
+  # returns: (<solved grid>, <dominoes used>)
+  def solve(self, fixed=None, used=[]):
     (N, M, D, grid) = (self.N, self.M, self.D, self.grid)
 
     # g = grid
@@ -7357,7 +7359,7 @@ class DominoGrid(object):
       # are we done?
       if n > D:
         # output the pairings
-        yield g
+        yield (g, ds)
       else:
         # find the next unassigned square
         for (i, d) in enumerate(g):
@@ -7377,7 +7379,7 @@ class DominoGrid(object):
           break
 
     # fixed can contain initial placements of dominoes
-    (n, ds) = (1, set())
+    (n, ds) = (1, set(used))
     if fixed:
       for (i, j) in fixed:
         assert abs(i - j) in (1, N)
@@ -7392,6 +7394,7 @@ class DominoGrid(object):
 
   # output a solution grid
   def output_solution(self, s, prefix=''):
+    s = s[0]
     (N, M, grid) = (self.N, self.M, self.grid)
 
     s1 = s2 = ''
@@ -7408,8 +7411,8 @@ class DominoGrid(object):
         s1 = s2 = ''
 
   # solve a grid and output solutions
-  def go(self, fixed=None, sep='', prefix=''):
-    for s in self.solve(fixed):
+  def go(self, fixed=None, used=[], sep='', prefix=''):
+    for s in self.solve(fixed, used):
       self.output_solution(s, prefix=prefix)
       print(sep)
 
