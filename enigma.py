@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun 18 09:57:28 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun 18 10:21:31 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-06-17"
+__version__ = "2020-06-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7335,6 +7335,14 @@ class Football(object):
 class DominoGrid(object):
 
   def __init__(self, N, M, grid):
+    """
+    create a domino grid to solve.
+
+    the grid is an NxM grid of dominoes, the values in the
+    grid are specified as a linearised list.
+
+    "holes" in the grid are indicated with the value: None.
+    """
     # checks
     n = len(grid)
     assert n == N * M
@@ -7350,7 +7358,20 @@ class DominoGrid(object):
   # used = dominoes not available for use
   # returns: (<solved grid>, <dominoes used>)
   def solve(self, fixed=None, used=[]):
+    """
+    find placements of dominoes in the specified grid.
+
+    fixed = pairs of indices of fixed dominoes
+    used = dominoes that are not available for use
+
+    any domino identified in 'fixed' is automatically in 'used'.
+
+    returns: (<solved grid>, <used dominoes>)
+    """
     (N, M, D, grid) = (self.N, self.M, self.D, self.grid)
+
+    # is a square assigned?
+    assigned = lambda v: v is None or v < 0
 
     # g = grid
     # n = label of next domino (1 to D)
@@ -7363,14 +7384,14 @@ class DominoGrid(object):
       else:
         # find the next unassigned square
         for (i, d) in enumerate(g):
-          if d < 0: continue
+          if assigned(d): continue
           (y, x) = divmod(i, N)
           # find placements for the domino
           js = list()
           # horizontally
-          if x < N - 1 and not(g[i + 1] < 0): js.append(i + 1)
+          if x < N - 1 and not assigned(g[i + 1]): js.append(i + 1)
           # vertically
-          if y < M - 1 and not(g[i + N] < 0): js.append(i + N)
+          if y < M - 1 and not assigned(g[i + N]): js.append(i + N)
           # try possible placements
           for j in js:
             d = ordered(g[i], g[j])
@@ -7394,8 +7415,11 @@ class DominoGrid(object):
 
   # output a solution grid
   def output_solution(self, s, prefix=''):
-    s = s[0]
+    """
+    given a solution from solve() output the solved grid.
+    """
     (N, M, grid) = (self.N, self.M, self.grid)
+    (s, ds) = s
 
     s1 = s2 = ''
     for (i, a) in enumerate(grid):
@@ -7412,6 +7436,9 @@ class DominoGrid(object):
 
   # solve a grid and output solutions
   def go(self, fixed=None, used=[], sep='', prefix=''):
+    """
+    solve a grid and output the solutions
+    """
     for s in self.solve(fixed, used):
       self.output_solution(s, prefix=prefix)
       print(sep)
