@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun 18 10:21:31 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jun 23 10:38:31 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-06-18"
+__version__ = "2020-06-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2359,6 +2359,21 @@ def hypot(*vs):
   """
   return sqrt(sum(v * v for v in vs))
 
+  
+# return roots of the form n/d in the appropriate domain
+def _roots(domain, *nds):
+  for (n, d) in nds:
+    if domain in "C":
+      yield complex(n / d)
+    elif domain in "F":
+      yield float(n / d)
+    elif domain in "QZ":
+      from fractions import Fraction as F
+      x = F(n, d)
+      if domain == "Q":
+        yield x
+      elif domain == "Z" and x.denominator == 1:
+        yield x.numerator
 
 # find roots of a quadratic equation
 # domain = "Z" (integer), "Q" (rational), "F" (float), "C" (complex float)
@@ -2378,31 +2393,39 @@ def quadratic(a, b, c, domain="Q"):
   >>> sorted(quadratic(1, 1, -6, domain="Z"))
   [-3, 2]
   """
-  d = b * b - 4 * a * c
+  assert domain in "CFQZ"
 
-  if domain != "C" and d < 0: return
+  if a == 0:
+    # linear equation
+    assert b != 0
+    return _roots(domain, (-c, b))
+
+  # discriminant
+  D = b * b - 4 * a * c
+  if D < 0 and domain != "C": return _roots(domain)
 
   if domain in "CF":
-    if d == 0:
-      yield (-0.5 * b) / a
+    d = -2 * a
+    if D == 0:
+      return _roots(domain, (b, d))
     else:
-      r = d ** 0.5
-      yield (-0.5 * (b + r)) / a
-      yield (-0.5 * (b - r)) / a
+      r = D ** 0.5
+      return _roots(domain, (b + r, d), (b - r, d))
 
   elif domain in "QZ":
     from fractions import Fraction as F
-    d = F(d)
-    p = is_square(d.numerator)
-    q = is_square(d.denominator)
+    D = F(D)
+    p = is_square(D.numerator)
+    q = is_square(D.denominator)
     if not(p is None or q is None):
       r = F(p, q)
-      xs = ([F(r + b, -2 * a), F(r - b, 2 * a)] if r != 0 else [F(b, -2 * a)])
-      for x in xs:
-        if domain == 'Q':
-          yield x
-        elif domain == 'Z' and x.denominator == 1:
-          yield x.numerator
+      d = -2 * a
+      if r == 0:
+        return _roots(domain, (b, d))
+      else:
+        return _roots(domain, (b + r, d), (b - r, d))
+
+  return _roots(domain)
 
 
 def intf(x):
@@ -3437,7 +3460,8 @@ def gss_minimiser(f, a, b, t=1e-9, m=None):
       (b, x2, f2) = (x2, x1, f1)
       x1 = R * a + C * b
       f1 = fn(x1)
-  return (Record(v=x1, fv=f(x1), t=t) if f1 < f2 else Record(v=x2, fv=f(x2), t=t))
+  v = (x1 if f1 < f2 else x2)
+  return Record(v=v, fv=f(v), t=t)
 
 
 find_min = gss_minimiser
@@ -4201,6 +4225,45 @@ def poly_interpolate(ps):
   except ValueError:
     return
 
+# find rational roots of a polynomial
+# see: [ https://en.wikipedia.org/wiki/Rational_root_theorem ]
+def poly_rational_roots(p, domain="Q", include="+-0"):
+  assert domain in "QZ"
+  if not p: return
+  (pos, neg, zero) = (x in include for x in '+-0')
+  from fractions import Fraction as F
+  # first deal with a root at x=0
+  if p[0] == 0:
+    if zero: yield (0 if domain == "Z" else F(0, 1))
+    while p and p[0] == 0: p = p[1:]
+  if not p: return
+  # make an equivalent polynomial with integer coefficients
+  p = list(map(F, p))
+  m = mlcm(*(f.denominator for f in p))
+  p = list((m * f).numerator for f in p)
+  g = mgcd(*p)
+  p = list(x // g for x in p)
+  # collect rational roots
+  fs = itertools.product(divisors(abs(p[0])), divisors(abs(p[-1])))
+  for x in uniq(map(unpack(F), fs)):
+    if domain == "Z":
+      if x.denominator != 1: continue
+      x = x.numerator
+    if pos and poly_value(p, x) == 0:
+      yield x
+    if neg and poly_value(p, -x) == 0:
+      yield -x
+
+# drop factors in qs from polynomial p
+def poly_drop_factor(p, *qs):
+  for q in qs:
+    while True:
+      (d, r) = poly_divmod(p, q)
+      if r != poly_zero:
+        break
+      p = d
+  return p
+
 # wrap the whole lot up in a class
 
 class Polynomial(list):
@@ -4235,6 +4298,12 @@ class Polynomial(list):
 
   def derivative(self, k=1):
     return self.__class__(poly_derivative(self, k))
+
+  def rational_roots(self, domain="Q", include="+-0"):
+    return poly_rational_roots(self, domain=domain, include=include)
+
+  def drop_factor(self, *qs):
+    return self.__class__(poly_drop_factor(self, *qs))
 
   @classmethod
   def from_pairs(self, ps):
