@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jun 23 10:38:31 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun 29 12:16:31 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-06-22"
+__version__ = "2020-06-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2439,7 +2439,9 @@ def intf(x):
   >>> intf(-1.5)
   -2
   """
-  return (int(x) if x > 0 or x.is_integer() else int(x) - 1)
+  r = int(x)
+  return (r - 1 if r < 0 else r)
+
 
 floor = intf
 
@@ -2455,7 +2457,8 @@ def intc(x):
   >>> intc(-1.5)
   -1
   """
-  return int(x) if x < 0 or x.is_integer() else int(x) + 1
+  r = int(x)
+  return (r + 1 if x - r > 0 else r)
 
 ceil = intc
 
@@ -4228,6 +4231,19 @@ def poly_interpolate(ps):
 # find rational roots of a polynomial
 # see: [ https://en.wikipedia.org/wiki/Rational_root_theorem ]
 def poly_rational_roots(p, domain="Q", include="+-0"):
+  """
+  find rational roots for the polynomial p (with rational coefficients).
+
+  the type of roots returned can be controlled with the 'domain' and
+  'include' parameters:
+
+    domain='Q' - find rational roots
+    domain='Z' - find integer roots
+
+    include='+' - include positive roots
+    include='0' - include zero
+    include='-' - include negative roots
+  """
   assert domain in "QZ"
   if not p: return
   (pos, neg, zero) = (x in include for x in '+-0')
@@ -8096,6 +8112,12 @@ def __matrix():
     assert len(B) == m
     return B
 
+  # create a matrix
+  # for the identity matrix: create(3, 3, (lambda r, c: int(r == c)))
+  # [ or: create(3, 3, fcompose(operator.eq, int)) ]
+  def create(rows, cols, k=0):
+    f = (k if callable(k) else (lambda r, c: k))
+    return [[f(r, c) for r in range(rows)] for c in range(cols)]
 
   # return the namespace
   return locals()
