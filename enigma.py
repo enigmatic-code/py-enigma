@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun 29 12:16:31 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jul 10 09:14:40 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-06-28"
+__version__ = "2020-07-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1197,11 +1197,14 @@ def collect(s, accept=None, reject=None, every=0, fn=list):
   except ValueError:
     return None
 
-def group(s, by=identity, fn=identity):
+def group(s, by=identity, st=None, fn=identity):
   """
   group the items of sequence <s> together using the <by> function.
 
   items in the same group return the same value when passed to <by>.
+
+  if the <st> function is specified, only items that satisfy it will
+  be considered.
 
   a dict() is returned where the keys of the dict are the values of
   the <by> function applied to the items of the sequence, and the
@@ -1212,9 +1215,11 @@ def group(s, by=identity, fn=identity):
   >>> group(irange(0, 9), by=mod(2))
   {0: [0, 2, 4, 6, 8], 1: [1, 3, 5, 7, 9]}
   """
+  if st is None: st = (lambda x: True)
   d = collections.defaultdict(list)
   for x in s:
-    d[by(x)].append(x)
+    if st(x):
+      d[by(x)].append(x)
   return dict((k, fn(v)) for (k, v) in d.items())
 
 def unpack(fn):
