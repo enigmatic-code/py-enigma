@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jul 10 09:14:40 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 19 10:47:09 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-07-09"
+__version__ = "2020-07-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7728,7 +7728,7 @@ timer = Timer(auto_start=0)
 # an even simpler form of the 'Record' (or 'types.SimpleNamespace') class
 # to make sub-namespaces within the module
 #
-# (I don't think this is very Pythonic, but it works)
+# (I don't think this is very Pythonic, but it works, except for __doc__)
 
 class namespace(object):
 
@@ -7738,6 +7738,14 @@ class namespace(object):
 
   def __repr__(self):
     return '<namespace ' + repr(self.__name) + '>'
+
+def make_namespace(name, vs):
+  return namespace(name, vs)
+
+  ## or attempt to make a module:
+  #r = type(enigma)("enigma." + name)
+  #r.__dict__.update(**vs)
+  #return r
 
 ###############################################################################
 
@@ -7842,7 +7850,7 @@ def __template_system():
   return locals()
 
 
-template_system = namespace('template_system', __template_system())
+template_system = make_namespace('template_system', __template_system())
 
 ###############################################################################
 
@@ -7851,6 +7859,10 @@ template_system = namespace('template_system', __template_system())
 # grouping problems
 
 def __grouping():
+
+  __doc__ = """
+  <placeholder docstring for __grouping()>
+  """
 
   def groups(vs, fn, s=[]):
     """
@@ -7963,7 +7975,7 @@ def __grouping():
   return locals()
 
 
-grouping = namespace('grouping', __grouping())
+grouping = make_namespace('grouping', __grouping())
 
 ###############################################################################
 
@@ -8127,7 +8139,7 @@ def __matrix():
   # return the namespace
   return locals()
 
-matrix = namespace('matrix', __matrix())
+matrix = make_namespace('matrix', __matrix())
 
 ###############################################################################
 
@@ -8619,7 +8631,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.8.3')
+""".format(version=__version__, python='2.7.18', python3='3.8.4')
 
 if __name__ == "__main__":
 
