@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 19 10:47:09 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jul 24 17:24:42 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,7 +160,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-07-19"
+__version__ = "2020-07-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -173,6 +173,7 @@ import functools
 import itertools
 import collections
 import copy
+import re
 
 # maybe use the "six" module for some of this stuff
 if sys.version_info[0] == 2:
@@ -3738,6 +3739,7 @@ def base2int(s, base=10, strip=0, digits=None):
   if digits is None: digits = base_digits()
   if len(digits) > base:
     digits = digits[:base]
+  s = str(s)
   if s == digits[0]:
     return 0
   elif s.startswith('-'):
@@ -4945,12 +4947,20 @@ def substitute(s2d, text, digits=None):
 
   characters in the text that don't occur in the mapping are unaltered.
 
+  if there are braces present in <text> then only those portions of the
+  <text> enclosed in braces are substituted.
+
   >>> substitute(dict(zip('DEMNORSY', (7, 5, 1, 6, 0, 8, 9, 2))), "SEND + MORE = MONEY")
   '9567 + 1085 = 10652'
+  
   """
   if text is None: return None
   if digits is None: digits = base_digits()
-  return join((digits[s2d[x]] if x in s2d else x) for x in text)
+  fn = (lambda t: join((digits[s2d[x]] if x in s2d else x) for x in t))
+  if '{' in text:
+    return re.sub(r'{(.*?)}', (lambda m: fn(m.group(1))), text)
+  else:
+    return fn(text)
 
 # friendly interface to the substituted sum solver
 def substituted_sum(terms, result, digits=None, l2d=None, d2i=None, base=10):
@@ -5227,7 +5237,6 @@ class SubstitutedSum(object):
       return -1
 
     # extract the sums
-    import re
     sums = list(re.split(r'[\s\+\=]+', arg) for arg in args)
 
     # call the solver
@@ -5264,8 +5273,6 @@ class SubstitutedSum(object):
 # take on any available digit (but still not allow leading zeros). [E1579]
 
 _SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-import re
 
 # find words in string <s>
 def _find_words(s, r=1):
