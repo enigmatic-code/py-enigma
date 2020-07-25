@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jul 24 17:24:42 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul 25 17:46:25 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -114,6 +114,7 @@ partitions             - partition a sequence of distinct values into tuples
 peek                   - return an element of a container
 pi                     - float approximation to pi
 poly_*                 - routines manipulating polynomials, wrapped as Polynomial
+powers                 - generate a range of powers
 prime_factor           - generate terms in the prime factorisation of a number
 printf                 - print with interpolated variables
 pythagorean_triples    - generate Pythagorean triples
@@ -160,7 +161,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-07-24"
+__version__ = "2020-07-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2192,6 +2193,18 @@ def is_square(n):
 is_square.mod = 80
 is_square.residues = set((i * i) % is_square.mod for i in range(is_square.mod))
 is_square.reject = list(i not in is_square.residues for i in range(is_square.mod))
+
+# generate powers from a range
+def powers(a, b, k=2):
+  """
+  generate powers (n ** k) for n in irange(a, b)
+
+  >>> list(powers(1, 10))
+  [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+  >>> list(powers(1, 10, 3))
+  [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000]
+  """
+  return (n ** k for n in irange(a, b))
 
 # compose functions in order (forward functional composition, "and then")
 # so: fcompose(f, g, h)(x) == h(g(f(x)))
