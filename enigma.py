@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul 25 22:20:07 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 26 14:18:03 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -161,7 +161,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-07-26"
+__version__ = "2020-07-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2165,7 +2165,8 @@ def isqrt(n):
 # the is_square() function (i.e. [[ is_square = _is_square_class(80) ]]), but it is
 # more efficient (and perhaps more readable) to just use normal variables, although
 # if you're using PyPy the class based version is just as fast (if not slightly faster)
-@static(mod=None, residues=None, reject=None)
+# experimentally mod = 80, 48, 72, 32 are good values (24, 16 also work OK)
+@static(mod=80, residues=None)
 def is_square(n):
   """
   check positive integer <n> is a perfect square.
@@ -2184,15 +2185,11 @@ def is_square(n):
   if n < 2: return n
   # early rejection: check <square> mod <some value> against a precomputed cache
   # e.g. <square> mod 80 = 0, 1, 4, 9, 16, 20, 25, 36, 41, 49, 64, 65 (rejects 88% of numbers)
-  if is_square.reject[n % is_square.mod]: return None
+  if not is_square.residues: is_square.residues = set((i * i) % is_square.mod for i in range(is_square.mod))
+  if (n % is_square.mod) not in is_square.residues: return None
   # otherwise use isqrt and check the result
   r = isqrt(n)
   return (r if r * r == n else None)
-
-# experimentally 80, 48, 72, 32 are good values (24, 16 also work OK)
-is_square.mod = 80
-is_square.residues = set((i * i) % is_square.mod for i in range(is_square.mod))
-is_square.reject = list(i not in is_square.residues for i in range(is_square.mod))
 
 # generate powers from a range
 def powers(a, b, k=2):
@@ -2231,6 +2228,8 @@ def rcompose(*fns):
 is_not_none = (lambda x: x is not None)
 is_square_p = fcompose(is_square, is_not_none)
 
+# 63 rejects 86% (other good values: 117 (87%), 189 (89%), 351 (90%), 504 (91%), 819 (95%))
+@static(mod=63, residues=None)
 def is_cube(n):
   """
   check positive integer <n> is a perfect cube.
@@ -2242,6 +2241,10 @@ def is_cube(n):
   >>> is_cube(0)
   0
   """
+  if n < 0: return None
+  if n < 2: return n
+  if not is_cube.residues: is_cube.residues = set((i * i * i) % is_cube.mod for i in range(is_cube.mod))
+  if (n % is_cube.mod) not in is_cube.residues: return None
   return is_power(n, 3)
 
 is_cube_p = fcompose(is_cube, is_not_none)
