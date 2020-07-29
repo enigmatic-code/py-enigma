@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 26 22:26:07 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jul 28 23:20:54 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -161,7 +161,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-07-27"
+__version__ = "2020-07-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -601,6 +601,9 @@ def split(x, fn=None):
   """
   return list(map(fn, str(x))) if fn else list(str(x))
 
+# rotate a sequence (move k elements from the beginning to the end)
+def rotate(s, k=1):
+  return s[k:] + s[:k]
 
 # or you can use itertools.izip_longest(*[iter(l)]*n) for padded chunks
 def chunk(s, n=2, pad=0, value=None, fn=tuple):
@@ -4095,6 +4098,10 @@ class MultiAccumulator(object):
   def __init__(self, fns):
     self.multi = list(Accumulator(fn) for fn in fns)
 
+  def __repr__(self):
+    return 'MultiAccumulator(' + repr(self.multi) + ')'
+    
+
   def accumulate(self, v):
     for x in self.multi:
       x.accumulate(v)
@@ -5096,12 +5103,15 @@ class SubstitutedSum(object):
 
   solution = output_solution
 
-  def go(self, check=None, first=0):
+  def run(self, check=None, first=0):
     """
     find all solutions (matching the filter <fn>) and output them.
     """
     for s in self.solve(check=check, verbose=1):
       if first: break
+
+  # backwards compatability
+  go = run
 
   # class method to chain multiple sums together
   @classmethod
@@ -5122,7 +5132,7 @@ class SubstitutedSum(object):
         for x in cls.chain(sums[1:], base=base, digits=digits, l2d=r, d2i=d2i): yield x
 
   @classmethod
-  def chain_go(cls, sums, base=10, digits=None, l2d=None, d2i=None):
+  def chain_run(cls, sums, base=10, digits=None, l2d=None, d2i=None):
     template = join(('(' + join(s[:-1], sep=' + ') + ' = ' + s[-1] + ')' for s in sums), sep=' ')
     printf("{template}")
     for s in cls.chain(sums, base=base, digits=digits, l2d=l2d, d2i=d2i):
@@ -5130,6 +5140,9 @@ class SubstitutedSum(object):
         t=substitute(s, template),
         s=map2str(s, sep=" ", enc="")
       )
+
+  # backwards compatability
+  chain_go = chain_run
 
   # class method to call from the command line
   @classmethod
@@ -5383,7 +5396,7 @@ class SubstitutedExpression(object):
 
 
   Enigma 1530 <https://enigmaticcode.wordpress.com/2012/07/09/enigma-1530-tom-daley/>
-  >>> SubstitutedExpression('TOM * 13 = DALEY').go()
+  >>> SubstitutedExpression('TOM * 13 = DALEY').run().n
   (TOM * 13 = DALEY)
   (796 * 13 = 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
   [1 solution]
@@ -5393,7 +5406,7 @@ class SubstitutedExpression(object):
   See SubstitutedExpression.command_line() for more examples.
   """
 
-  def __init__(self, exprs, base=10, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None, template=None, solution=None, header=None, distinct=1, check=None, env=None, code=None, process=1, reorder=1, first=0, verbose=1):
+  def __init__(self, exprs, base=10, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None, accumulate=None, template=None, solution=None, header=None, distinct=1, check=None, env=None, code=None, process=1, reorder=1, first=0, verbose=1):
     """
     create a substituted expression solver.
 
@@ -5414,6 +5427,7 @@ class SubstitutedExpression(object):
     s2d - initial map of symbols to digits (default: all symbols unassigned)
     d2i - map of digits to invalid symbol assignments (default: leading digits cannot be 0)
     answer - an expression for the answer value
+    accumulate - accumulate answers using the specified object
     distinct - symbols which should have distinct values (1 = all, 0 = none) (default: 1)
     check - a boolean function used to accept/reject solutions (default: None)
     env - additional environment for evaluation (default: None)
@@ -5429,6 +5443,7 @@ class SubstitutedExpression(object):
     self.s2d = (s2d or l2d) # s2d is preferred
     self.d2i = d2i
     self.answer = answer
+    self.accumulate = accumulate
     self.template = template
     self.solution = solution
     self.header = header
@@ -5451,23 +5466,39 @@ class SubstitutedExpression(object):
     if process: self._process()
 
 
-  # verbose flags
-  #   4 = output solutions
-  #   8 = output header template
-  #  16 = output solution count
-  #  32 = output timing
-  #  64 = output parameters
-  # 128 = output solver info
-  # 256 = output code
-  # ---
-  # 508 = all of the above
+  # verbose flags:
+  # generate output
+  vH = 4 # output header template
+  vT = 8 # output solutions (from template)
+  #vS = 512 # output solution symbol -> digit mapping
+  vA = 16 # output answer counts / accumulated measures
+  # information / debugging
+  vE = 32 # output elapsed time
+  vP = 64 # output solver parameters
+  vI = 128 # output solver info
+  vC = 256 # output code (before compilation)
+  # standard debug levels
+  v1 = vH | vT | vA # 1 = header + solutions + count
+  v2 = v1 | vI # 2 = 1 + solver info
+  v3 = v2 | vE | vP # 3 = 2 + timing + code
+  v9 = vH | vT | vA | vE | vP | vI | vC # 9 = everything
+
   def _verbose(self, n):
+    if not n: return 0
+    # if it is a string, parse it into a number
+    if isinstance(n, basestring):
+      # sort out "old-style" numeric arguments
+      if re.match(r'[\d\-\|\+\,]+', n):
+        n = sum(_digits(n))
+
+      else:
+        # sort out "new style" flags
+        # "1+E" "1-T" "1-T+E" "9" "HTAEPIC"
+        assert False
+
     # old style verbose flags (1, 2, 3)
     if n < 4:
-      v1 = (4 | 8 | 16) # header + solutions + count
-      v2 = (v1 | 128) # + solver info
-      v3 = (v2 | 32 | 256) # + timing + code
-      return (0, v1, v2, v3)[n]
+      return (0, self.v1, self.v2, self.v3)[n]
     # otherwise
     return n
 
@@ -5487,7 +5518,7 @@ class SubstitutedExpression(object):
     verbose = self.verbose
 
     # sort out verbose argument
-    if verbose: verbose = self._verbose(verbose)
+    verbose = self._verbose(verbose)
 
     # the symbols to replace (for implicit expressions)
     if symbols is None: symbols = _SYMBOLS
@@ -5655,7 +5686,7 @@ class SubstitutedExpression(object):
     (exprs, xs, vs, ts, syms) = self._exprs
 
     # output run parameters
-    if self.verbose & 64:
+    if self.verbose & self.vP:
       print("--[code]--" + nl + join(self.save(quote=1), sep=nl) + nl + "--[/code]--" + nl)
 
     # valid digits for each symbol
@@ -5687,7 +5718,7 @@ class SubstitutedExpression(object):
       vs = list(vs[i] for i in s)
       ts = list(ts[i] for i in s)
 
-    if verbose & 128:
+    if verbose & self.vI:
       # output solver information
       printf("[base={base}, digits={digits}, symbols={symbols!r}, distinct={distinct!r}]", distinct=join(distinct, sep=','))
       printf("[s2d={s2d}, d2i={d2i}]")
@@ -5833,7 +5864,7 @@ class SubstitutedExpression(object):
     # turn the program lines into a string
     prog = join(prog, sep=nl)
 
-    if verbose & 256:
+    if verbose & self.vC:
       printf("-- [code language=\"python\"] --{nl}{prog}{nl}-- [/code] --")
 
     # compile the solver
@@ -5853,7 +5884,7 @@ class SubstitutedExpression(object):
       # (e.g. in standard Python you can't have more than 20 nested blocks,
       # or more than 100 indent levels - PyPy does not have these limitations)
       printf("SubstitutedExpression: compilation error from Python interpreter [{sys.executable}]")
-      if not(verbose & 256): printf("(use verbosity level 256 to output code before compilation)")
+      if not(verbose & self.vC): printf("(use verbose level 256 to output code before compilation)")
       raise
     eval(code, gs)
 
@@ -5882,12 +5913,12 @@ class SubstitutedExpression(object):
     if first is None: first = self.first
     verbose = (self.verbose if verbose is None else self._verbose(verbose))
 
-    if verbose & 8 and header: print(header)
+    if verbose & self.vH and header: printf("{header}")
 
     n = 0
     for s in solver():
       if check and not(check(s)): continue
-      if verbose & 4: self.output_solution((s[0] if answer else s))
+      if verbose & self.vT: self.output_solution((s[0] if answer else s))
       # return the result
       yield s
       n += 1
@@ -5909,50 +5940,85 @@ class SubstitutedExpression(object):
     if ss: print(join(ss, sep=' / '))
 
 
-  def go(self, check=None, first=None, verbose=None):
+  def run(self, check=None, first=None, verbose=None):
     """
     find solutions to the substituted expression problem and output them.
 
     first - if set to True will stop after the first solution is output
 
-    returns the number of solutions found, but if the "answer" parameter
-    was set during init() returns a multiset() object counting
-    the number of times each answer occurs.
+    returns a Record object with the following attributes:
+      n = the number of solutions found
+      answer = a multiset() object counting the number of times each answer
+        occurs (if the "answer" parameter was set in init())
+      accumulate = result of accumulating the answers (if the "accumulate"
+        parameter was also set)
     """
     verbose = (self.verbose if verbose is None else self._verbose(verbose))
 
+    # return:
+    # n = number of solutions
+    # count = count of answers
+    # accumulator = accumulation of answers
+    (n, ans, acc) = (0, None, None)
+
     # collect answers (either total number or collected by "answer")
     answer = self.answer
-    r = (multiset() if answer else 0)
+    if answer: ans = multiset()
+
+    # also an accumulator object can be specified
+    accumulate = self.accumulate
+    if answer and accumulate:
+      (acc, acc_t) = (accumulate, "accumulator")
+      # if accumulate is a string, we should evaluate it
+      if isinstance(acc, basestring): (acc, acc_t) = (eval(acc), acc)
 
     # measure internal time
-    if verbose & 32:
+    if verbose & self.vE:
       t = Timer()
       t.start()
 
     # solve the problem, counting the answers
     for s in self.solve(check=check, first=first, verbose=verbose):
-      if answer:
-        r.add(s[1])
-      else:
-        r += 1
+      n += 1
+      if answer: ans.add(s[1])
 
-    if verbose & 32: t.stop()
+    if verbose & self.vE: t.stop()
 
     # output solutions
-    if verbose & 16:
-      if answer:
-        answer = _replace_words(answer, identity)
+    s = ('' if n == 1 else 's')
+    if answer and ans:
+      answer = _replace_words(answer, identity)
+
+      if not accumulate:
         # report the answer counts
-        for (k, v) in r.most_common():
-          printf("{answer} = {k} [{v} solution{s}]", s=('' if v == 1 else 's'))
+        if verbose & self.vA:
+          for (k, v) in ans.most_common():
+            printf("{answer} = {k} [{v} solution{s}]")
+
       else:
-        printf("[{r} solution{s}]", s=('' if r == 1 else 's'))
+        # report accumulated values
+        if isinstance(acc, Sequence):
+          # if we've been passed a sequence (of callables)
+          acc = tuple(f(ans) for f in acc)
+          if verbose & self.vA:
+            printf("{acc_t}({answer}) = {acc} [from {n} value{s}]", vs=join(acc, sep=", ", enc="()"))
 
-    if verbose & 32: t.report()
+        else:
+          # single callable
+          acc = acc(ans)
+          if verbose & self.vA:
+            printf("{acc_t}({answer}) = {acc} [from {n} value{s}]")
 
-    return r
+    elif verbose & self.vA:
+      # report solution count
+      printf("[{n} solution{s}]")
 
+    if verbose & self.vE: t.report()
+
+    return Record(n=n, answer=ans, accumulate=acc)
+
+  # backward compatability
+  go = run
 
   def substitute(self, s, text, digits=None):
     """
@@ -6002,6 +6068,9 @@ class SubstitutedExpression(object):
 
     if self.answer:
       args.append(sprintf("--answer={q}{self.answer}{q}"))
+
+    if self.accumulate:
+      args.append(sprintf("--accumulate={q}{self.accumulate}{q}"))
 
     if self.template:
       args.append(sprintf("--template={q}{self.template}{q}"))
@@ -6077,6 +6146,7 @@ class SubstitutedExpression(object):
       "  --digits=<digit>,... or --digits=<digit>-<digit> (or -d...) = available digits",
       "  --invalid=<digits>,<symbols> (or -i<ds>,<ss>) = invalid digit to symbol assignments",
       "  --answer=<expr> (or -A<expr>) = count answers according to <expr>",
+      "  --accumulate=<expr> (or -M<expr>) = accumulate answers according to <expr>",
       "  --template=<string> (or -T<s>) = solution template",
       "  --solution=<string> (or -S<s>) = solution symbols",
       "  --header=<string> (or -H<s>) = solution header",
@@ -6084,7 +6154,7 @@ class SubstitutedExpression(object):
       "  --code=<string> (or -C<s>) = initialisation code (can be used multiple times)",
       "  --first (or -1) = stop after the first solution",
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
-      "  --verbose[=<n>] (or -v[<n>]) = verbosity (0 = off, 1 = solutions, 2+ = more)",
+      "  --verbose[=<s>] (or -v[<s>]) = verbosity (0 = off, 1 = on, HTSAitC = more)",
       "  --help (or -h) = show command-line usage",
       "",
       "verbosity levels:",
@@ -6148,10 +6218,12 @@ class SubstitutedExpression(object):
       opt['code'].append(v)
     elif k == 'A' or k == 'answer':
       opt['answer'] = v
+    elif k == 'M' or k == 'accumulate':
+      opt['accumulate'] = v
     elif k == '1' or k == 'first':
       opt['first'] = (int(v) if v else 1)
     elif k == 'v' or k == 'verbose':
-      opt['verbose'] = (sum(_digits(v)) if v else 1)
+      opt['verbose'] = (v if v else 1)
     elif k == 'r' or k == 'reorder':
       opt['reorder'] = (int(v) if v else 0)
 
@@ -6245,7 +6317,7 @@ class SubstitutedExpression(object):
         self = cls(argv, **opt)
         if self is not None:
           # call the solver
-          self.go()
+          self.run()
           return 0
 
     # failure, output usage message
@@ -6299,7 +6371,6 @@ class SubstitutedExpression(object):
           print(e)
           print("[ERROR: try again]")
         print()
-
 
 
 
@@ -6490,7 +6561,7 @@ class SubstitutedDivision(SubstitutedExpression):
 
   Enigma 206 <https://enigmaticcode.wordpress.com/2014/07/13/enigma-206-division-some-letters-for-digits-some-digits-missing/>
 
-  >>> SubstitutedDivision('pkmkh / ?? = ???', ['pkm - pmd = xp', 'xpk - ?? = kh', 'khh - mbg = k']).go()
+  >>> SubstitutedDivision('pkmkh / ?? = ???', ['pkm - pmd = xp', 'xpk - ?? = kh', 'khh - mbg = k']).run().n
   pkmkh / ?? = ??? (rem k) [pkm - pmd = xp, xpk - ?? = kh, khh - mbg = k]
   47670 / 77 = 619 (rem 7) [476 - 462 = 14, 147 - 77 = 70, 700 - 693 = 7] / b=9 d=2 g=3 h=0 k=7 m=6 p=4 x=1
   [1 solution]
@@ -6721,7 +6792,7 @@ class SubstitutedDivision(SubstitutedExpression):
     opt['d2i'] = d2i
 
     # verbatim options
-    for v in ('digits', 'answer', 'code', 'verbose'):
+    for v in ('digits', 'answer', 'accumulate', 'code', 'verbose'):
       if v in kw:
         opt[v] = kw[v]
 
@@ -6752,7 +6823,7 @@ class SubstitutedDivision(SubstitutedExpression):
         if s[-1] is None: s[-1] = '0'
         break
     # find solutions (but disable solution output)
-    for s in SubstitutedExpression.solve(self, verbose=(verbose & ~4)):
+    for s in SubstitutedExpression.solve(self, verbose=(verbose & ~(self.vT))):
       if answer: (s, ans) = s
       # substitute the solution values
       (a, b, c, r) = self.substitute_all(s, (ta, tb, tc, tr))
@@ -6766,7 +6837,7 @@ class SubstitutedDivision(SubstitutedExpression):
       ss = SubstitutedDivisionSolution(a, b, c, r, subs, d, s)
       if check and not(check(ss)): continue
       # output the solution
-      if verbose & 4: self.output_solution(ss)
+      if verbose & self.vT: self.output_solution(ss)
       # return the result
       yield ((ss, ans) if answer else ss)
       if first: break
@@ -7549,13 +7620,16 @@ class DominoGrid(object):
         s1 = s2 = ''
 
   # solve a grid and output solutions
-  def go(self, fixed=None, used=[], sep='', prefix=''):
+  def run(self, fixed=None, used=[], sep='', prefix=''):
     """
     solve a grid and output the solutions
     """
     for s in self.solve(fixed, used):
       self.output_solution(s, prefix=prefix)
       print(sep)
+
+  # backward compatability
+  go = run
 
 ###############################################################################
 
@@ -8655,7 +8729,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.8.4')
+""".format(version=__version__, python='2.7.18', python3='3.8.5')
 
 if __name__ == "__main__":
 
