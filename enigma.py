@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jul 28 23:20:54 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jul 30 16:47:19 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -988,6 +988,18 @@ class multiset(dict):
   # copy a multiset
   def copy(self):
     return multiset.from_dict(self)
+
+  def min(self, **kw):
+    if not(self) and 'default' in kw: return kw['default']
+    return min(self.keys())
+
+  def max(self, **kw):
+    if not(self) and 'default' in kw: return kw['default']
+    return max(self.keys())
+
+  def sum(self):
+    return sum(v * k for (k, v) in self.items())
+
 
 def mcombinations(s, k=None):
   s = sorted(multiset(s))
@@ -5480,7 +5492,7 @@ class SubstitutedExpression(object):
   # standard debug levels
   v1 = vH | vT | vA # 1 = header + solutions + count
   v2 = v1 | vI # 2 = 1 + solver info
-  v3 = v2 | vE | vP # 3 = 2 + timing + code
+  v3 = v2 | vE | vC # 3 = 2 + timing + code
   v9 = vH | vT | vA | vE | vP | vI | vC # 9 = everything
 
   def _verbose(self, n):
@@ -5944,7 +5956,9 @@ class SubstitutedExpression(object):
     """
     find solutions to the substituted expression problem and output them.
 
+    check - a function to accept/reject solutions
     first - if set to True will stop after the first solution is output
+    verbose - control output
 
     returns a Record object with the following attributes:
       n = the number of solutions found
