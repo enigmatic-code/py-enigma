@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jul 30 16:47:19 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug  7 13:13:08 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -161,7 +161,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-07-29"
+__version__ = "2020-08-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -503,7 +503,7 @@ def nsplit(n, k=None, base=10):
   >>> nsplit(111 ** 2, 3)
   (3, 2, 1)
   """
-  if n < 0: n = -n
+  n = abs(int(n))
   ds = list()
   while True:
     (n, r) = divmod(n, base)
@@ -515,6 +515,23 @@ def nsplit(n, k=None, base=10):
       k -= 1
   return tuple(ds)
 
+# equivalent to: len(nsplit(n))
+# (we could use logarithms for "smallish" numbers)
+def ndigits(n, base=10):
+  """
+  return the number of digits in a number, when represented in the specified base.
+
+  >>> ndigits(factorial(70))
+  101
+  """
+  n = abs(int(n))
+  if n == 0: return 1
+  k = 1
+  u = base
+  while True:
+    if n < u: return k
+    k += 1
+    u *= base
 
 def nreverse(n, base=10):
   """
@@ -1189,6 +1206,10 @@ def filter_unique(s, f=identity, g=identity):
 # alias if you prefer the term partition (but don't confuse it with partitions())
 partition_unique = filter_unique
 
+# for this we will have to move fcompose() further up the file
+#elt = lambda i: (lambda x: x[i])
+#unique = fcompose(filter_unique, elt(0))
+#non_unique = fcompose(filter_unique, elt(1))
 
 
 def _collect(s, accept, reject, every):
@@ -1554,6 +1575,7 @@ def cbrt(x):
   """
   return (-math.pow(-x, _F13) if x < 0 else math.pow(x, _F13))
 
+# for large numbers: sympy.ntheory.factorint()
 def prime_factor(n):
   """
   generate (<prime>, <exponent>) pairs in the prime factorisation of positive integer <n>.
@@ -2222,12 +2244,23 @@ def powers(a, b, k=2):
 # compose functions in order (forward functional composition, "and then")
 # so: fcompose(f, g, h)(x) == h(g(f(x)))
 def fcompose(f, *gs):
+  """
+  forward functional composition ("and then")
+
+    fcompose(f, g, h)(x) == h(g(f(x)))
+
+  >>> fcompose(is_square, is_not_none)(49)
+  True
+  >>> fcompose(is_square, is_not_none)(50)
+  False
+  """
   # special case for 1 or 2 functions
   n = len(gs)
   if n == 0:
     return f
   if n == 1:
-    return (lambda *args, **kw: gs[0](f(*args, **kw)))
+    g = gs[0]
+    return (lambda *args, **kw: g(f(*args, **kw)))
   # general case
   def fn(*args, **kw):
     r = f(*args, **kw)
@@ -2239,6 +2272,11 @@ def fcompose(f, *gs):
 # compose functions in reverse order (reverse functional composition, "after")
 # so: rcompose(f, g, h)(x) = f(g(h(x)))
 def rcompose(*fns):
+  """
+  reverse functional composition
+
+    rcompose(f, g, h)(x) == f(g(h(x)))
+  """
   return fcompose(*(reversed(fns)))
 
 is_not_none = (lambda x: x is not None)
@@ -3865,14 +3903,14 @@ def _int2words(n, scale='short', sep='', hyphen=' '):
     raise ValueError(sprintf('Number too large (scale: {scale})'))
 
 # from http://en.wikipedia.org/wiki/Names_of_large_numbers
-_larger = [
-  'million', 'billion', 'trillion', 'quadrillion', 'quintillion', 'sextillion', 'septillion', 'octillion',
-  'nonillion', 'decillion', 'undecillion', 'duodecillion', 'tredecillion', 'quattuordecillion', 'quindecillion',
-  'sexdecillion', 'septendecillion', 'octodecillion', 'novemdecillion', 'vigintillion', 'unvigintillion',
-  'duovigintillion', 'tresvigintillion', 'quattuorvigintillion', 'quinquavigintillion', 'sesvigintillion',
-  'septemvigintillion', 'octovigintillion', 'novemvigintillion', 'trigintillion', 'untrigintillion',
-  'duotrigintillion', 'trestrigintillion', 'quattuortrigintillion', 'quinquatrigintillion', 'sestrigintillion',
-  'septentrigintillion', 'octotrigintillion', 'noventrigintillion', 'quadragintillion',
+_illions = [
+  'm', 'b', 'tr', 'quadr', 'quint', 'sext', 'sept', 'oct',
+  'non', 'dec', 'undec', 'duodec', 'tredec', 'quattuordec', 'quindec',
+  'sexdec', 'septendec', 'octodec', 'novemdec', 'vigint', 'unvigint',
+  'duovigint', 'tresvigint', 'quattuorvigint', 'quinquavigint', 'sesvigint',
+  'septemvigint', 'octovigint', 'novemvigint', 'trigint', 'untrigint',
+  'duotrigint', 'trestrigint', 'quattuortrigint', 'quinquatrigint', 'sestrigint',
+  'septentrigint', 'octotrigint', 'noventrigint', 'quadragint',
 ]
 
 def __int2words(n, scale='short', sep='', hyphen=' '):
@@ -3893,7 +3931,7 @@ def __int2words(n, scale='short', sep='', hyphen=' '):
     raise ValueError('Unsupported scale type: ' + scale)
   i = (len(str(n)) - 1) // g
   (d, r) = divmod(n, p ** i)
-  w = _larger[i - k]
+  w = _illions[i - k] + 'illion'
   x = _int2words(d, scale, sep, hyphen) + ' ' + w
   if r == 0: return x
   if r < 100: return x + ' and ' + _int2words(r, scale, sep, hyphen)
@@ -5901,6 +5939,7 @@ class SubstitutedExpression(object):
     eval(code, gs)
 
     self._solver = gs[solver]
+    self._globals = gs
     self._prepared = 1
 
 
@@ -5969,6 +6008,8 @@ class SubstitutedExpression(object):
     """
     verbose = (self.verbose if verbose is None else self._verbose(verbose))
 
+    if not self._prepared: self._prepare()
+
     # return:
     # n = number of solutions
     # count = count of answers
@@ -5984,7 +6025,8 @@ class SubstitutedExpression(object):
     if answer and accumulate:
       (acc, acc_t) = (accumulate, "accumulator")
       # if accumulate is a string, we should evaluate it
-      if isinstance(acc, basestring): (acc, acc_t) = (eval(acc), acc)
+      if isinstance(acc, basestring):
+        (acc, acc_t) = (eval(acc, self._globals), acc)
 
     # measure internal time
     if verbose & self.vE:
