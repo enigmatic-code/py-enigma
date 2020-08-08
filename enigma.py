@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug  8 12:57:05 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Aug  8 15:26:52 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -161,7 +161,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-08-07"
+__version__ = "2020-08-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3347,18 +3347,31 @@ def cslice(x):
 
 
 # overlapping tuples from a sequence
-def tuples(s, n=2):
+def tuples(s, n=2, circular=0):
   """
   generate overlapping <n>-tuples from sequence <s>.
 
   (for non-overlapping tuples see chunk()).
 
-  >>> list(tuples('12345'))
-  [('1', '2'), ('2', '3'), ('3', '4'), ('4', '5')]
+  >>> list(tuples('ABCDE'))
+  [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'E')]
   >>> list(tuples(irange(1, 5), 3))
   [(1, 2, 3), (2, 3, 4), (3, 4, 5)]
+  >>> list(tuples(irange(1, 5), 3, circular=1))
+  [(1, 2, 3), (2, 3, 4), (3, 4, 5), (4, 5, 1), (5, 1, 2)]
   """
+  assert n > 0
   i = iter(s)
+  if circular and n > 1:
+    # we need extract the first (n - 1) items and add them to the end
+    xs = first(i, n - 1)
+    if not xs: return
+    m = len(xs)
+    if m < n - 1:
+      i = itertools.chain(xs, i, (xs[k % m] for k in range(n - 1)))
+    else:
+      i = itertools.chain(xs, i, xs)
+  
   t = list()
   try:
     # collect the first tuple
