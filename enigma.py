@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug  7 13:13:08 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Aug  8 12:57:05 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -161,7 +161,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-08-06"
+__version__ = "2020-08-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -682,6 +682,13 @@ def peek(s, k=0, **kw):
   >>> peek(p for p in Primes() if p % 17 == 1)
   103
   """
+  if not isinstance(s, dict):
+    # try to index into the container
+    try:
+      return s[k]
+    except (KeyError, IndexError, TypeError):
+      pass
+  # try iterating through the container
   for (i, x) in enumerate(s):
     if i == k:
       return x
@@ -689,7 +696,7 @@ def peek(s, k=0, **kw):
     return kw['default']
   except KeyError:
     pass
-  raise ValueError("empty container")
+  raise ValueError("invalid index")
     
 
 def diff(a, b, *rest):
@@ -1170,6 +1177,8 @@ def identity(x):
   """
   return x
 
+FilterUnique = collections.namedtuple('FilterUnique', 'unique non_unique')
+
 def filter_unique(s, f=identity, g=identity):
   """
   for every object, x, in sequence, s, consider the map f(x) -> g(x)
@@ -1201,15 +1210,10 @@ def filter_unique(s, f=identity, g=identity):
   (r1, r2) = ([], [])
   for (k, v) in u.items():
     (r1 if len(v) == 1 else r2).extend(r[k])
-  return (r1, r2)
+  return FilterUnique(r1, r2)
 
 # alias if you prefer the term partition (but don't confuse it with partitions())
 partition_unique = filter_unique
-
-# for this we will have to move fcompose() further up the file
-#elt = lambda i: (lambda x: x[i])
-#unique = fcompose(filter_unique, elt(0))
-#non_unique = fcompose(filter_unique, elt(1))
 
 
 def _collect(s, accept, reject, every):
