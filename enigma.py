@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug  8 15:26:52 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug 14 12:08:31 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -161,7 +161,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-08-08"
+__version__ = "2020-08-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -237,6 +237,51 @@ def static(**kw):
       setattr(fn, k, v)
     return fn
   return decorate
+
+# can we treat x as an integer?
+# include = +/-/0, check for +ve, -ve, 0
+def as_int(x, include=""):
+  """
+  can argument <x> be treated as an integer?
+
+  <include> can be used to restrict the allowed range, by specifying
+  one or more of:
+    + = allow positive integers
+    - = allow negative integers
+    0 = allow zero
+
+  so things like this work:
+
+    as_int(0)  -->  0
+    as_int(42)  -->  42
+    as_int(42.0)  -->  42
+    as_int(Fraction(129, 3))  -->  43
+    as_int(sympy.Integer(42))  -->  42
+    as_int(sympy.Float(42.0))  -->  42
+    as_int(sympy.rational(129, 3))  -->  43
+
+  and things like this raise an error:
+
+    as_int("42")
+    as_int(42.5)
+    as_int(Fraction(129, 2))
+    as_int(42+0j)
+    as_int(42, include="-")
+    as_int(0, include="+")
+  """
+  try:
+    n = int(x)
+    if x == n:
+      if include:
+        (pos, neg, zero) = (x in include for x in '+-0')
+        if (pos and x > 0) or (neg and x < 0) or (zero and x == 0): return n
+      else:
+        return n
+  except:
+    pass
+  msg = "invalid integer: " + repr(x)
+  if include: msg += ' [include: ' + include + ']'
+  raise ValueError(msg)
 
 # useful routines for solving Enigma puzzles
 
@@ -503,7 +548,7 @@ def nsplit(n, k=None, base=10):
   >>> nsplit(111 ** 2, 3)
   (3, 2, 1)
   """
-  n = abs(int(n))
+  n = abs(as_int(n))
   ds = list()
   while True:
     (n, r) = divmod(n, base)
@@ -524,7 +569,7 @@ def ndigits(n, base=10):
   >>> ndigits(factorial(70))
   101
   """
-  n = abs(int(n))
+  n = abs(as_int(n))
   if n == 0: return 1
   k = 1
   u = base
@@ -800,7 +845,7 @@ class multiset(dict):
     update a multiset from a sequence of (<item>, <count>) pairs.
     """
     for (x, n) in vs:
-      self.add(x, n)
+      self.add(x, as_int(n))
     return self
 
   def update_from_dict(self, d):
@@ -1194,11 +1239,11 @@ def filter_unique(s, f=identity, g=identity):
   alias: partition_unique()
 
   "If I told you the first number you could deduce the second"
-  >>> filter_unique([(1, 1), (1, 3), (2, 1), (3, 1), (3, 2), (3, 3)], (lambda v: v[0]))[0]
+  >>> filter_unique([(1, 1), (1, 3), (2, 1), (3, 1), (3, 2), (3, 3)], (lambda v: v[0])).unique
   [(2, 1)]
 
   "If I told you the first number you could not deduce if the second was odd or even"
-  >>> filter_unique([(1, 1), (1, 3), (2, 1), (3, 1), (3, 2), (3, 3)], (lambda v: v[0]), (lambda v: v[1] % 2))[1]
+  >>> filter_unique([(1, 1), (1, 3), (2, 1), (3, 1), (3, 2), (3, 3)], (lambda v: v[0]), (lambda v: v[1] % 2)).non_unique
   [(3, 1), (3, 2), (3, 3)]
   """
   u = collections.defaultdict(set)
@@ -1437,7 +1482,7 @@ def partitions(s, n, pad=0, value=None, distinct=None):
   partition a sequence <s> into subsequences of length <n>.
 
   if <pad> is True then the sequence will be padded (using <value>)
-  until it's length is a integer multiple of <n>.
+  until its length is a integer multiple of <n>.
 
   if sequence <s> contains distinct elements then <distinct> can be
   set to True, if it is not set then <s> will be examined for repeated
@@ -1591,8 +1636,7 @@ def prime_factor(n):
   >>> list(prime_factor(factorial(12)))
   [(2, 10), (3, 5), (5, 2), (7, 1), (11, 1)]
   """
-  # to test the correct domain of the function we could use:
-  #if not(isinstance(n, numbers.Integral) and n > 0): raise ValueError("expecting positive integer")
+  n = as_int(n)
   if n > 1:
     i = 2
     # generate a list of deltas: 1, 2, then 2, 4, repeatedly
@@ -3350,8 +3394,10 @@ def cslice(x):
 def tuples(s, n=2, circular=0):
   """
   generate overlapping <n>-tuples from sequence <s>.
-
   (for non-overlapping tuples see chunk()).
+
+  if 'circular' is set to true, then values from the beginning of <s>
+  will be used to complete tuples when the end is reached.
 
   >>> list(tuples('ABCDE'))
   [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'E')]
@@ -3683,7 +3729,7 @@ def int2roman(x):
   >>> int2roman(1999)
   'MCMXCIX'
   """
-  x = int(x)
+  x = as_int(x)
   if not(0 < x < 5000): raise ValueError("integer out of range: {x}".format(x=x))
   s = list()
   for (n, i, m) in _romans:
@@ -4608,8 +4654,7 @@ class _PrimeSieveE6(object):
     limit of the sieve. When <mr> is set it can cope with numbers that
     have one large prime factor.
     """
-    # maybe should be: n < 1
-    #if n < 0: raise ValueError("can only factorise positive integers")
+    n = as_int(n, "0+")
     if n > 1:
       t = 0
       i = self.generate()
@@ -5366,8 +5411,16 @@ class SubstitutedSum(object):
 #
 # TODO: consider ordering the symbols, so we can calculate words sooner.
 #
-# TODO: consider allowing a "wildcard" character, for symbols that can
-# take on any available digit (but still not allow leading zeros). [E1579]
+# TODO: consider allowing a "wildcard" character, for symbols that can take
+# on any available digit (but still not allow leading zeros). [Enigma 1579]
+#
+# TODO: consider allowing code to generate possible values for a word
+# like: "[possible values] -> WORD", (so [Teaser 3019] would be:
+# [ "primes.irange(1000, 9999) -> WILL", "primes.irange(10, 99) -> AM" ], or
+# [Teaser 3018] could use [ "powers(31, 99, 2) -> ABCD" ])
+#
+# TODO: spotting it expressions for independent groups and solving
+# each group separately [Teaser 2990]
 
 _SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -6397,6 +6450,16 @@ class SubstitutedExpression(object):
     print(join(cls._usage(), sep=nl))
     return -1
 
+  # class method to load a run file
+  @classmethod
+  def run_file(cls, path, args=()):
+    argv = parsefile(path, *args)
+    # TODO: check argv[0] names the class
+    opt = cls.from_args(*argv[1:])
+    if opt:
+      argv = opt.pop('_argv')
+      return cls(argv, **opt)
+    
   # class method to provide a read/eval/print loop
   @classmethod
   def repl(cls, args=(), timed=1):
