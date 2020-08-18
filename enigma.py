@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug 14 12:08:31 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Aug 17 13:15:32 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -161,7 +161,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-08-10"
+__version__ = "2020-08-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5407,7 +5407,8 @@ class SubstitutedSum(object):
 #
 # the PyPy interpreter has neither of these limitations
 
-# TODO: think about negative values
+# TODO: think about negative values - expressions resulting in an
+# alphametic word must be non-negative
 #
 # TODO: consider ordering the symbols, so we can calculate words sooner.
 #
@@ -5889,41 +5890,52 @@ class SubstitutedExpression(object):
     # deal with each <expr>,<value> pair
     for ((expr, val, k), xsyms, vsyms) in zip(exprs, xs, vs):
 
-      # deal with each symbol in <expr>
-      # TODO: we could consider these in an order that makes words
-      # in <words> as soon as possible
-      for s in xsyms:
-        if s in done: continue
-        # allowable digits for s
-        ds = valid[s]
-        in_loop = True
-        prog.append(sprintf("{_}for {s} in {ds}:", s=sym(s)))
+      # EXPERIMENTAL: do something about: "<iterator>: = <word>
+      if k == 3 and expr.endswith(':'):
+        prog.append(sprintf("{_}for {vx} in {expr}")) # expr already has a colon
         _ += indent
-        if done and s in distinct:
-          # TODO: we should exclude initial values (that are excluded from ds) here
-          check = join(((sym(s) + ' != ' + sym(x)) for x in done if x in distinct[s]), sep=' and ')
-          if check:
-            prog.append(sprintf("{_}if {check}:"))
-            _ += indent
-        done.add(s)
-        # look for words which can now be made
-        for w in words:
-          if s in w and all(x in done for x in w):
-            prog.append(sprintf("{_}{w} = {x}", w=sym(w), x=_word(w, base)))
+        #prog.append(sprintf("{_}{w} = {vx}", w=sym(val)))
+        done.update(xsyms)
+
+      else:
+        # deal with each symbol in <expr>
+        # TODO: we could consider these in an order that makes words
+        # in <words> as soon as possible
+        for s in xsyms:
+          if s in done: continue
+          # allowable digits for s
+          ds = valid[s]
+          in_loop = True
+          prog.append(sprintf("{_}for {s} in {ds}:", s=sym(s)))
+          _ += indent
+          if done and s in distinct:
+            # TODO: we should exclude initial values (that are excluded from ds) here
+            check = join(((sym(s) + ' != ' + sym(x)) for x in done if x in distinct[s]), sep=' and ')
+            if check:
+              prog.append(sprintf("{_}if {check}:"))
+              _ += indent
+          done.add(s)
+          # look for words which can now be made
+          for w in words:
+            if s in w and all(x in done for x in w):
+              prog.append(sprintf("{_}{w} = {x}", w=sym(w), x=_word(w, base)))
 
       # calculate the expression
-      if k != 0: # (but not for the answer expression)
+      if k != 0 and not(expr.endswith(':')): # (but not for the answer expression)
         x = _replace_words(expr, (lambda w: '(' + sym(w) + ')'))
         prog.append(sprintf("{_}try:"))
         prog.append(sprintf("{_}  {vx} = int({x})"))
         prog.append(sprintf("{_}except NameError:")) # catch undefined functions
         prog.append(sprintf("{_}  raise"))
         prog.append(sprintf("{_}except:")) # maybe "except (ArithmeticError, ValueError)"
-        prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'pass')))
+        prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'raise')))
 
       # check the value
       if k == 3:
-        # this is a literal word
+        # this is a literal (alphametic) word
+        # so it must have a non-negative value
+        prog.append(sprintf("{_}if {vx} >= 0:"))
+        _ += indent
         for (j, y) in enumerate(val[::-1], start=-len(val)):
           if y in done:
             # this is a symbol with an assigned value
@@ -6454,7 +6466,8 @@ class SubstitutedExpression(object):
   @classmethod
   def run_file(cls, path, args=()):
     argv = parsefile(path, *args)
-    # TODO: check argv[0] names the class
+    if run.alias.get(argv[0], argv[0]) != cls.__name__:
+      printf("WARNING: ignoring cmd = {argv[0]}")
     opt = cls.from_args(*argv[1:])
     if opt:
       argv = opt.pop('_argv')
@@ -7291,6 +7304,11 @@ class Football(object):
     else:
       # [Python 3]: yield from ...
       for r in itertools.product(*gs): yield r
+
+  # points for a game
+  def points(self, g, t=0):
+    if t: g = self._swap.get(g, g)
+    return self._points.get(g, 0)
 
   # compute the table
   def table(self, gs, ts):
@@ -8503,6 +8521,7 @@ _run_exit = None
 
 # run command line arguments
 # always returns None, but sets _run_exit
+@static(alias={ 'Alphametic': 'SubstitutedExpression' })
 def run(cmd, *args, **kw):
   """
   run with command line arguments
@@ -8597,10 +8616,9 @@ def run(cmd, *args, **kw):
       return
 
   # if cmd names a class[.method]
-  alias = { 'Alphametic': 'SubstitutedExpression' }
   (obj, _, fn_name) = cmd.partition('.')
   if not fn_name: fn_name = 'command_line'
-  fn = globals().get(alias.get(obj, obj))
+  fn = globals().get(run.alias.get(obj, obj))
   if fn:
     fn = getattr(fn, fn_name, None)
     if fn:
