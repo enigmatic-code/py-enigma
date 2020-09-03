@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Aug 17 13:15:32 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep  3 14:23:44 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -161,7 +161,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-08-13"
+__version__ = "2020-08-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6941,7 +6941,7 @@ class SubstitutedDivision(SubstitutedExpression):
     opt['d2i'] = d2i
 
     # verbatim options
-    for v in ('digits', 'answer', 'accumulate', 'code', 'verbose'):
+    for v in ('base', 'digits', 'answer', 'accumulate', 'code', 'verbose'):
       if v in kw:
         opt[v] = kw[v]
 
@@ -6949,8 +6949,9 @@ class SubstitutedDivision(SubstitutedExpression):
     SubstitutedExpression.__init__(self, expr, **opt)
 
   def substitute_all(self, d, ss):
+    base = self.base
     if ss is None: return None
-    return tuple(int(self.substitute(d, s)) for s in ss)
+    return tuple(base2int(self.substitute(d, s), base=base) for s in ss)
 
   def solve(self, check=None, first=None, verbose=None):
     """
