@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep  3 14:23:44 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 10 15:05:32 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -161,7 +161,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-08-18"
+__version__ = "2020-09-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -741,7 +741,7 @@ def peek(s, k=0, **kw):
     return kw['default']
   except KeyError:
     pass
-  raise ValueError("invalid index")
+  raise ValueError(sprintf("invalid index {k}"))
     
 
 def diff(a, b, *rest):
@@ -1309,6 +1309,7 @@ def group(s, by=identity, st=None, fn=identity):
       d[by(x)].append(x)
   return dict((k, fn(v)) for (k, v) in d.items())
 
+# see ulambda() for a workaround for more complicated unpacking
 def unpack(fn):
   """
   Turn a function that takes multiple parameters into a function that
@@ -1338,6 +1339,63 @@ def unpack(fn):
   [(3, 4)]
   """
   return lambda args, kw=None: (fn(*args, **kw) if kw else fn(*args))
+
+
+# here's workaround for more complicated parameter unpacking in Python 3
+#
+# in Python 2.7 we could do:
+#
+#   fn = lambda (x, (y, z)): x + y + z
+#
+# instead we can do this:
+#
+#   fn = ulambda("(x, (y, z))", "x + y + z")
+#
+#   fn = ulambda("(x, (y, z)): x + y + z")
+#
+def ulambda(arg, expr=None):
+  """
+  provide an equivalent to:
+
+    lambda {arg}: {expr}
+
+  in Python 3
+
+  where {arg} specifies a complex parameter unpacking for a single argument
+  e.g.:
+
+  >>> dist = ulambda("((x1, y1), (x2, y2))", "hypot(x2 - x1, y2 - y1)")
+  >>> dist(((1, 2), (5, 5)))
+  5.0
+  """
+  if expr is None:
+    (arg, _, expr) = (x.strip() for x in arg.partition(":"))
+
+  if _python == 2:
+    # in Python 2 is is straightforward lambda
+    return eval(sprintf("lambda {arg}: {expr}"))
+  else:
+    # in Python 3 we can use a workaround
+    #
+    # we could use:
+    #
+    #   def __ulambda__(_x_):
+    #     {args} = _x_
+    #     return {expr}
+    #
+    # but this also works and yields the function we want:
+    #
+    #   lambda _x_: next({expr} for {args} in [_x_])
+    #
+    # [ peek() would also work instead of next() ]
+    # which is equivalent to a (hypothetical) "where" construction:
+    #
+    #   lambda _x_: {expr} where {args} = _x_
+    #
+    # 
+    #return eval(sprintf("lambda _x_: [{expr} for {arg} in [_x_]][0]"))
+    #return eval(sprintf("lambda _x_: peek({expr} for {arg} in [_x_])"))
+    return eval(sprintf("lambda _x_: next({expr} for {arg} in [_x_])"))
 
 
 # count the number of occurrences of a predicate in an iterator
@@ -7795,7 +7853,7 @@ import time
 
 if hasattr(time, 'process_time'):
   _timer = time.process_time
-if hasattr(time, 'perf_counter'):
+elif hasattr(time, 'perf_counter'):
   _timer = time.perf_counter
 elif sys.platform == "win32":
   _timer = time.clock
@@ -8567,7 +8625,7 @@ def run(cmd, *args, **kw):
       # *.run => treat it as a run file
       (cmd, args) = parsefile(cmd, *args)
     else:
-      if cmd.endswith(".py") and not interp:
+      if any(cmd.endswith(x) for x in (".py", ".py2", ".py3")) and not interp:
         # use runpy for *.py
         import runpy
         get_argv(force=1, args=args)
