@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 10 15:05:32 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Sep 11 16:42:44 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -161,7 +161,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-09-09"
+__version__ = "2020-09-11"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3209,9 +3209,9 @@ def irange(a, b=None, step=1):
   """
   a range iterator that includes both integer endpoints, <a> and <b>.
 
-  if only one endpoint is specified then this is taken as the highest
-  value, and a lowest value of 1 is used (so irange(n) produces n
-  integers from 1 to n).
+  if only one value <n> is specified for the endpoints, tben <n>
+  values are produces suitablr for indexing into an array of size <n>
+  (so irange(n) produces n integers from 0 to n - 1).
 
   if <b> is specified as inf (or -inf for negative steps) the iterator
   generate will values indefinitely.
@@ -3222,8 +3222,10 @@ def irange(a, b=None, step=1):
   [9, 8, 7, 6, 5, 4, 3, 2, 1]
   >>> list(irange(0, 10, step=3))
   [0, 3, 6, 9]
-  >>> list(irange(9))
-  [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  >>> list(irange(10))
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  >>> list(irange(10, step=-1))
+  [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
   """
   if step == 0: raise ValueError("irange: step cannot be 0")
   if b == inf:
@@ -3231,7 +3233,7 @@ def irange(a, b=None, step=1):
   elif b == -inf:
     if step > 0: return range(0)
   else:
-    if b is None: (a, b) = (1, a)
+    if b is None: (a, b) = ((0, a - 1) if step > 0 else (a - 1, 0))
     return range(a, b + (1 if step > 0 else -1), step)
   return itertools.count(start=a, step=step)
 
