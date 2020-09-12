@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Sep 11 16:42:44 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Sep 12 22:27:37 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -993,7 +993,7 @@ class multiset(dict):
     r = multiset(self)
     for m in rest:
       if not isinstance(m, dict): m = multiset(m)
-      r = multiset((item, min(count, r.get(item, 0))) for (item, count) in m.items())
+      r = multiset.from_pairs((item, min(count, r.get(item, 0))) for (item, count) in m.items())
     return r
 
   # differences between self and m
@@ -3209,8 +3209,8 @@ def irange(a, b=None, step=1):
   """
   a range iterator that includes both integer endpoints, <a> and <b>.
 
-  if only one value <n> is specified for the endpoints, tben <n>
-  values are produces suitablr for indexing into an array of size <n>
+  if only one value <n> is specified for the endpoints, then <n>
+  values are produced suitable for indexing into an array of size <n>
   (so irange(n) produces n integers from 0 to n - 1).
 
   if <b> is specified as inf (or -inf for negative steps) the iterator
