@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep 16 16:38:22 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep 16 19:23:42 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,6 +238,24 @@ def static(**kw):
       setattr(fn, k, v)
     return fn
   return decorate
+
+# useful as a decorator for caching functions (@cached).
+# NOTE: functools.lru_cached() can be used as an alternative in Python from v3.2
+def cached(f):
+  """
+  return a cached version of function <f>.
+  """
+  c = dict()
+  @functools.wraps(f)
+  def _cached(*k):
+    try:
+      #if k in c: printf("[{f.__name__}: cache hit, {k}")
+      return c[k]
+    except KeyError:
+      r = c[k] = f(*k)
+      #printf("[{f.__name__}: {k} -> {r}]")
+      return r
+  return _cached
 
 # can we treat x as an integer?
 # include = +/-/0, check for +ve, -ve, 0
@@ -2551,12 +2569,13 @@ def _roots(domain, *nds):
     elif domain in "F":
       yield float(n / d)
     elif domain in "QZ":
-      from fractions import Fraction as F
+      F = Rational()
       x = F(n, d)
       if domain == "Q":
         yield x
-      elif domain == "Z" and x.denominator == 1:
-        yield x.numerator
+      elif domain == "Z":
+        x = catch(as_int, x)
+        if x is not None: yield x
 
 # find roots of a quadratic equation
 # domain = "Z" (integer), "Q" (rational), "F" (float), "C" (complex float)
@@ -2596,7 +2615,7 @@ def quadratic(a, b, c, domain="Q"):
       return _roots(domain, (b + r, d), (b - r, d))
 
   elif domain in "QZ":
-    from fractions import Fraction as F
+    F = Rational()
     D = F(D)
     p = is_square(D.numerator)
     q = is_square(D.denominator)
@@ -2866,7 +2885,7 @@ def is_coprime(a, b):
   return gcd(a, b) == 1
 
 
-# for those times when fractions.Fraction is overkill
+# for those times when Rational() is overkill
 def fraction(a, b, *rest):
   """
   return the numerator and denominator of the fraction a/b in lowest terms
@@ -2890,7 +2909,9 @@ def fraction(a, b, *rest):
   return (a // g, b // g)
 
 # find an appropriate rational class
-def Rational(src="gmpy2.mpq gmpy.mpq fractions.Fraction", verbose=None):
+# (could also try "sympy.Rational", but not for speed)
+@static(src="gmpy2.mpq gmpy.mpq fractions.Fraction", impl=dict())
+def Rational(src=None, verbose=None):
   """
   select a class for representing rationals.
 
@@ -2899,17 +2920,28 @@ def Rational(src="gmpy2.mpq gmpy.mpq fractions.Fraction", verbose=None):
   >> F = Rational(src="fractions.Fraction", verbose=1)
   [Rational: using fractions.Fraction]
   """
-  if verbose is None: verbose = ('v' in _PY_ENIGMA)
+  if verbose is None: verbose = ('v' in _PY_ENIGMA)  
+  if src is None: src = Rational.src
+  f = None
   for s in src.split():
-    (mod, fn) = s.split('.', 2)      
+    try:
+      f = Rational.impl[s]
+      break
+    except KeyError:
+      pass
+    (mod, fn) = s.split('.', 2) 
     try:
       t = __import__(mod)
     except ImportError:
       continue
-    else:
+    try:
       f = t.__dict__[fn]
-      if verbose: printf("[Rational: using {s}]")
-      return f
+    except KeyError:
+      continue
+    Rational.impl[s] = f
+    break
+  if verbose: printf("[Rational: using {s}]", s=(s if f else f))
+  return f
 
 @static(impl=None)
 def rational(*args, **kw):
@@ -3212,25 +3244,6 @@ def printf(fmt='', **kw):
   if s.endswith('\\'): (s, d['end']) = (s[:-1], '')
   print(s, **d)
 
-
-
-# useful as a decorator for caching functions (@cached).
-# NOTE: functools.lru_cached() can be used as an alternative in Python from v3.2
-def cached(f):
-  """
-  return a cached version of function <f>.
-  """
-  c = dict()
-  @functools.wraps(f)
-  def _cached(*k):
-    try:
-      #if k in c: printf("[{f.__name__}: cache hit, {k}")
-      return c[k]
-    except KeyError:
-      r = c[k] = f(*k)
-      #printf("[{f.__name__}: {k} -> {r}]")
-      return r
-  return _cached
 
 def catch(fn, *args, **kw):
   """
@@ -4493,7 +4506,7 @@ def poly_rational_roots(p, domain="Q", include="+-0"):
   assert domain in "QZ"
   if not p: return
   (pos, neg, zero) = (x in include for x in '+-0')
-  from fractions import Fraction as F
+  F = Rational()
   # first deal with a root at x=0
   if p[0] == 0:
     if zero: yield (0 if domain == "Z" else F(0, 1))
@@ -8379,15 +8392,14 @@ def __matrix():
     return (det, B)
 
 
-  import fractions
-
   # map <fn> over all elements of (2d) matrix <M>
   def map2d(fn, M):
     if fn is None: fn = identity
     return list(list(fn(x) for x in r) for r in M)
 
   # default B is the identity matrix corresponding to A in this case X is the inverse of A
-  def gauss(A, B=None, F=fractions.Fraction):
+  def gauss(A, B=None, F=None):
+    if F is None: F = Rational()
 
     # check A is square
     n = len(A)
@@ -8411,7 +8423,7 @@ def __matrix():
 
 
   # solve a system of linear equations
-  def linear(A, B=0, F=fractions.Fraction):
+  def linear(A, B=0, F=None):
     """
     solve a system of linear equations.
 
@@ -8426,7 +8438,8 @@ def __matrix():
 
     Otherwise a sequence of the solution values x is returned (which will be in the field F)
     """
-
+    if F is None: F = Rational()
+    
     # verify A
     n = len(A)
     m = len(A[0])
