@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Sep 12 22:27:37 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep 16 16:38:22 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -151,6 +151,7 @@ MagicSquare            - a class for solving magic squares
 multiset               - a class for manipulating multisets
 Polynomial             - a class for manipulating polynomials
 Primes                 - a class for creating prime sieves
+Rational               - select a class for representing rational numbers
 SubstitutedDivision    - a class for solving substituted long division sums
 SubstitutedExpression  - a class for solving general substituted expression (alphametic/cryptarithm) problems
 SubstitutedSum         - a class for solving substituted addition sums
@@ -161,7 +162,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-09-11"
+__version__ = "2020-09-16"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2888,6 +2889,47 @@ def fraction(a, b, *rest):
   g = gcd(a, b)
   return (a // g, b // g)
 
+# find an appropriate rational class
+def Rational(src="gmpy2.mpq gmpy.mpq fractions.Fraction", verbose=None):
+  """
+  select a class for representing rationals.
+
+  >> F = Rational(verbose=1)
+  [Rational: using gmpy2.mpq]
+  >> F = Rational(src="fractions.Fraction", verbose=1)
+  [Rational: using fractions.Fraction]
+  """
+  if verbose is None: verbose = ('v' in _PY_ENIGMA)
+  for s in src.split():
+    (mod, fn) = s.split('.', 2)      
+    try:
+      t = __import__(mod)
+    except ImportError:
+      continue
+    else:
+      f = t.__dict__[fn]
+      if verbose: printf("[Rational: using {s}]")
+      return f
+
+@static(impl=None)
+def rational(*args, **kw):
+  """
+  create an object representing a rational number.
+
+  the class used is selected using Rational(), so for more control use:
+
+    >> rational = Rational(verbose=1)
+  or:
+    >> rational = Rational(src="<preferred-implementations>", verbose=1)
+
+  to see what implementation is being used.
+  (or set the 'v' flag in the environment variable PY_ENIGMA).
+
+  >>> rational(1, 49) * 49 == 1
+  True
+  """
+  if rational.impl is None: rational.impl = Rational()
+  return rational.impl(*args, **kw)
 
 def factorial(a, b=1):
   """
