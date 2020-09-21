@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep 16 19:23:42 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Sep 21 16:23:00 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -145,6 +145,7 @@ update                 - return an updated copy of an object
 Accumulator            - a class for accumulating values
 CrossFigure            - a class for solving cross figure puzzles
 Delay                  - a class for the delayed evaluation of a function
+Denominations          - express amounts using specified denominations
 DominoGrid             - a class for solving domino grid puzzles
 Football               - a class for solving football league table puzzles
 MagicSquare            - a class for solving magic squares
@@ -162,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-09-16"
+__version__ = "2020-09-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2910,6 +2911,10 @@ def fraction(a, b, *rest):
 
 # find an appropriate rational class
 # (could also try "sympy.Rational", but not for speed)
+# be aware:
+#   >> x = mpq(64)
+#   >> y = mpq(x, 2)
+# will end up setting both x and y to 32
 @static(src="gmpy2.mpq gmpy.mpq fractions.Fraction", impl=dict())
 def Rational(src=None, verbose=None):
   """
@@ -2920,26 +2925,32 @@ def Rational(src=None, verbose=None):
   >> F = Rational(src="fractions.Fraction", verbose=1)
   [Rational: using fractions.Fraction]
   """
-  if verbose is None: verbose = ('v' in _PY_ENIGMA)  
-  if src is None: src = Rational.src
-  f = None
-  for s in src.split():
+  s = f = None
+  if src is None:
     try:
-      f = Rational.impl[s]
+      (s, f) = Rational.impl['*']
+    except KeyError:
+      src = Rational.src
+  if f is None:
+    for s in src.split():
+      try:
+        f = Rational.impl[s]
+        break
+      except KeyError:
+        pass
+      (mod, fn) = s.split('.', 2) 
+      try:
+        t = __import__(mod)
+      except ImportError:
+        continue
+      try:
+        f = t.__dict__[fn]
+      except KeyError:
+        continue
+      Rational.impl[s] = f
+      if '*' not in Rational.impl and src == Rational.src: Rational.impl['*'] = (s, f)
       break
-    except KeyError:
-      pass
-    (mod, fn) = s.split('.', 2) 
-    try:
-      t = __import__(mod)
-    except ImportError:
-      continue
-    try:
-      f = t.__dict__[fn]
-    except KeyError:
-      continue
-    Rational.impl[s] = f
-    break
+  if verbose is None: verbose = ('v' in _PY_ENIGMA)    
   if verbose: printf("[Rational: using {s}]", s=(s if f else f))
   return f
 
@@ -3608,7 +3619,7 @@ def bit_permutations(a, b=None):
     a = t | ((((t & -t) // (a & -a)) >> 1) - 1)
 
 
-# for "coin puzzles" (see also: denominations.py)
+# for "coin puzzles", see also: Denominations()
 
 # simple express:
 def express(t, ds, qs=None, min_q=0, s=[]):
@@ -3666,8 +3677,117 @@ def express_quantities(t, ds, qs, s=[]):
       if d * i > t: break
       for r in express_quantities(t - d * i, ds[1:], qs, s + [i]): yield r
 
-# I also have an implementation of the Boecker-Liptak Money Changing algorithm,
-# but it has not been necessary to bring it to bear on Enigma style puzzles yet.
+
+# An implementation of the Boecker-Liptak Money Changing algorithm from:
+#
+# https://bio.informatik.uni-jena.de/bib2html/downloads/2007/BoeckerLiptak_FastSimpleAlgorithmMoneyChanging_Algorithmica_2007.pdf
+# https://pdfs.semanticscholar.org/14ac/14a15ebc31b58a4ac04328f9824f743a1e4e.pdf
+#
+# this implementation uses the "Round Robin" algorithm before optimisations.
+
+# make the Extended Residue Table
+def _residues(vs):
+  # empty table
+  res = [None] * len(vs)
+  # initial row
+  v0 = vs[0]
+  r = [inf] * v0
+  r[0] = 0
+  # fill out each row
+  for (i, vi) in enumerate(vs):
+    if i > 0:
+      d = gcd(v0, vi)
+      for p in range(d):
+        m = min(r[q] for q in range(p, v0, d))
+        if m < inf:
+          for c in range(v0 // d):
+            m += vi
+            j = m % v0
+            if r[j] < m:
+              m = r[j]
+            else:
+              r[j] = m
+    res[i] = list(r)
+  return res
+
+# generate possible expressions of t
+def _find_all(t, vs, i, c, res):
+  v0 = vs[0]
+  if i == 0:
+    c[0] = t // v0
+    yield tuple(c)
+  else:
+    vi = vs[i]
+    m = lcm(v0, vi)
+    d = m // vi
+    for j in range(0, d):
+      c[i] = j
+      u = t - j * vi
+      b = res[i - 1][u % v0]
+      while u >= b:
+        for x in _find_all(u, vs, i - 1, c, res): yield x
+        u -= m
+        c[i] += d
+
+
+class Denominations(object):
+  """
+  An implementation of the Boecker-Liptak Money Changing algorithm.
+
+  The denominations passed in are sorted into increasing order, and
+  accessible via the 'denominations' attribute.
+
+  Quantities returned by 'express()' are in the same order as the
+  'denominations' attribute.
+
+  >>> sorted(Denominations(3, 5, 7).express(20))
+  [(0, 4, 0), (1, 2, 1), (2, 0, 2), (5, 1, 0)]
+
+  >>> sorted(Denominations(3, 5, 7).express(20, min_q=1))
+  [(1, 2, 1)]
+
+  the number of ways to change 1 pound into smaller coins:
+  >>> Denominations(1, 2, 5, 10, 20, 50).count(100)
+  4562
+
+  using at least 1 of each type of coin:
+  >>> Denominations(1, 2, 5, 10, 20, 50).count(100, min_q=1)
+  15
+
+  the largest non-McNugget number:
+  >>> Denominations(6, 9, 20).frobenius()
+  43
+  """
+  def __init__(self, *denominations):
+    # first sort the denominations
+    ds = tuple(sorted(denominations))
+    assert ds[0] > 0 and seq_all_different(ds), sprintf("invalid denominations: {denominations}")
+    self.denominations = ds
+    # compute the extended residue table for the given denominations
+    self.residues = _residues(ds)
+
+  # generate different ways to express <amount>
+  def express(self, amount, min_q=0):
+    n = len(self.denominations)
+    if min_q == 0:
+      for t in _find_all(amount, self.denominations, n - 1, [0] * n, self.residues):
+        yield t
+    elif min_q > 0:
+      amount -= min_q * sum(self.denominations)
+      if amount == 0:
+        yield (0,) * n
+      elif amount > 0:
+        for t in _find_all(amount, self.denominations, n - 1, [0] * n, self.residues):
+          yield tuple(x + min_q for x in t)
+
+  # count the number of ways to express <amount>
+  def count(self, amount, min_q=0):
+    return icount(self.express(amount, min_q=min_q))
+
+  # return the Frobenius number (the largest amount that cannot be changed)
+  def frobenius(self):
+    m = max(self.residues[-1])
+    return (None if m == inf else m - self.denominations[0])
 
 ###############################################################################
 
