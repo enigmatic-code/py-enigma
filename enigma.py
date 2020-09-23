@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Sep 21 16:23:00 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep 23 08:11:30 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-09-21"
+__version__ = "2020-09-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3775,7 +3775,7 @@ class Denominations(object):
     elif min_q > 0:
       amount -= min_q * sum(self.denominations)
       if amount == 0:
-        yield (0,) * n
+        yield (min_q,) * n
       elif amount > 0:
         for t in _find_all(amount, self.denominations, n - 1, [0] * n, self.residues):
           yield tuple(x + min_q for x in t)
