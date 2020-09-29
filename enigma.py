@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep 23 08:11:30 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Sep 26 16:43:42 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-09-22"
+__version__ = "2020-09-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -509,6 +509,41 @@ def concat(*args, **kw):
     except:
       raise
   return join(args, sep=sep, enc=enc)
+
+# translate text <t>, using map <m> (and optional symbols <s>)
+def translate(t, m, s=""):
+  """
+  translate the text in <t> according to map <m> (and symbols <s>)
+
+  <t> is a string (sequence of letters), if there are sections of the
+  string enclosed in curly braces only those sections will be
+  translated, otherwise the whole string is processed.
+  
+  <m> can be:
+    - a dict of <letter> -> <replacement> mappings
+    - a sequence of letters to replace, in which case <s> should
+      give the corresponding substitutions
+    - a function called for each replacement, that should provide
+      the replacement value
+
+  substitutions can be multiple letters
+
+  >>> translate("A={A} B={B} C={C}", dict(A=1, B=2, C=3))
+  'A=1 B=2 C=3'
+  >>> translate("9567 + 1085 = 10652", "75160892", "DEMNORSY")
+  'SEND + MORE = MONEY'
+  >>> translate("1->{1}; 2->{2}; 3->{3}", (lambda x: int(x) ** 2))
+  '1->1; 2->4; 3->9'
+  """
+  t = str(t)
+  # construct the map
+  if callable(m):
+    f = m
+  else:
+    if not isinstance(m, dict): m = dict(zip(m, s))
+    f = (lambda x: m.get(x, x))
+  fn = (lambda t: join(map(f, t)))
+  return (re.sub(r'{(.*?)}', (lambda x: fn(x.group(1))), t) if '{' in t else fn(t))
 
 
 def nconcat(*digits, **kw):
@@ -5327,11 +5362,7 @@ def substitute(s2d, text, digits=None):
   """
   if text is None: return None
   if digits is None: digits = base_digits()
-  fn = (lambda t: join((digits[s2d[x]] if x in s2d else x) for x in t))
-  if '{' in text:
-    return re.sub(r'{(.*?)}', (lambda m: fn(m.group(1))), text)
-  else:
-    return fn(text)
+  return translate(text, (lambda x: digits[s2d[x]] if x in s2d else x))
 
 # friendly interface to the substituted sum solver
 def substituted_sum(terms, result, digits=None, l2d=None, d2i=None, base=10):
