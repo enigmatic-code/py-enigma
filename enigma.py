@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Sep 26 16:43:42 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Oct  9 09:32:53 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-09-26"
+__version__ = "2020-10-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1159,6 +1159,7 @@ def mpermutations(s, k=None):
   if k is None: k = len(s)
   return mP(s, k)
 
+# a simple implementation of derangements
 def derangements(s, k=None):
   s = list(s)
   if k is None: k = len(s)
@@ -1276,6 +1277,19 @@ def identity(x):
   the identity function: identity(x) == x
   """
   return x
+
+def is_equal(x, y):
+  """
+  is_equal(x, y) is the same as (x == y)
+
+  >>> is_equal(1, 2)
+  False
+  >>> is_equal(42, 42)
+  True
+  >>> is_equal([1, 2, 3], (1, 2, 3))
+  False
+  """
+  return (x == y)
 
 FilterUnique = collections.namedtuple('FilterUnique', 'unique non_unique')
 
@@ -3447,14 +3461,24 @@ def update(s, ps=(), vs=None):
 
   >>> update(dict(a=1, b=2, c=3), 'bc', (4, 9)) == dict(a=1, b=4, c=9)
   True
+
+  >>> update((1, 2, 3), [(2, 4)])
+  (1, 2, 4)
   """
   if vs is not None: ps = zip(ps, vs)
-  try:
-    # use copy() method if available
-    s = s.copy()
-  except AttributeError:
-    # otherwise create a new object initialised from the old one
-    s = type(s)(s)
+  # turn a tuple into a list (so it can be updated)
+  # and then back to a tuple at the end
+  fn = None
+  if isinstance(s, tuple):
+    fn = type(s)
+    s = list(s)
+  else:
+    try:
+      # use copy() method if available
+      s = s.copy()
+    except AttributeError:
+      # otherwise create a new object initialised from the old one
+      s = type(s)(s)
   try:
     # use update() method if available
     s.update(ps)
@@ -3463,7 +3487,7 @@ def update(s, ps=(), vs=None):
     for (k, v) in ps:
       s[k] = v
   # return the new object
-  return s
+  return (fn(s) if fn else s)
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
@@ -3803,6 +3827,12 @@ class Denominations(object):
 
   # generate different ways to express <amount>
   def express(self, amount, min_q=0):
+    """
+    generate the different ways to express the given amount.
+
+    if min_q is specified, at least that many instances of each
+    denomination must be used.
+    """
     n = len(self.denominations)
     if min_q == 0:
       for t in _find_all(amount, self.denominations, n - 1, [0] * n, self.residues):
@@ -3817,10 +3847,16 @@ class Denominations(object):
 
   # count the number of ways to express <amount>
   def count(self, amount, min_q=0):
+    """
+    count the number of ways of expressing an amount"
+    """
     return icount(self.express(amount, min_q=min_q))
 
   # return the Frobenius number (the largest amount that cannot be changed)
   def frobenius(self):
+    """
+    return the largest amount not expressible using the denominations.
+    """
     m = max(self.residues[-1])
     return (None if m == inf else m - self.denominations[0])
 
@@ -9150,7 +9186,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.8.5')
+""".format(version=__version__, python='2.7.18', python3='3.9.0')
 
 if __name__ == "__main__":
 
