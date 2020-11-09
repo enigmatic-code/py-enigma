@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Oct  9 09:32:53 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Nov  9 22:02:03 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-10-05"
+__version__ = "2020-11-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -209,6 +209,9 @@ nl = "\n"
 pi = math.pi
 two_pi = 2.0 * pi
 inf = float('+inf')
+
+_PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
+
 
 # add attributes to a function (to use as static variables)
 # (but for better performance use global variables)
@@ -340,6 +343,16 @@ def compare(a, b, vs=None):
   """
   r = (b < a) - (a < b)
   return (vs[r + 1] if vs else r)
+
+# logical implication: p -> q
+def implies(p, q):
+  """
+  logical implication: (p -> q) = (not(p) or q)
+
+  >>> list(p for p in irange(1, 100) if not implies(is_prime(p), p % 6 in (1, 5)))
+  [2, 3]
+  """
+  return not(p) or q
 
 # it's probably quicker (and shorter) to just use:
 #   X not in args
@@ -1172,7 +1185,7 @@ def subfactorial(n):
   if n == 0: return 1
   return n * subfactorial(n - 1) + (-1 if n % 2 else 1)
 
-# subsets (or subseqs) wraps various itertools methods (which can save an import)
+# subsets (or subseqs) wraps various methods (which can save an import)
 @static(select_fn=dict(), prepare_fn=dict())
 def subsets(s, size=None, min_size=0, max_size=None, select='C', prepare=None, fn=tuple):
   """
@@ -2769,6 +2782,14 @@ def div(a, b):
 
 is_multiple = div
 
+def ediv(a, b):
+  """
+  return (a // b) if b exactly divides a, otherwise raise a ValueError.
+  """
+  (d, r) = divmod(a, b)
+  if r != 0: raise ValueError("inexact division")
+  return d
+
 def fdiv(a, b):
   """
   float result of <a> divided by <b>.
@@ -3848,7 +3869,7 @@ class Denominations(object):
   # count the number of ways to express <amount>
   def count(self, amount, min_q=0):
     """
-    count the number of ways of expressing an amount"
+    count the number of ways of expressing an amount
     """
     return icount(self.express(amount, min_q=min_q))
 
@@ -6062,7 +6083,7 @@ class SubstitutedExpression(object):
     syms = list(x.union(v) for (x, v) in zip(xs, vs))
 
     # sort out distinct=0,1
-    if type(distinct) is int: distinct = (symbols if distinct else '')
+    if isinstance(distinct, int): distinct = (symbols if distinct else '')
     # distinct should be a sequence (probably of strings)
     if isinstance(distinct, basestring): distinct = [distinct]
 
@@ -6153,7 +6174,7 @@ class SubstitutedExpression(object):
       printf("[strategy: {ss}]", ss=join(ss, sep=' -> '))
 
     # turn distinct into a dict mapping <symbol> -> <excluded symbols>
-    if type(distinct) is not dict:
+    if not isinstance(distinct, dict):
       d = dict()
       for ss in distinct:
         for s in ss:
@@ -6504,7 +6525,8 @@ class SubstitutedExpression(object):
     # we should probably make this from self.invalid
     if self.d2i:
       for (k, v) in sorted(self.d2i.items(), key=lambda t: t[0]):
-        args.append(sprintf("--invalid={q}{k},{v}{q}", v=join(sorted(v))))
+        if v:
+          args.append(sprintf("--invalid={q}{k},{v}{q}", v=join(sorted(v))))
 
     if self.answer:
       args.append(sprintf("--answer={q}{self.answer}{q}"))
@@ -7243,7 +7265,7 @@ class SubstitutedDivision(SubstitutedExpression):
     opt['d2i'] = d2i
 
     # verbatim options
-    for v in ('base', 'digits', 'answer', 'accumulate', 'code', 'verbose'):
+    for v in ('base', 'digits', 'answer', 'accumulate', 'env', 'code', 'verbose'):
       if v in kw:
         opt[v] = kw[v]
 
@@ -8096,13 +8118,13 @@ import atexit
 import time
 
 if hasattr(time, 'process_time'):
-  _timer = time.process_time
+  _timer = time.process_time # process time
 elif hasattr(time, 'perf_counter'):
-  _timer = time.perf_counter
+  _timer = time.perf_counter # elapsed time
 elif sys.platform == "win32":
-  _timer = time.clock
+  _timer = time.clock # elapsed time
 else:
-  _timer = time.time
+  _timer = time.time # elapsed time
 
 class Timer(object):
 
@@ -8177,10 +8199,33 @@ class Timer(object):
     def whatever():
       some_code()
 
+
+  When a Timer object is initialised the 'timer' parameter specifies what
+  timing function to use. A value of 'E' use elapsed (real) time and a
+  value of 'P' use process (CPU) time. 'E' should always be available,
+  'P' may not be. You can specify 'PE', to try 'P', and if not 'E'.
+
+  If you know what timeing function you want to use you can pass it
+  directly. (Or pass the name of the function in the 'time' module).
 """
 
+  # lookup for timers
+  timers = None
 
-  def __init__(self, name='timing', timer=_timer, file=sys.stderr, exit_report=1, auto_start=1):
+  @classmethod
+  def init(self):
+    d = dict()
+    if hasattr(time, 'process_time'):
+      d['P'] = time.process_time # process time
+    if hasattr(time, 'perf_counter'):
+      d['E'] = time.perf_counter # elapsed time
+    elif sys.platform == "win32":
+      d['E'] = time.clock # elapsed time
+    else:
+      d['E'] = time.time # elapsed time
+    Timer.timers = d
+
+  def __init__(self, name='timing', timer="PE", file=sys.stderr, exit_report=1, auto_start=1, verbose=0):
     """
     Create (and start) a timer.
 
@@ -8190,15 +8235,30 @@ class Timer(object):
     exit_report = should the report be generated at exit
     auto_start = should the timer be automatically started
     """
+    if Timer.timers is None: Timer.init()    
     self._t0 = None
     self._t1 = None
     self._name = name
-    # timer can be the name of a function from time, e.g. 'time' or 'clock'
-    if type(timer) is str: timer = getattr(time, timer)
+    if not callable(timer):
+      # timer can be the name of a function from time, e.g. 'time' or 'clock'
+      fn = getattr(time, timer, None)
+      if fn is not None:
+        timer = fn
+      else:
+        # timer can be a sequence of timers to try: 'P' = process time, 'E' = elapsed time
+        for k in timer:
+          fn = Timer.timers.get(k, None)
+          if fn is not None:
+            timer = fn
+            break
+        else:
+          raise ValueError("no such timer \"" + timer + "\"")
     self._timer = timer
     self._file = file
     self._exit_report = exit_report
     self._report = None
+    self._verbose = verbose or ('v' in _PY_ENIGMA)
+    if self._verbose: printf("[{name}] timer = {fn}")
     if auto_start: self.start()
 
   def start(self):
@@ -8210,12 +8270,14 @@ class Timer(object):
       self._exit_report = False
     self._t1 = None
     self._t0 = self._timer()
+    if self._verbose: printf("[{self._name}] start = {self._t0}")
 
   def stop(self):
     """
     Set the stop time of a timer.
     """
     self._t1 = self._timer()
+    if self._verbose: printf("[{self._name}] stop = {self._t1}")
 
   def elapsed(self, disable_report=1):
     """
@@ -8508,6 +8570,7 @@ def __grouping():
   # useful selection functions
 
   # return the set of letters in a string
+  @cached
   def letters(s):
     return set(x for x in s.lower() if x.isalpha())
 
@@ -8520,7 +8583,7 @@ def __grouping():
     use the <cache> parameter to control whether the function is
     cached or not.
     """
-    fn = ((lambda x: x == k) if type(k) is int else k)
+    fn = ((lambda x: x == k) if isinstance(k, int) else k)
     # check each pair of values shares exactly <k> different letters
     def check(*vs):
       return all(fn(len(letters(a).intersection(letters(b)))) for (a, b) in itertools.combinations(vs, 2))
@@ -8740,8 +8803,6 @@ def status(fn, at_exit=0):
   status.fn = fn
   if at_exit: atexit.register(fn)
 
-_PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
-
 if 'i' in _PY_ENIGMA:
 
   if 'v' in _PY_ENIGMA: printf("[PY_ENIGMA: pid={pid}]", pid=os.getpid())
@@ -8908,7 +8969,8 @@ def run(cmd, *args, **kw):
           saved = [_PY_ENIGMA]
           _PY_ENIGMA = join(sorted(uniq(_PY_ENIGMA + flags)))
         try:
-          if timed: timed = Timer(name=timed)
+          # use elapsed time for subprocesses, rather than process time
+          if timed: timed = Timer(name=timed, timer="E")
           subprocess.call(cmd)
           if timed: timed.report()
           r = 1
