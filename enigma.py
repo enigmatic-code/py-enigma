@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Nov  9 22:02:03 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Nov 20 09:55:12 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -152,7 +152,7 @@ MagicSquare            - a class for solving magic squares
 multiset               - a class for manipulating multisets
 Polynomial             - a class for manipulating polynomials
 Primes                 - a class for creating prime sieves
-Rational               - select a class for representing rational numbers
+Rational               - select an implementation for rational numbers
 SubstitutedDivision    - a class for solving substituted long division sums
 SubstitutedExpression  - a class for solving general substituted expression (alphametic/cryptarithm) problems
 SubstitutedSum         - a class for solving substituted addition sums
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-11-09"
+__version__ = "2020-11-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -733,6 +733,14 @@ def split(x, fn=None):
 
 # rotate a sequence (move k elements from the beginning to the end)
 def rotate(s, k=1):
+  """
+  rotate a sequence by moving <k> elements from the beginning to the end
+
+  >>> rotate([1, 2, 3, 4], 1)
+  [2, 3, 4, 1]
+  >>> rotate([1, 2, 3, 4], -1)
+  [4, 1, 2, 3]
+  """
   return s[k:] + s[:k]
 
 # or you can use itertools.izip_longest(*[iter(l)]*n) for padded chunks
@@ -756,10 +764,16 @@ def chunk(s, n=2, pad=0, value=None, fn=tuple):
 
 # set union of a bunch of sequences
 def union(ss, fn=set):
+  """
+  construct a set that is the union of the sequences in <ss>.
+  """
   return fn().union(*ss)
 
 # set intersection of a bunch of sequences
 def intersect(ss, fn=set):
+  """
+  construct a set that is the intersection of the sequences in <ss>.
+  """
   i = iter(ss)
   try:
     s = fn(next(i))
@@ -995,6 +1009,9 @@ class multiset(dict):
 
   # return a count of the item
   def count(self, item):
+    """
+    return the number of times an item occurs.
+    """
     return self.get(item, 0)
 
   # add an item
@@ -1036,6 +1053,12 @@ class multiset(dict):
 
   # update self with some other multisets (item counts are summed)
   def update(self, *rest):
+    """
+    update the multiset with some other multisets (or objects that can
+    be interpreted as multisets).
+
+    item counts are summed.
+    """
     for m in rest:
       if not isinstance(m, dict): m = multiset(m)
       self.update_from_dict(m)
@@ -1043,10 +1066,23 @@ class multiset(dict):
 
   # combine self and some other multisets (item counts are summed)
   def combine(self, *rest):
+    """
+    return a new multiset that is the result of the original multiset
+    updated with some other multisets (or objects that can be
+    interepreted as multisets).
+
+    item counts are summed.
+    """
     return multiset(self).update(*rest)
 
   # union update of self and some other multiset (maximal item counts are retained)
   def union_update(self, *rest):
+    """
+    update a multiset with the union of itself and some other
+    multisets (or objects that can be interpreted as multisets).
+
+    maximal item counts are retained.
+    """
     for m in rest:
       if not isinstance(m, dict): m = multiset(m)
       for (item, count) in m.items(): self[item] = max(count, self.get(item, 0))
@@ -1054,10 +1090,24 @@ class multiset(dict):
 
   # union of self and some other multiset (maximal item counts are retained)
   def union(self, *rest):
+    """
+    return a new multiset that is the result of the union of the
+    original multiset and some other multisets (or objects that can be
+    interpreted as multisets).
+
+    maximal item counts are retained.
+    """
     return multiset(self).union_update(*rest)
 
   # intersection of self and some other multisets (minimal item counts are retained)
   def intersection(self, *rest):
+    """
+    return a new multiset that is the result of the intersection of
+    the original multiset and some other multisets (or objects that
+    can be interpreted as multisets).
+
+    minimal item counts are retained.
+    """
     r = multiset(self)
     for m in rest:
       if not isinstance(m, dict): m = multiset(m)
@@ -1092,25 +1142,43 @@ class multiset(dict):
 
   # is multiset m a subset of self?
   def issuperset(self, m):
+    """
+    test if this multiset contains multiset <m>.
+    """
     (d1, d2) = self.differences(m)
     return not d2
 
   # is multiset m a superset of self?
   def issubset(self, m):
+    """
+    test if this multiset is contained in multiset <m>.
+    """
     (d1, d2) = self.differences(m)
     return not d1
 
   # absolute difference in item counts of the two multisets
   def symmetric_difference(self, m):
+    """
+    symmetric difference of this multiset with multiset <m>.
+
+    the difference in item counts is retained.
+    """
     (d1, d2) = self.differences(m)
     return d1.update(d2)
 
   # multiply item counts
   def multiply(self, n):
+    """
+    return a new mutliset derived from the original multiset by
+    multiplying item counts by <n>.
+    """
     return multiset.from_pairs((k, n * v) for (k, v) in self.items())
 
   # generate subsets of a multiset
   def subsets(self, size=None, min_size=0, max_size=None):
+    """
+    generate subsets of a multiset.
+    """
     if size is not None:
       min_size = max_size = size
     elif max_size is None:
@@ -1124,17 +1192,35 @@ class multiset(dict):
 
   # copy a multiset
   def copy(self):
+    """
+    return a copy of a multiset
+    """
     return multiset.from_dict(self)
 
   def min(self, **kw):
+    """
+    return the minimum item value of a multiset (or <default>).
+
+    equivalent to: min(self)
+    """
     if not(self) and 'default' in kw: return kw['default']
     return min(self.keys())
 
   def max(self, **kw):
+    """
+    return the maximim item value of a multiset (or <default>).
+
+    equivalent to: max(self)
+    """
     if not(self) and 'default' in kw: return kw['default']
     return max(self.keys())
 
   def sum(self):
+    """
+    return the sum of items in a multiset.
+
+    equivalent to: sum(self)
+    """
     return sum(v * k for (k, v) in self.items())
 
 
@@ -3337,6 +3423,7 @@ def catch(fn, *args, **kw):
   try:
     return fn(*args, **kw)
   except:
+    #print("catch: caught exception!")
     return
 
 # inclusive range iterator
@@ -5202,6 +5289,11 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=
 
 # backwards compatibility
 def PrimesGenerator(n=None, array=_primes_array, fn=_primes_chunk):
+  """
+  provided for backwatds compatability.
+
+  use Primes() instead,
+  """
   return Primes(n, expandable=1, array=array, fn=fn)
 
 # default expandable sieve
