@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Nov 20 09:55:12 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Nov 26 14:22:49 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1672,6 +1672,12 @@ def find(s, v):
     if x == v: return i
   return -1
 
+def rfind(s, v):
+  """
+  find the last index of a value in a sequence, return -1 if not found.
+  """
+  i = find(s[::-1], v)
+  return (-1 if i == -1 else len(s) - i - 1)
 
 def _partitions(s, n):
   """
@@ -6228,6 +6234,41 @@ class SubstitutedExpression(object):
     # valid digits for each symbol
     valid = dict((s, list(digits.difference(d for (x, d) in invalid if x == s))) for s in symbols)
     #for k in sorted(valid.keys()): printf("{k} -> {v}", v=valid[k])
+
+    # at this point we can apply some heuristic re-writing rules:
+    # word = value  -> value = word, if value is free of alphametic symbols
+    if reorder:
+      for (i, (expr, val, k)) in enumerate(exprs):
+        #printf("[{i}] ({expr!r}, {val!r}, {k}) xs={xs} vs={vs}", xs=xs[i], vs=vs[i])
+
+        # "<word> == <expr>" and expr contains no alphametic symbols:
+        # ("<word> == <expr>", None, 1)  -->  ("<expr>", "<word>", 3)
+        if k == 1:
+          word = xpr = None
+          m = re.match('\s*\{([' + symbols + ']+)\}\s*==\s*(.+)\s*$', expr)
+          if m:
+            (word, xpr) = m.groups()
+          else:
+            # try: "<expr> == <word>"
+            m = re.match('\s*(.+?)\s*==\s*\{([' + symbols + ']+)\}\s*$', expr)
+            if m:
+              (xpr, word) = m.groups()
+
+          if word and expr:
+            if re.search('\{[' + symbols + ']+\}', xpr) is None:
+              if verbose > 0: printf("[SubstitutedExpression: replacing ({t}) -> ({xpr} = {word})]", t=ts[i])
+              exprs[i] = (xpr, word, 3)
+              (xs[i], vs[i]) = (vs[i], xs[i])
+
+        # "<word> = <int>": (even more efficient to use --assign instead)
+        # ("<word>", <int>, 2)  --> ("<int>", "<word>", 3)
+        if k == 2:
+          if expr[0] == '{' and expr[-1] == '}':
+            word = expr[1:-1]
+            if all(x in symbols for x in word):
+              if verbose > 0: printf("[SubstitutedExpression: replacing ({t}) -> ({val} = {{{word}}})]", t=ts[i])
+              exprs[i] = (int2base(val, base=10), word, 3)
+              (xs[i], vs[i]) = (vs[i], xs[i])
 
     # reorder the expressions into a more appropriate evaluation order
     if reorder:
