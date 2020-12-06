@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Nov 30 09:30:29 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Dec  6 14:19:14 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -60,7 +60,7 @@ farey                  - generate Farey sequences of coprime pairs
 fib                    - generate fibonacci sequences
 filter2                - partition an iterator into values that satisfy a predicate, and those that do not
 filter_unique          - partition an iterator into values that are unique, and those that are not
-find                   - find the index of an object in an iterable
+find, rfind            - find the index of an object in a sequence
 find_max               - find the maximum value of a function
 find_min               - find the minimum value of a function
 find_value             - find where a function has a specified value
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-11-29"
+__version__ = "2020-12-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2797,10 +2797,7 @@ def intf(x):
   -2
   """
   r = int(x)
-  return (r - 1 if r < 0 else r)
-
-
-floor = intf
+  return (r - 1 if x < r else r)
 
 
 def intc(x):
@@ -2815,9 +2812,7 @@ def intc(x):
   -1
   """
   r = int(x)
-  return (r + 1 if x - r > 0 else r)
-
-ceil = intc
+  return (r + 1 if x > r else r)
 
 
 def divf(a, b):
@@ -2837,6 +2832,15 @@ def divf(a, b):
   return int(a // b)
 
 
+def floor(x, m=1):
+  """
+  return largest multiple of m, not greater than x
+  """
+  # [[ m is 1 ]] give a SyntaxWarning
+  if m == 1: return intf(x)
+  return m * int(x // m)
+
+
 def divc(a, b):
   """
   ceiling division.
@@ -2854,6 +2858,13 @@ def divc(a, b):
   return -int(-a // b)
 
 cdiv = divc
+
+def ceil(x, m=1):
+  """
+  return lowest multiple of m, not less than x
+  """
+  if m == 1: return intc(x)
+  return m * -int(-x // m)
 
 
 def div(a, b):
