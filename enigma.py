@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec 14 12:28:04 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Dec 14 13:57:48 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-12-13"
+__version__ = "2020-12-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1013,6 +1013,8 @@ class multiset(dict):
 
     for distinct elements use: s.keys()
 
+    this function is used if a multiset is used as an iterator.
+
     >>> sorted(multiset("banana"))
     ['a', 'a', 'a', 'b', 'n', 'n']
     >>> sorted(multiset("banana").keys())
@@ -1158,20 +1160,20 @@ class multiset(dict):
     return self.differences(m)[0]
 
   # is multiset m a subset of self?
-  def issuperset(self, m):
+  def issuperset(self, m, strict=0):
     """
     test if this multiset contains multiset <m>.
     """
     (d1, d2) = self.differences(m)
-    return not d2
+    return not(d2) and (not(strict) or bool(d1))
 
   # is multiset m a superset of self?
-  def issubset(self, m):
+  def issubset(self, m, strict=0):
     """
     test if this multiset is contained in multiset <m>.
     """
     (d1, d2) = self.differences(m)
-    return not d1
+    return not(d1) and (not(strict) or bool(d2))
 
   # absolute difference in item counts of the two multisets
   def symmetric_difference(self, m):
@@ -1246,6 +1248,9 @@ class multiset(dict):
   # - = difference
   # & = intersection
   # | = union
+  # * = multiply
+  # < = subset
+  # > = superset
   __add__ = combine
   __sub__ = difference
   __and__ = intersection
@@ -1253,10 +1258,10 @@ class multiset(dict):
   __iadd__ = update
   __ior__ = union_update
   __mul__ = multiply
-  __lt__ = issubset
-  __gt__ = issuperset
-  __le__ = lambda self, m: self == m or self.issubset(m)
-  __ge__ = lambda self, m: self == m or self.issuperset(m)
+  __le__ = issubset
+  __ge__ = issuperset
+  __lt__ = lambda self, m: self.issubset(m, strict=1)
+  __gt__ = lambda self, m: self.issuperset(m, strict=1)
 
 def mcombinations(s, k=None):
   s = sorted(multiset(s))
