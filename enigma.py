@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Dec  9 12:44:15 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Dec 14 12:28:04 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-12-08"
+__version__ = "2020-12-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -975,12 +975,17 @@ class multiset(dict):
   # count all elements in the multiset
   # (for number of unique elements use: [[ len(s.keys()) ]])
   # NOTE: the final test fails on PyPy3 (but not PyPy)
-  def __len__(self):
+  def size(self):
     """
-    count all the elements in a multiset.
+    the cardinality of the multiset.
+    i.e. a count all the elements in a multiset.
 
-    to count the number of distinct elements use: len(s.keys())
+    to count the number of distinct element types use: len(s.keys())
 
+    this function is used to implement the len() method on multisets.
+
+    >>> multiset("banana").size()
+    6
     >>> len(multiset("banana"))
     6
     >>> len(multiset("banana").keys())
@@ -988,12 +993,21 @@ class multiset(dict):
     """
     return sum(self.values())
 
-  # faster than using __len__
-  __bool__ = __nonzero__ = lambda self: (dict.__len__(self) > 0)
+  # len(multiset) == multiset.size()
+  __len__ = size
+
+  def is_empty(self):
+    return dict.__len__(self) == 0
+
+  def is_nonempty(self):
+    return dict.__len__(self) > 0
+
+  # is_nonempty is faster than using __len__  
+  __bool__ = __nonzero__ = is_nonempty
 
   # all elements of the multiset
   # (for unique elements use: [[ s.keys() ]])
-  def __iter__(self):
+  def elements(self):
     """
     iterate through all elements of the multiset.
 
@@ -1007,6 +1021,8 @@ class multiset(dict):
     for (k, v) in self.items():
       for _ in range(v):
         yield k
+
+  __iter__ = elements
 
   # return a count of the item
   def count(self, item):
@@ -1224,6 +1240,23 @@ class multiset(dict):
     """
     return sum(v * k for (k, v) in self.items())
 
+  # allow operator overloading on multisets
+  # (let me know if these don't do what you expect)
+  # + = update
+  # - = difference
+  # & = intersection
+  # | = union
+  __add__ = combine
+  __sub__ = difference
+  __and__ = intersection
+  __or__ = union
+  __iadd__ = update
+  __ior__ = union_update
+  __mul__ = multiply
+  __lt__ = issubset
+  __gt__ = issuperset
+  __le__ = lambda self, m: self == m or self.issubset(m)
+  __ge__ = lambda self, m: self == m or self.issuperset(m)
 
 def mcombinations(s, k=None):
   s = sorted(multiset(s))
