@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec 14 13:57:48 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Dec 15 22:20:14 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-12-14"
+__version__ = "2020-12-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -592,7 +592,7 @@ def nconcat(*digits, **kw):
   # or: (slower, and only works with digits < 10)
   #return int(concat(*digits), base=base)
 
-def nsplit(n, k=None, base=10):
+def nsplit(n, k=None, base=10, fn=tuple):
   """
   split an integer into digits (using base <base> representation)
 
@@ -626,7 +626,7 @@ def nsplit(n, k=None, base=10):
     else:
       if k < 2: break
       k -= 1
-  return tuple(ds)
+  return fn(ds)
 
 # equivalent to: len(nsplit(n))
 # (we could use logarithms for "smallish" numbers)
@@ -1184,6 +1184,13 @@ class multiset(dict):
     """
     (d1, d2) = self.differences(m)
     return d1.update(d2)
+
+  # is this multiset disjoint from a bunch of other multisets
+  def is_disjoint(self, *rest):
+    for m in rest:
+      if not isinstance(m, dict): m = multiset(m)
+      if any(x in self for x in m): return False
+    return True
 
   # multiply item counts
   def multiply(self, n):
