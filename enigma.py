@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Dec 15 22:20:14 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Dec 21 12:40:40 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-12-15"
+__version__ = "2020-12-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -866,7 +866,8 @@ class multiset(dict):
 
     len() counts the number of elements (not the number of distinct elements)
 
-    iterating through a multiset provides all elements (not just distinct elements)
+    iterating through a multiset provides all elements (not just distinct
+    elements)
   """
 
   def __init__(self, *vs, **kw):
@@ -6135,7 +6136,7 @@ class SubstitutedExpression(object):
       # function fix up implicit parameters
       def fix(s):
         if s is None: return None
-        if '{' in s: return s
+        if re.search('{[' + symbols + ']+}', s): return s # was: [[ if '{' in s: return s ]]
         return re.sub('[' + symbols + ']+', (lambda m: '{' + m.group(0) + '}'), s)
 
       # now process the list
