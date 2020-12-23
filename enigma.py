@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec 21 12:40:40 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Dec 23 12:32:31 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-12-20"
+__version__ = "2020-12-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -627,6 +627,9 @@ def nsplit(n, k=None, base=10, fn=tuple):
       if k < 2: break
       k -= 1
   return fn(ds)
+
+# shortcut for digital sum (although it will still construct the list of digits)
+dsum = lambda n, k=None, base=10: nsplit(n, k=k, base=base, fn=sum)
 
 # equivalent to: len(nsplit(n))
 # (we could use logarithms for "smallish" numbers)
