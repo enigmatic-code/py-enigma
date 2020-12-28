@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Dec 24 09:48:03 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Dec 28 12:44:13 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-12-23"
+__version__ = "2020-12-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -592,6 +592,18 @@ def nconcat(*digits, **kw):
   # or: (slower, and only works with digits < 10)
   #return int(concat(*digits), base=base)
 
+# split n into digits, starting with the least significant
+def nsplitter(n, k=None, base=10):
+  n = abs(as_int(n))
+  while True:
+    (n, r) = divmod(n, base)
+    yield r
+    if k is None:
+      if n == 0: break
+    else:
+      if k < 2: break
+      k -= 1
+
 def nsplit(n, k=None, base=10, fn=tuple):
   """
   split an integer into digits (using base <base> representation)
@@ -616,20 +628,13 @@ def nsplit(n, k=None, base=10, fn=tuple):
   >>> nsplit(111 ** 2, 3)
   (3, 2, 1)
   """
-  n = abs(as_int(n))
   ds = list()
-  while True:
-    (n, r) = divmod(n, base)
-    ds.insert(0, r)
-    if k is None:
-      if n == 0: break
-    else:
-      if k < 2: break
-      k -= 1
+  for d in nsplitter(n, k=k, base=base):
+    ds.insert(0, d)
   return fn(ds)
 
 # shortcut for digital sum (although it will still construct the list of digits)
-dsum = lambda n, k=None, base=10: nsplit(n, k=k, base=base, fn=sum)
+dsum = lambda n, k=None, base=10: sum(nsplitter(n, k=k, base=base))
 
 # equivalent to: len(nsplit(n))
 # (we could use logarithms for "smallish" numbers)
@@ -640,14 +645,7 @@ def ndigits(n, base=10):
   >>> ndigits(factorial(70))
   101
   """
-  n = abs(as_int(n))
-  if n == 0: return 1
-  k = 1
-  u = base
-  while True:
-    if n < u: return k
-    k += 1
-    u *= base
+  return sum(1 for _ in nsplitter(n, base=base))
 
 def nreverse(n, base=10):
   """
@@ -665,7 +663,7 @@ def nreverse(n, base=10):
   if n < 0:
     return -nreverse(-n, base=base)
   else:
-    return nconcat(reversed(nsplit(n, base=base)), base=base)
+    return nconcat(nsplitter(n, base=base), base=base)
 
 from fnmatch import fnmatch
 
