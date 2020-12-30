@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Dec 30 09:35:47 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Dec 30 10:19:58 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1892,7 +1892,9 @@ def uniq1(i, fn=None):
       yield x
       seen = r
 
-# we use math.pow in sqrt(), cbrt() rather than ** to avoid generating complex numbers
+# root: calculate the nth root of a (positive) number
+# we use math.pow rather than ** to avoid generating complex numbers
+root = lambda x, n: (x if not(x) else math.pow(10.0, math.log10(x) / n))
 
 def cbrt(x):
   """
@@ -1903,8 +1905,9 @@ def cbrt(x):
   >>> cbrt(-27.0)
   -3.0
   """
-  r = math.pow(10, math.log10(abs(x)) / 3.0)
+  r = root(abs(x), 3.0)
   return (-r if x < 0 else r)
+
 
 # for large numbers: sympy.ntheory.factorint()
 def prime_factor(n):
@@ -2098,7 +2101,7 @@ prime = is_prime
 
 
 # Miller-Rabin primality test
-# modified from a contribution by Brian Gladman
+# (suggested by Brian Gladman)
 
 import random
 
