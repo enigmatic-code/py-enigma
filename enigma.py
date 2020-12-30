@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec 28 12:44:13 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Dec 30 09:35:47 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-12-27"
+__version__ = "2020-12-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -595,14 +595,17 @@ def nconcat(*digits, **kw):
 # split n into digits, starting with the least significant
 def nsplitter(n, k=None, base=10):
   n = abs(as_int(n))
-  while True:
-    (n, r) = divmod(n, base)
-    yield r
-    if k is None:
+  if k is None:
+    # the "naturnal" number of digits in n
+    while True:
+      (n, r) = divmod(n, base)
+      yield r
       if n == 0: break
-    else:
-      if k < 2: break
-      k -= 1
+  else:
+    # the least significant k digits of n
+    for _ in irange(1, k):
+      (n, r) = divmod(n, base)
+      yield r
 
 def nsplit(n, k=None, base=10, fn=tuple):
   """
@@ -1891,8 +1894,6 @@ def uniq1(i, fn=None):
 
 # we use math.pow in sqrt(), cbrt() rather than ** to avoid generating complex numbers
 
-_F13 = 1.0 / 3.0
-
 def cbrt(x):
   """
   Return the cube root of a number (as a float).
@@ -1902,7 +1903,8 @@ def cbrt(x):
   >>> cbrt(-27.0)
   -3.0
   """
-  return (-math.pow(-x, _F13) if x < 0 else math.pow(x, _F13))
+  r = math.pow(10, math.log10(abs(x)) / 3.0)
+  return (-r if x < 0 else r)
 
 # for large numbers: sympy.ntheory.factorint()
 def prime_factor(n):
@@ -5081,7 +5083,7 @@ class _PrimeSieveE6(object):
 
     (this will require less memory than list())
     """
-    if end is None or end is inf: end = self.max
+    if end is None or end == inf: end = self.max
     if start < 3 and end > 2: yield 2
     if start < 4 and end > 3: yield 3
     s = self.sieve
@@ -5097,7 +5099,7 @@ class _PrimeSieveE6(object):
 
   # irange = inclusive range
   def irange(self, a, b):
-    if not(b is None or b is inf): b += 1
+    if not(b is None or b == inf): b += 1
     return self.range(a, b)
 
   # prime test (may throw IndexError if n is too large)
@@ -5284,7 +5286,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     the sieve is expanded as necessary beforehand.
     """
     # have we asked for unlimited generation?
-    if b is None or b is inf: return self.generate(a)
+    if b is None or b == inf: return self.generate(a)
     # otherwise, upper limit is provided
     self.extend(b)
     return _PrimeSieveE6.range(self, a, b)
