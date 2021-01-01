@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Dec 30 10:19:58 2020 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Dec 31 16:24:06 2020 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,7 +163,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2020-12-28"
+__version__ = "2020-12-30"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1030,6 +1030,9 @@ class multiset(dict):
         yield k
 
   __iter__ = elements
+
+  # alias for keys()
+  distinct_elements = dict.keys
 
   # return a count of the item
   def count(self, item):
