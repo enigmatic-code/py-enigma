@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan 11 13:40:26 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jan 11 13:46:31 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -52,6 +52,7 @@ divisor_pairs          - generate pairs of divisors of a number
 divisors               - the divisors of a number
 divisors_pairs         - generate pairs of divisors of a number
 drop_factors           - reduce a number by removing factors
+dsum                   - digit sum of a number
 egcd                   - extended gcd
 express                - express an amount using specific denominations
 factor                 - the prime factorisation of a number
@@ -636,8 +637,20 @@ def nsplit(n, k=None, base=10, fn=tuple):
     ds.insert(0, d)
   return fn(ds)
 
-# shortcut for digital sum (although it will still construct the list of digits)
-dsum = lambda n, k=None, base=10: sum(nsplitter(n, k=k, base=base))
+def dsum(n, k=None, base=10):
+  """
+  calculate the digit sum of an integer (when represented in the
+  specified base).
+
+  the sign of the integer is ignored
+
+  >>> dsum(123456789)
+  45
+  >>> dsum(123456789, base=2)
+  16
+  """
+  return sum(nsplitter(n, k=k, base=base))
+
 # population count, Hamming weight, bitsum(), bit_count()
 dsum2 = lambda n: bin(n).count('1') # alternative to: dsum(n, base=2)
 if sys.version_info[0:2] > (3, 9): dsum2 = int.bit_count
