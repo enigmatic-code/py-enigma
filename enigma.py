@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan 11 13:46:31 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jan 12 17:36:35 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-01-11"
+__version__ = "2021-01-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -180,24 +180,25 @@ import copy
 import re
 
 # maybe use the "six" module for some of this stuff
-if sys.version_info[0] == 2:
+_pythonv = sys.version_info[0:2] # Python version e.g. (2, 7) or (3, 9)
+if _pythonv[0] == 2:
   # Python 2.x
-  if sys.version_info[1] < 7:
-    print("[enigma.py] WARNING: Python {v} is very old. Things may not work.".format(v=sys.version.split(None, 1)[0]))
   _python = 2
+  if _pythonv[1] < 7:
+    print("[enigma.py] WARNING: Python {v} is very old. Things may not work.".format(v=sys.version.split(None, 1)[0]))
   range = xrange
   reduce = reduce
   basestring = basestring
   raw_input = raw_input
   Sequence = collections.Sequence
-elif sys.version_info[0] > 2:
+elif _pythonv[0] > 2:
   # Python 3.x
   _python = 3
   range = range
   reduce = functools.reduce
   basestring = str
   raw_input = input
-  if sys.version_info[1] > 6:
+  if _pythonv > (3, 6):
     # Python 3.7 onwards
     # not: [[ Sequence = collections.abc.Sequence ]]
     from collections.abc import Sequence
@@ -597,7 +598,7 @@ def nconcat(*digits, **kw):
 def nsplitter(n, k=None, base=10):
   n = abs(as_int(n))
   if k is None:
-    # the "naturnal" number of digits in n
+    # the "natural" number of digits in n
     while True:
       (n, r) = divmod(n, base)
       yield r
@@ -652,8 +653,8 @@ def dsum(n, k=None, base=10):
   return sum(nsplitter(n, k=k, base=base))
 
 # population count, Hamming weight, bitsum(), bit_count()
-dsum2 = lambda n: bin(n).count('1') # alternative to: dsum(n, base=2)
-if sys.version_info[0:2] > (3, 9): dsum2 = int.bit_count
+dsum2 = lambda n: bin(n).count('1', 2) # fast alternative to: dsum(n, base=2)
+if _pythonv > (3, 9): dsum2 = int.bit_count
 
 # equivalent to: len(nsplit(n))
 # (we could use logarithms for "smallish" numbers)
@@ -3467,7 +3468,7 @@ def _sprintf(fmt, vs, frame):
 
 _sprintf.fn = __sprintf
 if _python > 2: _sprintf.fn = __sprintf3
-if sys.version_info[0:2] > (3, 5): _sprintf.fn = __sprintf36
+if _pythonv > (3, 5): _sprintf.fn = __sprintf36
 
 # print with variables interpolated into the format string
 def sprintf(fmt='', **kw):
@@ -9107,7 +9108,7 @@ def run(cmd, *args, **kw):
   run with command line arguments
 
   <cmd> can be a class in enigma.py that accepts a command line,
-  or it can be a run file, Python program or other scripts
+  or it can be a run file, Python program or other script
 
   <args> are the command line arguments to be provided
 
