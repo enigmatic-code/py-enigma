@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jan 15 08:28:24 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jan 15 17:35:16 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-01-14"
+__version__ = "2021-01-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6410,6 +6410,8 @@ class SubstitutedExpression(object):
     if not isinstance(distinct, dict):
       d = dict()
       for ss in distinct:
+        if verbose > 0 and len(ss) > len(digits):
+          printf("[SubstitutedExpression: WARNING: distinct=\"{ss}\" has more symbols than available digits]")
         for s in ss:
           if s not in d: d[s] = set()
           d[s].update(x for x in ss if x != s)
@@ -6509,7 +6511,7 @@ class SubstitutedExpression(object):
         prog.append(sprintf("{_}except NameError:")) # catch undefined functions
         prog.append(sprintf("{_}  raise"))
         prog.append(sprintf("{_}except:")) # maybe "except (ArithmeticError, ValueError)"
-        prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'raise')))
+        prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else ('return' if denest else 'raise'))))
 
       # check the value
       if k == 3:
@@ -6837,6 +6839,9 @@ class SubstitutedExpression(object):
     if self.first is not None:
       args.append(sprintf("--first={self.first}"))
 
+    if self.denest is not None:
+      args.append(sprintf("--denest={self.denest}"))
+
     if self.verbose is not None:
       args.append(sprintf("--verbose={self.verbose}"))
 
@@ -6979,11 +6984,10 @@ class SubstitutedExpression(object):
   # class method to make an object from arguments
   @classmethod
   def from_args(cls, args):
-
     #if not args: return
 
     # process options
-    opt = dict(_argv=list(), s2d=dict(), d2i=None, verbose=1, first=0, reorder=1)
+    opt = dict(_argv=list(), s2d=dict(), d2i=None, verbose=1, first=0, reorder=1, denest=0)
     for arg in args:
       # deal with option args
       try:
@@ -7001,6 +7005,7 @@ class SubstitutedExpression(object):
 
       except:
         raise ValueError(sprintf("[{cls.__name__}] invalid option: {arg}"))
+
     return opt
 
   # class method to make an object from a file
@@ -7069,7 +7074,7 @@ class SubstitutedExpression(object):
   # class method to load a run file
   @classmethod
   def run_file(cls, path, args=()):
-    argv = parsefile(path, *args)
+    argv = parsefile(path, args)
     if run.alias.get(argv[0], argv[0]) != cls.__name__:
       printf("WARNING: ignoring cmd = {argv[0]}")
     opt = cls.from_args(*argv[1:])
@@ -9172,7 +9177,7 @@ sigusr2 = lambda pid: os.kill(pid, signal.SIGUSR2)
 
 # parse a run file (which uses a shell-like syntax)
 
-def parsefile(path, *args):
+def parsefile(path, args, interleave=None):
   import shlex
 
   with open(path, 'r') as f:
@@ -9183,6 +9188,9 @@ def parsefile(path, *args):
 
   cmd = words.pop(0)
 
+  if interleave is None:
+    interleave = (cmd not in { 'SubstitutedExpression', 'SubstitutedDivision' })
+
   def divide(s, fn=lambda s: s.startswith('-')):
     for (i, x) in enumerate(s):
       if not fn(x):
@@ -9191,8 +9199,11 @@ def parsefile(path, *args):
 
   # insert any extra args
   if args:
-    ((s1, s3), (s2, s4)) = (divide(words), divide(args))
-    words = flatten((s1, s2, s3, s4))
+    if interleave:
+      ((s1, s3), (s2, s4)) = (divide(words), divide(args))
+      words = flatten([s1, s2, s3, s4])
+    else:
+      words = flatten([words, args])
 
   return (cmd, words)
 
@@ -9244,7 +9255,7 @@ def run(cmd, *args, **kw):
     if timed and not isinstance(timed, basestring): timed = os.path.basename(cmd)
     if cmd.endswith(".run"):
       # *.run => treat it as a run file
-      (cmd, args) = parsefile(cmd, *args)
+      (cmd, args) = parsefile(cmd, args)
     else:
       if any(cmd.endswith(x) for x in (".py", ".py2", ".py3")) and not interp:
         # use runpy for *.py
