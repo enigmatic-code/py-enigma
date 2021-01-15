@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jan 12 17:36:35 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jan 15 08:28:24 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-01-12"
+__version__ = "2021-01-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -653,7 +653,7 @@ def dsum(n, k=None, base=10):
   return sum(nsplitter(n, k=k, base=base))
 
 # population count, Hamming weight, bitsum(), bit_count()
-dsum2 = lambda n: bin(n).count('1', 2) # fast alternative to: dsum(n, base=2)
+dsum2 = lambda n: bin(n).count('1', (3 if n < 0 else 2)) # fast alternative to: dsum(n, base=2)
 if _pythonv > (3, 9): dsum2 = int.bit_count
 
 # equivalent to: len(nsplit(n))
@@ -665,7 +665,8 @@ def ndigits(n, base=10):
   >>> ndigits(factorial(70))
   101
   """
-  return sum(1 for _ in nsplitter(n, base=base))
+  #return sum(1 for _ in nsplitter(n, base=base))
+  return icount(nsplitter(n, base=base))
 
 def nreverse(n, base=10):
   """
@@ -5911,6 +5912,9 @@ class SubstitutedSum(object):
 # if there are more than 100 levels of indentation.
 #
 # the PyPy interpreter has neither of these limitations
+#
+# the experimental [[ denest=1 ]] parameter will produce less nested code
+# to work around this issue.
 
 # TODO: think about negative values - expressions resulting in an
 # alphametic word must be non-negative
@@ -6032,7 +6036,11 @@ class SubstitutedExpression(object):
   See SubstitutedExpression.command_line() for more examples.
   """
 
-  def __init__(self, exprs, base=10, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None, accumulate=None, template=None, solution=None, header=None, distinct=1, check=None, env=None, code=None, process=1, reorder=1, first=0, verbose=1):
+  def __init__(self,
+    exprs, base=10, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None,
+    accumulate=None, template=None, solution=None, header=None, distinct=1, check=None,
+    env=None, code=None, process=1, reorder=1, first=0, denest=0, verbose=1
+  ):
     """
     create a substituted expression solver.
 
@@ -6058,6 +6066,7 @@ class SubstitutedExpression(object):
     check - a boolean function used to accept/reject solutions (default: None)
     env - additional environment for evaluation (default: None)
     code - additional lines of code evaluated before solving (default: None)
+    denest - work around CPython statically nested block limit
 
     If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
     """
@@ -6077,6 +6086,7 @@ class SubstitutedExpression(object):
     self.check = check
     self.env = env
     self.code = code
+    self.denest = denest
 
     self.process = process
     self.reorder = reorder
@@ -6140,6 +6150,7 @@ class SubstitutedExpression(object):
     answer = self.answer
     template = self.template
     distinct = self.distinct
+    denest = self.denest
     process = self.process
     verbose = self.verbose
 
@@ -6274,6 +6285,9 @@ class SubstitutedExpression(object):
     if self.solution is None: self.solution = symbols
     if self.header is None: self.header = _replace_words(self.template, identity)
 
+    # sort out denest=1
+    if denest == 1: denest = 50
+
     # update the processed values
     self.exprs = exprs
     self.symbols = symbols
@@ -6281,6 +6295,7 @@ class SubstitutedExpression(object):
     self.s2d = s2d
     self.answer = answer
     self.distinct = distinct
+    self.denest = denest
     self.verbose = verbose
     self._words = words
     self._invalid = invalid
@@ -6304,6 +6319,7 @@ class SubstitutedExpression(object):
     env = self.env
     code = self.code
     reorder = self.reorder
+    denest = self.denest
     verbose = self.verbose
 
     words = self._words
@@ -6425,10 +6441,35 @@ class SubstitutedExpression(object):
       if all(x in done for x in w):
         prog.append(sprintf("{_}{w} = {x}", w=sym(w), x=_word(w, base)))
 
+    # [denest] workaround statically nested block limit
+    if denest:
+      #  set other initial values to None
+      for s in symbols:
+        if s not in s2d:
+          prog.append(sprintf("{_}{s} = None", s=sym(s)))
+      for w in words:
+        prog.append(sprintf("{_}{w} = None", w=sym(w)))
+      # keep track of nested functions
+      blocks = list()
+      block = None
+      block_args = join(map(sym, chain(symbols, words)), sep=", ")
+      indent_reset = indent
+
     in_loop = False
 
     # deal with each <expr>,<value> pair
     for ((expr, val, k), xsyms, vsyms) in zip(exprs, xs, vs):
+
+      # [denest] work around statically nested block limit
+      if denest and block is None:
+        # start a new function block
+        block = gensym('_substituted_expression_block')
+        blocks.append(block)
+        _ = indent_reset
+        # In Python3 we can use [[ nonlocal ]] instead of passing the symbols around
+        prog.append(sprintf("{_}def {block}({block_args}):"))
+        _ += indent
+        in_loop = False
 
       # EXPERIMENTAL: do something about: "<iterator>: = <word>
       if k == 3 and expr.endswith(':'):
@@ -6523,6 +6564,23 @@ class SubstitutedExpression(object):
         prog.append(sprintf("{_}if {vx} == {val}:"))
         _ += indent
 
+      # [denest] work around statically nested block limit
+      if denest and len(_) > denest:
+        # return the current state of the symbols
+        prog.append(sprintf("{_}yield [{block_args}]"))
+        block = None
+
+    # [denest] work around statically nested block limit
+    if denest:
+      if block:
+        # close any partial function block
+        prog.append(sprintf("{_}yield [{block_args}]"))
+      _ = indent_reset
+      # now call all the blocks
+      for block in blocks:
+        prog.append(sprintf("{_}for [{block_args}] in {block}({block_args}):"))
+        _ += indent
+
     # yield solutions as dictionaries
     d = join((("'" + s + "': " + sym(s)) for s in sorted(done)), sep=', ')
     if answer:
@@ -6556,7 +6614,9 @@ class SubstitutedExpression(object):
       # (e.g. in standard Python you can't have more than 20 nested blocks,
       # or more than 100 indent levels - PyPy does not have these limitations)
       printf("SubstitutedExpression: compilation error from Python interpreter [{sys.executable}]")
-      if not(verbose & self.vC): printf("(use verbose level 256 to output code before compilation)")
+      if not(verbose & self.vC):
+        printf("(use verbose level 256 to output code before compilation)")
+        printf("(or use the \"denest=1\" option (--denest, -X) to reduce program complexity)")
       raise
     eval(code, gs)
 
@@ -6833,6 +6893,7 @@ class SubstitutedExpression(object):
       "  --code=<string> (or -C<s>) = initialisation code (can be used multiple times)",
       "  --first (or -1) = stop after the first solution",
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
+      "  --denest=<n> (or -X<b>) = workaround statically nested block limit (0 = off, 1 = on, 2+ = depth)",
       "  --verbose[=<s>] (or -v[<s>]) = verbosity (0 = off, 1 = on, HTSAitC = more)",
       "  --help (or -h) = show command-line usage",
       "",
@@ -6905,6 +6966,8 @@ class SubstitutedExpression(object):
       opt['verbose'] = (v if v else 1)
     elif k == 'r' or k == 'reorder':
       opt['reorder'] = (int(v) if v else 0)
+    elif k == 'X' or k == 'denest':
+      opt['denest'] = (int(v) if v else 1)
 
     else:
       # unrecognised option
@@ -7482,7 +7545,7 @@ class SubstitutedDivision(SubstitutedExpression):
     opt['d2i'] = d2i
 
     # verbatim options
-    for v in ('base', 'digits', 'answer', 'accumulate', 'env', 'code', 'verbose'):
+    for v in ('base', 'digits', 'answer', 'accumulate', 'env', 'code', 'verbose', 'denest'):
       if v in kw:
         opt[v] = kw[v]
 
@@ -8562,7 +8625,8 @@ timer = Timer(auto_start=0)
 # an even simpler form of the 'Record' (or 'types.SimpleNamespace') class
 # to make sub-namespaces within the module
 #
-# (I don't think this is very Pythonic, but it works, except for __doc__)
+# (I don't think this normal Python practise, but it works, except for __doc__)
+# (although __doc__seems to work in Python 3.9)
 
 class namespace(object):
 
@@ -8588,6 +8652,13 @@ def make_namespace(name, vs):
 # template system problems
 
 def __template_system():
+  __doc__ = """
+  Solve a template system.
+
+  Functions provided:
+
+    template_system.solve()
+  """
 
   # find values that match a system of template sequences
   def solve(templates, values=None):
@@ -8693,9 +8764,29 @@ template_system = make_namespace('template_system', __template_system())
 # grouping problems
 
 def __grouping():
-
   __doc__ = """
-  <placeholder docstring for __grouping()>
+  Grouping puzzles provide a collection of lists of values, and
+  require the solver to form groups of values (usually disjoint groups
+  with one element from each of the lists) that satisfy some condition
+  (often that each pair of elements in the group shares exactly some
+  given number of letters.
+
+  Functions provided:
+
+    Simple grouping problems:
+      grouping.groups() - find groups
+      grouping.output_groups() - output groups
+      grouping.solve() - find and output groups
+
+    Grouping problems with \"gangs\":
+      grouping.gang() - construct a gang
+      grouping.gangs() - find gangs
+      grouping.output_gangs() - output gangs
+      grouping.solve_gangs() - find and output gangs
+
+    Useful selection functions:
+      grouping.letters()
+      grouping.share_letters()
   """
 
   def groups(vs, fn, s=[]):
@@ -8817,6 +8908,14 @@ grouping = make_namespace('grouping', __grouping())
 # matrix routines (see Enigma 287)
 
 def __matrix():
+  __doc__ = """
+  Solve a system of linear equations using matrices.
+
+  Functions provides:
+
+    matrix.linear() - solve a collection of linear equations
+    matrix.create() - create a matrix
+  """
 
   # given two matrices A and B, returns (det(A), X) st A * X = B
   # A must be square, and the elements must support __truediv__
@@ -9467,7 +9566,7 @@ enigma.py has the following command-line usage:
 
 """.format(version=__version__, python='2.7.18', python3='3.9.1')
 
-if __name__ == "__main__":
+if __name__ == "__main__" or __name__ == "<run_path>":
 
   # allow solvers to run from the command line:
   #   % python enigma.py <class> <args> ...
