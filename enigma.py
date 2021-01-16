@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jan 15 17:35:16 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jan 16 10:20:20 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-01-15"
+__version__ = "2021-01-16"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6445,14 +6445,14 @@ class SubstitutedExpression(object):
 
     # [denest] workaround statically nested block limit
     if denest:
-      #  set other initial values to None
+      #  set other initial values and words to None
       for s in symbols:
         if s not in s2d:
           prog.append(sprintf("{_}{s} = None", s=sym(s)))
       for w in words:
         prog.append(sprintf("{_}{w} = None", w=sym(w)))
       # keep track of nested functions
-      blocks = list()
+      blocks = [ gensym('_substituted_expression_block') ]
       block = None
       block_args = join(map(sym, chain(symbols, words)), sep=", ")
       indent_reset = indent
@@ -6465,8 +6465,7 @@ class SubstitutedExpression(object):
       # [denest] work around statically nested block limit
       if denest and block is None:
         # start a new function block
-        block = gensym('_substituted_expression_block')
-        blocks.append(block)
+        block = blocks[-1]
         _ = indent_reset
         # In Python3 we can use [[ nonlocal ]] instead of passing the symbols around
         prog.append(sprintf("{_}def {block}({block_args}):"))
@@ -6511,7 +6510,7 @@ class SubstitutedExpression(object):
         prog.append(sprintf("{_}except NameError:")) # catch undefined functions
         prog.append(sprintf("{_}  raise"))
         prog.append(sprintf("{_}except:")) # maybe "except (ArithmeticError, ValueError)"
-        prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else ('return' if denest else 'raise'))))
+        prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'return')))
 
       # check the value
       if k == 3:
@@ -6568,8 +6567,11 @@ class SubstitutedExpression(object):
 
       # [denest] work around statically nested block limit
       if denest and len(_) > denest:
+        # chain into the next block
+        block = gensym('_substituted_expression_block')
+        blocks.append(block)
         # return the current state of the symbols
-        prog.append(sprintf("{_}yield [{block_args}]"))
+        prog.append(sprintf("{_}for {vr} in {block}({block_args}): yield {vr}"))
         block = None
 
     # [denest] work around statically nested block limit
@@ -6578,10 +6580,11 @@ class SubstitutedExpression(object):
         # close any partial function block
         prog.append(sprintf("{_}yield [{block_args}]"))
       _ = indent_reset
-      # now call all the blocks
+      # now call the first block
       for block in blocks:
         prog.append(sprintf("{_}for [{block_args}] in {block}({block_args}):"))
         _ += indent
+        break
 
     # yield solutions as dictionaries
     d = join((("'" + s + "': " + sym(s)) for s in sorted(done)), sep=', ')
