@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jan 16 10:20:20 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jan 20 10:50:20 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-01-16"
+__version__ = "2021-01-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -191,6 +191,7 @@ if _pythonv[0] == 2:
   basestring = basestring
   raw_input = raw_input
   Sequence = collections.Sequence
+  Iterable = collections.Iterable
 elif _pythonv[0] > 2:
   # Python 3.x
   _python = 3
@@ -201,9 +202,10 @@ elif _pythonv[0] > 2:
   if _pythonv > (3, 6):
     # Python 3.7 onwards
     # not: [[ Sequence = collections.abc.Sequence ]]
-    from collections.abc import Sequence
+    from collections.abc import Sequence, Iterable
   else:
     Sequence = collections.Sequence
+    Iterable = collections.Iterable
 
 # useful constants
 enigma = sys.modules[__name__]
@@ -1260,7 +1262,7 @@ class multiset(dict):
 
   def max(self, **kw):
     """
-    return the maximim item value of a multiset (or <default>).
+    return the maximum item value of a multiset (or <default>).
 
     equivalent to: max(self)
     """
@@ -1427,18 +1429,30 @@ subseqs = subsets
 # like filter() but also returns the elements that don't satisfy the predicate
 # see also partition() recipe from itertools documentation
 # (but note that itertools.partition() returns (false, true) lists)
+
+Filter2 = collections.namedtuple('Filter2', 'true false')
+
 def filter2(p, i, fn=list):
   """
   use a predicate to partition an iterable into those elements that
   satisfy the predicate, and those that do not.
 
+  returns the partition of the original sequence as:
+
+    (<values for which p is true>, <values for which p is false>)
+
+  which can calso be accessed from return value r as:
+
+    r.true
+    r.false
+
   alias: partition()
 
-  >>> filter2(lambda n: n % 2 == 0, irange(1, 10))
+  >>> tuple(filter2(lambda n: n % 2 == 0, irange(1, 10)))
   ([2, 4, 6, 8, 10], [1, 3, 5, 7, 9])
   """
   t = list((x, p(x)) for x in i)
-  return (fn(x for (x, v) in t if v), fn(x for (x, v) in t if not v))
+  return Filter2(fn(x for (x, v) in t if v), fn(x for (x, v) in t if not v))
 
 # alias if you prefer the term partition (but don't confuse it with partitions())
 partition = filter2
@@ -1471,8 +1485,14 @@ def filter_unique(s, f=identity, g=identity):
   unique value for g(x), and those objects where f(x) implies multiple
   values for g(x).
 
-  returns the partition of the original sequence as
-  (<unique values>, <non-unique values>)
+  returns the partition of the original sequence as:
+
+    (<unique values>, <non-unique values>)
+
+  which can also be accessed from return value r as:
+
+    r.unique
+    r.non_unique
 
   See: Enigma 265 <https://enigmaticcode.wordpress.com/2015/03/14/enigma-265-the-parable-of-the-wise-fool/#comment-4167>
 
@@ -3597,10 +3617,10 @@ def chain(*s, **kw):
 # do we flatten this?
 def _flatten_test(s):
   # don't flatten strings
-  if isinstance(s, basestring):
+  if isinstance(s, (basestring, bytes)):
     return None
   # do flatten other sequences
-  if isinstance(s, Sequence):
+  if isinstance(s, (Sequence, Iterable)):
     return s
   # otherwise don't flatten
   return None
@@ -6233,8 +6253,17 @@ class SubstitutedExpression(object):
     if s2d is None: s2d = dict()
 
     # allowable digits (and invalid digits)
-    if digits is None: digits = range(base)
-    digits = set(digits)
+    if digits is None:
+      digits = set(range(base))
+    else:
+      digits = set(digits)
+      ds = set(range(base))
+      if verbose > 0:
+        # check for invalid digits
+        for d in digits:
+          if d not in ds:
+            printf("WARNING: SubstitutedExpression: non-valid digit {d} for base {base} specified", d=repr(d))
+      digits.intersection_update(ds)
     # TODO: I suspect this needs to work with more values of "distinct"
     if distinct == 1: digits = digits.difference(s2d.values())
     idigits = set(range(base)).difference(digits)
@@ -6249,7 +6278,7 @@ class SubstitutedExpression(object):
     if d2i is not None:
       # it should provide a sequence of (<digit>, <symbol[s]>) pairs
       for (d, ss) in (d2i.items() if hasattr(d2i, 'items') else d2i):
-        if d not in digits: printf("WARNING: SubstitutedExpression: non-valid invalid digit {d} specified", d=repr(d))
+        if verbose > 0 and d not in digits: printf("WARNING: SubstitutedExpression: non-valid invalid digit {d} specified", d=repr(d))
         invalid.update((s, d) for s in ss)
     else:
       # disallow leading zeros
@@ -6571,6 +6600,7 @@ class SubstitutedExpression(object):
         block = gensym('_substituted_expression_block')
         blocks.append(block)
         # return the current state of the symbols
+        # Python3 can use [[ yield from ... ]]
         prog.append(sprintf("{_}for {vr} in {block}({block_args}): yield {vr}"))
         block = None
 
