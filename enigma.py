@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jan 20 10:50:20 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jan 22 22:16:57 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-01-18"
+__version__ = "2021-01-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -635,10 +635,7 @@ def nsplit(n, k=None, base=10, fn=tuple):
   >>> nsplit(111 ** 2, 3)
   (3, 2, 1)
   """
-  ds = list()
-  for d in nsplitter(n, k=k, base=base):
-    ds.insert(0, d)
-  return fn(ds)
+  return fn(reversed(tuple(nsplitter(n, k=k, base=base))))
 
 def dsum(n, k=None, base=10):
   """
@@ -1863,7 +1860,11 @@ def choose(vs, fns, s=None, distinct=0):
 def first(i, count=1, skip=0, fn=list):
   """
   return the first <count> items in iterator <i> (skipping the initial
-  <skip> items) as a list.
+  <skip> items) as a list (or other object specified by <fn>).
+
+  <count> can be a callable object, in which case items are collected
+  from <i> while <count> returns a true value when it is passed each
+  item (after skipping the first <skip> items).
 
   this would be a way to find the first 10 primes:
   >>> first((n for n in irange(1, inf) if is_prime(n)), count=10)
@@ -1871,7 +1872,13 @@ def first(i, count=1, skip=0, fn=list):
   >>> first(p for p in Primes() if p % 17 == 1)
   [103]
   """
-  r = itertools.islice(i, skip, skip + count)
+  if callable(count):
+    if skip == 0:
+      r = itertools.takewhile(count, i)
+    else:
+      r = itertools.takewhile(count, itertools.islice(i, skip, None))
+  else:
+    r = itertools.islice(i, skip, skip + count)
   return (r if fn is None else fn(r))
 
 
