@@ -6,12 +6,12 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jan 22 22:16:57 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jan 25 16:26:28 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
 #
-# (c) Copyright 2009-2020, Jim Randell, all rights reserved.
+# (c) Copyright 2009-2021, Jim Randell, all rights reserved.
 #
 ###############################################################################
 # -*- mode: Python; py-indent-offset: 2; -*-
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-01-21"
+__version__ = "2021-01-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1865,6 +1865,9 @@ def first(i, count=1, skip=0, fn=list):
   <count> can be a callable object, in which case items are collected
   from <i> while <count> returns a true value when it is passed each
   item (after skipping the first <skip> items).
+  
+  <skip> can also be a callable, in which case items are skipped while
+  <skip> returns a true value when it is passed each item.
 
   this would be a way to find the first 10 primes:
   >>> first((n for n in irange(1, inf) if is_prime(n)), count=10)
@@ -1875,6 +1878,8 @@ def first(i, count=1, skip=0, fn=list):
   if callable(count):
     if skip == 0:
       r = itertools.takewhile(count, i)
+    elif callable(skip):
+      r = itertools.takewhile(count, itertools.dropwhile(skip, i))
     else:
       r = itertools.takewhile(count, itertools.islice(i, skip, None))
   else:
