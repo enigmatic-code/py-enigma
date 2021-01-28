@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan 25 16:26:28 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jan 28 15:02:59 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-01-22"
+__version__ = "2021-01-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6071,7 +6071,7 @@ class SubstitutedExpression(object):
   def __init__(self,
     exprs, base=10, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None,
     accumulate=None, template=None, solution=None, header=None, distinct=1, check=None,
-    env=None, code=None, process=1, reorder=1, first=0, denest=0, verbose=1
+    env=None, code=None, process=1, reorder=1, first=0, denest=0, sane=1, verbose=1
   ):
     """
     create a substituted expression solver.
@@ -6123,6 +6123,7 @@ class SubstitutedExpression(object):
     self.process = process
     self.reorder = reorder
     self.first = first
+    self.sane = sane
     self.verbose = verbose
 
     # set by process
@@ -6184,10 +6185,14 @@ class SubstitutedExpression(object):
     distinct = self.distinct
     denest = self.denest
     process = self.process
+    sane = self.sane
     verbose = self.verbose
 
     # sort out verbose argument
     verbose = self._verbose(verbose)
+
+    if sane == 0 and verbose > 0:
+      printf("WARNING: sanity checks disabled - good luck!")
 
     # the symbols to replace (for implicit expressions)
     if symbols is None: symbols = _SYMBOLS
@@ -6269,13 +6274,14 @@ class SubstitutedExpression(object):
       digits = set(range(base))
     else:
       digits = set(digits)
-      ds = set(range(base))
-      if verbose > 0:
-        # check for invalid digits
-        for d in digits:
-          if d not in ds:
-            printf("WARNING: SubstitutedExpression: non-valid digit {d} for base {base} specified", d=repr(d))
-      digits.intersection_update(ds)
+      if sane > 0:
+        ds = set(range(base))
+        if verbose > 0:
+          # check for invalid digits
+          for d in digits:
+            if d not in ds:
+              printf("WARNING: SubstitutedExpression: non-valid digit {d} for base {base} specified", d=repr(d))
+        digits.intersection_update(ds)
     # TODO: I suspect this needs to work with more values of "distinct"
     if distinct == 1: digits = digits.difference(s2d.values())
     idigits = set(range(base)).difference(digits)
@@ -6290,7 +6296,7 @@ class SubstitutedExpression(object):
     if d2i is not None:
       # it should provide a sequence of (<digit>, <symbol[s]>) pairs
       for (d, ss) in (d2i.items() if hasattr(d2i, 'items') else d2i):
-        if verbose > 0 and d not in digits: printf("WARNING: SubstitutedExpression: non-valid invalid digit {d} specified", d=repr(d))
+        if sane > 0 and verbose > 0 and d not in digits: printf("WARNING: SubstitutedExpression: non-valid invalid digit {d} specified", d=repr(d))
         invalid.update((s, d) for s in ss)
     else:
       # disallow leading zeros
@@ -6361,6 +6367,7 @@ class SubstitutedExpression(object):
     code = self.code
     reorder = self.reorder
     denest = self.denest
+    sane = self.sane
     verbose = self.verbose
 
     words = self._words
@@ -6370,7 +6377,7 @@ class SubstitutedExpression(object):
 
     # output run parameters
     if self.verbose & self.vP:
-      print("--[code]--" + nl + join(self.save(quote=1), sep=nl) + nl + "--[/code]--" + nl)
+      print("-- [code] --" + nl + join(self.save(quote=1), sep=nl) + nl + "-- [/code] --")
 
     # valid digits for each symbol
     valid = dict((s, list(digits.difference(d for (x, d) in invalid if x == s))) for s in symbols)
@@ -6378,7 +6385,7 @@ class SubstitutedExpression(object):
 
     # at this point we can apply some heuristic re-writing rules:
     # word = value  -> value = word, if value is free of alphametic symbols
-    if reorder:
+    if sane > 0:
       for (i, (expr, val, k)) in enumerate(exprs):
         #printf("[{i}] ({expr!r}, {val!r}, {k}) xs={xs} vs={vs}", xs=xs[i], vs=vs[i])
 
@@ -6451,7 +6458,7 @@ class SubstitutedExpression(object):
     if not isinstance(distinct, dict):
       d = dict()
       for ss in distinct:
-        if verbose > 0 and len(ss) > len(digits):
+        if sane > 0 and verbose > 0 and len(ss) > len(digits):
           printf("[SubstitutedExpression: WARNING: distinct=\"{ss}\" has more symbols than available digits]")
         for s in ss:
           if s not in d: d[s] = set()
@@ -6459,8 +6466,8 @@ class SubstitutedExpression(object):
       distinct = d
 
     # generate the program (line by line)
-    (prog, _, indent) = ([], '', '  ')
-    (vx, vy, vr) = ('_x_', '_y_', '_r_') # local variables (that don't clash with sym(x))
+    (prog, _, indent) = ([], "", "  ")
+    (vx, vy, vr) = ("_x_", "_y_", "_r_") # local variables (that don't clash with sym(x))
 
     # start with any initialisation code
     if code:
@@ -6499,6 +6506,7 @@ class SubstitutedExpression(object):
       indent_reset = indent
 
     in_loop = False
+    # use_sets = 1 # using sets is slower
 
     # deal with each <expr>,<value> pair
     for ((expr, val, k), xsyms, vsyms) in zip(exprs, xs, vs):
@@ -6533,8 +6541,15 @@ class SubstitutedExpression(object):
           _ += indent
           if done and s in distinct:
             # TODO: we should exclude initial values (that are excluded from ds) here
-            check = join(((sym(s) + ' != ' + sym(x)) for x in done if x in distinct[s]), sep=' and ')
+            check = list(sym(x) for x in done if x in distinct[s])
             if check:
+              #if use_sets:
+              #  if len(check) == 1:
+              #    check = sym(s) + " != " + check[0]
+              #  else:
+              #    check = sym(s) + " not in " + join(check, sep=", ", enc="{}")
+              #else:
+              check = join(((sym(s) + ' != ' + x) for x in check), sep=' and ')
               prog.append(sprintf("{_}if {check}:"))
               _ += indent
           done.add(s)
@@ -6577,12 +6592,18 @@ class SubstitutedExpression(object):
             check = list()
             # check it is different from existing symbols
             if y in distinct:
-              check.extend(((sym(y) + ' != ' + sym(x)) for x in done if x in distinct[y]))
+              check.extend(sym(x) for x in done if x in distinct[y])
             # check any invalid values for this symbol
             for v in idigits.union(v for (s, v) in invalid if y == s):
-              check.append(sym(y) + ' != ' + str(v))
+              check.append(str(v))
             if check:
-              check = join(check, sep=' and ')
+              #if use_sets:
+              #  if len(check) == 1:
+              #    check = sym(y) + " != " + check[0]
+              #  else:
+              #    check = sym(y) + " not in " + join(check, sep=", ", enc="{}")
+              #else:
+              check = join((sym(y) + " != " + x for x in check), sep=" and ")
               prog.append(sprintf("{_}if {check}:"))
               _ += indent
             prog.append(sprintf("{_}{vx} //= {base}"))
@@ -6887,6 +6908,9 @@ class SubstitutedExpression(object):
     if self.denest is not None:
       args.append(sprintf("--denest={self.denest}"))
 
+    if self.sane is not None:
+      args.append(sprintf("--sane={self.sane}"))
+
     if self.verbose is not None:
       args.append(sprintf("--verbose={self.verbose}"))
 
@@ -6943,7 +6967,8 @@ class SubstitutedExpression(object):
       "  --code=<string> (or -C<s>) = initialisation code (can be used multiple times)",
       "  --first (or -1) = stop after the first solution",
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
-      "  --denest=<n> (or -X<b>) = workaround statically nested block limit (0 = off, 1 = on, 2+ = depth)",
+      "  --denest=<n> (or -X<n>) = workaround statically nested block limit (0 = off, 1 = on, 2+ = depth)",
+      "  --sane=<n> (or -Y<n>) = enable/disable sanitfy checks (0 = off, 1 = on)",
       "  --verbose[=<s>] (or -v[<s>]) = verbosity (0 = off, 1 = on, HTSAitC = more)",
       "  --help (or -h) = show command-line usage",
       "",
@@ -7018,6 +7043,8 @@ class SubstitutedExpression(object):
       opt['reorder'] = (int(v) if v else 0)
     elif k == 'X' or k == 'denest':
       opt['denest'] = (int(v) if v else 1)
+    elif k == 'Y' or k == 'sane':
+      opt['sane'] = (int(v) if v else 0)
 
     else:
       # unrecognised option
@@ -7032,7 +7059,7 @@ class SubstitutedExpression(object):
     #if not args: return
 
     # process options
-    opt = dict(_argv=list(), s2d=dict(), d2i=None, verbose=1, first=0, reorder=1, denest=0)
+    opt = dict(_argv=list(), s2d=dict(), d2i=None, verbose=1, first=0, reorder=1, denest=0, sane=1)
     for arg in args:
       # deal with option args
       try:
@@ -7595,7 +7622,7 @@ class SubstitutedDivision(SubstitutedExpression):
     opt['d2i'] = d2i
 
     # verbatim options
-    for v in ('base', 'digits', 'answer', 'accumulate', 'env', 'code', 'verbose', 'denest'):
+    for v in ('base', 'digits', 'answer', 'accumulate', 'env', 'code', 'verbose', 'denest', 'sane'):
       if v in kw:
         opt[v] = kw[v]
 
@@ -9052,7 +9079,8 @@ def __matrix():
     If the system is underspecified an "incomplete" error is raised.
     If the system is inconsistent an "inconsistent" error is raised.
 
-    Otherwise a sequence of the solution values x is returned (which will be in the field F)
+    Otherwise a sequence of the solution values x is returned (which will
+    be in the field F).
     """
     if F is None: F = Rational()
     
