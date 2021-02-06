@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jan 28 15:02:59 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb  6 09:32:31 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -528,13 +528,14 @@ def concat(*args, **kw):
   return join(args, sep=sep, enc=enc)
 
 # translate text <t>, using map <m> (and optional symbols <s>)
-def translate(t, m, s=""):
+def translate(t, m, s="", embed=1):
   """
   translate the text in <t> according to map <m> (and symbols <s>)
 
   <t> is a string (sequence of letters), if there are sections of the
   string enclosed in curly braces only those sections will be
-  translated, otherwise the whole string is processed.
+  translated, otherwise the whole string is processed (providing the
+  'embed' parameter is not disabled).
   
   <m> can be:
     - a dict of <letter> -> <replacement> mappings
@@ -560,7 +561,8 @@ def translate(t, m, s=""):
     if not isinstance(m, dict): m = dict(zip(m, s))
     f = (lambda x: m.get(x, x))
   fn = (lambda t: join(map(f, t)))
-  return (re.sub(r'{(.*?)}', (lambda x: fn(x.group(1))), t) if '{' in t else fn(t))
+  if not embed or '{' not in t: return fn(t)
+  return re.sub(r'{(.*?)}', (lambda x: fn(x.group(1))), t)
 
 
 def nconcat(*digits, **kw):
@@ -3675,7 +3677,7 @@ def flattened(s, depth=None, test=_flatten_test, fn=None):
     return _flattened(z, depth, test)
 
 
-# return a copy of object s, but with value <v> at index <k> for (k, v) in <ps>
+# return a copy of object <s>, but with value <v> at index <k> for (k, v) in <ps>
 # <ps> can be a sequence of (k, v) pairs, or a sequence of keys, in which case
 # the values should be given in <vs>
 def update(s, ps=(), vs=None):
@@ -6099,6 +6101,8 @@ class SubstitutedExpression(object):
     env - additional environment for evaluation (default: None)
     code - additional lines of code evaluated before solving (default: None)
     denest - work around CPython statically nested block limit
+    sane - enable/disable sanity checks (default: 1)
+    verbose - control informational output (default: 1)
 
     If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
     """
@@ -9066,7 +9070,7 @@ def __matrix():
 
 
   # solve a system of linear equations
-  def linear(A, B=0, F=None):
+  def linear(A, B=None, F=None):
     """
     solve a system of linear equations.
 
@@ -9083,7 +9087,12 @@ def __matrix():
     be in the field F).
     """
     if F is None: F = Rational()
-    
+
+    # if B is not specified, then assume we've been supplied a list of
+    # (coefficient, constant) pairs, where A is made by collecting the
+    # coefficients, and B the constants
+    if B is None: (A, B) = zip(*A)
+
     # verify A
     n = len(A)
     m = len(A[0])
