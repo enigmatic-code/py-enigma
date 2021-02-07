@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb  6 09:34:40 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb  7 10:14:27 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-02-05"
+__version__ = "2021-02-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6214,7 +6214,7 @@ class SubstitutedExpression(object):
       # function fix up implicit parameters
       def fix(s):
         if s is None: return None
-        if re.search('{[' + symbols + ']+}', s): return s # was: [[ if '{' in s: return s ]]
+        if re.search('{\w+}', s): return s # was: [[ if '{' in s: return s ]]
         return re.sub('[' + symbols + ']+', (lambda m: '{' + m.group(0) + '}'), s)
 
       # now process the list
@@ -7086,8 +7086,8 @@ class SubstitutedExpression(object):
 
   # class method to make an object from a file
   @classmethod
-  def from_file(cls, file):
-    (cmd, args) = parsefile(file)
+  def from_file(cls, file, args=None):
+    (cmd, args) = parsefile(file, args)
     assert cmd == cls.__name__
     return cls(args)
 
@@ -7149,7 +7149,7 @@ class SubstitutedExpression(object):
 
   # class method to load a run file
   @classmethod
-  def run_file(cls, path, args=()):
+  def run_file(cls, path, args=None):
     argv = parsefile(path, args)
     if run.alias.get(argv[0], argv[0]) != cls.__name__:
       printf("WARNING: ignoring cmd = {argv[0]}")
@@ -9085,12 +9085,19 @@ def __matrix():
 
     Otherwise a sequence of the solution values x is returned (which will
     be in the field F).
+
+    The rows of the matrix of coeffecients and constants can be
+    specified as:
+
+      A = (row, row, row, ...) B = (const, const, const, ...)
+      A = (row, row, row, ...) B = const # if all consts are equal
+      A = ((row, const), (row, const), ...)
     """
     if F is None: F = Rational()
 
     # if B is not specified, then assume we've been supplied a list of
-    # (coefficient, constant) pairs, where A is made by collecting the
-    # coefficients, and B the constants
+    # (row, constant) pairs, where A is made by collecting the rows,
+    # and B the constants
     if B is None: (A, B) = zip(*A)
 
     # verify A
@@ -9259,7 +9266,7 @@ sigusr2 = lambda pid: os.kill(pid, signal.SIGUSR2)
 
 # parse a run file (which uses a shell-like syntax)
 
-def parsefile(path, args, interleave=None):
+def parsefile(path, args=None, interleave=None):
   import shlex
 
   with open(path, 'r') as f:
