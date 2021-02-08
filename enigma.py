@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb  7 10:14:27 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb  8 12:08:53 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-02-06"
+__version__ = "2021-02-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6643,15 +6643,19 @@ class SubstitutedExpression(object):
 
     # [denest] work around statically nested block limit
     if denest:
-      if block:
-        # close any partial function block
-        prog.append(sprintf("{_}yield [{block_args}]"))
+      if block is None:
+        # we need a final trivial block
+        block = blocks[-1]
+        _ = indent_reset
+        prog.append(sprintf("{_}def {block}({block_args}):"))
+        _ += indent
+      # close final function block
+      prog.append(sprintf("{_}yield [{block_args}]"))
       _ = indent_reset
       # now call the first block
-      for block in blocks:
-        prog.append(sprintf("{_}for [{block_args}] in {block}({block_args}):"))
-        _ += indent
-        break
+      block = blocks[0]
+      prog.append(sprintf("{_}for [{block_args}] in {block}({block_args}):"))
+      _ += indent
 
     # yield solutions as dictionaries
     d = join((("'" + s + "': " + sym(s)) for s in sorted(done)), sep=', ')
