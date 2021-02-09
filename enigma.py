@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb  8 12:08:53 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb  8 22:12:44 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-02-07"
+__version__ = "2021-02-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6462,7 +6462,7 @@ class SubstitutedExpression(object):
     if not isinstance(distinct, dict):
       d = dict()
       for ss in distinct:
-        if sane > 0 and verbose > 0 and len(ss) > len(digits):
+        if sane > 0 and verbose > 0 and len(set(ss).difference(s2d.keys())) > len(digits):
           printf("[SubstitutedExpression: WARNING: distinct=\"{ss}\" has more symbols than available digits]")
         for s in ss:
           if s not in d: d[s] = set()
