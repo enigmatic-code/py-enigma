@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb  8 22:12:44 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb 14 08:46:29 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-02-08"
+__version__ = "2021-02-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2545,11 +2545,10 @@ def sqrt(a, b=None):
   return math.sqrt(a if b is None else a / b)
 
 
-# Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt())
-_isqrt = getattr(math, 'isqrt', None)
-
 # calculate intf(sqrt(n))
 # see: https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_numeral_system_.28base_2.29
+# Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt())
+@static(impl=getattr(math, 'isqrt', None))
 def isqrt(n):
   """
   calculate intf(sqrt(n)).
@@ -2565,7 +2564,7 @@ def isqrt(n):
   """
   if n < 0: return None
   if n < 4: return int(n > 0)
-  if _isqrt: return _isqrt(n) # use math.isqrt() if available
+  if isqrt.impl: return isqrt.impl(n) # use math.isqrt() if available
 
   r = 0
   k = n.bit_length() - 2
@@ -3072,7 +3071,6 @@ def multiply(s):
 # to avoid name clashes with itertools.product.
 product = multiply
 
-
 def gcd(a, b):
   """
   greatest common divisor (on positive integers).
@@ -3086,6 +3084,9 @@ def gcd(a, b):
     (a, b) = (b, a % b)
   return a
 
+# or use math.gcd()
+gcd = getattr(math, 'gcd', gcd)
+
 
 def lcm(a, b):
   """
@@ -3097,6 +3098,9 @@ def lcm(a, b):
   35
   """
   return (a // gcd(a, b)) * b
+
+# or use math.lcm()
+lcm = getattr(math, 'lcm', lcm)
 
 
 # Extended Euclidean Algorithm
@@ -4684,13 +4688,14 @@ class Accumulator(object):
   5.0
   """
 
-  def __init__(self, fn=operator.add, value=None, data=None, count=0):
+  def __init__(self, fn=operator.add, fn1=identity, value=None, data=None, count=0):
     """
     create an Accumulator.
 
     The accumulation function and initial value can be specified.
     """
-    self.fn = fn
+    self.fn = fn # used to accumulate
+    self.fn1 = fn1 # used to set initial value
     self.value = value
     self.data = data
     self.count = count
@@ -4708,7 +4713,7 @@ class Accumulator(object):
     function which is called as fn(<current-value>, v).
     """
     self.count += 1
-    self.value = (v if self.value is None else self.fn(self.value, v))
+    self.value = (self.fn1(v) if self.value is None else self.fn(self.value, v))
 
 
   def accumulate_data(self, v, data, t=None):
