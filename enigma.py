@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb 14 14:06:40 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb 15 12:35:20 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-02-14"
+__version__ = "2021-02-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -586,15 +586,15 @@ def nconcat(*digits, **kw):
   """
   # in Python3 [[ def nconcat(*digits, base=10): ]] is allowed instead
   base = kw.get('base', 10)
-  fn = lambda x: reduce(lambda a, b: a * base + b, x, 0)
-  if len(digits) == 1:
-    try:
-      return fn(digits[0])
-    except TypeError:
-      pass
-    except:
-      raise
-  return fn(digits)
+  # allow a sequence to passed as a single argument
+  if len(digits) == 1 and isinstance(digits[0], (Sequence, Iterable)):
+    digits = digits[0]
+  # this is faster than using: reduce(lambda a, b: a * base + b, x, 0)
+  n = 0
+  for d in digits:
+    n *= base
+    n += d
+  return n
   # or: (slower, and only works with digits < 10)
   #return int(concat(*digits), base=base)
 
