@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb 14 08:46:29 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb 14 14:06:40 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-02-12"
+__version__ = "2021-02-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3084,7 +3084,7 @@ def gcd(a, b):
     (a, b) = (b, a % b)
   return a
 
-# or use math.gcd()
+# or use math.gcd() [available from 3.5; from 3.9 = mgcd]
 gcd = getattr(math, 'gcd', gcd)
 
 
@@ -3099,7 +3099,7 @@ def lcm(a, b):
   """
   return (a // gcd(a, b)) * b
 
-# or use math.lcm()
+# or use math.lcm() [available from 3.5; from 3.9 = mlcm]
 lcm = getattr(math, 'lcm', lcm)
 
 
@@ -4688,7 +4688,7 @@ class Accumulator(object):
   5.0
   """
 
-  def __init__(self, fn=operator.add, fn1=identity, value=None, data=None, count=0):
+  def __init__(self, fn=operator.add, fn1=identity, value=None, data=None, collect=0, count=0):
     """
     create an Accumulator.
 
@@ -4698,6 +4698,8 @@ class Accumulator(object):
     self.fn1 = fn1 # used to set initial value
     self.value = value
     self.data = data
+    self.target = None
+    self.collect = collect
     self.count = count
 
 
@@ -4716,16 +4718,36 @@ class Accumulator(object):
     self.value = (self.fn1(v) if self.value is None else self.fn(self.value, v))
 
 
-  def accumulate_data(self, v, data, t=None):
+  def accumulate_data(self, v, data, target=None):
     """
     Accumulate a value, and check the accumulated value against a target value,
     and if it matches record the data parameter.
 
     You can use this to record data where some function of the data is at an
     extremum value.
+
+    If the 'collect' parameter was set during initialisation, then all
+    values that hit current target are recorded in a list. Otherwise
+    only the most recent value is recorded.
     """
+    if target is None: target = v
     self.accumulate(v)
-    if self.value == (v if t is None else t): self.data = data
+
+    # have we hit the target?
+    if self.value == target:
+      if self.collect:
+        # we need to collect all data values with specified target measure
+        if target != self.target:
+          # the target has changed, start a new list
+          self.data = [data]
+          self.target = target
+        else:
+          # if the target is unchanged, append the current data
+          self.data.append(data)
+
+      else:
+        # otherwise, just record the data verbatim
+        self.data = data
 
   def accumulate_from(self, s):
     """
