@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb 15 12:35:20 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb 21 17:53:55 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-02-15"
+__version__ = "2021-02-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -589,13 +589,13 @@ def nconcat(*digits, **kw):
   # allow a sequence to passed as a single argument
   if len(digits) == 1 and isinstance(digits[0], (Sequence, Iterable)):
     digits = digits[0]
-  # this is faster than using: reduce(lambda a, b: a * base + b, x, 0)
+  # this is faster than using: reduce(lambda a, b: a * base + b, digits, 0)
   n = 0
   for d in digits:
     n *= base
     n += d
   return n
-  # or: (slower, and only works with digits < 10)
+  # or: (slower, and only works with digits < base)
   #return int(concat(*digits), base=base)
 
 # split n into digits, starting with the least significant
@@ -3065,7 +3065,10 @@ def multiply(s):
   >>> multiply([2] * 8)
   256
   """
-  return reduce(operator.mul, s, 1)
+  r = 1
+  for x in s:
+    r *= x
+  return r
 
 # product is the original name for multiply, but it's been renamed
 # to avoid name clashes with itertools.product.
@@ -4362,8 +4365,11 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   <group> is positive the groups start from the right, if negative
   they start from the left.
 
-  By default this routine only handles single digits up 36 in any given base,
-  but the <digits> parameter can be specified to give the symbols for larger bases.
+  By default this routine only handles single digits up 36 in any
+  given base, but the <digits> parameter can be specified to give the
+  symbols for larger bases. And if the error=1 parameter is given then
+  invalid digits will be substituted with"<n>", where n is the digit
+  value in decimal.
 
   >>> int2base(-42)
   '-42'
@@ -4457,7 +4463,7 @@ _tens = {
   1: 'teen', 2: 'twenty', 3: 'thirty', 4: 'forty', 5: 'fifty', 6: 'sixty', 7: 'seventy', 8: 'eighty', 9: 'ninety'
 }
 
-def int2words(n, scale='short', sep='', hyphen=' '):
+def int2words(n, scale='short', sep='', hyphen=' ', lang='en'):
   """
   convert an integer <n> to a string representing the number in English.
 
@@ -4478,6 +4484,7 @@ def int2words(n, scale='short', sep='', hyphen=' '):
   >>> int2words(factorial(13), scale='long')
   'six thousand two hundred and twenty seven million twenty thousand eight hundred'
   """
+  assert lang == 'en'
   return _int2words(int(n), scale, sep, hyphen)
 
 def _int2words(n, scale='short', sep='', hyphen=' '):
@@ -9695,7 +9702,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.9.1')
+""".format(version=__version__, python='2.7.18', python3='3.9.2')
 
 if __name__ == "__main__" or __name__ == "<run_path>":
 
