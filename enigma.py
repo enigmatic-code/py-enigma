@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 27 11:09:50 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 27 17:41:15 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-02-25"
+__version__ = "2021-02-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2129,7 +2129,7 @@ def divisors(n, fn=prime_factor):
   return multiples(fn(n))
 
 
-def divisors_pairs(n, fn=prime_factor, all=0):
+def divisors_pairs(n, fn=prime_factor, every=0):
   """
   generate divisors pairs (a, b) with a <= b, such that a * b = n.
 
@@ -2137,14 +2137,14 @@ def divisors_pairs(n, fn=prime_factor, all=0):
 
   this is probably faster than divisor_pairs() if you want all divisors.
 
-  if the 'all' parameter is set, then pairs with a > b are also generated.
+  if the 'every' parameter is set, then pairs with a > b are also generated.
   """
   if n == 0:
     yield (0, 0)
     return
   for a in divisors(n, fn=fn):
     b = n // a
-    if a > b and not(all): break
+    if a > b and not(every): break
     yield (a, b)
 
 
