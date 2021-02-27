@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb 21 17:53:55 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 27 10:56:47 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-02-21"
+__version__ = "2021-02-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1029,6 +1029,10 @@ class multiset(dict):
   # is_nonempty is faster than using __len__  
   __bool__ = __nonzero__ = is_nonempty
 
+  # does this multiset contain elements with multiplicity greater than n?
+  def is_duplicate(self, n=1):
+    return any(v > n for v in self.values())
+
   # all elements of the multiset
   # (for unique elements use: [[ s.keys() ]])
   def elements(self):
@@ -1562,11 +1566,18 @@ def group(s, by=identity, st=None, fn=identity):
   {0: [0, 2, 4, 6, 8], 1: [1, 3, 5, 7, 9]}
   """
   if st is None: st = (lambda x: True)
-  d = collections.defaultdict(list)
+  d = dict()
   for x in s:
     if st(x):
-      d[by(x)].append(x)
-  return dict((k, fn(v)) for (k, v) in d.items())
+      k = by(x)
+      try:
+        d[k].append(x)
+      except KeyError:
+        d[k] = [x]
+  if fn is not identity:
+    for (k, vs) in d.items():
+      d[k] = fn(vs)
+  return d
 
 # see ulambda() for a workaround for more complicated unpacking
 def unpack(fn):
@@ -2118,20 +2129,22 @@ def divisors(n, fn=prime_factor):
   return multiples(fn(n))
 
 
-def divisors_pairs(n, fn=prime_factor):
+def divisors_pairs(n, fn=prime_factor, all=0):
   """
-  generate divisors pairs (a, b) with a =< b, such that a * b = n.
+  generate divisors pairs (a, b) with a <= b, such that a * b = n.
 
   pairs are generated in order, by determining the factors of n.
 
   this is probably faster than divisor_pairs() if you want all divisors.
+
+  if the 'all' parameter is set, then pairs with a > b are also generated.
   """
   if n == 0:
     yield (0, 0)
     return
   for a in divisors(n, fn=fn):
     b = n // a
-    if a > b: break
+    if a > b and not(all): break
     yield (a, b)
 
 
@@ -2943,7 +2956,7 @@ def floor(x, m=1):
   """
   return largest multiple of m, not greater than x
   """
-  # [[ m is 1 ]] give a SyntaxWarning
+  # [[ m is 1 ]] gives a SyntaxWarning
   if m == 1: return intf(x)
   return m * int(x // m)
 
@@ -4711,7 +4724,7 @@ class Accumulator(object):
 
 
   def __repr__(self):
-    return 'Accumulator(value=' + repr(self.value) + ', data=' + repr(self.data) + ', count=' + str(self.count) + ')'
+    return self.__class__.__name__ + '(value=' + repr(self.value) + ', data=' + repr(self.data) + ', count=' + str(self.count) + ')'
 
   def accumulate(self, v=1):
     """
@@ -4785,7 +4798,7 @@ class MultiAccumulator(object):
     self.multi = list(Accumulator(fn) for fn in fns)
 
   def __repr__(self):
-    return 'MultiAccumulator(' + repr(self.multi) + ')'
+    return self.__class__.__name___ + '(' + repr(self.multi) + ')'
     
 
   def accumulate(self, v):
@@ -8754,7 +8767,7 @@ class namespace(object):
     self.__dict__.update(**vs)
 
   def __repr__(self):
-    return '<namespace ' + repr(self.__name) + '>'
+    return '<' + self.__class__.__name__ + ' ' + repr(self.__name) + '>'
 
 def make_namespace(name, vs):
   return namespace(name, vs)
