@@ -1,4 +1,4 @@
-#!/usr/bin/env python -t
+#!/usr/bin/env python3 -t
 ###############################################################################
 #
 # File:         enigma.py
@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 27 17:41:15 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Mar  2 09:30:33 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-02-26"
+__version__ = "2021-02-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3207,6 +3207,7 @@ def fraction(a, b, *rest):
   if rest:
     for (c, d) in chunk(rest, 2):
       (a, b) = (a * d + b * c, b * d)
+  if b < 0: (a, b) = (-a, -b)
   g = gcd(a, b)
   return (a // g, b // g)
 
@@ -3240,6 +3241,8 @@ def Rational(src=None, verbose=None):
       except KeyError:
         pass
       (mod, fn) = s.split('.', 2) 
+      # Python3: could use importlib.util.find_spec() to see if the module exists
+      # and then importlib.util.module_from_spec() to load it
       try:
         t = __import__(mod)
       except ImportError:
@@ -3719,11 +3722,13 @@ def update(s, ps=(), vs=None):
   (1, 2, 4)
   """
   if vs is not None: ps = zip(ps, vs)
-  # turn a tuple into a list (so it can be updated)
-  # and then back to a tuple at the end
+  # allow updating of immutable types: tuple, string
   fn = None
   if isinstance(s, tuple):
     fn = type(s)
+    s = list(s)
+  elif isinstance(s, basestring):
+    fn = ''.join
     s = list(s)
   else:
     try:
@@ -9407,7 +9412,7 @@ def run(cmd, *args, **kw):
           _PY_ENIGMA = join(sorted(uniq(_PY_ENIGMA + flags)))
         try:
           if timed: timed = Timer(name=timed)
-          r = runpy.run_path(cmd, run_name="__main__")
+          r = runpy.run_path(cmd, run_name=kw.get('run_name', '__main__'))
           if timed: timed.report()
         finally:
           if saved:
@@ -9717,7 +9722,11 @@ enigma.py has the following command-line usage:
 
 """.format(version=__version__, python='2.7.18', python3='3.9.2')
 
-if __name__ == "__main__" or __name__ == "<run_path>":
+def _namecheck(name, verbose=0):
+  if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
+  return name == "__main__" or name == "<run_path>"
+
+if _namecheck(__name__):
 
   # allow solvers to run from the command line:
   #   % python enigma.py <class> <args> ...
