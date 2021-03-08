@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Mar  2 09:30:33 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Mar  8 17:47:29 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-02-27"
+__version__ = "2021-03-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2558,8 +2558,7 @@ def sqrt(a, b=None):
   return math.sqrt(a if b is None else a / b)
 
 
-# calculate intf(sqrt(n))
-# see: https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_numeral_system_.28base_2.29
+# calculate intf(sqrt(n)) using Newton's method
 # Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt())
 @static(impl=getattr(math, 'isqrt', None))
 def isqrt(n):
@@ -2579,23 +2578,17 @@ def isqrt(n):
   if n < 4: return int(n > 0)
   if isqrt.impl: return isqrt.impl(n) # use math.isqrt() if available
 
-  r = 0
-  k = n.bit_length() - 2
-  b = 1 << (k + (k & 1))
-
-  #assert not(b > n)
-  ## if this assertion fails we need
-  #while b > n: b >>= 2
-
-  while b:
-    if n >= r + b:
-      n -= r + b
-      r = (r >> 1) + b
-    else:
-      r >>= 1
-    b >>= 2
-
-  return r
+  try:
+    # try using float approximation
+    a = int(math.sqrt(n))
+  except OverflowError:
+    # roughly: 2 ** (0.5 * log2(n))
+    a = 1 << ((n.bit_length() + 1) >> 1)
+  # run Newton's method
+  while True:
+    b = (a + n // a) >> 1
+    if a <= b: return a
+    a = b
 
 # it would be more Pythonic to encapsulate is_square in a class with the initialisation
 # in __init__, and the actual call in __call__, and then instantiate an object to be
