@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Mar  8 17:47:29 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Mar 11 21:19:54 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-03-07"
+__version__ = "2021-03-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2578,17 +2578,21 @@ def isqrt(n):
   if n < 4: return int(n > 0)
   if isqrt.impl: return isqrt.impl(n) # use math.isqrt() if available
 
-  try:
-    # try using float approximation
-    a = int(math.sqrt(n))
-  except OverflowError:
-    # roughly: 2 ** (0.5 * log2(n))
-    a = 1 << ((n.bit_length() + 1) >> 1)
-  # run Newton's method
-  while True:
-    b = (a + n // a) >> 1
-    if a <= b: return a
-    a = b
+  # use the math.isqrt algorithm
+  c = (n.bit_length() - 1) >> 1
+  a = 1
+  d = 0
+  s = c.bit_length()
+  while s:
+    s -= 1
+    e = d
+    d = c >> s
+    a = (a << d - e - 1) + (n >> (c << 1) - e - d + 1) // a
+  return a - (a * a > n)
+
+# square root floor and ceiling functions
+sqrtf = isqrt
+sqrtc = lambda x: (isqrt(x) if x < 1 else 1 + isqrt(x - 1))
 
 # it would be more Pythonic to encapsulate is_square in a class with the initialisation
 # in __init__, and the actual call in __call__, and then instantiate an object to be
