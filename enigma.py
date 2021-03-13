@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Mar 11 21:19:54 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 13 15:00:00 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-03-10"
+__version__ = "2021-03-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4800,7 +4800,7 @@ class MultiAccumulator(object):
     self.multi = list(Accumulator(fn) for fn in fns)
 
   def __repr__(self):
-    return self.__class__.__name___ + '(' + repr(self.multi) + ')'
+    return self.__class__.__name__ + '(' + repr(self.multi) + ')'
     
 
   def accumulate(self, v):
