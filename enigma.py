@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 13 15:00:00 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Mar 14 09:50:31 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-03-12"
+__version__ = "2021-03-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -725,6 +725,7 @@ def match(v, t):
       t = t[1:]
   return fnmatch(v, t)
 
+@static(special={'inf': inf, '+inf': inf, '-inf': -inf})
 def number(s, base=10):
   """
   make an integer from a string, ignoring non-digit characters
@@ -738,6 +739,8 @@ def number(s, base=10):
   >>> number('DEAD.BEEF', base=16) == 0xdeadbeef
   True
   """
+  v = number.special.get(s.strip().lower(), None)
+  if v: return v
   return base2int(s, base=base, strip=1)
 
 
@@ -1895,6 +1898,8 @@ def first(i, count=1, skip=0, fn=list):
       r = itertools.takewhile(count, itertools.dropwhile(skip, i))
     else:
       r = itertools.takewhile(count, itertools.islice(i, skip, None))
+  elif count == inf:
+    r = i
   else:
     r = itertools.islice(i, skip, skip + count)
   return (r if fn is None else fn(r))
