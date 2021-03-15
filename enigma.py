@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Mar 14 09:50:31 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Mar 15 14:19:32 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-03-13"
+__version__ = "2021-03-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7115,9 +7115,9 @@ class SubstitutedExpression(object):
     return True
 
 
-  # class method to make an object from arguments
+  # class method to make options from arguments
   @classmethod
-  def from_args(cls, args):
+  def _opt_from_args(cls, args):
     #if not args: return
 
     # process options
@@ -7142,12 +7142,20 @@ class SubstitutedExpression(object):
 
     return opt
 
-  # class method to make an object from a file
+  # class method to make object from a collection of arguments
   @classmethod
-  def from_file(cls, file, args=None):
-    (cmd, args) = parsefile(file, args)
-    assert cmd == cls.__name__
-    return cls(args)
+  def from_args(cls, args):
+    # if args is a string
+    if isinstance(args, basestring):
+      # split into lines, and discard comments
+      args = list(s for s in (x.partition('#')[0].strip() for x in args.splitlines()) if s)
+
+    # parse the args
+    opt = cls._opt_from_args(args)
+    if opt:
+      # create the object
+      argv = opt.pop('_argv')
+      return cls(argv, **opt)
 
   # class method to call from the command line
   @classmethod
@@ -7189,17 +7197,12 @@ class SubstitutedExpression(object):
     (62129 - 58722 = 3407) (is_prime(62129)) (is_prime(3407)) (is_prime(7043)) (is_square(529)) / E=2 F=3 H=8 N=9 O=4 R=7 S=6 T=5 U=0 V=1 / (3407, 529)
     (FOUR, TEN) = (3407, 529) [1 solution]
     """
-
     if args:
-      opt = cls.from_args(args)
-      if opt:
-        # create the object
-        argv = opt.pop('_argv')
-        self = cls(argv, **opt)
-        if self is not None:
-          # call the solver
-          self.run()
-          return 0
+      self = cls.from_args(args)
+      if self is not None:
+        # call the solver
+        self.run()
+        return 0
 
     # failure, output usage message
     print(join(cls._usage(), sep=nl))
@@ -7207,11 +7210,11 @@ class SubstitutedExpression(object):
 
   # class method to load a run file
   @classmethod
-  def run_file(cls, path, args=None):
+  def from_file(cls, path, args=None):
     argv = parsefile(path, args)
     if run.alias.get(argv[0], argv[0]) != cls.__name__:
       printf("WARNING: ignoring cmd = {argv[0]}")
-    opt = cls.from_args(*argv[1:])
+    opt = cls._opt_from_args(*argv[1:])
     if opt:
       argv = opt.pop('_argv')
       return cls(argv, **opt)
