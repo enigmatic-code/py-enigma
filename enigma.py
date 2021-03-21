@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Mar 15 14:19:32 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Mar 21 08:55:27 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-03-14"
+__version__ = "2021-03-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1317,11 +1317,11 @@ def mcombinations(s, k=None):
 #
 #  >>> with Timer(): icount(uniq(subsets("mississippi", select="P")))
 #  107899
-#  [timing] elapsed time: 68.9407666s (68.94s)
+#  [timing] total time: 68.9407666s (68.94s)
 #
 #  >>> with Timer(): icount(subsets("mississippi", select="mP"))
 #  107899
-#  [timing] elapsed time: 0.5661372s (566.14ms)
+#  [timing] total time: 0.5661372s (566.14ms)
 #
 def mP(d, n):
   if n == 0:
@@ -2632,7 +2632,7 @@ def is_square(n):
   return (r if r * r == n else None)
 
 # generate powers from a range
-def powers(a, b, k=2):
+def powers(a, b, k=2, step=1):
   """
   generate powers (n ** k) for n in irange(a, b)
 
@@ -2641,7 +2641,7 @@ def powers(a, b, k=2):
   >>> list(powers(1, 10, 3))
   [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000]
   """
-  return (n ** k for n in irange(a, b))
+  return (n ** k for n in irange(a, b, step=step))
 
 # compose functions in order (forward functional composition, "and then")
 # so: fcompose(f, g, h)(x) == h(g(f(x)))
@@ -8728,7 +8728,7 @@ class Timer(object):
     if self._report and not(force): return self._report
     if self._t1 is None: self.stop()
     e = self.elapsed()
-    self._report = sprintf("[{n}] elapsed time: {e:.7f}s ({f})", n=self._name, f=self.format(e))
+    self._report = sprintf("[{n}] total time: {e:.7f}s ({f})", n=self._name, f=self.format(e))
     print(self._report, file=self._file)
 
   def printf(self, fmt='', **kw):
