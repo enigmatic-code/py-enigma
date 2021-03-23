@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Mar 21 08:55:27 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Mar 23 08:36:38 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-03-20"
+__version__ = "2021-03-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -850,7 +850,27 @@ def peek(s, k=0, **kw):
   except KeyError:
     pass
   raise ValueError(sprintf("invalid index {k}"))
-    
+
+# functions to create a selector for elements/attributes from an object
+# passing multi=1 forces a multivalued return, even if only one element is specified
+def item(*ks, **kw):
+  f = operator.itemgetter(*ks)
+  if len(ks) == 1 and kw.get('multi'): return (lambda x: (f(x),))
+  return f
+
+def attr(*ks, **kw):
+  f = operator.attrgetter(*ks)
+  if len(ks) == 1 and kw.get('multi'): return (lambda x: (f(x),))
+  return f
+
+items = lambda n: map(item, range(n)) # (x, y, z) = items(3)
+
+# select items according to space/comma separated template
+# item_from("p", "V, L, p") -> item(2)
+def item_from(select, template, **kw):
+  split = lambda s: (re.split(r'[\s,]+', s) if isinstance(s, basestring) else s)
+  fields = dict((k, v) for (v, k) in enumerate(split(template)))
+  return item(*(fields[k] for k in split(select)), **kw)
 
 def diff(a, b, *rest):
   """
@@ -1275,13 +1295,13 @@ class multiset(dict):
     if not(self) and 'default' in kw: return kw['default']
     return max(self.keys())
 
-  def sum(self):
+  def sum(self, fn=sum):
     """
     return the sum of items in a multiset.
 
     equivalent to: sum(self)
     """
-    return sum(v * k for (k, v) in self.items())
+    return fn(v * k for (k, v) in self.items())
 
   # allow operator overloading on multisets
   # (let me know if these don't do what you expect)
@@ -1550,7 +1570,7 @@ def collect(s, accept=None, reject=None, every=0, fn=list):
   except ValueError:
     return None
 
-def group(s, by=identity, st=None, fn=identity):
+def group(s, by=identity, st=None, f=identity, fn=identity):
   """
   group the items of sequence <s> together using the <by> function.
 
@@ -1558,6 +1578,9 @@ def group(s, by=identity, st=None, fn=identity):
 
   if the <st> function is specified, only items that satisfy it will
   be considered.
+
+  if the <f> function is specified, the function is applied to
+  selected values before they are added to the groups.
 
   a dict() is returned where the keys of the dict are the values of
   the <by> function applied to the items of the sequence, and the
@@ -1567,16 +1590,22 @@ def group(s, by=identity, st=None, fn=identity):
 
   >>> group(irange(0, 9), by=mod(2))
   {0: [0, 2, 4, 6, 8], 1: [1, 3, 5, 7, 9]}
+
+  # to reverse a dict into a multivalued map
+  >>> d = dict((n, n % 2) for n in irange(0, 9))
+  >>> group(d.items(), by=item(1), f=item(0), fn=sorted)
+  {0: [0, 2, 4, 6, 8], 1: [1, 3, 5, 7, 9]}
   """
   if st is None: st = (lambda x: True)
   d = dict()
   for x in s:
     if st(x):
       k = by(x)
+      v = f(x)
       try:
-        d[k].append(x)
+        d[k].append(v)
       except KeyError:
-        d[k] = [x]
+        d[k] = [v]
   if fn is not identity:
     for (k, vs) in d.items():
       d[k] = fn(vs)
@@ -6124,10 +6153,21 @@ class SubstitutedExpression(object):
   See SubstitutedExpression.command_line() for more examples.
   """
 
+  @classmethod
+  def set_default(cls, **kw):
+    """
+    set default values for instance initialisation.
+    """
+    for (k, v) in kw.items():
+      cls.defaults[k] = v
+
+  # standard default values (all others are None)
+  defaults = dict(base=10, distinct=1, process=1, reorder=1, first=0, denest=0, sane=1, verbose=1)
+
   def __init__(self,
-    exprs, base=10, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None,
-    accumulate=None, template=None, solution=None, header=None, distinct=1, check=None,
-    env=None, code=None, process=1, reorder=1, first=0, denest=0, sane=1, verbose=1
+    exprs, base=None, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None,
+    accumulate=None, template=None, solution=None, header=None, distinct=None, check=None,
+    env=None, code=None, process=None, reorder=None, first=None, denest=None, sane=None, verbose=None
   ):
     """
     create a substituted expression solver.
@@ -6161,28 +6201,34 @@ class SubstitutedExpression(object):
     If you want to allow leading digits to be 0 pass an empty dictionary for d2i.
     """
 
-    self.exprs = exprs
-    self.base = base
-    self.symbols = symbols
-    self.digits = digits
-    self.s2d = (s2d or l2d) # s2d is preferred
-    self.d2i = d2i
-    self.answer = answer
-    self.accumulate = accumulate
-    self.template = template
-    self.solution = solution
-    self.header = header
-    self.distinct = distinct
-    self.check = check
-    self.env = env
-    self.code = code
-    self.denest = denest
+    # return the first not-None value, or defaults[key]
+    def get_default(key, *values):
+      for v in values:
+        if v is not None: return v
+      return self.__class__.defaults.get(key, None)
 
-    self.process = process
-    self.reorder = reorder
-    self.first = first
-    self.sane = sane
-    self.verbose = verbose
+    self.exprs = get_default('exprs', exprs)
+    self.base = get_default('base', base)
+    self.symbols = get_default('symbols', symbols)
+    self.digits = get_default('digits', digits)
+    self.s2d = get_default('s2d', s2d, l2d) # s2d is preferred
+    self.d2i = get_default('d2i', d2i)
+    self.answer = get_default('answer', answer)
+    self.accumulate = get_default('accumulate', accumulate)
+    self.template = get_default('template', template)
+    self.solution = get_default('solution', solution)
+    self.header = get_default('header', header)
+    self.distinct = get_default('distinct', distinct)
+    self.check = get_default('check', check)
+    self.env = get_default('env', env)
+    self.code = get_default('code', code)
+    self.denest = get_default('denest', denest)
+
+    self.process = get_default('process', process)
+    self.reorder = get_default('reorder', reorder)
+    self.first = get_default('first', first)
+    self.sane = get_default('sane', sane)
+    self.verbose = get_default('verbose', verbose)
 
     # set by process
     self._processed = 0
@@ -6190,7 +6236,7 @@ class SubstitutedExpression(object):
     # set by prepare()
     self._prepared = 0
 
-    if process: self._process()
+    if self.process: self._process()
 
 
   # verbose flags:
@@ -6354,7 +6400,8 @@ class SubstitutedExpression(object):
     if d2i is not None:
       # it should provide a sequence of (<digit>, <symbol[s]>) pairs
       for (d, ss) in (d2i.items() if hasattr(d2i, 'items') else d2i):
-        if sane > 0 and verbose > 0 and d not in digits: printf("WARNING: SubstitutedExpression: non-valid invalid digit {d} specified", d=repr(d))
+        if sane > 0 and verbose > 0 and d not in digits and d not in idigits:
+          printf("WARNING: SubstitutedExpression: non-valid invalid digit {d} specified", d=repr(d))
         invalid.update((s, d) for s in ss)
     else:
       # disallow leading zeros
