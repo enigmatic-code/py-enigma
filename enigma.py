@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 24 15:29:44 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 24 18:13:26 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -6935,7 +6935,7 @@ class SubstitutedExpression(object):
     """
     return substitute(s, text, digits=digits)
 
-  # experimental
+  # !!! EXPERIMENTAL !!!
   @classmethod
   def split_sum(cls, terms, result=None, k=1, base=None, carries=None, d2i=None):
     """
@@ -6984,9 +6984,11 @@ class SubstitutedExpression(object):
       ts_ = list(t for t in (t[:-k] for t in terms) if t)
       maxc_ = (sum(pow(base, len(t)) - 1 for t in ts) + maxc) // pow(base, k)
       if carry: ts.append(carry)
-      # chop k characters off the end of the result
-      rs = result[-k:]
-      rs_ = result[:-k]
+      if ts_:
+        # chop k characters off the end of the result
+        (rs, rs_) = (result[-k:], result[:-k])
+      else:
+        (rs, rs_) = (result, '')
       # allocate a carry out
       carry = (carries.pop(0) if rs_ else '')
       if carry: cs.append(carry)
@@ -7000,6 +7002,7 @@ class SubstitutedExpression(object):
 
     return Record(
       exprs=exprs,
+      base=base,
       symbols=join(sorted(union(words))),
       carries=join(cs),
       d2i=d2i,
