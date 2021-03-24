@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 24 08:49:50 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 24 10:39:01 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -6977,6 +6977,7 @@ class SubstitutedExpression(object):
       # chop k characters off the end of each term
       ts = list(t[-k:] for t in terms)
       ts_ = list(t for t in (t[:-k] for t in terms) if t)
+      maxc_ = (len(ts) * (base - 1) + maxc) // base
       if carry: ts.append(carry)
       # chop k characters off the end of the result
       rs = result[-k:]
@@ -6987,7 +6988,7 @@ class SubstitutedExpression(object):
       exprs.append(join(map(enc, ts), sep=" + ") + " = " + enc(carry + rs))
       # determine d2i values
       if carry:
-        maxc_ = (len(ts) * (base - 1) + maxc) // base
+        #printf("maxc {carry} = {maxc_}")
         d2i.update((d, carry) for d in irange(maxc_ + 1, base - 1))
         maxc = maxc_
       if not rs_: break
