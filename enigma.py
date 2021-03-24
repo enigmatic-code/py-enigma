@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 24 10:39:01 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 24 15:29:44 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -6956,6 +6956,7 @@ class SubstitutedExpression(object):
       symbols - the symbols used in the original sum
       carries - the symbols used in the carries between chunks
       d2i - is augmented with additional restrictions for carry symbols
+      template - template for original sum
     """
     # defaults
     if base is None: base = cls.defaults.get('base', 10)
@@ -6970,19 +6971,23 @@ class SubstitutedExpression(object):
     # no leading zeros by default
     words = union([terms, [result]])
     if d2i is None: d2i = set((0, w[0]) for w in words)
-    # enclose a string with braces
+
+    # prepare return values
     enc = lambda s, b="{}": b[0] + s + b[-1]
+    template = enc(join(map(enc, terms), sep=' + ') + " = " + enc(result), b="()")
+
+    # enclose a string with braces
     (exprs, cs, carry, maxc) = (list(), list(), None, 0)
     while True:
       # chop k characters off the end of each term
       ts = list(t[-k:] for t in terms)
       ts_ = list(t for t in (t[:-k] for t in terms) if t)
-      maxc_ = (len(ts) * (base - 1) + maxc) // base
+      maxc_ = (sum(pow(base, len(t)) - 1 for t in ts) + maxc) // pow(base, k)
       if carry: ts.append(carry)
       # chop k characters off the end of the result
       rs = result[-k:]
       rs_ = result[:-k]
-      # allocate a carry
+      # allocate a carry out
       carry = (carries.pop(0) if rs_ else '')
       if carry: cs.append(carry)
       exprs.append(join(map(enc, ts), sep=" + ") + " = " + enc(carry + rs))
@@ -6990,15 +6995,15 @@ class SubstitutedExpression(object):
       if carry:
         #printf("maxc {carry} = {maxc_}")
         d2i.update((d, carry) for d in irange(maxc_ + 1, base - 1))
-        maxc = maxc_
       if not rs_: break
-      (terms, result) = (ts_, rs_)
+      (terms, result, maxc) = (ts_, rs_, maxc_)
 
     return Record(
       exprs=exprs,
       symbols=join(sorted(union(words))),
       carries=join(cs),
       d2i=d2i,
+      template=template,
     )
 
   # generate appropriate command line arguments to reconstruct this instance
