@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 24 18:13:26 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 24 19:15:38 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -6978,17 +6978,23 @@ class SubstitutedExpression(object):
 
     # enclose a string with braces
     (exprs, cs, carry, maxc) = (list(), list(), None, 0)
-    while True:
-      # chop k characters off the end of each term
-      ts = list(t[-k:] for t in terms)
-      ts_ = list(t for t in (t[:-k] for t in terms) if t)
-      maxc_ = (sum(pow(base, len(t)) - 1 for t in ts) + maxc) // pow(base, k)
+    while terms:
+      if len(terms) > 1:
+        # chop k characters off the end of each term
+        ts = list(t[-k:] for t in terms)
+        ts_ = list(t for t in (t[:-k] for t in terms) if t)
+        # upper bound for carry out
+        maxc_ = (sum(pow(base, len(t)) - 1 for t in ts) + maxc) // pow(base, k)
+      else:
+        # use the remaining term
+        (ts, ts_) = (terms, None)
       if carry: ts.append(carry)
       if ts_:
         # chop k characters off the end of the result
         (rs, rs_) = (result[-k:], result[:-k])
       else:
-        (rs, rs_) = (result, '')
+        # otherwise, use the whole result
+        (rs, rs_) = (result, None)
       # allocate a carry out
       carry = (carries.pop(0) if rs_ else '')
       if carry: cs.append(carry)
