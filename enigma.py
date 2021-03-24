@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 24 19:15:38 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 24 19:51:27 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -6937,7 +6937,7 @@ class SubstitutedExpression(object):
 
   # !!! EXPERIMENTAL !!!
   @classmethod
-  def split_sum(cls, terms, result=None, k=1, base=None, carries=None, d2i=None):
+  def split_sum(cls, terms, result=None, k=1, base=None, carries=None, d2i=None, answer=None):
     """
     split the sum represented by [[ sum(<terms>) = <result> ]] into
     sums consisting of <k> columns of the original sum with carries
@@ -6946,6 +6946,7 @@ class SubstitutedExpression(object):
       base - the number base to operate in (default: 10)
       carries - symbols to be used for carries between chunks
       d2i - initial invalid digits
+      answer - answer parameter (see: __init__)
 
     if <result> is None, then <terms> can contain the sum respresented
     as a string.
@@ -6957,11 +6958,14 @@ class SubstitutedExpression(object):
       carries - the symbols used in the carries between chunks
       d2i - is augmented with additional restrictions for carry symbols
       template - template for original sum
+      answer - answer parameter
+      run - a function to run the solver with "standard" arguments
     """
     # defaults
     if base is None: base = cls.defaults.get('base', 10)
     if carries is None: carries = list('abcdefghijklmnopqrstuvwxyz')
     if d2i is None: d2i = cls.defaults.get('d2i', None)
+    if answer is None: answer = cls.defaults.get('answer', None)
 
     # if result is None, terms can be the sum represented as a string
     if result is None:
@@ -7006,13 +7010,23 @@ class SubstitutedExpression(object):
       if not rs_: break
       (terms, result, maxc) = (ts_, rs_, maxc_)
 
+    symbols = join(sorted(union(words)))
+    carries = join(cs)
+    # a function to run the solver with "standard" arguments
+    run = (lambda *args, **kw:
+      SubstitutedExpression(exprs,
+        base=base, distinct=symbols, d2i=d2i, template=template, solution=symbols, answer=answer
+      ).run(*args, **kw)
+    )
     return Record(
       exprs=exprs,
       base=base,
-      symbols=join(sorted(union(words))),
-      carries=join(cs),
+      symbols=symbols,
+      carries=cs,
       d2i=d2i,
       template=template,
+      answer=answer,
+      run=run
     )
 
   # generate appropriate command line arguments to reconstruct this instance
