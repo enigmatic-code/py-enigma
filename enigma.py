@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Mar 23 08:36:38 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 24 08:49:50 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-03-21"
+__version__ = "2021-03-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -868,7 +868,7 @@ items = lambda n: map(item, range(n)) # (x, y, z) = items(3)
 # select items according to space/comma separated template
 # item_from("p", "V, L, p") -> item(2)
 def item_from(select, template, **kw):
-  split = lambda s: (re.split(r'[\s,]+', s) if isinstance(s, basestring) else s)
+  split = lambda s: (re.split(r'[\s,]+', s.strip("()[]{}")) if isinstance(s, basestring) else s)
   fields = dict((k, v) for (v, k) in enumerate(split(template)))
   return item(*(fields[k] for k in split(select)), **kw)
 
@@ -6161,8 +6161,17 @@ class SubstitutedExpression(object):
     for (k, v) in kw.items():
       cls.defaults[k] = v
 
-  # standard default values (all others are None)
-  defaults = dict(base=10, distinct=1, process=1, reorder=1, first=0, denest=0, sane=1, verbose=1)
+  # standard default values
+  # add new parameters here, and they will be set up automatically
+  # but you still need to document them in __init__
+  defaults = dict(
+    # parameters that have a default value
+    base=10, distinct=1, process=1, reorder=1, first=0, denest=0, sane=1, verbose=1,
+    # other parameters
+    exprs=None, symbols=None, digits=None, s2d=None, d2i=None, answer=None, accumulate=None,
+    template=None, solution=None, header=None,
+    check=None, env=None, code=None,
+  )
 
   def __init__(self,
     exprs, base=None, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None,
@@ -6207,34 +6216,18 @@ class SubstitutedExpression(object):
         if v is not None: return v
       return self.__class__.defaults.get(key, None)
 
-    self.exprs = get_default('exprs', exprs)
-    self.base = get_default('base', base)
-    self.symbols = get_default('symbols', symbols)
-    self.digits = get_default('digits', digits)
-    self.s2d = get_default('s2d', s2d, l2d) # s2d is preferred
-    self.d2i = get_default('d2i', d2i)
-    self.answer = get_default('answer', answer)
-    self.accumulate = get_default('accumulate', accumulate)
-    self.template = get_default('template', template)
-    self.solution = get_default('solution', solution)
-    self.header = get_default('header', header)
-    self.distinct = get_default('distinct', distinct)
-    self.check = get_default('check', check)
-    self.env = get_default('env', env)
-    self.code = get_default('code', code)
-    self.denest = get_default('denest', denest)
+    # set defaults from class, most are simple except:
+    # s2d - use l2d if s2d is not specified (for backward compatability)
+    scope = locals()
+    for k in self.__class__.defaults.keys():
+      if k == 's2d':
+        v = get_default(k, s2d, l2d)
+      else:
+        v = get_default(k, scope[k])
+      setattr(self, k, v)
 
-    self.process = get_default('process', process)
-    self.reorder = get_default('reorder', reorder)
-    self.first = get_default('first', first)
-    self.sane = get_default('sane', sane)
-    self.verbose = get_default('verbose', verbose)
-
-    # set by process
-    self._processed = 0
-
-    # set by prepare()
-    self._prepared = 0
+    self._processed = 0 # set by process
+    self._prepared = 0 # set by prepare()
 
     if self.process: self._process()
 
@@ -6942,6 +6935,70 @@ class SubstitutedExpression(object):
     """
     return substitute(s, text, digits=digits)
 
+  # experimental
+  @classmethod
+  def split_sum(cls, terms, result=None, k=1, base=None, carries=None, d2i=None):
+    """
+    split the sum represented by [[ sum(<terms>) = <result> ]] into
+    sums consisting of <k> columns of the original sum with carries
+    inbetween the chunks.
+
+      base - the number base to operate in (default: 10)
+      carries - symbols to be used for carries between chunks
+      d2i - initial invalid digits
+
+    if <result> is None, then <terms> can contain the sum respresented
+    as a string.
+
+    return value is an object with the following attributes:
+
+      exprs - the alphametic expressions corresponding to the chunks
+      symbols - the symbols used in the original sum
+      carries - the symbols used in the carries between chunks
+      d2i - is augmented with additional restrictions for carry symbols
+    """
+    # defaults
+    if base is None: base = cls.defaults.get('base', 10)
+    if carries is None: carries = list('abcdefghijklmnopqrstuvwxyz')
+    if d2i is None: d2i = cls.defaults.get('d2i', None)
+
+    # if result is None, terms can be the sum represented as a string
+    if result is None:
+      terms = re.split(r'[\s\+\=]+', terms)
+      result = terms.pop()
+
+    # no leading zeros by default
+    words = union([terms, [result]])
+    if d2i is None: d2i = set((0, w[0]) for w in words)
+    # enclose a string with braces
+    enc = lambda s, b="{}": b[0] + s + b[-1]
+    (exprs, cs, carry, maxc) = (list(), list(), None, 0)
+    while True:
+      # chop k characters off the end of each term
+      ts = list(t[-k:] for t in terms)
+      ts_ = list(t for t in (t[:-k] for t in terms) if t)
+      if carry: ts.append(carry)
+      # chop k characters off the end of the result
+      rs = result[-k:]
+      rs_ = result[:-k]
+      # allocate a carry
+      carry = (carries.pop(0) if rs_ else '')
+      if carry: cs.append(carry)
+      exprs.append(join(map(enc, ts), sep=" + ") + " = " + enc(carry + rs))
+      # determine d2i values
+      if carry:
+        maxc_ = (len(ts) * (base - 1) + maxc) // base
+        d2i.update((d, carry) for d in irange(maxc_ + 1, base - 1))
+        maxc = maxc_
+      if not rs_: break
+      (terms, result) = (ts_, rs_)
+
+    return Record(
+      exprs=exprs,
+      symbols=join(sorted(union(words))),
+      carries=join(cs),
+      d2i=d2i,
+    )
 
   # generate appropriate command line arguments to reconstruct this instance
   def to_args(self, quote=1):
@@ -6978,7 +7035,7 @@ class SubstitutedExpression(object):
 
     # we should probably make this from self.invalid
     if self.d2i:
-      for (k, v) in sorted(self.d2i.items(), key=lambda t: t[0]):
+      for (k, v) in sorted((self.d2i.items() if hasattr(self.d2i, 'items') else self.d2i), key=lambda t: t[0]):
         if v:
           args.append(sprintf("--invalid={q}{k},{v}{q}", v=join(sorted(v))))
 
