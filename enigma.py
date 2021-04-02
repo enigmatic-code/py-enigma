@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 24 19:51:27 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Apr  2 15:19:15 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-03-23"
+__version__ = "2021-04-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6936,12 +6936,13 @@ class SubstitutedExpression(object):
     return substitute(s, text, digits=digits)
 
   # !!! EXPERIMENTAL !!!
+  # it may be better to implement this as a subclass of SubstitutedExpression
   @classmethod
-  def split_sum(cls, terms, result=None, k=1, base=None, carries=None, d2i=None, answer=None):
+  def split_sum(cls, terms, result=None, k=1, base=None, carries=None, d2i=None, answer=None, extra=None, template=None):
     """
-    split the sum represented by [[ sum(<terms>) = <result> ]] into
-    sums consisting of <k> columns of the original sum with carries
-    inbetween the chunks.
+    split the alphametic sum represented by [[ sum(<terms>) = <result> ]]
+    into sums consisting of <k> columns of the original sum with carries
+    between the chunks.
 
       base - the number base to operate in (default: 10)
       carries - symbols to be used for carries between chunks
@@ -6949,7 +6950,7 @@ class SubstitutedExpression(object):
       answer - answer parameter (see: __init__)
 
     if <result> is None, then <terms> can contain the sum respresented
-    as a string.
+    as a string (e.g. "ABC + DEF = GHI").
 
     return value is an object with the following attributes:
 
@@ -6959,6 +6960,7 @@ class SubstitutedExpression(object):
       d2i - is augmented with additional restrictions for carry symbols
       template - template for original sum
       answer - answer parameter
+      extra - extra expressions
       run - a function to run the solver with "standard" arguments
     """
     # defaults
@@ -6973,12 +6975,13 @@ class SubstitutedExpression(object):
       result = terms.pop()
 
     # no leading zeros by default
+    # TODO: need to incorporate words from answer
     words = union([terms, [result]])
     if d2i is None: d2i = set((0, w[0]) for w in words)
 
     # prepare return values
     enc = lambda s, b="{}": b[0] + s + b[-1]
-    template = enc(join(map(enc, terms), sep=' + ') + " = " + enc(result), b="()")
+    template_ = enc(join(map(enc, terms), sep=' + ') + " = " + enc(result), b="()")
 
     # enclose a string with braces
     (exprs, cs, carry, maxc) = (list(), list(), None, 0)
@@ -7010,8 +7013,13 @@ class SubstitutedExpression(object):
       if not rs_: break
       (terms, result, maxc) = (ts_, rs_, maxc_)
 
+    if extra:
+      extra = list(extra)
+      exprs.extend(extra)
+      template_ += " " + join(extra, sep=") (", enc="()")      
     symbols = join(sorted(union(words)))
     carries = join(cs)
+    if template is None: template = template_
     # a function to run the solver with "standard" arguments
     run = (lambda *args, **kw:
       SubstitutedExpression(exprs,
