@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Apr  2 15:19:15 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Apr  3 13:57:46 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -4228,7 +4228,7 @@ def find_max(f, a, b, t=1e-9):
   find the maximum value of a (well behaved) function over an interval.
 
   f = function to maximise (should take a single float argument)
-  a, b = the interval to maximise over (a < b)
+  a, b = the interval to search (a < b)
   t = the tolerance to work to
 
   the result is returned as a record with the following fields:
@@ -4247,7 +4247,7 @@ def find_zero(f, a, b, t=1e-9, ft=1e-6):
   find the zero of a (well behaved) function over an interval.
 
   f = function to find the zero of (should take a single float argument)
-  a, b = the interval to maximise over (a < b)
+  a, b = the interval to search (a < b)
   t = the tolerance to work to
 
   the result is returned as a record with the following fields:
@@ -4273,7 +4273,7 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   find the value of a (well behaved) function over an interval.
 
   f = function to find the value of (should take a single float argument)
-  a, b = the interval to search over (a < b)
+  a, b = the interval to search (a < b)
   t = the tolerance to work to
 
   the result is returned as a record with the following fields:
@@ -9866,7 +9866,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.9.2')
+""".format(version=__version__, python='2.7.18', python3='3.9.3')
 
 def _namecheck(name, verbose=0):
   if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
