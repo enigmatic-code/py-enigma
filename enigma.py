@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Apr  3 13:57:46 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Apr  7 11:14:49 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-04-01"
+__version__ = "2021-04-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2809,7 +2809,7 @@ def is_triangular(n):
   """
   check positive integer <n> is a triangular number.
 
-  if <n> is a triangular number, returns <i> such that T(i) == n.
+  if <n> is a triangular number, returns integer <k> such that T(k) == n.
   if <n> is not a triangular number, returns None.
 
   >>> is_triangular(5050)
@@ -2817,9 +2817,9 @@ def is_triangular(n):
   >>> is_triangular(49) is not None
   False
   """
-  i = int(trirt(n) + 0.5)
-  return (i if i * (i + 1) == 2 * n else None)
-
+  if not(n % 9 in {0, 1, 3, 6}): return
+  x = is_square(8 * n + 1)
+  return (None if x is None else x // 2)
 
 def digrt(n, base=10):
   """
@@ -9866,7 +9866,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.9.3')
+""".format(version=__version__, python='2.7.18', python3='3.9.4')
 
 def _namecheck(name, verbose=0):
   if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
