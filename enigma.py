@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Apr  7 11:14:49 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Apr 11 10:59:34 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -6938,16 +6938,25 @@ class SubstitutedExpression(object):
   # !!! EXPERIMENTAL !!!
   # it may be better to implement this as a subclass of SubstitutedExpression
   @classmethod
-  def split_sum(cls, terms, result=None, k=1, base=None, carries=None, d2i=None, answer=None, extra=None, template=None):
+  def split_sum(cls,
+    terms, result=None, k=1, carries=None, extra=None,
+    base=None, d2i=None, answer=None, template=None, verbose=None
+  ):
     """
     split the alphametic sum represented by [[ sum(<terms>) = <result> ]]
     into sums consisting of <k> columns of the original sum with carries
     between the chunks.
 
-      base - the number base to operate in (default: 10)
       carries - symbols to be used for carries between chunks
+      extra - extra expressions (that don't get split)
+
+    the following parameters are passed to the SubstitutedExpression solver:
+
+      base - the number base to operate in (default: 10)
       d2i - initial invalid digits
-      answer - answer parameter (see: __init__)
+      answer - expression for the answer value
+      template - solution template
+      verbose - control informational output
 
     if <result> is None, then <terms> can contain the sum respresented
     as a string (e.g. "ABC + DEF = GHI").
@@ -6960,6 +6969,7 @@ class SubstitutedExpression(object):
       d2i - is augmented with additional restrictions for carry symbols
       template - template for original sum
       answer - answer parameter
+      verbose - verbose parameter
       extra - extra expressions
       run - a function to run the solver with "standard" arguments
     """
@@ -6968,6 +6978,7 @@ class SubstitutedExpression(object):
     if carries is None: carries = list('abcdefghijklmnopqrstuvwxyz')
     if d2i is None: d2i = cls.defaults.get('d2i', None)
     if answer is None: answer = cls.defaults.get('answer', None)
+    if verbose is None: verbose = cls.defaults.get('verbose', None)
 
     # if result is None, terms can be the sum represented as a string
     if result is None:
@@ -6977,7 +6988,10 @@ class SubstitutedExpression(object):
     # no leading zeros by default
     # TODO: need to incorporate words from answer
     words = union([terms, [result]])
-    if d2i is None: d2i = set((0, w[0]) for w in words)
+    if d2i is None:
+      d2i = set((0, w[0]) for w in words)
+    elif isinstance(d2i, dict):
+      d2i = set((d, s) for (d, ss) in d2i.items() for s in ss)
 
     # prepare return values
     enc = lambda s, b="{}": b[0] + s + b[-1]
@@ -7023,7 +7037,7 @@ class SubstitutedExpression(object):
     # a function to run the solver with "standard" arguments
     run = (lambda *args, **kw:
       SubstitutedExpression(exprs,
-        base=base, distinct=symbols, d2i=d2i, template=template, solution=symbols, answer=answer
+        base=base, distinct=symbols, d2i=d2i, template=template, solution=symbols, answer=answer, verbose=verbose,
       ).run(*args, **kw)
     )
     return Record(
@@ -7034,6 +7048,7 @@ class SubstitutedExpression(object):
       d2i=d2i,
       template=template,
       answer=answer,
+      verbose=verbose,
       run=run
     )
 
