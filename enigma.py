@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Apr 11 11:23:54 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Apr 24 13:24:24 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -28,7 +28,7 @@ args                   - extract a list of arguments from the command line
 base2int               - convert a string in the specified base to an integer
 base_digits            - get/set digits used in numerical base conversion
 bit_permutations       - generate bit permutations
-C                      - combinatorial function (nCk)
+C, nCr                 - combinatorial function (nCr)
 cached                 - decorator for caching functions
 cbrt                   - the (real) cube root of a number
 chain                  - see: flatten()
@@ -110,7 +110,7 @@ nconcat                - concatenate single digits into an integer
 nreverse               - reverse the digits in an integer
 nsplit                 - split an integer into single digits
 number                 - create an integer from a string ignoring non-digits
-P                      - permutations function (nPk)
+P, nPr                 - permutations function (nPr)
 partitions             - partition a sequence of distinct values into tuples
 peek                   - return an element of a container
 pi                     - float approximation to pi
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-04-10"
+__version__ = "2021-04-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1596,10 +1596,9 @@ def group(s, by=identity, st=None, f=identity, fn=identity):
   >>> group(d.items(), by=item(1), f=item(0), fn=sorted)
   {0: [0, 2, 4, 6, 8], 1: [1, 3, 5, 7, 9]}
   """
-  if st is None: st = (lambda x: True)
   d = dict()
   for x in s:
-    if st(x):
+    if st is None or st(x):
       k = by(x)
       v = f(x)
       try:
@@ -2711,7 +2710,7 @@ def rcompose(*fns):
   return fcompose(*(reversed(fns)))
 
 is_not_none = (lambda x: x is not None)
-is_square_p = fcompose(is_square, is_not_none)
+is_square_p = (lambda x: is_square(x) is not None) # = fcompose(is_square, is_not_none)
 
 # 819 rejects 95% (other good values: 63 (86%), 117 (87%), 189 (89%), 351 (90%), 504 (91%), 819 (95%))
 @static(mod=819, residues=None)
@@ -3322,36 +3321,39 @@ def factorial(a, b=1):
   return (r if b == 1 else r // math.factorial(b))
 
 
-def P(n, k):
+def nPr(n, r):
   """
-  permutations functions: n P k.
+  permutations functions: n P r.
 
-  the number of ordered k-length selections from n elements
+  the number of ordered r-length selections from n elements
   (elements can only be used once).
 
-  >>> P(10, 3)
+  >>> nPr(10, 3)
   720
   """
-  if k > n:
+  if r > n:
     return 0
   else:
-    return math.factorial(n) // math.factorial(n - k)
+    return math.factorial(n) // math.factorial(n - r)
 
+P = nPr
 
-def C(n, k):
+def nCr(n, r):
   """
-  combinatorial function: n C k.
+  combinatorial function: n C r.
 
-  the number of unordered k-length selections from n elements
+  the number of unordered r-length selections from n elements
   (elements can only be used once).
 
-  >>> C(10, 3)
+  >>> nCr(10, 3)
   120
   """
-  if k > n:
+  if r > n:
     return 0
   else:
-    return math.factorial(n) // math.factorial(k) // math.factorial(n - k)
+    return math.factorial(n) // math.factorial(r) // math.factorial(n - r)
+
+C = nCr
 
 # NOTE: this corresponds to [[ select='R' ]] in subsets(), not [[ select='M' ]]
 def M(n, k):
@@ -7006,6 +7008,7 @@ class SubstitutedExpression(object):
         ts_ = list(t for t in (t[:-k] for t in terms) if t)
         # upper bound for carry out
         maxc_ = (sum(pow(base, len(t)) - 1 for t in ts) + maxc) // pow(base, k)
+        assert maxc_ < base, "multi-digit carries unimplemented"
       else:
         # use the remaining term
         (ts, ts_) = (terms, None)
