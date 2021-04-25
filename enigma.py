@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Apr 24 13:24:24 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Apr 25 11:43:25 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-04-23"
+__version__ = "2021-04-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1801,8 +1801,15 @@ def find(s, v):
     return -1
   except AttributeError:
     pass
-  for (i, x) in enumerate(s):
-    if x == v: return i
+  if isinstance(s, dict):
+    # search the keys
+    for (k, x) in s.items():
+      if x == v: return k
+  else:
+    # search the sequence
+    for (i, x) in enumerate(s):
+      if x == v: return i
+  # not found
   return -1
 
 def rfind(s, v):
@@ -1991,9 +1998,9 @@ def uniq1(i, fn=None):
       yield x
       seen = r
 
-# root: calculate the nth root of a (positive) number
+# root: calculate the (positive) nth root of a (positive) number
 # we use math.pow rather than ** to avoid generating complex numbers
-root = lambda x, n: (x if not(x) else math.pow(10.0, math.log10(x) / n))
+root = lambda x, n: (x if not(x) else math.pow(x, 1.0 / n))
 
 def cbrt(x):
   """
@@ -2007,6 +2014,7 @@ def cbrt(x):
   r = root(abs(x), 3.0)
   return (-r if x < 0 else r)
 
+cb = lambda x: x ** 3
 
 # for large numbers: sympy.ntheory.factorint()
 def prime_factor(n):
@@ -2590,6 +2598,7 @@ def sqrt(a, b=None):
   # / is operator.truediv() here
   return math.sqrt(a if b is None else a / b)
 
+sq = lambda x: x * x
 
 # calculate intf(sqrt(n)) using Newton's method
 # Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt())
@@ -2776,20 +2785,20 @@ def is_power_of(n, k):
   return (i if m == 1 else None)
 
 
-def T(n):
+def tri(n):
   """
-  T(n) is the nth triangular number.
+  tri(n) is the nth triangular number.
 
-  T(n) = n * (n + 1) // 2.
+  tri(n) = n * (n + 1) // 2.
 
-  >>> T(1)
+  >>> tri(1)
   1
-  >>> T(100)
+  >>> tri(100)
   5050
   """
   return n * (n + 1) // 2
 
-tri = T
+T = tri
 
 
 def trirt(x):
