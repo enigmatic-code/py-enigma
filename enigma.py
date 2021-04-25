@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Apr 25 11:43:25 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Apr 25 12:05:42 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1803,6 +1803,7 @@ def find(s, v):
     pass
   if isinstance(s, dict):
     # search the keys
+    # (or we would find() in the values, and return the correspond index in keys)
     for (k, x) in s.items():
       if x == v: return k
   else:
