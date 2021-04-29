@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Apr 25 12:09:42 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Apr 29 10:19:00 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-04-25"
+__version__ = "2021-04-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2643,7 +2643,7 @@ sqrtc = lambda x: (isqrt(x) if x < 1 else 1 + isqrt(x - 1))
 # more efficient (and perhaps more readable) to just use normal variables, although
 # if you're using PyPy the class based version is just as fast (if not slightly faster)
 # experimentally mod = 80, 48, 72, 32 are good values (24, 16 also work OK)
-@static(mod=720, residues=None)
+@static(mod=720, residues=None, cache_enabled=0, cache=dict())
 def is_square(n):
   """
   check positive integer <n> is a perfect square.
@@ -2666,8 +2666,16 @@ def is_square(n):
   if not is_square.residues: is_square.residues = set((i * i) % is_square.mod for i in range(is_square.mod))
   if (n % is_square.mod) not in is_square.residues: return None
   # otherwise use isqrt and check the result
-  r = isqrt(n)
-  return (r if r * r == n else None)
+  if is_square.cache_enabled:
+    try:
+      return is_square.cache[n]
+    except KeyError:
+      r = isqrt(n)
+      z = is_square.cache[n] = (r if r * r == n else None)
+      return z
+  else:
+    r = isqrt(n)
+    return (r if r * r == n else None)
 
 # generate powers from a range
 def powers(a, b, k=2, step=1):
@@ -2723,7 +2731,7 @@ is_not_none = (lambda x: x is not None)
 is_square_p = (lambda x: is_square(x) is not None) # = fcompose(is_square, is_not_none)
 
 # 819 rejects 95% (other good values: 63 (86%), 117 (87%), 189 (89%), 351 (90%), 504 (91%), 819 (95%))
-@static(mod=819, residues=None)
+@static(mod=819, residues=None, cache_enabled=0, cache=dict())
 def is_cube(n):
   """
   check positive integer <n> is a perfect cube.
@@ -2739,7 +2747,14 @@ def is_cube(n):
   if n < 2: return n
   if not is_cube.residues: is_cube.residues = set((i * i * i) % is_cube.mod for i in range(is_cube.mod))
   if (n % is_cube.mod) not in is_cube.residues: return None
-  return is_power(n, 3)
+  if is_cube.cache_enabled:
+    try:
+      return is_cube.cache[n]
+    except KeyError:
+      z = is_cube.cache[n] = is_power(n, 3)
+      return z
+  else:
+    return is_power(n, 3)
 
 is_cube_p = fcompose(is_cube, is_not_none)
 
