@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Apr 29 10:19:00 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue May  4 23:12:05 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-04-28"
+__version__ = "2021-05-04"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -267,7 +267,7 @@ def cached(f):
 
 # can we treat x as an integer?
 # include = +/-/0, check for +ve, -ve, 0
-def as_int(x, include=""):
+def as_int(x, include="", **kw):
   """
   can argument <x> be treated as an integer?
 
@@ -276,6 +276,8 @@ def as_int(x, include=""):
     + = allow positive integers
     - = allow negative integers
     0 = allow zero
+
+  <default> can be specified as a value returned instead of raising an error
 
   so things like this work:
 
@@ -304,6 +306,7 @@ def as_int(x, include=""):
         if (pos and x > 0) or (neg and x < 0) or (zero and x == 0): return n
       else:
         return n
+    return kw['default']
   except:
     pass
   msg = "invalid integer: " + repr(x)
@@ -2666,16 +2669,13 @@ def is_square(n):
   if not is_square.residues: is_square.residues = set((i * i) % is_square.mod for i in range(is_square.mod))
   if (n % is_square.mod) not in is_square.residues: return None
   # otherwise use isqrt and check the result
-  if is_square.cache_enabled:
-    try:
-      return is_square.cache[n]
-    except KeyError:
-      r = isqrt(n)
-      z = is_square.cache[n] = (r if r * r == n else None)
-      return z
-  else:
+  try:
+    return is_square.cache[n]
+  except KeyError:
     r = isqrt(n)
-    return (r if r * r == n else None)
+    z = (r if r * r == n else None)
+    if is_square.cache_enabled: is_square.cache[n] = z
+    return z
 
 # generate powers from a range
 def powers(a, b, k=2, step=1):
@@ -2747,14 +2747,13 @@ def is_cube(n):
   if n < 2: return n
   if not is_cube.residues: is_cube.residues = set((i * i * i) % is_cube.mod for i in range(is_cube.mod))
   if (n % is_cube.mod) not in is_cube.residues: return None
-  if is_cube.cache_enabled:
-    try:
-      return is_cube.cache[n]
-    except KeyError:
-      z = is_cube.cache[n] = is_power(n, 3)
-      return z
-  else:
-    return is_power(n, 3)
+  try:
+    return is_cube.cache[n]
+  except KeyError:
+    pass
+  z = is_power(n, 3)
+  if is_cube.cache_enabled: is_cube.cache[n] = z
+  return z
 
 is_cube_p = fcompose(is_cube, is_not_none)
 
@@ -2904,7 +2903,7 @@ def _roots(domain, *nds):
       if domain == "Q":
         yield x
       elif domain == "Z":
-        x = catch(as_int, x)
+        x = as_int(x, default=None)
         if x is not None: yield x
 
 # find roots of a quadratic equation
@@ -5099,6 +5098,17 @@ class Polynomial(list):
     return self.__class__(poly_sub(self, other))
 
   __call__ = poly_value
+
+  # degree of polynomial
+  def degree(self):
+    return len(self) - 1
+
+  # coefficient of x^k
+  def coeff(self, k, default=0):
+    if 0 <= k < len(self):
+      return self[k]
+    else:
+      return default
 
   def to_pairs(self):
     for p in enumerate(self):
