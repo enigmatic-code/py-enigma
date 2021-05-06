@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue May  4 23:12:05 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu May  6 18:01:29 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-05-04"
+__version__ = "2021-05-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2213,8 +2213,7 @@ def is_prime(n):
 prime = is_prime
 
 
-# Miller-Rabin primality test
-# (suggested by Brian Gladman)
+# Miller-Rabin primality test (originally suggested by Brian Gladman)
 
 import random
 
@@ -5298,9 +5297,8 @@ class _PrimeSieveE6(object):
   # allows use of "in"
   __contains__ = is_prime
 
-  # generate prime factors of <n>
-  # (try setting mr=100 if checking large numbers)
-  def prime_factor(self, n, mr=0):
+  # generate prime factors of <n> (try setting mr=100 if checking large numbers)
+  def prime_factor(self, n, mr=0, mrr=0):
     """
     generate (<prime>, <exponent>) pairs in the prime factorisation of
     positive integer <n>.
@@ -5315,31 +5313,43 @@ class _PrimeSieveE6(object):
     """
     n = as_int(n, "0+")
     if n > 1:
-      t = 0
+      f = 0
       i = self.generate()
       while n > 1:
 
+        # is n a prime in the sieve?
         if n < self.max:
           if self.is_prime(n):
             yield (n, 1)
             return
 
-        elif mr and t == mr and is_prime_mr(n):
-          yield (n, 1)
-          return
+        # have the last <mr> primes failed? try a Miller-Rabin test
+        elif mr and f == mr:
+          if is_prime_mr(n, mrr):
+            yield (n, 1)
+            return
+          if i is None: break
 
-        p = next(i)
-        e = 0
-        while True:
-          (d, r) = divmod(n, p)
-          if r != 0: break
-          e += 1
-          n = d
-        if e > 0:
-          yield (p, e)
-          t = 0
+        # try the next prime
+        try:
+          p = next(i)
+        except StopIteration:
+          # run out of primes
+          if not mr: break
+          i = None
+          f = mr
         else:
-          t += 1
+          e = 0
+          while True:
+            (d, r) = divmod(n, p)
+            if r != 0: break
+            e += 1
+            n = d
+          if e > 0:
+            yield (p, e)
+            f = 0
+          else:
+            f += 1
 
   # functions that can use self.prime_factor() instead of simple prime_factor()
 
