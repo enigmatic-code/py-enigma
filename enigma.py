@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu May  6 18:01:29 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri May  7 15:20:52 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -164,7 +164,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-05-06"
+__version__ = "2021-05-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2603,7 +2603,7 @@ def sqrt(a, b=None):
 
 sq = lambda x: x * x
 
-# calculate intf(sqrt(n)) using Newton's method
+# calculate intf(sqrt(n))
 # Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt())
 @static(impl=getattr(math, 'isqrt', None))
 def isqrt(n):
@@ -5337,7 +5337,7 @@ class _PrimeSieveE6(object):
           # run out of primes
           if not mr: break
           i = None
-          f = mr
+          if f < mr: f = mr
         else:
           e = 0
           while True:
@@ -6987,7 +6987,7 @@ class SubstitutedExpression(object):
   @classmethod
   def split_sum(cls,
     terms, result=None, k=1, carries=None, extra=None,
-    base=None, d2i=None, answer=None, template=None, verbose=None
+    base=None, d2i=None, answer=None, accumulate=None, template=None, verbose=None
   ):
     """
     split the alphametic sum represented by [[ sum(<terms>) = <result> ]]
@@ -7002,6 +7002,7 @@ class SubstitutedExpression(object):
       base - the number base to operate in (default: 10)
       d2i - initial invalid digits
       answer - expression for the answer value
+      accumulate - accumulate answers using specified object
       template - solution template
       verbose - control informational output
 
@@ -7016,6 +7017,7 @@ class SubstitutedExpression(object):
       d2i - is augmented with additional restrictions for carry symbols
       template - template for original sum
       answer - answer parameter
+      accumulate - accumulate parameter
       verbose - verbose parameter
       extra - extra expressions
       run - a function to run the solver with "standard" arguments
@@ -7025,6 +7027,7 @@ class SubstitutedExpression(object):
     if carries is None: carries = list('abcdefghijklmnopqrstuvwxyz')
     if d2i is None: d2i = cls.defaults.get('d2i', None)
     if answer is None: answer = cls.defaults.get('answer', None)
+    if accumulate is None: accumulate = cls.defaults.get('accumulate', None)
     if verbose is None: verbose = cls.defaults.get('verbose', None)
 
     # if result is None, terms can be the sum represented as a string
@@ -7043,6 +7046,9 @@ class SubstitutedExpression(object):
     # prepare return values
     enc = lambda s, b="{}": b[0] + s + b[-1]
     template_ = enc(join(map(enc, terms), sep=' + ') + " = " + enc(result), b="()")
+
+    # k=0 disables splitting
+    if k == 0: k = len(result)
 
     # enclose a string with braces
     (exprs, cs, carry, maxc) = (list(), list(), None, 0)
@@ -7085,7 +7091,8 @@ class SubstitutedExpression(object):
     # a function to run the solver with "standard" arguments
     run = (lambda *args, **kw:
       SubstitutedExpression(exprs,
-        base=base, distinct=symbols, d2i=d2i, template=template, solution=symbols, answer=answer, verbose=verbose,
+        base=base, distinct=symbols, d2i=d2i, template=template, solution=symbols,
+        answer=answer, accumulate=accumulate, verbose=verbose,
       ).run(*args, **kw)
     )
     return Record(
@@ -7096,6 +7103,7 @@ class SubstitutedExpression(object):
       d2i=d2i,
       template=template,
       answer=answer,
+      accumulate=accumulate,
       verbose=verbose,
       run=run
     )
