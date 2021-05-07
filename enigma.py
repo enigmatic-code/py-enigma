@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri May  7 15:20:52 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri May  7 18:08:39 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1657,50 +1657,33 @@ def unpack(fn):
 #
 #   fn = ulambda("(x, (y, z)): x + y + z")
 #
-def ulambda(arg, expr=None):
+def ulambda(args, expr=None):
   """
   provide an equivalent to:
 
-    lambda {arg}: {expr}
+    lambda {args}: {expr}
 
   in Python 3
 
-  where {arg} specifies a complex parameter unpacking for a single argument
+  where {args} specifies a complex parameter unpacking of arguments
+
   e.g.:
 
-  >>> dist = ulambda("((x1, y1), (x2, y2))", "hypot(x2 - x1, y2 - y1)")
-  >>> dist(((1, 2), (5, 5)))
+  >>> dist = ulambda("(x1, y1), (x2, y2)", "hypot(x2 - x1, y2 - y1)")
+  >>> dist((1, 2), (5, 5))
   5.0
   """
   if expr is None:
-    (arg, _, expr) = (x.strip() for x in arg.partition(":"))
+    (args, _, expr) = (x.strip() for x in args.partition(":"))
 
   if _python == 2:
     # in Python 2 is is straightforward lambda
-    return eval(sprintf("lambda {arg}: {expr}"))
+    expr = sprintf("lambda {args}: {expr}")
   else:
-    # in Python 3 we can use a workaround
-    #
-    # we could use:
-    #
-    #   def __ulambda__(_x_):
-    #     {args} = _x_
-    #     return {expr}
-    #
-    # but this also works and yields the function we want:
-    #
-    #   lambda _x_: next({expr} for {args} in [_x_])
-    #
-    # [ peek() would also work instead of next() ]
-    # which is equivalent to a (hypothetical) "where" construction:
-    #
-    #   lambda _x_: {expr} where {args} = _x_
-    #
-    # 
-    #return eval(sprintf("lambda _x_: [{expr} for {arg} in [_x_]][0]"))
-    #return eval(sprintf("lambda _x_: peek({expr} for {arg} in [_x_])"))
-    return eval(sprintf("lambda _x_: next({expr} for {arg} in [_x_])"))
-
+    #expr = sprintf("lambda *_x_: [{expr} for {args} in [_x_]][0]")
+    #expr = sprintf("lambda *_x_: peek({expr} for {args} in [_x_])")
+    expr = sprintf("lambda *_x_: next({expr} for {args} in [_x_])")
+  return eval(expr)
 
 # count the number of occurrences of a predicate in an iterator
 def icount(i, p=None, t=None):
