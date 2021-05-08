@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri May  7 22:03:46 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat May  8 09:31:02 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -5311,14 +5311,13 @@ class _PrimeSieveE6(object):
           if is_prime_mr(n, mrr):
             yield (n, 1)
             return
-          if i is None: break
 
         # try the next prime
+        if i is None: break
         try:
           p = next(i)
         except StopIteration:
           # run out of primes
-          if not mr: break
           i = None
           if f < mr: f = mr
         else:
