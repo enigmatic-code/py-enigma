@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat May  8 09:31:02 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May  9 13:55:23 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -94,7 +94,7 @@ is_palindrome          - check a sequence is palindromic
 is_power               - check if n = i^k for some integer i
 is_power_of            - check if n = k^i for some integer i
 is_prime               - simple prime test
-is_prime_mr            - Miller-Rabin fast prime test
+is_prime_mr            - Miller-Rabin fast prime test for large numbers
 is_roman               - check a Roman Numeral is valid
 is_square              - check a number is a perfect square
 is_triangular          - check a number is a triangular number
@@ -117,6 +117,7 @@ pi                     - float approximation to pi
 poly_*                 - routines manipulating polynomials, wrapped as Polynomial
 powers                 - generate a range of powers
 prime_factor           - generate terms in the prime factorisation of a number
+prime_factor_rho       - generate prime factors of large numbers
 printf                 - print with interpolated variables
 pythagorean_triples    - generate Pythagorean triples
 quadratic              - determine roots of a quadratic equation
@@ -164,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-05-08"
+__version__ = "2021-05-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2003,12 +2004,16 @@ def cbrt(x):
 
 cb = lambda x: x ** 3
 
-# for large numbers: sympy.ntheory.factorint()
+# for large numbers try Primes.prime_factor(n, mr=100), or sympy.ntheory.factorint(n)
 def prime_factor(n):
   """
-  generate (<prime>, <exponent>) pairs in the prime factorisation of positive integer <n>.
+  generate (<prime>, <exponent>) pairs in the prime factorisation of
+  positive integer <n>.
 
   no pairs are returned for 1 (or for non-positive integers).
+
+  for numbers with large prime factors it will take a long time to
+  find them.
 
   >>> list(prime_factor(60))
   [(2, 2), (3, 1), (5, 1)]
@@ -2286,6 +2291,40 @@ def is_prime_mr(n, r=0):
 
   # otherwise, probably prime
   return 1
+
+
+# find prime factors using Pollard's Rho method
+# [see: https://programmingpraxis.files.wordpress.com/2012/09/primenumbers.pdf ]
+
+def _rho_factor(n, mrr=0):
+  if n % 2 == 0: return 2
+  c = 1
+  while True:
+    (t, h, d) = (2, 2, 1)
+    while d == 1:
+      t = (t * t + c) % n
+      h = (h * h + c) % n
+      h = (h * h + c) % n
+      d = gcd(h - t, n)
+    if d == n:
+      pass
+    elif is_prime_mr(d, mrr):
+      return d
+    else:
+      n = d
+    c += 1
+
+# NOTE: factors are not neccessarily returned in order
+def prime_factor_rho(n, mrr=0):
+  while n > 1:
+    # check for prime
+    if is_prime_mr(n, mrr):
+      yield (n, 1)
+      break
+    # find a factor
+    p = _rho_factor(n)
+    (e, n) = drop_factors(n, p)
+    yield (p, e)
 
 
 def tau(n, fn=prime_factor):
@@ -5236,14 +5275,14 @@ class _PrimeSieveE6(object):
   # return a generator (less space)
   def generate(self, start=0, end=None):
     """
-    generate all primes in the sieve (in numerical order).
+    generate primes in the sieve (in numerical order).
 
     the range of primes can be restricted to starting at <start>
     and ending at <end> (primes less than <end> will be returned)
 
     (this will require less memory than list())
     """
-    if end is None or end == inf: end = self.max
+    if end is None or end > self.max: end = self.max
     if start < 3 and end > 2: yield 2
     if start < 4 and end > 3: yield 3
     s = self.sieve
@@ -5280,55 +5319,79 @@ class _PrimeSieveE6(object):
   # allows use of "in"
   __contains__ = is_prime
 
-  # generate prime factors of <n> (try setting mr=100 if checking large numbers)
-  def prime_factor(self, n, mr=0, mrr=0):
+  # generate prime factors of <n> using the sieve
+  # (try setting mr=100 if checking large numbers)
+  # (or mr=inf to perform all heuristic tests after the sieve is exhausted)
+  def prime_factor(self, n, end=None, mr=0, mrr=0):
     """
     generate (<prime>, <exponent>) pairs in the prime factorisation of
-    positive integer <n>.
+    positive integer <n>, for primes in the sieve (less than <end>).
 
     if <mr> is set the program will use a Miller-Rabin probabilistic
-    test after <mr> primes have failed to divide the residue.
+    test after <mr> primes have failed to divide the residue to see if
+    it is prime, and after the primes in the sieve are exhausted the
+    Pollard Rho algorithm is used to look for remaining large prime
+    factors.
 
-    Note: This will only divide primes up to the limit of the sieve,
-    so this is a complete factorisation for <n> up to the square of the
-    limit of the sieve. When <mr> is set it can cope with numbers that
-    have one large prime factor.
+    Note: By default this will only return primes up to the limit of
+    the sieve, so may not be a complete factorisation of <n>.  However
+    when <mr> is set it will also attempt to look for larger
+    probabalistic prime factors.
     """
     n = as_int(n, "0+")
     if n > 1:
       f = 0
-      i = self.generate()
+      m = 1
+      i = self.generate(end=end)
       while n > 1:
 
         # is n a prime in the sieve?
         if n < self.max:
-          if self.is_prime(n):
-            yield (n, 1)
+          if f == 0 and self.is_prime(n):
+            yield (n, m)
             return
 
-        # have the last <mr> primes failed? try a Miller-Rabin test
+        # have the last <mr> primes failed?
         elif mr and f == mr:
-          if is_prime_mr(n, mrr):
-            yield (n, 1)
-            return
 
-        # try the next prime
+          # check to see if the number is an exact power
+          k = 2
+          while True:
+            r = iroot(n, k)
+            if r ** k == n:
+              m *= k
+              n = r
+            elif k == 2:
+              k = 3
+            else:
+              k += 2
+            # limit the search
+            if r < self.max or k > 20: break
+
+          # if the sieve is exhausted
+          if i is None:
+            # look for probabalistic factors (not necessarily in order)
+            for (p, e) in prime_factor_rho(n, mrr):
+              yield (p, e * m)
+
+          else:
+            # check to see if whats left is a large prime
+            if is_prime_mr(n, mrr):
+              yield (n, m)
+              return
+
+        # try the next prime in the sieve
         if i is None: break
         try:
           p = next(i)
         except StopIteration:
           # run out of primes
           i = None
-          if f < mr: f = mr
+          f = mr
         else:
-          e = 0
-          while True:
-            (d, r) = divmod(n, p)
-            if r != 0: break
-            e += 1
-            n = d
+          (e, n) = drop_factors(n, p)
           if e > 0:
-            yield (p, e)
+            yield (p, e * m)
             f = 0
           else:
             f += 1
@@ -5421,18 +5484,22 @@ class _PrimeSieveE6X(_PrimeSieveE6):
   expand = extend
 
   # generate all primes, a chunk at a time
-  def generate(self, start=0):
+  # end = inf (or None), will expand the sieve for ever
+  # end = self.max, will not expand the sieve
+  def generate(self, start=0, end=inf):
     """
     generate primes without limit, expanding the sieve as necessary.
 
     eventually the sieve will consume all available memory.
     """
-    while True:
+    if end is None: end = inf
+    while start < end:
       # generate all primes currently in the sieve
-      for p in _PrimeSieveE6.generate(self, start): yield p
+      for p in _PrimeSieveE6.generate(self, start, end):
+        yield p
+      # expand the sieve for the next batch
       start = self.max + 1
-      # then expand the sieve
-      self.expand()
+      if start < end: self.expand()
 
   # make this an iterable object
   __iter__ = generate
