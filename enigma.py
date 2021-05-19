@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May  9 13:55:23 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed May 19 10:24:01 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-05-09"
+__version__ = "2021-05-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2023,8 +2023,9 @@ def prime_factor(n):
   n = as_int(n)
   if n > 1:
     i = 2
-    # generate a list of deltas: 1, 2, then 2, 4, repeatedly
-    (ds, js) = ((1, 2, 2, 4), (1, 2, 3, 2))
+    # generate a list of deltas: 1, 2, 2 then 4, 2, 4, 2, 4, 6, 2, 6 repeatedly
+    ds = (1, 2, 2, 4, 2, 4, 2, 4, 6, 2, 6)
+    js = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3)
     j = 0
     while i * i <= n:
       e = 0
@@ -3285,6 +3286,11 @@ def fraction(a, b, *rest):
   if b < 0: (a, b) = (-a, -b)
   g = gcd(a, b)
   return (a // g, b // g)
+
+def format_fraction(n, d, base=10):
+  s = int2base(n, base=base)
+  if d == 1: return s
+  return s + "/" + int2base(d, base=base)
 
 # find an appropriate rational class
 # (could also try "sympy.Rational", but not for speed)
@@ -7069,7 +7075,8 @@ class SubstitutedExpression(object):
       accumulate - accumulate parameter
       verbose - verbose parameter
       extra - extra expressions
-      run - a function to run the solver with "standard" arguments
+      solver - a function to return the solver (with "standard" arguments)
+      run - a function to run the solver (with "standard" arguments)
     """
     # defaults
     if base is None: base = cls.defaults.get('base', 10)
@@ -7137,12 +7144,12 @@ class SubstitutedExpression(object):
     symbols = join(sorted(union(words)))
     carries = join(cs)
     if template is None: template = template_
-    # a function to run the solver with "standard" arguments
-    run = (lambda *args, **kw:
-      SubstitutedExpression(exprs,
-        base=base, distinct=symbols, d2i=d2i, template=template, solution=symbols,
-        answer=answer, accumulate=accumulate, verbose=verbose,
-      ).run(*args, **kw)
+    # a solver with "standard" arguments
+    solver = Delay(
+      SubstitutedExpression,
+      exprs,
+      base=base, distinct=symbols, d2i=d2i, template=template, solution=symbols,
+      answer=answer, accumulate=accumulate, verbose=verbose,
     )
     return Record(
       exprs=exprs,
@@ -7154,7 +7161,8 @@ class SubstitutedExpression(object):
       answer=answer,
       accumulate=accumulate,
       verbose=verbose,
-      run=run
+      solver=(lambda: solver.value),
+      run=(lambda *args, **kw: solver.value.run(*args, **kw)),
     )
 
   # generate appropriate command line arguments to reconstruct this instance
@@ -9317,6 +9325,7 @@ def __matrix():
   Functions provides:
 
     matrix.linear() - solve a collection of linear equations
+    matrix.equation() - create a helper function for matrix.linear()
     matrix.create() - create a matrix
   """
 
@@ -9390,6 +9399,46 @@ def __matrix():
     except ZeroDivisionError:
       return (0, None)
 
+  # create a function that creates (row, const) pairs suitable for construction
+  # matrix A in a call to linear
+  # symbols = sequence of symbols used in the system of equations
+  # k = default constant (if none is specified)
+  def equation(symbols, k=0, z=0):
+    """
+    create a function that can be used to create (row, const) values,
+    suitable for constructing the matrix A used in matrix.linear().
+
+    symbols = sequence of symbols used in the system of equations
+    k = default constant
+
+    >>> eq = equation("abcd", 42)
+    >>> eq("acd")
+    ((1, 0, 1, 1), 42)
+    >>> eq(dict(a=1, b=2, c=3), 19)
+    ((1, 2, 3, 0), 19)
+    
+    """
+    # map symbols to indices
+    sym = dict((s, i) for (i, s) in enumerate(symbols))
+    return lambda cs, k=k, z=z: _equation(sym, len(sym.keys()), cs, k, z)
+
+  def _equation(sym, n, coeffs, k, z):
+    row = [z] * n
+    # if coeffs is a dictionary
+    if isinstance(coeffs, dict):
+      for (c, v) in coeffs.items():
+        row[sym[c]] += v
+    else:
+      # if coeffs is a sequence of (symbol, value) pairs
+      try:
+        for (c, v) in coeffs:
+          row[sym[c]] += v
+      except ValueError:
+        # otherwise, just a sequence of symbols
+        for c in coeffs:
+          row[sym[c]] += 1
+    # return the (<coefficients>, <value>) pair
+    return (tuple(row), k)
 
   # solve a system of linear equations
   def linear(A, B=None, F=None):
