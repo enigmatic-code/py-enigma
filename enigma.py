@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed May 19 10:24:01 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May 30 11:00:07 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-05-18"
+__version__ = "2021-05-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2195,6 +2195,11 @@ def is_prime(n):
   False
 
   """
+  if n < 2: return False # 0, 1 -> F
+  if n < 4: return True # 2, 3 -> T
+  (i, r) = divmod(n, 6)
+  if r != 1 and r != 5: return False # (n % 6) != (1, 5) -> F
+
   for (p, e) in prime_factor(n):
     return p == n
   return False
@@ -8808,15 +8813,6 @@ class DominoGrid(object):
 import atexit
 import time
 
-if hasattr(time, 'process_time'):
-  _timer = time.process_time # process time
-elif hasattr(time, 'perf_counter'):
-  _timer = time.perf_counter # elapsed time
-elif sys.platform == "win32":
-  _timer = time.clock # elapsed time
-else:
-  _timer = time.time # elapsed time
-
 class Timer(object):
 
   """
@@ -8894,7 +8890,7 @@ class Timer(object):
   When a Timer object is initialised the 'timer' parameter specifies what
   timing function to use. A value of 'E' use elapsed (real) time and a
   value of 'P' use process (CPU) time. 'E' should always be available,
-  'P' may not be. You can specify 'PE', to try 'P', and if not 'E'.
+  'P' may not be. You can specify 'PE', to try 'P' first, and then 'E'.
 
   If you know what timeing function you want to use you can pass it
   directly. (Or pass the name of the function in the 'time' module).
@@ -8906,7 +8902,7 @@ class Timer(object):
   @classmethod
   def init(self):
     d = dict()
-    if hasattr(time, 'process_time'):
+    if hasattr(time, 'process_time') and sys.platform != "win32":
       d['P'] = time.process_time # process time
     if hasattr(time, 'perf_counter'):
       d['E'] = time.perf_counter # elapsed time
