@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 30 11:00:07 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May 30 12:03:06 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -8902,13 +8902,15 @@ class Timer(object):
   @classmethod
   def init(self):
     d = dict()
+    if hasattr(time, 'thread_time'):
+      d['T'] = time.thread_time
     if hasattr(time, 'process_time') and sys.platform != "win32":
       d['P'] = time.process_time # process time
     if hasattr(time, 'perf_counter'):
       d['E'] = time.perf_counter # elapsed time
-    elif sys.platform == "win32":
+    elif sys.platform == "win32" and hasattr(time, 'clock'):
       d['E'] = time.clock # elapsed time
-    else:
+    elif hasattr(time, 'time'):
       d['E'] = time.time # elapsed time
     Timer.timers = d
 
@@ -8945,7 +8947,7 @@ class Timer(object):
     self._exit_report = exit_report
     self._report = None
     self._verbose = verbose or ('v' in _PY_ENIGMA)
-    if self._verbose: printf("[{name}] timer = {fn}")
+    if self._verbose: printf("[{name}] timer = {timer}")
     if auto_start: self.start()
 
   def start(self):
