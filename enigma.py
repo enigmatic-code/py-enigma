@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 30 12:03:06 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun  3 09:33:19 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-05-29"
+__version__ = "2021-06-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -187,7 +187,6 @@ if _pythonv[0] == 2:
   _python = 2
   if _pythonv[1] < 7:
     print("[enigma.py] WARNING: Python {v} is very old. Things may not work.".format(v=sys.version.split(None, 1)[0]))
-  range = xrange
   reduce = reduce
   basestring = basestring
   raw_input = raw_input
@@ -196,7 +195,7 @@ if _pythonv[0] == 2:
 elif _pythonv[0] > 2:
   # Python 3.x
   _python = 3
-  range = range
+  xrange = range
   reduce = functools.reduce
   basestring = str
   raw_input = input
@@ -420,7 +419,7 @@ def is_pairwise_distinct(*args):
   # it's probably faster to use a builtin...
   #return len(set(args)) == len(args)
   ## even through the following may do fewer tests:
-  #for i in range(len(args) - 1):
+  #for i in xrange(len(args) - 1):
   #  if args[i] in args[i + 1:]: return False
   #return True
   return seq_all_different(args)
@@ -554,7 +553,7 @@ def translate(t, m, s="", embed=1):
   'A=1 B=2 C=3'
   >>> translate("9567 + 1085 = 10652", "75160892", "DEMNORSY")
   'SEND + MORE = MONEY'
-  >>> translate("1->{1}; 2->{2}; 3->{3}", (lambda x: int(x) ** 2))
+  >>> translate("1->{1}; 2->{2}; 3->{3}", (lambda x: sq(int(x))))
   '1->1; 2->4; 3->9'
   """
   t = str(t)
@@ -867,7 +866,7 @@ def attr(*ks, **kw):
   if len(ks) == 1 and kw.get('multi'): return (lambda x: (f(x),))
   return f
 
-items = lambda n: map(item, range(n)) # (x, y, z) = items(3)
+items = lambda n: map(item, xrange(n)) # (x, y, z) = items(3)
 
 # select items according to space/comma separated template
 # item_from("p", "V, L, p") -> item(2)
@@ -1076,7 +1075,7 @@ class multiset(dict):
     ['a', 'b', 'n']
     """
     for (k, v) in self.items():
-      for _ in range(v):
+      for _ in xrange(v):
         yield k
 
   __iter__ = elements
@@ -1833,7 +1832,7 @@ def ipartitions(s, n):
   >>> list(ipartitions((1, 0, 1, 0), 2))
   [((1, 0), (1, 0)), ((1, 1), (0, 0)), ((1, 0), (0, 1))]
   """
-  for p in _partitions(tuple(range(len(s))), n):
+  for p in _partitions(tuple(xrange(len(s))), n):
     yield tuple(tuple(s[i] for i in x) for x in p)
 
 
@@ -2142,7 +2141,7 @@ def multiples(ps):
   for (m, n) in ps:
     t = list()
     p = m
-    for _ in range(n):
+    for _ in xrange(n):
       t.extend(x * p for x in s)
       p *= m
     s.extend(t)
@@ -2216,7 +2215,7 @@ def _is_composite(a, d, n, s):
   x = pow(a, d, n)
   if x == 1:
     return 0
-  for _ in range(s):
+  for _ in xrange(s):
     if x == n - 1:
       return 0
     x = (x * x) % n
@@ -2693,7 +2692,7 @@ def is_square(n):
   # early rejection: check <square> mod <some value> against a precomputed cache
   # e.g. <square> mod 80 = 0, 1, 4, 9, 16, 20, 25, 36, 41, 49, 64, 65 (rejects 88% of numbers)
   # mod 720 rejects 93% of candidates
-  if not is_square.residues: is_square.residues = set((i * i) % is_square.mod for i in range(is_square.mod))
+  if not is_square.residues: is_square.residues = set((i * i) % is_square.mod for i in xrange(is_square.mod))
   if (n % is_square.mod) not in is_square.residues: return None
   # otherwise use isqrt and check the result
   try:
@@ -2772,7 +2771,7 @@ def is_cube(n):
   """
   if n < 0: return None
   if n < 2: return n
-  if not is_cube.residues: is_cube.residues = set((i * i * i) % is_cube.mod for i in range(is_cube.mod))
+  if not is_cube.residues: is_cube.residues = set((i * i * i) % is_cube.mod for i in xrange(is_cube.mod))
   if (n % is_cube.mod) not in is_cube.residues: return None
   try:
     return is_cube.cache[n]
@@ -3154,7 +3153,7 @@ def multiply(s):
   """
   return the product of the sequence <s>.
 
-  >>> multiply(range(1, 7))
+  >>> multiply(xrange(1, 7))
   720
   >>> multiply([2] * 8)
   256
@@ -3664,6 +3663,8 @@ def catch(fn, *args, **kw):
     return
 
 # inclusive range iterator
+# TODO: should irange(4) = (1, 2, 3, 4) or (0, 1, 2, 3) ?
+# it's currently the latter, but maybe should be the former
 @static(inf=inf) # so b=irange.inf can be used
 def irange(a, b=None, step=1):
   """
@@ -3675,6 +3676,9 @@ def irange(a, b=None, step=1):
 
   if <b> is specified as inf (or -inf for negative steps) the iterator
   generate will values indefinitely.
+
+  Python's standard range iterator is available as xrange() if you
+  want to emphasise the exclusion of the final endpoint.
 
   >>> list(irange(1, 9))
   [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -3689,12 +3693,12 @@ def irange(a, b=None, step=1):
   """
   if step == 0: raise ValueError("irange: step cannot be 0")
   if b == inf:
-    if step < 0: return range(0)
+    if step < 0: return xrange(0)
   elif b == -inf:
-    if step > 0: return range(0)
+    if step > 0: return xrange(0)
   else:
     if b is None: (a, b) = ((0, a - 1) if step > 0 else (a - 1, 0))
-    return range(a, b + (1 if step > 0 else -1), step)
+    return xrange(a, b + (1 if step > 0 else -1), step)
   return itertools.count(start=a, step=step)
 
 # inclusive range iterator that allows a fractional step
@@ -3702,6 +3706,9 @@ def irangef(a, b, step=1):
   """
   inclusive range iterator that allows the endpoints and the
   step to be fractional values.
+
+  note that if float approximations are used for the step and/or
+  endpoint then the final value may not be generated.
 
   >>> list(irangef(1, 2.5, step=0.5))
   [1.0, 1.5, 2.0, 2.5]
@@ -3877,8 +3884,8 @@ def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0, in
   # construct the adjacency matrix
   t = n * m
   r = [None] * t
-  for y in range(0, m):
-    for x in range(0, n):
+  for y in xrange(0, m):
+    for x in xrange(0, n):
       s = list()
       for (dx, dy) in deltas:
         (x1, y1) = (x + dx, y + dy)
@@ -3946,14 +3953,14 @@ def tuples(s, n=2, circular=0):
     if not xs: return
     m = len(xs)
     if m < n - 1:
-      i = itertools.chain(xs, i, (xs[k % m] for k in range(n - 1)))
+      i = itertools.chain(xs, i, (xs[k % m] for k in xrange(n - 1)))
     else:
       i = itertools.chain(xs, i, xs)
   
   t = list()
   try:
     # collect the first tuple
-    for _ in range(n):
+    for _ in xrange(n):
       t.append(next(i))
     while True:
       # return the tuple
@@ -4103,10 +4110,10 @@ def _residues(vs):
   for (i, vi) in enumerate(vs):
     if i > 0:
       d = gcd(v0, vi)
-      for p in range(d):
-        m = min(r[q] for q in range(p, v0, d))
+      for p in xrange(d):
+        m = min(r[q] for q in xrange(p, v0, d))
         if m < inf:
-          for c in range(v0 // d):
+          for c in xrange(v0 // d):
             m += vi
             j = m % v0
             if r[j] < m:
@@ -4126,7 +4133,7 @@ def _find_all(t, vs, i, c, res):
     vi = vs[i]
     m = lcm(v0, vi)
     d = m // vi
-    for j in range(0, d):
+    for j in xrange(0, d):
       c[i] = j
       u = t - j * vi
       b = res[i - 1][u % v0]
@@ -5298,7 +5305,7 @@ class _PrimeSieveE6(object):
     if start < 4 and end > 3: yield 3
     s = self.sieve
     # generate primes from <start> up to (but not including) <end>
-    for i in range((start + 1) // 3 - (start % 6 == 5), (end + 1) // 3 - (end % 6 == 5)):
+    for i in xrange((start + 1) // 3 - (start % 6 == 5), (end + 1) // 3 - (end % 6 == 5)):
       if s[i]: yield (i * 3) + (i & 1) + 1
 
   # make this an iterable object
@@ -5671,8 +5678,8 @@ class MagicSquare(object):
     # make the magic lines
     if lines is None:
       lines = []
-      l = tuple(range(n))
-      for i in range(n):
+      l = tuple(xrange(n))
+      for i in xrange(n):
         # row
         lines.append(tuple(i * n + j for j in l))
         # column
@@ -5701,8 +5708,8 @@ class MagicSquare(object):
     m = max(self.square)
     n = (int(math.log10(m)) + 1 if m > 0 else 1)
     fmt = "[{:>" + str(n) + "s}]"
-    for y in range(self.n):
-      for x in range(self.n):
+    for y in xrange(self.n):
+      for x in xrange(self.n):
         v = self.square[y * self.n + x]
         print(fmt.format(str(v) if v > 0 else ''), end=' ')
       print('')
@@ -5844,7 +5851,7 @@ def substituted_sum(terms, result, digits=None, l2d=None, d2i=None, base=10):
   if l2d is None:
     l2d = dict()
   if digits is None:
-    digits = range(base)
+    digits = xrange(base)
   digits = set(digits).difference(l2d.values())
   if d2i is None:
     d2i = dict()
@@ -6475,11 +6482,11 @@ class SubstitutedExpression(object):
 
     # allowable digits (and invalid digits)
     if digits is None:
-      digits = set(range(base))
+      digits = set(xrange(base))
     else:
       digits = set(digits)
       if sane > 0:
-        ds = set(range(base))
+        ds = set(xrange(base))
         if verbose > 0:
           # check for invalid digits
           for d in digits:
@@ -6488,7 +6495,7 @@ class SubstitutedExpression(object):
         digits.intersection_update(ds)
     # TODO: I suspect this needs to work with more values of "distinct"
     if distinct == 1: digits = digits.difference(s2d.values())
-    idigits = set(range(base)).difference(digits)
+    idigits = set(xrange(base)).difference(digits)
 
     # find words in all exprs
     words = _find_words(_template)
@@ -8521,7 +8528,7 @@ class Football(object):
     t = teams[0]
 
     # matches for team t
-    ms = list((x, t) for x in range(0, t)) + list((t, x) for x in range(t + 1, n))
+    ms = list((x, t) for x in xrange(0, t)) + list((t, x) for x in xrange(t + 1, n))
     # and the matches remaining
     rs = diff(ms, matches)
 
@@ -8581,7 +8588,7 @@ class Football(object):
     if teams is None:
       # choose an order to process the teams in
       rows = tuple(zip(*(table.values())))
-      teams = sorted(range(0, n), key=lambda i: (rows[i].count('?'), len(set(rows[i]))))
+      teams = sorted(xrange(0, n), key=lambda i: (rows[i].count('?'), len(set(rows[i]))))
     if matches is None: matches = dict()
     if d is None: d = dict()
     if vs is None: vs = list(irange(0, 9))
@@ -8641,7 +8648,7 @@ class Football(object):
     min_goals - minumum number of goals for each team in a match (usually 0).
     """
     if d is None: d = digit_map(0, 9)
-    if teams is None: teams = (list(gf.keys()) if hasattr(gf, 'keys') else list(range(0, len(gf))))
+    if teams is None: teams = (list(gf.keys()) if hasattr(gf, 'keys') else list(xrange(0, len(gf))))
     if scores is None: scores = dict()
     # fill out unplayed matches
     for (k, v) in matches.items():
@@ -9335,10 +9342,10 @@ def __matrix():
     p = len(B[0])
     det = 1
 
-    for i in range(0, n - 1):
+    for i in xrange(0, n - 1):
 
       k = i
-      for j in range(i + 1, n):
+      for j in xrange(i + 1, n):
         if abs(A[j][i]) > abs(A[k][i]):
           k = j
 
@@ -9347,22 +9354,22 @@ def __matrix():
         (B[i], B[k]) = (B[k], B[i])
         det = -det
 
-      for j in range(i + 1, n):
+      for j in xrange(i + 1, n):
         t = A[j][i] / A[i][i] # note use of /
-        for k in range(i + 1, n):
+        for k in xrange(i + 1, n):
           A[j][k] -= t * A[i][k]
-        for k in range(p):
+        for k in xrange(p):
           B[j][k] -= t * B[i][k]
 
-    for i in range(n - 1, -1, -1):
-      for j in range(i + 1, n):
+    for i in xrange(n - 1, -1, -1):
+      for j in xrange(i + 1, n):
         t = A[i][j]
-        for k in range(p):
+        for k in xrange(p):
           B[i][k] -= t * B[j][k]
 
       t = 1 / A[i][i] # note use of /
       det *= A[i][i]
-      for j in range(p):
+      for j in xrange(p):
         B[i][j] *= t
 
     return (det, B)
@@ -9383,8 +9390,8 @@ def __matrix():
 
     # if B is None, use the identity matrix
     if B is None:
-      B = list([0] * n for _ in range(0, n))
-      for i in range(0, n):
+      B = list([0] * n for _ in xrange(0, n))
+      for i in xrange(0, n):
         B[i][i] = 1
 
     # convert A and B (so that the elements supports __truediv__)
@@ -9487,7 +9494,7 @@ def __matrix():
       if n < m: raise ValueError("incomplete")
 
       # choose the row with the largest value in the column i
-      j = max(range(i, n), key=(lambda j: abs(A[j][i])))
+      j = max(xrange(i, n), key=(lambda j: abs(A[j][i])))
 
       # if necessary bring it to row i
       if j != i: (A[i], A[j], B[i], B[j]) = (A[j], A[i], B[j], B[i])
@@ -9496,21 +9503,21 @@ def __matrix():
       v = A[i][i]
       if v == 0: raise ValueError("incomplete")
       if v != 1:
-        for k in range(i, m):
+        for k in xrange(i, m):
           A[i][k] /= v
         B[i] /= v
 
       # eliminate co-efficients in row i
       rs = list()
-      for j in range(0, n):
+      for j in xrange(0, n):
         if j != i:
           t = A[j][i]
           if t != 0:
-            for k in range(i, m):
+            for k in xrange(i, m):
               A[j][k] -= t * A[i][k]
             B[j] -= t * B[i]
             # if all coefficients are 0
-            if all(A[j][k] == 0 for k in range(0, m)):
+            if all(A[j][k] == 0 for k in xrange(0, m)):
               if B[j] == 0:
                 rs.insert(0, j)
               else:
@@ -9531,7 +9538,7 @@ def __matrix():
   # [ or: create(3, 3, fcompose(operator.eq, int)) ]
   def create(rows, cols, k=0):
     f = (k if callable(k) else (lambda r, c: k))
-    return [[f(r, c) for r in range(rows)] for c in range(cols)]
+    return [[f(r, c) for r in xrange(rows)] for c in xrange(cols)]
 
   # return the namespace
   return locals()
