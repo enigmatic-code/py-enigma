@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun  3 09:33:19 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jun 12 12:45:19 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-06-02"
+__version__ = "2021-06-03"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -657,8 +657,10 @@ def dsum(n, k=None, base=10):
   return sum(nsplitter(n, k=k, base=base))
 
 # population count, Hamming weight, bitsum(), bit_count()
-dsum2 = lambda n: bin(n).count('1', (3 if n < 0 else 2)) # fast alternative to: dsum(n, base=2)
-if _pythonv > (3, 9): dsum2 = int.bit_count
+if _pythonv > (3, 9):
+  dsum2 = int.bit_count
+else:
+  def dsum2(n): "fast alternative to dsum(n, base=2)"; bin(abs(n)).count('1', 2)
 
 # equivalent to: len(nsplit(n))
 # (we could use logarithms for "smallish" numbers)
@@ -1789,7 +1791,7 @@ def find(s, v):
     pass
   if isinstance(s, dict):
     # search the keys
-    # (or we would find() in the values, and return the correspond index in keys)
+    # (or we could use find() in the values, and return the correspond index in keys)
     for (k, x) in s.items():
       if x == v: return k
   else:
@@ -2001,7 +2003,8 @@ def cbrt(x):
   r = root(abs(x), 3.0)
   return (-r if x < 0 else r)
 
-cb = lambda x: x ** 3
+#cb = lambda x: x ** 3
+def cb(x): "cb(x) = x ** 3"; return cb(x)
 
 # for large numbers try Primes.prime_factor(n, mr=100), or sympy.ntheory.factorint(n)
 def prime_factor(n):
@@ -2029,8 +2032,8 @@ def prime_factor(n):
     while i * i <= n:
       e = 0
       while True:
-        (d, m) = divmod(n, i)
-        if m > 0: break
+        (d, r) = divmod(n, i)
+        if r > 0: break
         e += 1
         n = d
       if e > 0: yield (i, e)
@@ -2628,7 +2631,8 @@ def sqrt(a, b=None):
   # / is operator.truediv() here
   return math.sqrt(a if b is None else a / b)
 
-sq = lambda x: x * x
+# sq = lambda x: x * x
+def sq(x): "sq(x) = x ** 2"; return x * x
 
 # calculate intf(sqrt(n))
 # Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt())
@@ -2917,14 +2921,11 @@ def hypot(*vs):
 
   
 # return roots of the form n/d in the appropriate domain
-def _roots(domain, *nds):
+def _roots(domain, F, *nds):
   for (n, d) in nds:
-    if domain in "C":
-      yield complex(n / d)
-    elif domain in "F":
-      yield float(n / d)
+    if domain in "CF":
+      yield F(n / d)
     elif domain in "QZ":
-      F = Rational()
       x = F(n, d)
       if domain == "Q":
         yield x
@@ -2959,15 +2960,16 @@ def quadratic(a, b, c, domain="Q"):
 
   # discriminant
   D = b * b - 4 * a * c
-  if D < 0 and domain != "C": return _roots(domain)
+  if D < 0 and domain != "C": return _roots(domain, None)
 
   if domain in "CF":
+    F = (complex if domain == 'C' else float)
     d = -2 * a
     if D == 0:
-      return _roots(domain, (b, d))
+      return _roots(domain, F, (b, d))
     else:
       r = D ** 0.5
-      return _roots(domain, (b + r, d), (b - r, d))
+      return _roots(domain, F, (b + r, d), (b - r, d))
 
   elif domain in "QZ":
     F = Rational()
@@ -2978,11 +2980,11 @@ def quadratic(a, b, c, domain="Q"):
       r = F(p, q)
       d = -2 * a
       if r == 0:
-        return _roots(domain, (b, d))
+        return _roots(domain, F, (b, d))
       else:
-        return _roots(domain, (b + r, d), (b - r, d))
+        return _roots(domain, F, (b + r, d), (b - r, d))
 
-  return _roots(domain)
+  return _roots(domain, None)
 
 
 def intf(x):
@@ -3307,9 +3309,9 @@ def Rational(src=None, verbose=None):
   """
   select a class for representing rationals.
 
-  >> F = Rational(verbose=1)
+  >> Q = Rational(verbose=1)
   [Rational: using gmpy2.mpq]
-  >> F = Rational(src="fractions.Fraction", verbose=1)
+  >> Q = Rational(src="fractions.Fraction", verbose=1)
   [Rational: using fractions.Fraction]
   """
   s = f = None
@@ -5078,21 +5080,21 @@ def poly_rational_roots(p, domain="Q", include="+-0"):
   assert domain in "QZ"
   if not p: return
   (pos, neg, zero) = (x in include for x in '+-0')
-  F = Rational()
+  Q = Rational()
   # first deal with a root at x=0
   if p[0] == 0:
-    if zero: yield (0 if domain == "Z" else F(0, 1))
+    if zero: yield (0 if domain == "Z" else Q(0, 1))
     while p and p[0] == 0: p = p[1:]
   if not p: return
   # make an equivalent polynomial with integer coefficients
-  p = list(map(F, p))
+  p = list(map(Q, p))
   m = mlcm(*(f.denominator for f in p))
   p = list((m * f).numerator for f in p)
   g = mgcd(*p)
   p = list(x // g for x in p)
   # collect rational roots
   fs = itertools.product(divisors(abs(p[0])), divisors(abs(p[-1])))
-  for x in uniq(map(unpack(F), fs)):
+  for x in uniq(map(unpack(Q), fs)):
     if domain == "Z":
       if x.denominator != 1: continue
       x = x.numerator
