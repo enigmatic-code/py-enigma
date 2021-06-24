@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jun 12 12:45:19 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun 24 16:35:41 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-06-03"
+__version__ = "2021-06-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -213,6 +213,7 @@ nl = "\n"
 pi = math.pi
 two_pi = 2.0 * pi
 inf = float('+inf')
+empty = frozenset()  # the empty set
 
 _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
@@ -3636,7 +3637,7 @@ def printf(fmt='', **kw):
   """
   print format string <fmt> with interpolated local variables and keyword arguments.
 
-  the final newline can be suppressed by ending the string with '\'.
+  the final newline can be suppressed by ending the string with '\\'.
 
   >>> (a, b, c) = (1, 2, 3)
   >>> printf("a={a} b={b} c={c}")
