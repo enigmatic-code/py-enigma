@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun 24 16:35:41 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun 25 21:17:16 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-06-23"
+__version__ = "2021-06-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2005,7 +2005,7 @@ def cbrt(x):
   return (-r if x < 0 else r)
 
 #cb = lambda x: x ** 3
-def cb(x): "cb(x) = x ** 3"; return cb(x)
+def cb(x): "cb(x) = x ** 3"; return x ** 3
 
 # for large numbers try Primes.prime_factor(n, mr=100), or sympy.ntheory.factorint(n)
 def prime_factor(n):
@@ -8971,12 +8971,13 @@ class Timer(object):
     self._t0 = self._timer()
     if self._verbose: printf("[{self._name}] start = {self._t0}")
 
-  def stop(self):
+  def stop(self, report=0):
     """
     Set the stop time of a timer.
     """
     self._t1 = self._timer()
     if self._verbose: printf("[{self._name}] stop = {self._t1}")
+    if report: self.report(force=1)
 
   def elapsed(self, disable_report=1):
     """
