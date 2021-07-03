@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul  3 10:45:46 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul  3 13:50:30 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-07-02"
+__version__ = "2021-07-03"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3494,11 +3494,12 @@ def format_recurring(*args, **kw):
   return (i + dp + nr + rr if nr or rr else i)
 
 # see: Enigma 348
-def reciprocals(k, b=1, a=1, m=1, g=0):
+def reciprocals(k, b=1, a=1, m=1, M=inf, g=0):
   """
   generate k whole numbers (d1, d2, ..., dk) such that 1/d1 + 1/d2 + ... + 1/dk = a/b
   the numbers are generated as an ordered list
   m = minimum allowed number
+  M = maximum allowed number
   g = minimum allowed gap between numbers
 
   e.g. sums of 3 reciprocals that sum to 1
@@ -3511,13 +3512,13 @@ def reciprocals(k, b=1, a=1, m=1, g=0):
   # are we done?
   if k == 1:
     (d, r) = divmod(b, a)
-    if r == 0 and not(d < m):
+    if r == 0 and not(d < m or d > M):
       yield [d]
   else:
     # find a suitable reciprocal
-    for d in irange(max(m, divc(b + 1, a)), divf(k * b, a)):
+    for d in irange(max(m, divc(b + 1, a)), min(M, divf(k * b, a))):
       # solve for the remaining fraction
-      for ds in reciprocals(k - 1, b * d, a * d - b, d + g, g):
+      for ds in reciprocals(k - 1, b * d, a * d - b, d + g, M, g):
         yield [d] + ds
 
 
