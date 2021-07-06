@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul  4 10:19:59 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jul  6 22:20:33 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-07-04"
+__version__ = "2021-07-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3514,6 +3514,12 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
     (d, r) = divmod(b, a)
     if r == 0 and not(d < m or d > M):
       yield rs + [d]
+  elif k == 2:
+    # special case k = 2
+    for d in irange(max(m, divc(b + 1, a)), min(M, divf(2 * b, a))):
+      (e, r) = divmod(d * b, d * a - b)
+      if r == 0 and not(e < d + g or e > M):
+        yield rs + [d, e]
   else:
     # find a suitable reciprocal
     for d in irange(max(m, divc(b + 1, a)), min(M, divf(k * b, a))):
