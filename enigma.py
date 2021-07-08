@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jul  6 22:20:33 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul  7 12:41:37 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-07-05"
+__version__ = "2021-07-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -9888,8 +9888,20 @@ def __enigma_update(url, check=1, download=0, rename=0, verbose=1):
     if verbose > 0: print("enigma.py is NOT up to date")
   else:
     if verbose > 0: print("enigma.py is up to date")
-    # TODO: maybe verify checksum of local file matches
-
+    if cksum:
+      # verify checksum of local file matches
+      import hashlib
+      h = hashlib.md5()
+      with open(__file__, 'rb') as f:
+        if verbose > 1: printf("update: verifying checksum for \"{__file__}\"")
+        while True:
+          data = f.read(8192)
+          if not data: break
+          h.update(data)
+      if cksum == h.hexdigest():
+        if verbose > 0: printf("checksum verified")
+      else:
+        printf("WARNING: checksum mismatch for \"{__file__}\"")
 
 @static(url='https://raw.githubusercontent.com/enigmatic-code/py-enigma/master/') # was: @static(url='http://www.magwag.plus.com/jim/')
 def _enigma_update(url=None, check=1, download=0, rename=0, quiet=0, verbose=0):
