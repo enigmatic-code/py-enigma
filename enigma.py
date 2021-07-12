@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul  7 12:41:37 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jul 12 09:20:39 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-07-06"
+__version__ = "2021-07-11"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -878,7 +878,7 @@ def item_from(select, template, **kw):
   fields = dict((k, v) for (v, k) in enumerate(split(template)))
   return item(*(fields[k] for k in split(select)), **kw)
 
-def diff(a, b, *rest):
+def diff(a, b, *rest, **kw):
   """
   return the subsequence of <a> that excludes elements in <b>.
 
@@ -887,8 +887,9 @@ def diff(a, b, *rest):
   >>> join(diff('newhampshire', 'wham'))
   'nepsire'
   """
+  fn = kw.get('fn', tuple)
   if rest: b = set(b).union(*rest)
-  return tuple(x for x in a if x not in b)
+  return fn(x for x in a if x not in b)
 
 
 # unique combinations:
@@ -9708,6 +9709,7 @@ def run(cmd, *args, **kw):
   global _run_exit, _PY_ENIGMA
   _run_exit = None
 
+  verbose = kw.get('verbose')
   timed = kw.get('timed')
   flags = kw.get('flags', '')
   interp = kw.get('interpreter')
@@ -9722,10 +9724,12 @@ def run(cmd, *args, **kw):
     if cmd == "-rt" or cmd == "--run:timed": timed = 1
     (cmd, args) = (args[0], args[1:])
   elif cmd.startswith('-'):
+    if verbose: printf("run: unrecognised command \"{cmd}\"")
     return
 
   # if cmd names a file
   if os.path.isfile(cmd):
+    if verbose: printf("run: attempting to run file \"{cmd}\"")
     if timed and not isinstance(timed, basestring): timed = os.path.basename(cmd)
     if cmd.endswith(".run"):
       # *.run => treat it as a run file
@@ -9780,6 +9784,8 @@ def run(cmd, *args, **kw):
             [PY_ENIGMA] = saved
         _run_exit = (0 if r else -1)
       return
+  else:
+    if verbose: printf("run: not a file \"{cmd}\"")
 
   # if cmd names a class[.method]
   (obj, _, fn_name) = cmd.partition('.')
@@ -9802,6 +9808,8 @@ def run(cmd, *args, **kw):
       return
     else:
       printf("enigma.py: {obj}.{fn_name}() not implemented")
+  else:
+    if verbose: printf("run: not a class[.method] \"{cmd}\"")
 
   # if we get this far we can't find the solver
   printf("enigma.py: unable to run \"{cmd}\"")
