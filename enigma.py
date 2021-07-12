@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jul 12 09:20:39 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jul 12 15:43:59 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-07-11"
+__version__ = "2021-07-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -288,7 +288,7 @@ def as_int(x, include="", **kw):
     as_int(Fraction(129, 3))  -->  43
     as_int(sympy.Integer(42))  -->  42
     as_int(sympy.Float(42.0))  -->  42
-    as_int(sympy.rational(129, 3))  -->  43
+    as_int(sympy.Rational(129, 3))  -->  43
 
   and things like this raise an error:
 
@@ -303,8 +303,15 @@ def as_int(x, include="", **kw):
     n = int(x)
     if x == n:
       if include:
-        (pos, neg, zero) = (x in include for x in '+-0')
-        if (pos and x > 0) or (neg and x < 0) or (zero and x == 0): return n
+        if n > 0:
+          if '+' in include:
+            return n
+        elif n < 0:
+          if '-' in include:
+            return n
+        else:
+          if '0' in include:
+            return n
       else:
         return n
     return kw['default']
@@ -2681,10 +2688,12 @@ sqrtc = lambda x: (isqrt(x) if x < 1 else 1 + isqrt(x - 1))
 @static(mod=720, residues=None, cache_enabled=0, cache=dict())
 def is_square(n):
   """
-  check positive integer <n> is a perfect square.
+  check integer <n> is a perfect square.
 
   if <n> is a perfect square, returns the integer square root.
   if <n> is not a perfect square, returns None.
+
+  results can be cached by setting: is_square.cache_enabled = 1
 
   >>> is_square(49)
   7
@@ -2704,10 +2713,11 @@ def is_square(n):
   try:
     return is_square.cache[n]
   except KeyError:
-    r = isqrt(n)
-    z = (r if r * r == n else None)
-    if is_square.cache_enabled: is_square.cache[n] = z
-    return z
+    pass
+  r = isqrt(n)
+  z = (r if r * r == n else None)
+  if is_square.cache_enabled: is_square.cache[n] = z
+  return z
 
 # generate powers from a range
 def powers(a, b, k=2, step=1):
@@ -2768,6 +2778,10 @@ def is_cube(n):
   """
   check positive integer <n> is a perfect cube.
 
+  to check for positive/negative values use: is_cube_z().
+
+  results can be cached by setting: is_cube.cache_enabled = 1
+
   >>> is_cube(27)
   3
   >>> is_cube(49) is not None
@@ -2787,8 +2801,24 @@ def is_cube(n):
   if is_cube.cache_enabled: is_cube.cache[n] = z
   return z
 
-is_cube_p = fcompose(is_cube, is_not_none)
+is_cube_p = (lambda x: is_cube(x) is not None) # = fcompose(is_cube, is_not_none)
 
+def is_cube_z(n):
+  """
+  check integer <n> is a perfect cube.
+
+  >>> is_cube_z(27)
+  3
+  >>> is_cube_z(-27)
+  -3
+  >>> is_cube_z(0)
+  0
+  """
+  if n < 0:
+    r = is_cube(-n)
+    return (r if r is None else -r)
+  else:
+    return is_cube(n)
 
 # keep the old names as aliases
 power = is_power
