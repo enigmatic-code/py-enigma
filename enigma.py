@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jul 12 15:43:59 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jul 20 10:23:10 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-07-12"
+__version__ = "2021-07-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -187,6 +187,7 @@ if _pythonv[0] == 2:
   _python = 2
   if _pythonv[1] < 7:
     print("[enigma.py] WARNING: Python {v} is very old. Things may not work.".format(v=sys.version.split(None, 1)[0]))
+  xrange = xrange
   reduce = reduce
   basestring = basestring
   raw_input = raw_input
@@ -213,7 +214,7 @@ nl = "\n"
 pi = math.pi
 two_pi = 2.0 * pi
 inf = float('+inf')
-empty = frozenset()  # the empty set
+empty = frozenset() # the empty set
 
 _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
@@ -612,6 +613,7 @@ def nconcat(*digits, **kw):
 # split n into digits, starting with the least significant
 def nsplitter(n, k=None, base=10):
   n = abs(as_int(n))
+  assert base > 1, sprintf("invalid base: {base}")
   if k is None:
     # the "natural" number of digits in n
     while True:
@@ -1449,7 +1451,7 @@ def _subsets_init():
       ('P', getattr(itertools, 'permutations', None), None),
       ('D', derangements, None),
       ('R', getattr(itertools, 'combinations_with_replacement', None), None),
-      ('M', (lambda fn: ((lambda s, k: fn(s, repeat=k)) if fn else None))(getattr(itertools, 'product', None)), None),
+      ('M', (lambda fn=getattr(itertools, 'product', None): ((lambda s, k: fn(s, repeat=k)) if fn else None))(), None),
       ('uC', uC, None),
       ('mC', uC, (lambda s: sorted(multiset(s)))),
       ('mP', mP, multiset),
@@ -2647,8 +2649,9 @@ def sq(x): "sq(x) = x ** 2"; return x * x
 # Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt())
 @static(impl=getattr(math, 'isqrt', None))
 def isqrt(n):
+  # type: (int) -> Union[int, NoneType]
   """
-  calculate intf(sqrt(n)).
+  calculate intf(sqrt(n)), for integers n.
 
   >>> isqrt(9)
   3
@@ -2687,6 +2690,7 @@ sqrtc = lambda x: (isqrt(x) if x < 1 else 1 + isqrt(x - 1))
 # experimentally mod = 80, 48, 72, 32 are good values (24, 16 also work OK)
 @static(mod=720, residues=None, cache_enabled=0, cache=dict())
 def is_square(n):
+  # type: (int) -> Union[int, NoneType]
   """
   check integer <n> is a perfect square.
 
