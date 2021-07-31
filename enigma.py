@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jul 20 10:23:10 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul 31 22:28:27 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-07-19"
+__version__ = "2021-07-30"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1954,7 +1954,7 @@ def repeat(fn, v=0, k=inf):
     if i == k: break
     v = fn(v)
 
-def uniq(i, fn=None):
+def uniq(i, fn=None, verbose=0):
   """
   generate unique values from iterator <i> (maintaining order).
 
@@ -1971,6 +1971,7 @@ def uniq(i, fn=None):
     if r not in seen:
       yield x
       seen.add(r)
+  if verbose: printf("[uniq: found {n} unique items]")
 
 def uniq1(i, fn=None):
   """
@@ -2649,7 +2650,7 @@ def sq(x): "sq(x) = x ** 2"; return x * x
 # Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt())
 @static(impl=getattr(math, 'isqrt', None))
 def isqrt(n):
-  # type: (int) -> Union[int, NoneType]
+  # type: (int) -> int | NoneType
   """
   calculate intf(sqrt(n)), for integers n.
 
@@ -2690,7 +2691,7 @@ sqrtc = lambda x: (isqrt(x) if x < 1 else 1 + isqrt(x - 1))
 # experimentally mod = 80, 48, 72, 32 are good values (24, 16 also work OK)
 @static(mod=720, residues=None, cache_enabled=0, cache=dict())
 def is_square(n):
-  # type: (int) -> Union[int, NoneType]
+  # type: (int) -> int | NoneType
   """
   check integer <n> is a perfect square.
 
