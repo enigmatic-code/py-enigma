@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul 31 22:28:27 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Aug  5 11:57:49 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-07-30"
+__version__ = "2021-08-04"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -266,6 +266,13 @@ def cached(f):
       #printf("[{f.__name__}: {k} -> {r}]")
       return r
   return _cached
+
+# the identity function
+def identity(x):
+  """
+  the identity function: identity(x) == x
+  """
+  return x
 
 # can we treat x as an integer?
 # include = +/-/0, check for +ve, -ve, 0
@@ -394,7 +401,7 @@ def distinct_values(s, n=None):
   if n is None: n = len(s)
   return len(set(s)) == n
 
-def seq_all_different(s):
+def seq_all_different(s, fn=identity):
   """
   check all elements of <s> are pairwise distinct
 
@@ -407,12 +414,13 @@ def seq_all_different(s):
   """
   seen = set()
   for x in s:
+    x = fn(x)
     if x in seen: return False
     seen.add(x)
   return True
 
 # same as distinct_values(args), or distinct_values(args, len(args))
-def is_pairwise_distinct(*args):
+def is_pairwise_distinct(*args, **kw):
   """
   check all arguments are pairwise distinct
 
@@ -431,7 +439,7 @@ def is_pairwise_distinct(*args):
   #for i in xrange(len(args) - 1):
   #  if args[i] in args[i + 1:]: return False
   #return True
-  return seq_all_different(args)
+  return seq_all_different(args, fn=kw.get('fn', identity))
 
 pairwise_distinct = is_pairwise_distinct
 
@@ -1255,8 +1263,8 @@ class multiset(dict):
     (d1, d2) = self.differences(m)
     return d1.update(d2)
 
-  # is this multiset disjoint from a bunch of other multisets
   def is_disjoint(self, *rest):
+    "test if the multiset is disjoint from a bunch of other multisets"
     for m in rest:
       if not isinstance(m, dict): m = multiset(m)
       if any(x in self for x in m): return False
@@ -1270,11 +1278,8 @@ class multiset(dict):
     """
     return multiset.from_pairs((k, n * v) for (k, v) in self.items())
 
-  # generate subsets of a multiset
   def subsets(self, size=None, min_size=0, max_size=None):
-    """
-    generate subsets of a multiset.
-    """
+    "generate subsets of a multiset."
     if size is not None:
       min_size = max_size = size
     elif max_size is None:
@@ -1286,11 +1291,8 @@ class multiset(dict):
       if min_size <= sum(ns) <= max_size:
         yield multiset.from_pairs(zip(ks, ns))
 
-  # copy a multiset
   def copy(self):
-    """
-    return a copy of a multiset
-    """
+    "return a copy of a multiset"
     return multiset.from_dict(self)
 
   def min(self, **kw):
@@ -1318,6 +1320,10 @@ class multiset(dict):
     equivalent to: sum(self)
     """
     return fn(v * k for (k, v) in self.items())
+
+  def map2str(self, sort=1, enc='()', sep=', ', arr='='):
+    "call map2str() on the multiset"
+    return map2str(self, sort=sort, enc=enc, sep=sep, arr=arr)
 
   # allow operator overloading on multisets
   # (let me know if these don't do what you expect)
@@ -1498,12 +1504,6 @@ def filter2(p, i, fn=list):
 
 # alias if you prefer the term partition (but don't confuse it with partitions())
 partition = filter2
-
-def identity(x):
-  """
-  the identity function: identity(x) == x
-  """
-  return x
 
 def is_equal(x, y):
   """
