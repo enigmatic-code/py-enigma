@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Aug  5 11:57:49 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug  6 11:30:15 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-08-04"
+__version__ = "2021-08-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -207,6 +207,9 @@ elif _pythonv[0] > 2:
   else:
     Sequence = collections.Sequence
     Iterable = collections.Iterable
+
+# detect if running under PyPy
+_pypy = getattr(sys, 'pypy_version_info', None)
 
 # useful constants
 enigma = sys.modules[__name__]
@@ -1044,14 +1047,12 @@ class multiset(dict):
     return m
 
   # count all elements in the multiset
-  # (for number of unique elements use: [[ len(s.keys()) ]])
-  # NOTE: the final test fails on PyPy3 (but not PyPy)
   def size(self):
     """
     the cardinality of the multiset.
     i.e. a count all the elements in a multiset.
 
-    to count the number of distinct element types use: len(s.keys())
+    to count the number of distinct element types use: s.distinct_size().
 
     this function is used to implement the len() method on multisets.
 
@@ -1059,10 +1060,10 @@ class multiset(dict):
     6
     >>> len(multiset("banana"))
     6
-    >>> len(multiset("banana").keys())
+    >>> multiset("banana").distinct_size()
     3
     """
-    return sum(self.values())
+    return sum(dict.values(self))
 
   # len(multiset) == multiset.size()
   __len__ = size
@@ -1078,7 +1079,7 @@ class multiset(dict):
 
   # does this multiset contain elements with multiplicity greater than n?
   def is_duplicate(self, n=1):
-    return any(v > n for v in self.values())
+    return any(v > n for v in dict.values(self))
 
   # all elements of the multiset
   # (for unique elements use: [[ s.keys() ]])
@@ -1095,21 +1096,34 @@ class multiset(dict):
     >>> sorted(multiset("banana").keys())
     ['a', 'b', 'n']
     """
-    for (k, v) in self.items():
+    for (k, v) in dict.items(self):
       for _ in xrange(v):
         yield k
 
   __iter__ = elements
 
+  # the distinct elements
   # alias for keys()
   distinct_elements = dict.keys
+
+  # the number of the distinct elements
+  def __distinct_size(self):
+    "the number of distinct elements in the multiset"
+    return len(dict.keys(self))
+
+  # specialised version for PyPy3
+  def __distinct_size_pypy3(self):
+    "the number of distinct elements in the multiset"
+    return len(dict(self))
+
+  distinct_size = (__distinct_size_pypy3 if (_pypy and _python > 2) else __distinct_size)
 
   # return a count of the item
   def count(self, item):
     """
     return the number of times an item occurs.
     """
-    return self.get(item, 0)
+    return dict.get(self, item, 0)
 
   # add an item
   def add(self, item, count=1):
@@ -1302,7 +1316,7 @@ class multiset(dict):
     equivalent to: min(self)
     """
     if not(self) and 'default' in kw: return kw['default']
-    return min(self.keys())
+    return min(dict.keys(self))
 
   def max(self, **kw):
     """
@@ -1311,7 +1325,7 @@ class multiset(dict):
     equivalent to: max(self)
     """
     if not(self) and 'default' in kw: return kw['default']
-    return max(self.keys())
+    return max(dict.keys(self))
 
   def sum(self, fn=sum):
     """
@@ -1319,7 +1333,7 @@ class multiset(dict):
 
     equivalent to: sum(self)
     """
-    return fn(v * k for (k, v) in self.items())
+    return fn(v * k for (k, v) in dict.items(self))
 
   def map2str(self, sort=1, enc='()', sep=', ', arr='='):
     "call map2str() on the multiset"
@@ -3622,7 +3636,7 @@ def __sprintf(fmt, vs):
   return fmt.format(**vs)
 
 # Python3 has str.format_map(vs)
-def __sprintf3(fmt, vs):
+def __sprintf_3(fmt, vs):
   return fmt.format_map(vs)
 
 # in Python v3.6.x we are getting f"..." strings which can do this job
@@ -3639,7 +3653,7 @@ def __sprintf3(fmt, vs):
 #
 # printf("... {a} + {b} = {a + b} ...", a=2, b=3)  ->  "... 2 + 3 = 5 ..."
 
-def __sprintf36(fmt, vs):
+def __sprintf_36(fmt, vs):
   return eval('f' + repr(fmt), vs)
 
 @static(fn=None)
@@ -3657,8 +3671,8 @@ def _sprintf(fmt, vs, frame):
   return _sprintf.fn(fmt, d)
 
 _sprintf.fn = __sprintf
-if _python > 2: _sprintf.fn = __sprintf3
-if _pythonv > (3, 5): _sprintf.fn = __sprintf36
+if _python > 2: _sprintf.fn = __sprintf_3
+if _pythonv > (3, 5): _sprintf.fn = __sprintf_36
 
 # print with variables interpolated into the format string
 def sprintf(fmt='', **kw):
