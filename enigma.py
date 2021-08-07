@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug  6 11:30:15 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Aug  7 12:31:09 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-08-05"
+__version__ = "2021-08-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -255,9 +255,7 @@ def static(**kw):
 # useful as a decorator for caching functions (@cached).
 # NOTE: functools.lru_cached() can be used as an alternative in Python from v3.2
 def cached(f):
-  """
-  return a cached version of function <f>.
-  """
+  """return a cached version of function <f>"""
   c = dict()
   @functools.wraps(f)
   def _cached(*k):
@@ -272,9 +270,7 @@ def cached(f):
 
 # the identity function
 def identity(x):
-  """
-  the identity function: identity(x) == x
-  """
+  """the identity function: identity(x) == x"""
   return x
 
 # can we treat x as an integer?
@@ -816,16 +812,12 @@ def chunk(s, n=2, pad=0, value=None, fn=tuple):
 
 # set union of a bunch of sequences
 def union(ss, fn=set):
-  """
-  construct a set that is the union of the sequences in <ss>.
-  """
+  """construct a set that is the union of the sequences in <ss>"""
   return fn().union(*ss)
 
 # set intersection of a bunch of sequences
 def intersect(ss, fn=set):
-  """
-  construct a set that is the intersection of the sequences in <ss>.
-  """
+  """construct a set that is the intersection of the sequences in <ss>"""
   i = iter(ss)
   try:
     s = fn(next(i))
@@ -989,25 +981,19 @@ class multiset(dict):
         self.add(x, n)
 
   def update_from_seq(self, vs, count=1):
-    """
-    update a multiset from a sequence of items.
-    """
+    """update a multiset from a sequence of items"""
     for x in vs:
       self.add(x, count=count)
     return self
 
   def update_from_pairs(self, vs):
-    """
-    update a multiset from a sequence of (<item>, <count>) pairs.
-    """
+    """update a multiset from a sequence of (<item>, <count>) pairs"""
     for (x, n) in vs:
       self.add(x, as_int(n))
     return self
 
   def update_from_dict(self, d):
-    """
-    update a multiset from a dict of <item> -> <count> values.
-    """
+    """update a multiset from a dict of <item> -> <count> values"""
     return self.update_from_pairs(d.items())
 
   @classmethod
@@ -1108,21 +1094,19 @@ class multiset(dict):
 
   # the number of the distinct elements
   def __distinct_size(self):
-    "the number of distinct elements in the multiset"
+    """the number of distinct elements in the multiset"""
     return len(dict.keys(self))
 
   # specialised version for PyPy3
   def __distinct_size_pypy3(self):
-    "the number of distinct elements in the multiset"
+    """the number of distinct elements in the multiset"""
     return len(dict(self))
 
   distinct_size = (__distinct_size_pypy3 if (_pypy and _python > 2) else __distinct_size)
 
   # return a count of the item
   def count(self, item):
-    """
-    return the number of times an item occurs.
-    """
+    """return the number of times an item occurs in the multiset"""
     return dict.get(self, item, 0)
 
   # add an item
@@ -1145,9 +1129,7 @@ class multiset(dict):
 
   # remove an item
   def remove(self, item, count=1):
-    """
-    remove an item from a multiset.
-    """
+    """remove an item from the multiset"""
     return self.add(item, -count)
 
   # like self.items(), but in value order
@@ -1246,24 +1228,18 @@ class multiset(dict):
   # difference between self and m
   # (m may contain items that are not in self, they are ignored)
   def difference(self, m):
-    """
-    return (self - m)
-    """
+    """return (self - m)"""
     return self.differences(m)[0]
 
   # is multiset m a subset of self?
   def issuperset(self, m, strict=0):
-    """
-    test if this multiset contains multiset <m>.
-    """
+    """test if the multiset contains multiset <m>"""
     (d1, d2) = self.differences(m)
     return not(d2) and (not(strict) or bool(d1))
 
   # is multiset m a superset of self?
   def issubset(self, m, strict=0):
-    """
-    test if this multiset is contained in multiset <m>.
-    """
+    """test if the multiset is contained in multiset <m>"""
     (d1, d2) = self.differences(m)
     return not(d1) and (not(strict) or bool(d2))
 
@@ -1278,7 +1254,7 @@ class multiset(dict):
     return d1.update(d2)
 
   def is_disjoint(self, *rest):
-    "test if the multiset is disjoint from a bunch of other multisets"
+    """test if the multiset is disjoint from a bunch of other multisets"""
     for m in rest:
       if not isinstance(m, dict): m = multiset(m)
       if any(x in self for x in m): return False
@@ -1293,7 +1269,7 @@ class multiset(dict):
     return multiset.from_pairs((k, n * v) for (k, v) in self.items())
 
   def subsets(self, size=None, min_size=0, max_size=None):
-    "generate subsets of a multiset."
+    """generate subsets of a multiset"""
     if size is not None:
       min_size = max_size = size
     elif max_size is None:
@@ -1306,7 +1282,7 @@ class multiset(dict):
         yield multiset.from_pairs(zip(ks, ns))
 
   def copy(self):
-    "return a copy of a multiset"
+    """return a copy of the multiset"""
     return multiset.from_dict(self)
 
   def min(self, **kw):
@@ -1336,7 +1312,7 @@ class multiset(dict):
     return fn(v * k for (k, v) in dict.items(self))
 
   def map2str(self, sort=1, enc='()', sep=', ', arr='='):
-    "call map2str() on the multiset"
+    """call map2str() on the multiset"""
     return map2str(self, sort=sort, enc=enc, sep=sep, arr=arr)
 
   # allow operator overloading on multisets
@@ -1827,9 +1803,7 @@ def find(s, v):
   return -1
 
 def rfind(s, v):
-  """
-  find the last index of a value in a sequence, return -1 if not found.
-  """
+  """find the last index of a value in a sequence, return -1 if not found"""
   i = find(s[::-1], v)
   return (-1 if i == -1 else len(s) - i - 1)
 
@@ -2019,7 +1993,7 @@ root = lambda x, n: (x if not(x) else math.pow(x, 1.0 / n))
 
 def cbrt(x):
   """
-  Return the cube root of a number (as a float).
+  return the cube root of a number (as a float).
 
   >>> cbrt(27.0)
   3.0
@@ -2048,7 +2022,7 @@ def prime_factor(n):
   >>> list(prime_factor(factorial(12)))
   [(2, 10), (3, 5), (5, 2), (7, 1), (11, 1)]
   """
-  n = as_int(n)
+  n = as_int(n, "0+")
   if n > 1:
     i = 2
     # generate a list of deltas: 1, 2, 2 then 4, 2, 4, 2, 4, 6, 2, 6 repeatedly
@@ -2365,7 +2339,7 @@ def tau(n, fn=prime_factor):
   """
   count the number of divisors of a positive integer <n>.
 
-  tau(n) = len(divisors(n)) (but faster)
+  tau(n) = len(divisors(n)) [but faster]
 
   >>> tau(factorial(12))
   792
@@ -2756,7 +2730,7 @@ def fcompose(f, *gs):
   """
   forward functional composition ("and then")
 
-    fcompose(f, g, h)(x) == h(g(f(x)))
+  fcompose(f, g, h)(x) == h(g(f(x)))
 
   >>> fcompose(is_square, is_not_none)(49)
   True
@@ -2784,7 +2758,7 @@ def rcompose(*fns):
   """
   reverse functional composition
 
-    rcompose(f, g, h)(x) == f(g(h(x)))
+  rcompose(f, g, h)(x) == f(g(h(x)))
   """
   return fcompose(*(reversed(fns)))
 
@@ -3113,9 +3087,7 @@ def divc(a, b):
 cdiv = divc
 
 def ceil(x, m=1):
-  """
-  return lowest multiple of m, not less than x
-  """
+  "return lowest multiple of m, not less than x."
   if m == 1: return intc(x)
   return m * -int(-x // m)
 
@@ -3139,9 +3111,7 @@ def div(a, b):
 is_multiple = div
 
 def ediv(a, b):
-  """
-  return (a // b) if b exactly divides a, otherwise raise a ValueError.
-  """
+  "return (a // b) if b exactly divides a, otherwise raise a ValueError."
   (d, r) = divmod(a, b)
   if r != 0: raise ValueError("inexact division")
   return d
@@ -3328,7 +3298,7 @@ def fraction(a, b, *rest):
   if more than 2 arguments are specified the sum of the arguments as
   (numerator, denominator) pairs is determined, so:
 
-      fraction(a, b, c, d, e, f, ...) -> a/b + c/d + e/f + ...
+  fraction(a, b, c, d, e, f, ...) -> a/b + c/d + e/f + ...
 
   >>> fraction(286, 1001)
   (2, 7)
@@ -3418,7 +3388,7 @@ def rational(*args, **kw):
 
 def factorial(a, b=1):
   """
-  return a!/b!.
+  return a! / b!.
 
   >>> factorial(6)
   720
@@ -4102,7 +4072,7 @@ def express(t, ds, qs=None, min_q=0, s=[]):
 
   <ds> and <qs> should be increasing sequences.
 
-  generated values are the quantaties for each denomination in <ds>.
+  generated values are the quantities for each denomination in <ds>.
 
   >>> list(express(20, (3, 5, 7)))
   [[0, 4, 0], [1, 2, 1], [2, 0, 2], [5, 1, 0]]
@@ -4259,16 +4229,12 @@ class Denominations(object):
 
   # count the number of ways to express <amount>
   def count(self, amount, min_q=0):
-    """
-    count the number of ways of expressing an amount
-    """
+    """count the number of ways of expressing an amount"""
     return icount(self.express(amount, min_q=min_q))
 
   # return the Frobenius number (the largest amount that cannot be changed)
   def frobenius(self):
-    """
-    return the largest amount not expressible using the denominations.
-    """
+    """return the largest amount not expressible using the denominations"""
     m = max(self.residues[-1])
     return (None if m == inf else m - self.denominations[0])
 
@@ -4281,7 +4247,7 @@ class Denominations(object):
 class Record(object):
 
   def update(self, **vs):
-    "update values in a record"
+    """update values in a record"""
     self.__dict__.update(vs)
 
   # __init__ is the same as update
@@ -4929,16 +4895,14 @@ class Accumulator(object):
         self.data = data
 
   def accumulate_from(self, s):
-    """
-    Accumulate values from iterable object <s>.
-    """
+    """accumulate values from iterable object <s>"""
     for v in s:
       self.accumulate(v)
     return self
 
   def accumulate_data_from(self, s, value=0, data=1):
     """
-    Accumulate values and data from iterable object <s>.
+    accumulate values and data from iterable object <s>.
 
     <value>, <data> can be an index into elements from <s>
     or a function to extract the appropriate value from an element.
@@ -5288,9 +5252,7 @@ class _PrimeSieveE6(object):
   # to check numbers up to (but not including) n we need a sieve of size: (n // 3) + (n % 6 == 2)
 
   def __init__(self, n, array=_primes_array, verbose=0):
-    """
-    make a sieve of primes up to n
-    """
+    "make a sieve of primes up to <n>"
     # initial sieve
     self.sieve = array([0])
     self.max = 1
@@ -5307,7 +5269,7 @@ class _PrimeSieveE6(object):
 
   def extend(self, n):
     """
-    extend the sieve up to (at least) n
+    extend the sieve up to (at least) <n>
     """
     if not(n > self.max): return
     #if self.verbose: printf("[{x}: expanding to {n}]", x=self.__class__.__name__)
@@ -5582,9 +5544,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
 
   # expand the sieve as necessary
   def is_prime(self, n):
-    """
-    primality test - the sieve is expanded as necessary before testing.
-    """
+    "primality test - the sieve is expanded as necessary before testing."
     self.extend(n)
     return _PrimeSieveE6.is_prime(self, n)
 
@@ -5669,11 +5629,7 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=
 
 # backwards compatibility
 def PrimesGenerator(n=None, array=_primes_array, fn=_primes_chunk):
-  """
-  provided for backwatds compatability.
-
-  use Primes() instead,
-  """
+  "provided for backwatds compatability. use Primes() instead."
   return Primes(n, expandable=1, array=array, fn=fn)
 
 # default expandable sieve
@@ -5753,16 +5709,16 @@ class MagicSquare(object):
     self.lines = lines
 
   def set(self, i, v):
-    """set the value of a square (linearly indexed from 0)."""
+    """set the value of a square (linearly indexed from 0)"""
     self.square[i] = v
     self.numbers.remove(v)
 
   def get(self, i):
-    """get the value of a square (linearly indexed from 0)."""
+    """get the value of a square (linearly indexed from 0)"""
     return self.square[i]
 
   def output(self):
-    """print the magic square."""
+    """print the magic square"""
     m = max(self.square)
     n = (int(math.log10(m)) + 1 if m > 0 else 1)
     fmt = "[{:>" + str(n) + "s}]"
@@ -6011,9 +5967,7 @@ class SubstitutedSum(object):
   solution = output_solution
 
   def run(self, check=None, first=0):
-    """
-    find all solutions (matching the filter <fn>) and output them.
-    """
+    """find all solutions (matching the filter <fn>) and output them"""
     for s in self.solve(check=check, verbose=1):
       if first: break
 
@@ -8500,9 +8454,7 @@ class Football(object):
 
   # compute outcomes based on scores
   def outcomes(self, ss, ts=None):
-    """
-    return a sequence of outcomes ('x', 'w', 'd', 'l') for a sequence of scores.
-    """
+    """return a sequence of outcomes ('x', 'w', 'd', 'l') for a sequence of scores"""
     if ts is None: ts = [0] * len(ss)
     return tuple(('x' if s is None else 'ldw'[compare(s[0 ^ t], s[1 ^ t]) + 1]) for (s, t) in zip(ss, ts))
 
@@ -8861,9 +8813,7 @@ class DominoGrid(object):
 
   # solve a grid and output solutions
   def run(self, fixed=None, used=[], sep='', prefix=''):
-    """
-    solve a grid and output the solutions
-    """
+    """solve a grid and output the solutions"""
     for s in self.solve(fixed, used):
       self.output_solution(s, prefix=prefix)
       print(sep)
@@ -9016,9 +8966,7 @@ class Timer(object):
     if auto_start: self.start()
 
   def start(self):
-    """
-    Set the start time of a timer.
-    """
+    """set the start time of a timer"""
     if self._exit_report:
       atexit.register(self.report, force=0)
       self._exit_report = False
@@ -9027,16 +8975,14 @@ class Timer(object):
     if self._verbose: printf("[{self._name}] start = {self._t0}")
 
   def stop(self, report=0):
-    """
-    Set the stop time of a timer.
-    """
+    """set the stop time of a timer"""
     self._t1 = self._timer()
     if self._verbose: printf("[{self._name}] stop = {self._t1}")
     if report: self.report(force=1)
 
   def elapsed(self, disable_report=1):
     """
-    Return the elapsed time of a stopped timer
+    return the elapsed time of a stopped timer
 
     disable_report = should the report be disabled
     """
@@ -9044,9 +8990,7 @@ class Timer(object):
     return (self._t1 or self._timer()) - self._t0
 
   def format(self, t, fmt='{:.2f}'):
-    """
-    Format a time for the report.
-    """
+    """format a time for the report"""
     u = 's'
     if t < 1.0: (t, u) = (1000 * t, 'ms')
     if t < 1.0: (t, u) = (1000 * t, 'us')
@@ -9077,9 +9021,7 @@ class Timer(object):
 
 # function wrapper
 def timed(f):
-  """
-  Return a timed version of function <f>.
-  """
+  """return a timed version of function <f>"""
   @functools.wraps(f)
   def _timed(*args, **kw):
     n = f.__name__
