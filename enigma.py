@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Aug  8 10:01:01 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Aug  8 11:06:13 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-08-07"
+__version__ = "2021-08-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4063,7 +4063,7 @@ def bit_permutations(a, b=None):
 # for "coin puzzles", see also: Denominations()
 
 # simple express:
-def express(t, ds, qs=None, min_q=0, s=[]):
+def express(t, ds, qs=None, min_q=0):
   """
   express total <t> using denominations <ds>.
 
@@ -4089,47 +4089,53 @@ def express(t, ds, qs=None, min_q=0, s=[]):
   """
   ds = list(ds)
   if qs:
-    return express_quantities(t, ds, qs, s)
-  elif min_q == 0:
-    return express_denominations(t, ds, s)
+    return express_quantities(t, ds, qs)
+  min_q = as_int(min_q, "0+")
+  if min_q > 0:
+    return express_denominations_min(t, ds, min_q)
   else:
-    return express_denominations_min(t, ds, min_q, s)
+    return express_denominations(t, ds)
 
 # express total <t> using denominations <ds>
-def express_denominations(t, ds, s=[]):
+def express_denominations(t, ds, ss=[]):
   if t == 0:
     if not(ds):
-      yield s
+      yield ss
     else:
-      yield s + [0] * len(ds)
+      yield ss + [0] * len(ds)
   elif ds:
     d = ds[0]
-    for q in irange(0, t // d):
-      for r in express_denominations(t - d * q, ds[1:], s + [q]): yield r
+    (k, r) = divmod(t, d)
+    if len(ds) == 1:
+      if r: return
+      qs = [k]
+    else:
+      qs = irange(0, k)
+    for q in qs:
+      for r in express_denominations(t - d * q, ds[1:], ss + [q]): yield r
 
 # express total <t> using denominations <ds>, min quantity <min_q>
-def express_denominations_min(t, ds, min_q, s):
+def express_denominations_min(t, ds, min_q):
   # allocate the minimum quantities
   t_ = t - min_q * sum(ds)
   if t_ > 0:
     # solve for the remaining amount
-    for ss in express_denominations(t_, ds, s):
-      # and add in the initial quantities
+    for ss in express_denominations(t_, ds):
+      # add in the initial quantities
       yield list(q + min_q for q in ss)
 
-
 # express total <t> using denominations <ds>, quantities chosen from <qs>
-def express_quantities(t, ds, qs, s=[]):
+def express_quantities(t, ds, qs, ss=[]):
   if t == 0:
     if not(ds):
-      yield s
+      yield ss
     elif 0 in qs:
-      yield s + [0] * len(ds)
+      yield ss + [0] * len(ds)
   elif ds:
     d = ds[0]
     for q in qs:
       if d * q > t: break
-      for r in express_quantities(t - d * q, ds[1:], qs, s + [q]): yield r
+      for r in express_quantities(t - d * q, ds[1:], qs, ss + [q]): yield r
 
 
 # An implementation of the Boecker-Liptak Money Changing algorithm from:
