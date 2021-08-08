@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Aug  8 11:06:13 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Aug  8 11:17:23 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -4118,7 +4118,7 @@ def express_denominations(t, ds, ss=[]):
 def express_denominations_min(t, ds, min_q):
   # allocate the minimum quantities
   t_ = t - min_q * sum(ds)
-  if t_ > 0:
+  if t_ >= 0:
     # solve for the remaining amount
     for ss in express_denominations(t_, ds):
       # add in the initial quantities
