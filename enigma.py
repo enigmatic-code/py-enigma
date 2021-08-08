@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug  7 12:31:09 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Aug  8 10:01:01 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-08-06"
+__version__ = "2021-08-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4090,20 +4090,33 @@ def express(t, ds, qs=None, min_q=0, s=[]):
   ds = list(ds)
   if qs:
     return express_quantities(t, ds, qs, s)
+  elif min_q == 0:
+    return express_denominations(t, ds, s)
   else:
-    return express_denominations(t, ds, min_q, s)
+    return express_denominations_min(t, ds, min_q, s)
 
-# express total <t> using denominations <ds>, min quantity <min_q>
-def express_denominations(t, ds, min_q=0, s=[]):
+# express total <t> using denominations <ds>
+def express_denominations(t, ds, s=[]):
   if t == 0:
     if not(ds):
       yield s
-    elif min_q == 0:
+    else:
       yield s + [0] * len(ds)
   elif ds:
     d = ds[0]
-    for i in irange(min_q, t // d):
-      for r in express_denominations(t - d * i, ds[1:], min_q, s + [i]): yield r
+    for q in irange(0, t // d):
+      for r in express_denominations(t - d * q, ds[1:], s + [q]): yield r
+
+# express total <t> using denominations <ds>, min quantity <min_q>
+def express_denominations_min(t, ds, min_q, s):
+  # allocate the minimum quantities
+  t_ = t - min_q * sum(ds)
+  if t_ > 0:
+    # solve for the remaining amount
+    for ss in express_denominations(t_, ds, s):
+      # and add in the initial quantities
+      yield list(q + min_q for q in ss)
+
 
 # express total <t> using denominations <ds>, quantities chosen from <qs>
 def express_quantities(t, ds, qs, s=[]):
@@ -4114,9 +4127,9 @@ def express_quantities(t, ds, qs, s=[]):
       yield s + [0] * len(ds)
   elif ds:
     d = ds[0]
-    for i in qs:
-      if d * i > t: break
-      for r in express_quantities(t - d * i, ds[1:], qs, s + [i]): yield r
+    for q in qs:
+      if d * q > t: break
+      for r in express_quantities(t - d * q, ds[1:], qs, s + [q]): yield r
 
 
 # An implementation of the Boecker-Liptak Money Changing algorithm from:
