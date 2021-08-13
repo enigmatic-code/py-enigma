@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Aug  8 11:17:23 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug 13 16:20:53 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-08-08"
+__version__ = "2021-08-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3161,7 +3161,6 @@ def is_palindrome(s):
   >>> first(n for n in irange(0, inf) if not is_palindrome(nsplit(11 ** n)))
   [5]
   """
-  s = list(s)
   j = len(s)
   if j < 2: return True
   i = 0
@@ -3172,16 +3171,15 @@ def is_palindrome(s):
     j -= 1
   return True
 
-def multiply(s):
+def multiply(s, r=1):
   """
   return the product of the sequence <s>.
 
-  >>> multiply(xrange(1, 7))
+  >>> multiply(irange(1, 6))
   720
   >>> multiply([2] * 8)
   256
   """
-  r = 1
   for x in s:
     r *= x
   return r
@@ -4068,7 +4066,7 @@ def express(t, ds, qs=None, min_q=0):
   express total <t> using denominations <ds>.
 
   optional: using quantities chosen from <qs>
-  or: minimum quantity <min_q>
+  or: minimum quantity <min_q> (non-negative integer)
 
   <ds> and <qs> should be increasing sequences.
 
@@ -4090,7 +4088,6 @@ def express(t, ds, qs=None, min_q=0):
   ds = list(ds)
   if qs:
     return express_quantities(t, ds, qs)
-  min_q = as_int(min_q, "0+")
   if min_q > 0:
     return express_denominations_min(t, ds, min_q)
   else:
@@ -4117,10 +4114,12 @@ def express_denominations(t, ds, ss=[]):
 # express total <t> using denominations <ds>, min quantity <min_q>
 def express_denominations_min(t, ds, min_q):
   # allocate the minimum quantities
-  t_ = t - min_q * sum(ds)
-  if t_ >= 0:
+  t -= min_q * sum(ds)
+  if t == 0:
+    yield [0] * len(ds)
+  elif t > 0:
     # solve for the remaining amount
-    for ss in express_denominations(t_, ds):
+    for ss in express_denominations(t, ds):
       # add in the initial quantities
       yield list(q + min_q for q in ss)
 
@@ -4231,8 +4230,8 @@ class Denominations(object):
     """
     generate the different ways to express the given amount.
 
-    if min_q is specified, at least that many instances of each
-    denomination must be used.
+    if min_q is specified (non-negative integer), at least that many
+    instances of each denomination must be used.
     """
     n = len(self.denominations)
     if min_q == 0:
@@ -5318,7 +5317,7 @@ class _PrimeSieveE6(object):
         #printf("eliminating {p} {ns}", ns=tuple((z * 3) + (z & 1) + 1 for z in irange(j, h-1, step=k)))
 
     self.max = n
-    if self.verbose: printf("[{x}: expanded to {n}: {b} bytes used]", x=self.__class__.__name__, b=s.__sizeof__())
+    if self.verbose: printf("[{x}: expanded to {n}: {b} bytes used]", x=self.__class__.__name__, b=s.__alloc__())
 
   # return a list of primes (more space)
   def list(self):
