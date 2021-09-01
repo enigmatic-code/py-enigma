@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug 13 16:20:53 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Aug 26 17:48:50 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-08-12"
+__version__ = "2021-08-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -191,6 +191,7 @@ if _pythonv[0] == 2:
   reduce = reduce
   basestring = basestring
   raw_input = raw_input
+  call = apply
   Sequence = collections.Sequence
   Iterable = collections.Iterable
 elif _pythonv[0] > 2:
@@ -200,6 +201,7 @@ elif _pythonv[0] > 2:
   reduce = functools.reduce
   basestring = str
   raw_input = input
+  call = lambda fn, args=(), kw=dict(): fn(*args, **kw)
   if _pythonv > (3, 6):
     # Python 3.7 onwards
     # not: [[ Sequence = collections.abc.Sequence ]]
@@ -5349,13 +5351,14 @@ class _PrimeSieveE6(object):
   # make this an iterable object
   __iter__ = generate
 
-  # range(a, b) - generate primes in the range [a, b) - is the same as generate() now
+  # xrange(a, b) - generate primes in the range [a, b) - is the same as generate() now
+  xrange = generate
   range = generate
 
   # irange = inclusive range
   def irange(self, a, b):
     if not(b is None or b == inf): b += 1
-    return self.range(a, b)
+    return self.generate(a, b)
 
   # prime test (may throw IndexError if n is too large)
   def is_prime(self, n):
