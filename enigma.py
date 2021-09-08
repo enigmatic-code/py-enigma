@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Aug 26 17:48:50 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep  8 09:07:31 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-08-25"
+__version__ = "2021-09-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -209,6 +209,9 @@ elif _pythonv[0] > 2:
   else:
     Sequence = collections.Sequence
     Iterable = collections.Iterable
+
+# cartesian product
+product = itertools.product
 
 # detect if running under PyPy
 _pypy = getattr(sys, 'pypy_version_info', None)
@@ -1279,7 +1282,7 @@ class multiset(dict):
     # distinct elements
     ks = list(self.keys())
     # choose the number of elements for each key
-    for ns in itertools.product(*(irange(0, self[k]) for k in ks)):
+    for ns in product(*(irange(0, self[k]) for k in ks)):
       if min_size <= sum(ns) <= max_size:
         yield multiset.from_pairs(zip(ks, ns))
 
@@ -1449,7 +1452,7 @@ def _subsets_init():
       ('P', getattr(itertools, 'permutations', None), None),
       ('D', derangements, None),
       ('R', getattr(itertools, 'combinations_with_replacement', None), None),
-      ('M', (lambda fn=getattr(itertools, 'product', None): ((lambda s, k: fn(s, repeat=k)) if fn else None))(), None),
+      ('M', (lambda s, k: product(s, repeat=k)), None),
       ('uC', uC, None),
       ('mC', uC, (lambda s: sorted(multiset(s)))),
       ('mP', mP, multiset),
@@ -1613,6 +1616,7 @@ def group(s, by=identity, st=None, f=identity, fn=identity):
         d[k].append(v)
       except KeyError:
         d[k] = [v]
+
   if fn is not identity:
     for (k, vs) in d.items():
       d[k] = fn(vs)
@@ -2934,7 +2938,7 @@ def repdigit(n, d=1, base=10):
   assert 0 <= d < base
   return d * (base ** n - 1) // (base - 1)
 
-
+# Python 3.8 has math.hypot
 def hypot(*vs):
   """
   return hypotenuse of a right angled triangle with shorter sides <a> and <b>.
@@ -3173,6 +3177,8 @@ def is_palindrome(s):
     j -= 1
   return True
 
+# originally called product(), but renamed to avoid name clashes with itertools.product
+# Python 3.8 has math.prod
 def multiply(s, r=1):
   """
   return the product of the sequence <s>.
@@ -3186,11 +3192,7 @@ def multiply(s, r=1):
     r *= x
   return r
 
-# product is the original name for multiply, but it's been renamed
-# to avoid name clashes with itertools.product.
-product = multiply
-
-def gcd(a, b):
+def _gcd(a, b):
   """
   greatest common divisor (on positive integers).
 
@@ -3204,10 +3206,10 @@ def gcd(a, b):
   return a
 
 # or use math.gcd() [available from 3.5; from 3.9 = mgcd]
-gcd = getattr(math, 'gcd', gcd)
+gcd = getattr(math, 'gcd', _gcd)
 
 
-def lcm(a, b):
+def _lcm(a, b):
   """
   lowest common multiple (on positive integers).
 
@@ -3219,7 +3221,7 @@ def lcm(a, b):
   return (a // gcd(a, b)) * b
 
 # or use math.lcm() [available from 3.5; from 3.9 = mlcm]
-lcm = getattr(math, 'lcm', lcm)
+lcm = getattr(math, 'lcm', _lcm)
 
 
 # Extended Euclidean Algorithm
@@ -3249,9 +3251,10 @@ def egcd(a, b):
   return (x0, y0, a)
 
 # multiplicative inverse mod m
-def invmod(n, m):
+def _invmod(n, m):
   """
-  return the multiplicative inverse of n mod m (or None if there is no inverse)
+  return the multiplicative inverse of n mod m
+  (or None if there is no inverse)
 
   e.g. the inverse of 2 (mod 9) is 5, as (2 * 5) % 9 = 1
   >>> invmod(2, 9)
@@ -3260,7 +3263,15 @@ def invmod(n, m):
   (x, y, g) = egcd(n, m)
   return ((x % m) if g == 1 else None)
 
+# from Python 3.8, pow() can do this for us
+if _pythonv > (3, 7):
+  def invmod(n, m): return catch(pow, n, -1, m)
+  invmod.__doc__ = _invmod.__doc__
+else:
+  invmod = _invmod
+
 # multiple GCD
+# from Python 3.9 math.gcd can take multiple arguments
 def mgcd(a, *rest):
   """
   GCD of multiple (two or more) integers.
@@ -3277,6 +3288,7 @@ def mgcd(a, *rest):
   return reduce(gcd, rest, a)
 
 # multiple LCM
+# from Python 3.9 math.lcm can take multiple arguments
 def mlcm(a, *rest):
   """
   LCM of multiple (two or more) integers.
@@ -3398,7 +3410,7 @@ def factorial(a, b=1):
   r = math.factorial(a)
   return (r if b == 1 else r // math.factorial(b))
 
-
+# Python 3.8 has math.perm
 def nPr(n, r):
   """
   permutations functions: n P r.
@@ -3416,6 +3428,7 @@ def nPr(n, r):
 
 P = nPr
 
+# Python 3.8 has math.comb
 def nCr(n, r):
   """
   combinatorial function: n C r.
@@ -3606,7 +3619,7 @@ def __sprintf(fmt, vs):
   return fmt.format(**vs)
 
 # Python3 has str.format_map(vs)
-def __sprintf_3(fmt, vs):
+def __sprintf3(fmt, vs):
   return fmt.format_map(vs)
 
 # in Python v3.6.x we are getting f"..." strings which can do this job
@@ -3623,7 +3636,7 @@ def __sprintf_3(fmt, vs):
 #
 # printf("... {a} + {b} = {a + b} ...", a=2, b=3)  ->  "... 2 + 3 = 5 ..."
 
-def __sprintf_36(fmt, vs):
+def __sprintf36(fmt, vs):
   return eval('f' + repr(fmt), vs)
 
 @static(fn=None)
@@ -3641,8 +3654,8 @@ def _sprintf(fmt, vs, frame):
   return _sprintf.fn(fmt, d)
 
 _sprintf.fn = __sprintf
-if _python > 2: _sprintf.fn = __sprintf_3
-if _pythonv > (3, 5): _sprintf.fn = __sprintf_36
+if _python > 2: _sprintf.fn = __sprintf3
+if _pythonv > (3, 5): _sprintf.fn = __sprintf36
 
 # print with variables interpolated into the format string
 def sprintf(fmt='', **kw):
@@ -3933,8 +3946,6 @@ def csum(i, s=0, fn=operator.add):
   [1, 3, 6, 10, 15, 21, 28, 36, 45, 55]
   >>> list(csum(irange(1, 10), fn=operator.mul, s=1))
   [1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800]
-  >>> list(csum('python', s=''))
-  ['p', 'py', 'pyt', 'pyth', 'pytho', 'python']
   """
   for x in i:
     s = fn(s, x)
@@ -5133,7 +5144,7 @@ def poly_rational_roots(p, domain="Q", include="+-0"):
   g = mgcd(*p)
   p = list(x // g for x in p)
   # collect rational roots
-  fs = itertools.product(divisors(abs(p[0])), divisors(abs(p[-1])))
+  fs = product(divisors(abs(p[0])), divisors(abs(p[-1])))
   for x in uniq(map(unpack(Q), fs)):
     if domain == "Z":
       if x.denominator != 1: continue
@@ -8364,7 +8375,7 @@ class Football(object):
       for r in gs[0]: yield r
     else:
       # [Python 3]: yield from ...
-      for r in itertools.product(*gs): yield r
+      for r in product(*gs): yield r
 
   # points for a game
   def points(self, g, t=0):
@@ -9239,7 +9250,7 @@ def __grouping():
       yield tuple(s)
     else:
       # otherwise choose the next group to go with category 0
-      for v in itertools.product(*(enumerate(x) for x in vs[1:])):
+      for v in product(*(enumerate(x) for x in vs[1:])):
         # find indices and elements of the other categories
         (js, t) = zip(*v)
         # the full group is
