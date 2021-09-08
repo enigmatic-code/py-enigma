@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep  8 09:07:31 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep  8 12:01:02 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -165,7 +165,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-09-05"
+__version__ = "2021-09-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7132,7 +7132,8 @@ class SubstitutedExpression(object):
       verbose - verbose parameter
       extra - extra expressions
       solver - a function to return the solver (with "standard" arguments)
-      run - a function to run the solver (with "standard" arguments)
+      solve - a function to generate solutions from the solver (ditto)
+      run - a function to run the solver (ditto)
     """
     # defaults
     if base is None: base = cls.defaults.get('base', 10)
@@ -7218,6 +7219,7 @@ class SubstitutedExpression(object):
       accumulate=accumulate,
       verbose=verbose,
       solver=(lambda: solver.value),
+      solve=(lambda *args, **kw: solver.value.solve(*args, **kw)),
       run=(lambda *args, **kw: solver.value.run(*args, **kw)),
     )
 
@@ -9723,10 +9725,9 @@ def run(cmd, *args, **kw):
   additional options are:
 
     timed - if set, time the execution of <cmd>
-
     flags - 'p' = enable prompts, 'v' = enable verbose
-
     interpreter - interpreter to use
+    verbose - enable informational output
   """
 
   global _run_exit, _PY_ENIGMA
@@ -9792,11 +9793,12 @@ def run(cmd, *args, **kw):
         cmd = shlex.split(cmd)
         cmd.append(path)
         cmd.extend(args)
-          
+
         if flags:
           saved = [_PY_ENIGMA]
           _PY_ENIGMA = join(sorted(uniq(_PY_ENIGMA + flags)))
         try:
+          if verbose: printf("run: calling {cmd}")
           # use elapsed time for subprocesses, rather than process time
           if timed: timed = Timer(name=timed, timer="E")
           subprocess.call(cmd)
@@ -9806,6 +9808,7 @@ def run(cmd, *args, **kw):
           if saved:
             [PY_ENIGMA] = saved
         _run_exit = (0 if r else -1)
+      if verbose: printf("run: _run_exit = {_run_exit}")
       return
   else:
     if verbose: printf("run: not a file \"{cmd}\"")
@@ -9828,6 +9831,7 @@ def run(cmd, *args, **kw):
       finally:
         if saved:
           [_PY_ENIGMA] = saved
+      if verbose: printf("run: _run_exit = {_run_exit}")
       return
     else:
       printf("enigma.py: {obj}.{fn_name}() not implemented")
@@ -9837,6 +9841,7 @@ def run(cmd, *args, **kw):
   # if we get this far we can't find the solver
   printf("enigma.py: unable to run \"{cmd}\"")
   _run_exit = -1
+  if verbose: printf("run: _run_exit = {_run_exit}")
   return
 
 def timed_run(*args):
