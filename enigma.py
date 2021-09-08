@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep  8 12:01:02 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep  8 13:04:13 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -5287,6 +5287,7 @@ class _PrimeSieveE6(object):
     # initial sieve
     self.sieve = array([0])
     self.max = 1
+    self.num = None # record the number of primes
     # singleton arrays for True and False values
     self.T = array([1])
     self.F = array([0])
@@ -5330,6 +5331,7 @@ class _PrimeSieveE6(object):
         #printf("eliminating {p} {ns}", ns=tuple((z * 3) + (z & 1) + 1 for z in irange(j, h-1, step=k)))
 
     self.max = n
+    self.num = None
     if self.verbose: printf("[{x}: expanded to {n}: {b} bytes used]", x=self.__class__.__name__, b=s.__alloc__())
 
   # return a list of primes (more space)
@@ -5388,6 +5390,13 @@ class _PrimeSieveE6(object):
 
   # allows use of "in"
   __contains__ = is_prime
+
+  # size = number of primes in the sieve
+  def size(self):
+    if self.num is None: self.num = icount(self.generate())
+    return self.num
+
+  __len__ = size
 
   # generate prime factors of <n> using the sieve
   # (try setting mr=100 if checking large numbers)
@@ -5595,6 +5604,10 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     # otherwise, upper limit is provided
     self.extend(b)
     return _PrimeSieveE6.range(self, a, b)
+
+  # don't ask for the size of an expandable sieve (__len__ can't return inf)
+  def size(self): raise ValueError("expandable sieve has no finite size")
+  __len__ = size
 
 # create a suitable prime sieve
 def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=0):
