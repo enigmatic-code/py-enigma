@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep  8 16:56:05 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep  9 15:44:52 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -146,6 +146,7 @@ update                 - return an updated copy of an object
 
 Accumulator            - a class for accumulating values
 CrossFigure            - a class for solving cross figure puzzles
+Decompose              - return a decompose() function
 Delay                  - a class for the delayed evaluation of a function
 Denominations          - express amounts using specified denominations
 DominoGrid             - a class for solving domino grid puzzles
@@ -165,7 +166,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-09-07"
+__version__ = "2021-09-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4268,6 +4269,53 @@ class Denominations(object):
     """return the largest amount not expressible using the denominations"""
     m = max(self.residues[-1])
     return (None if m == inf else m - self.denominations[0])
+
+# return a function to generate k-sequences of positive integers with a particular total
+def Decompose(k=None, increasing=1, sep=1, min_v=1, fn=identity):
+  """
+  return a function to generate k-sequences of non-negative integers
+  that sum to a chosen total
+
+    k = length of sequences to generate (or can be specified when calling)
+    increasing = +1 = increasing sequences; -1 = decreasing sequences; or 0
+    sep = separation between numbers (if increasing != 0); 0 allows repeats
+    min_v = minimum permissible value (0, 1, ...)
+    fn = return type (default is to return tuples)
+  """
+  # decompose t into k increasing numbers, minimum m
+  # d = delta between numbers (or m for non-inc/dec seqs)
+  # R = function to calculate min remaining values
+  # M = function to calculate next minimum value
+  # r = reverse return values
+  # fn = return type
+  # ns = numbers collected so far
+  def decompose(t, k, m, d, R, M, r, fn, ns=()):
+    if k == 1:
+      if not(t < m):
+        ns += (t,)
+        yield fn(ns[::-1] if r else ns)
+    else:
+      k_ = k - 1
+      for n in irange(m, t - R(k_, m)):
+        yield from decompose(t - n, k_, M(n, d), d, R, M, r, fn, ns + (n,))
+
+  if increasing == 0:
+    R = (lambda k, m: k * m)
+    M = (lambda n, d: d)
+    return (lambda t, k=k, min_v=min_v: decompose(t, k, min_v, min_v, R, M, 0, fn))
+  else:
+    d = sep   
+    if d == 0:
+      R = (lambda k, m: k * m)
+      M = (lambda n, d: n)
+    elif d == 1:
+      R = (lambda k, m: k * m + tri(k - 1))
+      M = (lambda n, d: n + 1)
+    else:
+      R = (lambda k, m: k * m + d * tri(k - 1))
+      M = (lambda n, d: n + d)
+    r = (increasing < 0)
+    return (lambda t, k=k, min_v=min_v: decompose(t, k, min_v, d, R, M, r, fn))
 
 ###############################################################################
 
