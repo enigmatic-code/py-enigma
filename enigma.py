@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep  9 15:51:34 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep  9 20:56:22 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -166,7 +166,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-09-08"
+__version__ = "2021-09-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4271,7 +4271,7 @@ class Denominations(object):
     return (None if m == inf else m - self.denominations[0])
 
 # return a function to generate k-sequences of positive integers with a particular total
-def Decompose(k=None, increasing=1, sep=1, min_v=1, fn=identity):
+def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   """
   return a function to generate k-sequences of non-negative integers
   that sum to a chosen total
@@ -4280,46 +4280,47 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, fn=identity):
     increasing = +1 = increasing sequences; -1 = decreasing sequences; or 0
     sep = separation between numbers (if increasing != 0); 0 allows repeats
     min_v = minimum permissible value (0, 1, ...)
+    max_v = maximum permissible value (or inf)
     fn = return type (default is to return tuples)
 
   >>> decompose = Decompose(3, increasing=1, min_v=1)
   >>> sorted(decompose(10))
   [(1, 2, 7), (1, 3, 6), (1, 4, 5), (2, 3, 5)]
   """
-  # decompose t into k increasing numbers, minimum m
-  # d = delta between numbers (or m for non-inc/dec seqs)
+  # decompose t into k increasing numbers, in range [min_v, max_v]
+  # d = delta between numbers (or min_v for non-inc/dec seqs)
   # R = function to calculate min remaining values
   # M = function to calculate next minimum value
   # r = reverse return values
   # fn = return type
   # ns = numbers collected so far
-  def decompose(t, k, m, d, R, M, r, fn, ns=()):
+  def decompose(t, k, min_v, max_v, d, R, M, r, fn, ns=()):
     if k == 1:
-      if not(t < m):
+      if not(t < min_v or t > max_v):
         ns += (t,)
         yield fn(ns[::-1] if r else ns)
     else:
       k_ = k - 1
-      for n in irange(m, t - R(k_, m)):
-        for z in decompose(t - n, k_, M(n, d), d, R, M, r, fn, ns + (n,)): yield z
+      for n in irange(min_v, min(max_v, t - R(k_, min_v))):
+        for z in decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,)): yield z
 
   if increasing == 0:
     R = (lambda k, m: k * m)
     M = (lambda n, d: d)
-    return (lambda t, k=k, min_v=min_v: decompose(t, k, min_v, min_v, R, M, 0, fn))
+    return (lambda t, k=k, min_v=min_v: decompose(t, k, min_v, max_v, min_v, R, M, 0, fn))
   else:
     d = sep   
     if d == 0:
       R = (lambda k, m: k * m)
       M = (lambda n, d: n)
     elif d == 1:
-      R = (lambda k, m: k * m + tri(k - 1))
+      R = (lambda k, m: k * m + (k * (k - 1)) // 2)
       M = (lambda n, d: n + 1)
     else:
-      R = (lambda k, m: k * m + d * tri(k - 1))
+      R = (lambda k, m: k * m + (d * k * (k - 1)) // 2)
       M = (lambda n, d: n + d)
     r = (increasing < 0)
-    return (lambda t, k=k, min_v=min_v: decompose(t, k, min_v, d, R, M, r, fn))
+    return (lambda t, k=k, min_v=min_v: decompose(t, k, min_v, max_v, d, R, M, r, fn))
 
 ###############################################################################
 
