@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep  9 15:44:52 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep  9 15:46:38 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -4297,7 +4297,7 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, fn=identity):
     else:
       k_ = k - 1
       for n in irange(m, t - R(k_, m)):
-        yield from decompose(t - n, k_, M(n, d), d, R, M, r, fn, ns + (n,))
+        for z in decompose(t - n, k_, M(n, d), d, R, M, r, fn, ns + (n,)): yield z
 
   if increasing == 0:
     R = (lambda k, m: k * m)
