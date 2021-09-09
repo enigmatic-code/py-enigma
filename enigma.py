@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep  9 20:56:22 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep  9 21:50:47 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -41,6 +41,7 @@ concat                 - concatenate a list of values into a string
 coprime_pairs          - generate coprime pairs
 cslice                 - cumulative slices of an array
 csum                   - cumulative sum
+decompose              - construct and call a Decompose() function
 diff                   - sequence difference
 digit_map              - create a map of digits to corresponding integer values
 digrt                  - the digital root of a number
@@ -4276,16 +4277,12 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   return a function to generate k-sequences of non-negative integers
   that sum to a chosen total
 
-    k = length of sequences to generate (or can be specified when calling)
-    increasing = +1 = increasing sequences; -1 = decreasing sequences; or 0
+    k = length of sequences to generate
+    increasing = +1 (increasing sequences); -1 (decreasing sequences); or 0
     sep = separation between numbers (if increasing != 0); 0 allows repeats
-    min_v = minimum permissible value (0, 1, ...)
-    max_v = maximum permissible value (or inf)
+    min_v = minimum permissible value (non-negative integer)
+    max_v = maximum permissible value (non-negative integer, or inf)
     fn = return type (default is to return tuples)
-
-  >>> decompose = Decompose(3, increasing=1, min_v=1)
-  >>> sorted(decompose(10))
-  [(1, 2, 7), (1, 3, 6), (1, 4, 5), (2, 3, 5)]
   """
   # decompose t into k increasing numbers, in range [min_v, max_v]
   # d = delta between numbers (or min_v for non-inc/dec seqs)
@@ -4321,6 +4318,24 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
       M = (lambda n, d: n + d)
     r = (increasing < 0)
     return (lambda t, k=k, min_v=min_v: decompose(t, k, min_v, max_v, d, R, M, r, fn))
+
+# all-in-one
+def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
+  """
+  decompose <t> in <k>-sequences of non-negative integers that sum to <t>
+
+    t = total sum of each sequence
+    k = length of sequences to generate
+    increasing = +1 (increasing sequences); -1 (decreasing sequences); or 0
+    sep = separation between numbers (if increasing != 0); 0 allows repeats
+    min_v = minimum permissible value (non-negative integer)
+    max_v = maximum permissible value (non-negative integer, or inf)
+    fn = return type (default is to return tuples)
+
+  >>> sorted(decompose(10, 3, increasing=1, min_v=1))
+  [(1, 2, 7), (1, 3, 6), (1, 4, 5), (2, 3, 5)]
+  """
+  return call(Decompose(increasing=increasing, sep=sep, min_v=min_v, max_v=max_v, fn=fn), (t, k))
 
 ###############################################################################
 
