@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep  9 15:46:38 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep  9 15:51:34 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -4281,6 +4281,10 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, fn=identity):
     sep = separation between numbers (if increasing != 0); 0 allows repeats
     min_v = minimum permissible value (0, 1, ...)
     fn = return type (default is to return tuples)
+
+  >>> decompose = Decompose(3, increasing=1, min_v=1)
+  >>> sorted(decompose(10))
+  [(1, 2, 7), (1, 3, 6), (1, 4, 5), (2, 3, 5)]
   """
   # decompose t into k increasing numbers, minimum m
   # d = delta between numbers (or m for non-inc/dec seqs)
