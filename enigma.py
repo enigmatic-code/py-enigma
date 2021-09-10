@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep  9 21:50:47 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Sep 10 09:20:49 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -4285,8 +4285,8 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
     fn = return type (default is to return tuples)
   """
   # decompose t into k increasing numbers, in range [min_v, max_v]
-  # d = delta between numbers (or min_v for non-inc/dec seqs)
-  # R = function to calculate min remaining values
+  # d = delta between numbers (for inc/dec seqs)
+  # R = function to calculate remaining values
   # M = function to calculate next minimum value
   # r = reverse return values
   # fn = return type
@@ -4298,23 +4298,23 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
         yield fn(ns[::-1] if r else ns)
     else:
       k_ = k - 1
-      for n in irange(min_v, min(max_v, t - R(k_, min_v))):
+      for n in irange(min_v, min(max_v, R(t, k, k_, min_v))):
         for z in decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,)): yield z
 
   if increasing == 0:
-    R = (lambda k, m: k * m)
-    M = (lambda n, d: d)
-    return (lambda t, k=k, min_v=min_v: decompose(t, k, min_v, max_v, min_v, R, M, 0, fn))
+    R = (lambda t, k, k_, m: t - k_ * m)
+    M = (lambda n, d, m=min_v: m)
+    return (lambda t, k=k, min_v=min_v: decompose(t, k, min_v, max_v, None, R, M, 0, fn))
   else:
     d = sep   
     if d == 0:
-      R = (lambda k, m: k * m)
+      R = (lambda t, k, k_, m: (t - k * m) // k)
       M = (lambda n, d: n)
     elif d == 1:
-      R = (lambda k, m: k * m + (k * (k - 1)) // 2)
+      R = (lambda t, k, k_, m: (t - (k * k_) // 2) // k)
       M = (lambda n, d: n + 1)
     else:
-      R = (lambda k, m: k * m + (d * k * (k - 1)) // 2)
+      R = (lambda t, k, k_, m: (t - (d * k * k_) // 2) // k)
       M = (lambda n, d: n + d)
     r = (increasing < 0)
     return (lambda t, k=k, min_v=min_v: decompose(t, k, min_v, max_v, d, R, M, r, fn))
