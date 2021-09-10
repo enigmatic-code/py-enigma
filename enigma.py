@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Sep 10 09:20:49 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Sep 10 10:18:53 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -4308,7 +4308,7 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   else:
     d = sep   
     if d == 0:
-      R = (lambda t, k, k_, m: (t - k * m) // k)
+      R = (lambda t, k, k_, m: t // k)
       M = (lambda n, d: n)
     elif d == 1:
       R = (lambda t, k, k_, m: (t - (k * k_) // 2) // k)
