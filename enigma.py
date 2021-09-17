@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Sep 10 10:18:53 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 16 13:51:42 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -167,7 +167,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-09-10"
+__version__ = "2021-09-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -183,7 +183,7 @@ import copy
 import re
 
 # maybe use the "six" module for some of this stuff
-_pythonv = sys.version_info[0:2] # Python version e.g. (2, 7) or (3, 9)
+_pythonv = sys.version_info[0:2]  # Python version e.g. (2, 7) or (3, 9)
 if _pythonv[0] == 2:
   # Python 2.x
   _python = 2
@@ -224,7 +224,7 @@ nl = "\n"
 pi = math.pi
 two_pi = 2.0 * pi
 inf = float('+inf')
-empty = frozenset() # the empty set
+empty = frozenset()  # the empty set
 
 _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
@@ -2135,10 +2135,10 @@ def divisor(n):
     yield b
 
 
-def multiples(ps):
+def multiples(ps, k=1):
   """
   given a list of (<m>, <n>) pairs, return all numbers that can be formed by multiplying
-  together the <m>s, with each <m> occurring up to <n> times.
+  together the <m>s, with each <m> occurring up to <n> * <k> times.
 
   the multiples are returned as a sorted list
 
@@ -2150,6 +2150,7 @@ def multiples(ps):
   """
   s = [1]
   for (m, n) in ps:
+    if k > 1: n *= k
     t = list()
     p = m
     for _ in xrange(n):
@@ -2160,22 +2161,22 @@ def multiples(ps):
   return s
 
 
-def divisors(n, fn=prime_factor):
+def divisors(n, k=1, fn=prime_factor):
   """
-  return the divisors of positive integer <n> as a sorted list.
+  return the divisors of positive integer <n> ** <k> as a sorted list.
 
   >>> divisors(36)
   [1, 2, 3, 4, 6, 9, 12, 18, 36]
   >>> divisors(101)
   [1, 101]
   """
-  if n == 0: return [0]
-  return multiples(fn(n))
+  if n == 0 and k > 0: return [0]
+  return multiples(fn(n), k=k)
 
 
-def divisors_pairs(n, fn=prime_factor, every=0):
+def divisors_pairs(n, k=1, fn=prime_factor, every=0):
   """
-  generate divisors pairs (a, b) with a <= b, such that a * b = n.
+  generate divisors pairs (a, b) with a <= b, such that a * b = n**k.
 
   pairs are generated in order, by determining the factors of n.
 
@@ -2183,11 +2184,12 @@ def divisors_pairs(n, fn=prime_factor, every=0):
 
   if the 'every' parameter is set, then pairs with a > b are also generated.
   """
-  if n == 0:
+  if n == 0 and k > 0:
     yield (0, 0)
     return
-  for a in divisors(n, fn=fn):
-    b = n // a
+  nk = (n ** k if k != 1 else n)
+  for a in divisors(n, k=k, fn=fn):
+    b = nk // a
     if a > b and not(every): break
     yield (a, b)
 
@@ -8841,9 +8843,9 @@ class DominoGrid(object):
     (D, r) = divmod(n - grid.count(None), 2)
     assert r == 0
     self.grid = grid
-    self.N = N # columns
-    self.M = M # rows
-    self.D = D # number of dominoes
+    self.N = N  # columns
+    self.M = M  # rows
+    self.D = D  # number of dominoes
 
   # solve the grid
   # fixed = pairs of indices of fixed dominoes
@@ -9537,7 +9539,7 @@ def __matrix():
     ((1, 0, 1, 1), 42)
     >>> eq(dict(a=1, b=2, c=3), 19)
     ((1, 2, 3, 0), 19)
-    
+
     """
     # map symbols to indices
     sym = dict((s, i) for (i, s) in enumerate(symbols))
@@ -9623,7 +9625,7 @@ def __matrix():
           A[i][k] /= v
         B[i] /= v
 
-      # eliminate co-efficients in row i
+      # eliminate co-efficients in column i
       rs = list()
       for j in xrange(0, n):
         if j != i:
@@ -9632,9 +9634,10 @@ def __matrix():
             for k in xrange(i, m):
               A[j][k] -= t * A[i][k]
             B[j] -= t * B[i]
-            # if all coefficients are 0
+            # if all coefficients in row j are 0
             if all(A[j][k] == 0 for k in xrange(0, m)):
               if B[j] == 0:
+                # mark the row for deletion
                 rs.insert(0, j)
               else:
                 # the system is inconsistent
@@ -10032,7 +10035,7 @@ def _enigma_update(url=None, check=1, download=0, rename=0, quiet=0, verbose=0):
     [enigma.py version 2019-07-06 (Python 3.7.5)]
     checking for updates...
     latest version is 2019-07-06
-    enigma.py is up to date  
+    enigma.py is up to date
 
   check - set to check current version against latest
   download - set to always download latest version
