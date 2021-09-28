@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Sep 17 09:25:14 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Sep 27 15:09:23 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -167,7 +167,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-09-16"
+__version__ = "2021-09-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1655,6 +1655,8 @@ def unpack(fn):
   """
   return lambda args, kw=None: (fn(*args, **kw) if kw else fn(*args))
 
+# unpacked form of zip (which also serves as an inverse to zip)
+unzip = unpack(zip)
 
 # here's workaround for more complicated parameter unpacking in Python 3
 #
@@ -2643,6 +2645,7 @@ def sqrt(a, b=None):
 
 # sq = lambda x: x * x
 def sq(x): "sq(x) = x ** 2"; return x * x
+def sumsq(*xs): "sumsq(xs) = sum(sq(x) for x in xs)"; return sum(x * x for x in xs)
 
 # calculate intf(sqrt(n))
 # Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt())
