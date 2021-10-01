@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Sep 27 15:09:23 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Oct  1 14:23:59 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -167,7 +167,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-09-22"
+__version__ = "2021-09-30"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1937,6 +1937,21 @@ def first(i, count=1, skip=0, fn=list):
     r = itertools.islice(i, skip, skip + count)
   return (r if fn is None else fn(r))
 
+# return the single value if s contains only a single value (else None)
+def singleton(s, skip=0, default=None):
+  """
+  if the container <s> contains only a single value return it,
+  otherwise return None (or the <default> parameter)
+
+  >>> singleton([], default=0)
+  0
+  >>> singleton([1], default=0)
+  1
+  >>> singleton([1, 2, 3], default=0)
+  0
+  """
+  r = first(s, 2, skip)
+  return (r[0] if len(r) == 1 else default)
 
 def repeat(fn, v=0, k=inf):
   """
@@ -9576,6 +9591,9 @@ def __matrix():
     A is the matrix of coefficients of the variables (n equations in m variables)
     B is the the vector of constants (a sequence of a single value that will be replicated)
     F is the field to operate over (which must support __truediv__)
+
+    If F is not specified an implementation of the rational numbers
+    will be used, by calling Rational().
 
     If the system is underspecified an "incomplete" error is raised.
     If the system is inconsistent an "inconsistent" error is raised.
