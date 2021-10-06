@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Oct  1 14:23:59 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Oct  6 11:24:03 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -167,7 +167,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-09-30"
+__version__ = "2021-10-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1906,9 +1906,9 @@ def choose(vs, fns, s=None, distinct=0):
           for z in choose(vs, fns[1:], s1, distinct): yield z
 
 
-def first(i, count=1, skip=0, fn=list):
+def first(s, count=1, skip=0, fn=list):
   """
-  return the first <count> items in iterator <i> (skipping the initial
+  return the first <count> items in iterator <s> (skipping the initial
   <skip> items) as a list (or other object specified by <fn>).
 
   <count> can be a callable object, in which case items are collected
@@ -1926,15 +1926,15 @@ def first(i, count=1, skip=0, fn=list):
   """
   if callable(count):
     if skip == 0:
-      r = itertools.takewhile(count, i)
+      r = itertools.takewhile(count, s)
     elif callable(skip):
-      r = itertools.takewhile(count, itertools.dropwhile(skip, i))
+      r = itertools.takewhile(count, itertools.dropwhile(skip, s))
     else:
-      r = itertools.takewhile(count, itertools.islice(i, skip, None))
+      r = itertools.takewhile(count, itertools.islice(s, skip, None))
   elif count == inf:
-    r = i
+    r = s
   else:
-    r = itertools.islice(i, skip, skip + count)
+    r = itertools.islice(s, skip, skip + count)
   return (r if fn is None else fn(r))
 
 # return the single value if s contains only a single value (else None)
@@ -1945,7 +1945,7 @@ def singleton(s, skip=0, default=None):
 
   >>> singleton([], default=0)
   0
-  >>> singleton([1], default=0)
+  >>> singleton({1}, default=0)
   1
   >>> singleton([1, 2, 3], default=0)
   0
@@ -2552,7 +2552,7 @@ def pythagorean_triples(n=None, primitive=0, order=0):
 
 def fib(*s, **kw):
   """
-  generate Fibonacci type sequences.
+  generate Fibonacci type sequences (or other recurrence relations)
 
   The initial k terms are provided as sequence s, subsequent terms are
   calculated as a function of the preceeding k terms.
@@ -4356,6 +4356,76 @@ def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   [(1, 2, 7), (1, 3, 6), (1, 4, 5), (2, 3, 5)]
   """
   return call(Decompose(increasing=increasing, sep=sep, min_v=min_v, max_v=max_v, fn=fn), (t, k))
+
+###############################################################################
+
+# exact set cover (using Knuth's Algorithm X)
+
+# in-place algorithmX implementation (X, soln are modified)
+def algorithmX(X, Y, soln):
+  if not X:
+    yield soln
+  else:
+    c = min(X.keys(), key=lambda k: len(X[k]))
+    # copy X[c], as X is modified (could use sorted(X[c]) for stability)
+    for r in list(X[c]):
+      soln.append(r)
+ 
+      # cols = select(X, Y, r)
+      cols = list()
+      for j in Y[r]:
+        for i in X[j]:
+          for k in Y[i]:
+            if k != j:
+              X[k].remove(i)
+        cols.append(X.pop(j))
+ 
+      for z in algorithmX(X, Y, soln): yield z
+ 
+      # deselect(X, Y, r, cols)
+      for j in reversed(Y[r]):
+        X[j] = cols.pop()
+        for i in X[j]:
+          for k in Y[i]:
+            if k != j:
+              X[k].add(i)
+ 
+      soln.pop()
+ 
+# input: ss = sequence of collections of sets [ [a0, a1, ...], [b1, b2, ...], [c1, c2, ...] ... ]
+# output: sequence of sets (a, b, c, ...) one from each collection
+def exact_cover(sss, tgt=None):
+  # map elements to indices
+  if tgt is None: tgt = union(union(ss) for ss in sss)
+  tgt = sorted(tgt)
+  n = len(tgt)
+  m = dict((x, i) for (i, x) in enumerate(tgt))
+ 
+  # set up Y, one row for each position
+  Y = list()
+  for (j, ss) in enumerate(sss, start=n):
+    for s in ss:
+      y = list(m[x] for x in s)
+      y.append(j)
+      Y.append(y)
+ 
+  # set up X as a dict of sets
+  X = dict((k, set()) for k in irange(0, j))
+  for (i, y) in enumerate(Y):
+    for k in y:
+      X[k].add(i)
+ 
+  # find exact covers using algorithmX
+  k = len(sss)
+  for rs in algorithmX(X, Y, list()):
+    # turn the selected rows of Y, back into sets
+    r = [None] * k
+    for i in rs:
+      y = Y[i]
+      r[y[-1] - n] = list(tgt[i] for i in y[:-1])
+    yield r
+
+# for multiset cover using the same idea see: Enigma 1712
 
 ###############################################################################
 
@@ -10202,7 +10272,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.9.7')
+""".format(version=__version__, python='2.7.18', python3='3.10.0')
 
 def _namecheck(name, verbose=0):
   if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
