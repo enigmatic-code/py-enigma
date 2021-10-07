@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Oct  6 11:24:03 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct  7 17:06:52 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -167,7 +167,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-10-05"
+__version__ = "2021-10-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -684,7 +684,7 @@ def dsum(n, k=None, base=10):
 if _pythonv > (3, 9):
   dsum2 = int.bit_count
 else:
-  def dsum2(n): "fast alternative to dsum(n, base=2)"; bin(abs(n)).count('1', 2)
+  def dsum2(n): "fast alternative to dsum(n, base=2)"; return bin(abs(n)).count('1', 2)
 
 # equivalent to: len(nsplit(n))
 # (we could use logarithms for "smallish" numbers)
