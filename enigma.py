@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct  7 17:06:52 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Oct 10 15:07:48 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -167,7 +167,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-10-06"
+__version__ = "2021-10-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -719,6 +719,7 @@ def nreverse(n, base=10):
 from fnmatch import fnmatch
 
 # match a value (as a string) to a template
+# NOTE: match is a soft keyword in Python 3.10
 def match(v, t):
   """
   match a value (as a string) to a template (see fnmatch.fnmatch).
@@ -3482,6 +3483,8 @@ def M(n, k):
   return C(n + k - 1, k)
 
 
+Recurring = collections.namedtuple('Recurring', 'i nr rr')
+
 def recurring(a, b, recur=0, base=10, digits=None):
   """
   find recurring representation of the fraction <a> / <b> in the specified base.
@@ -3517,7 +3520,7 @@ def recurring(a, b, recur=0, base=10, digits=None):
       j = r[a]
       (i, nr, rr) = (int2base(i, base, digits=digits), s[:j], s[j:])
       if neg and (nr or rr or i != '0'): i = '-' + i
-      return (i, nr, rr)
+      return Recurring(i, nr, rr)
     except KeyError:
       # no, we haven't
       r[a] = n
@@ -3547,6 +3550,38 @@ def format_recurring(*args, **kw):
   (i, nr, rr) = args
   rr = ('(' + rr + ')...' if rr else '')
   return (i + dp + nr + rr if nr or rr else i)
+
+# recurring -> fraction
+def recurring2fraction(i, nr, rr, base=10, digits=None):
+  """
+  turn the decimal representation <i>.<nr>(<rr>)...
+  into a fraction in its lowest terms.
+
+  >>> recurring2fraction('0', '', '142857')  
+  (1, 7)
+  >>> recurring2fraction('1', '5', '')
+  (3, 2)
+  >>> recurring2fraction('1', '4', '9')
+  (3, 2)
+  >>> recurring2fraction('0', '', '4B', base=16)
+  (5, 17)
+  """
+  (p, q) = (len(nr), len(rr))
+  i = base2int(i, base=base, digits=digits)
+  if q:
+    if p:
+      d = base ** (p + q) - base ** p
+      n = base2int(nr, base=base, digits=digits) * (base ** q - 1) + base2int(rr, base=base, digits=digits)
+    else:
+      d = base ** q - 1
+      n = base2int(rr, base=base, digits=digits)
+  elif p:
+    d = base ** p
+    n = base2int(nr, base=base, digits=digits)
+  else:
+    return (i, 1)
+  (a, b) = fraction(n, d)
+  return ((i * b - a, b) if i < 0 else (i * b + a, b))
 
 # see: Enigma 348
 def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
