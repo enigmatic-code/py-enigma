@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Oct 10 15:07:48 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Oct 10 15:27:17 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3491,13 +3491,13 @@ def recurring(a, b, recur=0, base=10, digits=None):
   return strings (<integer-part>, <non-recurring-part>, <recurring-part>)
   if you want rationals that normally terminate represented as non-terminating set <recur>
 
-  >>> recurring(1, 7)
+  >>> tuple(recurring(1, 7))
   ('0', '', '142857')
-  >>> recurring(3, 2)
+  >>> tuple(recurring(3, 2))
   ('1', '5', '')
-  >>> recurring(3, 2, recur=1)
+  >>> tuple(recurring(3, 2, recur=1))
   ('1', '4', '9')
-  >>> recurring(5, 17, base=16)
+  >>> tuple(recurring(5, 17, base=16))
   ('0', '', '4B')
   """
   # check input fraction
