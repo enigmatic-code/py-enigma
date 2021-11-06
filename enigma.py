@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Nov  6 10:40:37 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Nov  6 10:55:43 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -4383,7 +4383,7 @@ def Decompose(k=None, increasing=1, sep=None, min_v=1, max_v=inf, fn=identity):
       # so generate increasing sequences with the appropriate sep value
       # and then permute the answers (which may contain repeats if sep=0)
       f = Decompose(k, increasing=1, sep=sep, min_v=min_v, max_v=max_v, fn=fn)
-      perm = (mpermutations if sep == 0 else permutations)
+      perm = (mpermutations if sep == 0 else itertools.permutations)
       return (lambda t, k=k: flatten((perm(ns, k) for ns in f(t, k)), fn=iter))
   else:
     d = (1 if sep is None else abs(sep)) # default sep is 1
