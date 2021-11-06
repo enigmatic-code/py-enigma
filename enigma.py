@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Oct 10 15:30:31 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Nov  6 10:05:23 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -167,7 +167,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-10-09"
+__version__ = "2021-11-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -212,7 +212,7 @@ elif _pythonv[0] > 2:
     Sequence = collections.Sequence
     Iterable = collections.Iterable
 
-# cartesian product
+# cartesian product (re-exported from itertools to save on imports)
 product = itertools.product
 
 # detect if running under PyPy
@@ -2111,7 +2111,7 @@ def factor(n, fn=prime_factor):
 
 def divisor_pairs(n):
   """
-  generate divisors (a, b) of positive integer n, such that a =< b and a * b = n.
+  generate divisors (a, b) of positive integer n, such that a <= b and a * b = n.
 
   the pairs are generated in order of increasing <a>.
 
@@ -2391,7 +2391,7 @@ def is_square_free(n, fn=prime_factor):
 def farey(n):
   """
   generate the Farey sequence F(n) - the sequence of coprime
-  pairs (a, b) where 0 < a < b =< n. pairs are generated
+  pairs (a, b) where 0 < a < b <= n. pairs are generated
   in numerical order when considered as fractions a/b.
 
   the pairs (0, 0) and (1, 1) usually present at the start
@@ -2408,7 +2408,7 @@ def farey(n):
 
 def coprime_pairs(n=None, order=0):
   """
-  generate coprime pairs (a, b) with 0 < a < b =< n.
+  generate coprime pairs (a, b) with 0 < a < b <= n.
 
   the list is complete and no element appears more than once.
 
@@ -2597,7 +2597,7 @@ def fib(*s, **kw):
 
 def iroot(n, k):
   """
-  compute the largest integer x such that x^k =< n.
+  compute the largest integer x such that x^k <= n.
 
   i.e. x is the integer k-th root of n.
 
@@ -3546,9 +3546,11 @@ def format_recurring(*args, **kw):
   '0.(4B)...'
   """
   dp = kw.get('dp', '.')
+  enc = kw.get('enc', '()')
+  dots = kw.get('dots', '...')
   if len(args) == 1: args = args[0]
   (i, nr, rr) = args
-  rr = ('(' + rr + ')...' if rr else '')
+  rr = (enc[0] + rr + enc[1] + dots if rr else '')
   return (i + dp + nr + rr if nr or rr else i)
 
 # recurring -> fraction
@@ -3844,6 +3846,20 @@ def chain(*s, **kw):
   """
   fn = kw.get("fn", iter)
   return flatten(s, fn=fn)
+
+# flatten(zip(*s), fn=iter) works if arguments are the same length
+def interleave(*s, **kw):
+  ss = list(iter(x) for x in s)
+  n = len(ss)
+  while n > 0:
+    i = 0
+    while i < n:
+      try:
+        yield next(ss[i])
+        i += 1
+      except StopIteration:
+        ss.pop(i)
+        n -= 1
 
 # do we flatten this?
 def _flatten_test(s):
@@ -4327,14 +4343,14 @@ class Denominations(object):
     return (None if m == inf else m - self.denominations[0])
 
 # return a function to generate k-sequences of positive integers with a particular total
-def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
+def Decompose(k=None, increasing=1, sep=None, min_v=1, max_v=inf, fn=identity):
   """
   return a function to generate k-sequences of non-negative integers
   that sum to a chosen total
 
     k = length of sequences to generate
     increasing = +1 (increasing sequences); -1 (decreasing sequences); or 0
-    sep = separation between numbers (if increasing != 0); 0 allows repeats
+    sep = separation between numbers; 0 allows repeats
     min_v = minimum permissible value (non-negative integer)
     max_v = maximum permissible value (non-negative integer, or inf)
     fn = return type (default is to return tuples)
@@ -4346,7 +4362,7 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   # r = reverse return values
   # fn = return type
   # ns = numbers collected so far
-  def decompose(t, k, min_v, max_v, d, R, M, r, fn, ns=()):
+  def _decompose(t, k, min_v, max_v, d, R, M, r, fn, ns=()):
     if k == 1:
       if not(t < min_v or t > max_v):
         ns += (t,)
@@ -4354,14 +4370,22 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
     else:
       k_ = k - 1
       for n in irange(min_v, min(max_v, R(t, k, k_, min_v))):
-        for z in decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,)): yield z
+        for z in _decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,)): yield z
 
   if increasing == 0:
-    R = (lambda t, k, k_, m: t - k_ * m)
-    M = (lambda n, d, m=min_v: m)
-    return (lambda t, k=k, min_v=min_v: decompose(t, k, min_v, max_v, None, R, M, 0, fn))
+    if sep is None:
+      R = (lambda t, k, k_, m: t - k_ * m)
+      M = (lambda n, d, m=min_v: m)
+      return (lambda t, k=k, min_v=min_v: _decompose(t, k, min_v, max_v, None, R, M, 0, fn))
+    else:
+      # increasing = 0, and sep is set
+      # so generate increasing sequences with the appropriate sep value
+      # and then permute the answers (which may contain repeats if sep=0)
+      f = Decompose(k, increasing=1, sep=sep, min_v=min_v, max_v=max_v, fn=fn)
+      perm = (mpermutations if sep == 0 else permutations)
+      return (lambda t, k=k: flatten((perm(ns, k) for ns in f(t, k)), fn=iter))
   else:
-    d = sep   
+    d = (1 if sep is None else abs(sep)) # default sep is 1
     if d == 0:
       R = (lambda t, k, k_, m: t // k)
       M = (lambda n, d: n)
@@ -4372,7 +4396,7 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
       R = (lambda t, k, k_, m: (t - (d * k * k_) // 2) // k)
       M = (lambda n, d: n + d)
     r = (increasing < 0)
-    return (lambda t, k=k, min_v=min_v: decompose(t, k, min_v, max_v, d, R, M, r, fn))
+    return (lambda t, k=k, min_v=min_v: _decompose(t, k, min_v, max_v, d, R, M, r, fn))
 
 # all-in-one
 def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
@@ -9687,7 +9711,7 @@ def __matrix():
     return (tuple(row), k)
 
   # solve a system of linear equations
-  def linear(A, B=None, F=None):
+  def linear(A, B=None, F=None, valid=None):
     """
     solve a system of linear equations.
 
@@ -9776,6 +9800,17 @@ def __matrix():
         n -= len(rs)
 
     assert len(B) == m
+
+    # apply solution validation?
+    if valid:
+      vs = list()
+      for v in B:
+        # valid can raise a ValueError, or return None
+        x = valid(v)
+        if x is None: raise ValueError("invalid value: " + repr(v))
+        vs.append(x)
+      return vs
+
     return B
 
   # create a matrix
