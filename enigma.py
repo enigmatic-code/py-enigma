@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Nov  6 10:05:23 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Nov  6 10:21:48 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -167,7 +167,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-11-05"
+__version__ = "2021-11-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -10163,8 +10163,9 @@ def __enigma_update(url, check=1, download=0, rename=0, verbose=1):
       else:
         raise IOError("checksum failure")
     if rename:
-      if verbose > 0: printf("renaming \"{name}\" to \"enigma.py\"")
-      os.rename(name, "enigma.py")
+      dst = __file__
+      if verbose > 0: printf("renaming \"{name}\" to \"{dst}\"")
+      os.rename(name, dst)
   elif __version__ < v:
     if verbose > 0: print("enigma.py is NOT up to date")
   else:
@@ -10381,7 +10382,7 @@ if _namecheck(__name__):
   # -u => check for updates, and download newer version
   # -uc => just check for updates (don't download)
   # -ud => always download latest version
-  # -u[d]r => rename downloaded file to "enigma.py"
+  # -u[d]r => replace enigma.py with downloaded file
   if 'u' in args:
     kw = dict((w, w[0] in args['u']) for w in ('check', 'download', 'rename', 'quiet', 'verbose'))
     _enigma_update(**kw)
