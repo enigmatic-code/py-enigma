@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Nov  6 10:21:48 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Nov  6 10:40:37 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -167,7 +167,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-11-06"
+__version__ = "2021-11-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3835,7 +3835,7 @@ def flatten(s, fn=list):
 
 # chain(a, b, c) = flatten([a, b, c])
 # so: unpack(chain) = flatten
-def chain(*s, **kw):
+def chain(*ss, **kw):
   """
   a convenience function for calling flatten():
 
@@ -3845,11 +3845,12 @@ def chain(*s, **kw):
   ('a', 'b', 'c', 1, 2, 3, 4, 5, 6)
   """
   fn = kw.get("fn", iter)
-  return flatten(s, fn=fn)
+  return flatten(ss, fn=fn)
 
-# flatten(zip(*s), fn=iter) works if arguments are the same length
-def interleave(*s, **kw):
-  ss = list(iter(x) for x in s)
+# interleave values from a bunch of iterators
+# flatten(zip(*ss), fn=iter) works if arguments are the same length
+def interleave(*ss, **kw):
+  ss = list(iter(x) for x in ss)
   n = len(ss)
   while n > 0:
     i = 0
