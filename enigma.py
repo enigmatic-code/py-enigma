@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Nov  6 10:55:43 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Nov 10 21:02:03 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -167,7 +167,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-11-07"
+__version__ = "2021-11-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1074,6 +1074,13 @@ class multiset(dict):
   # does this multiset contain elements with multiplicity greater than n?
   def is_duplicate(self, n=1):
     return any(v > n for v in dict.values(self))
+
+  # does this multiset contain only values with the same multiplicity (n if specified)
+  def all_same(self, n=None):
+    if n is None:
+      return seq_all_same(dict.values(self))
+    else:
+      return all(v == n for v in dict.values(self))
 
   # all elements of the multiset
   # (for unique elements use: [[ s.keys() ]])
