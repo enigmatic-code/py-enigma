@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Nov 10 21:02:03 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Nov 15 21:40:00 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -167,7 +167,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-11-10"
+__version__ = "2021-11-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -260,7 +260,7 @@ def static(**kw):
   return decorate
 
 # useful as a decorator for caching functions (@cached).
-# NOTE: functools.lru_cached() can be used as an alternative in Python from v3.2
+# NOTE: functools.lru_cached() can be used as an alternative in Python 3.2 and later
 def cached(f):
   """return a cached version of function <f>"""
   c = dict()
@@ -274,6 +274,9 @@ def cached(f):
       #printf("[{f.__name__}: {k} -> {r}]")
       return r
   return _cached
+
+# or you can use cache, to get functools.cache() (if available) or cached() if not.
+cache = getattr(functools, 'cache', cached)
 
 # the identity function
 def identity(x):
@@ -448,6 +451,7 @@ def is_pairwise_distinct(*args, **kw):
   return seq_all_different(args, fn=kw.get('fn', identity))
 
 pairwise_distinct = is_pairwise_distinct
+all_different = is_pairwise_distinct
 
 def seq_all_same(s, **kw):
   """
@@ -486,7 +490,16 @@ def all_same(*args, **kw):
   """
   return seq_all_same(args, **kw)
 
-all_different = is_pairwise_distinct
+# check sequences have the same elements
+# 'strict' is passed to zip (which is supported in some Python versions, and throws an error if the inputs are not of equal length)
+# 'first' limits checks to the first <k> elements
+def zip_eq(*ss, **kw):
+  z = (zip(*ss, strict=kw['strict']) if 'strict' in kw else zip(*ss))
+  k = kw.get('first')
+  if k is not None: z = first(z, count=k, fn=iter)
+  for vs in z:
+    if not seq_all_same(vs): return False
+  return True
 
 def ordered(*args, **kw):
   """
@@ -1824,6 +1837,25 @@ def rfind(s, v):
   """find the last index of a value in a sequence, return -1 if not found"""
   i = find(s[::-1], v)
   return (-1 if i == -1 else len(s) - i - 1)
+
+# trim elements from a sequence
+def trim(s, head=0, tail=0):
+  """
+  return a new list derived from input sequence <s>, but with <head>
+  elements removed from the front and <tail> elements removed from the
+  end.
+
+  >>> trim((1, 2, 3, 4, 5), head=2)
+  [3, 4, 5]
+  >>> trim((1, 2, 3, 4, 5), tail=2)
+  [1, 2, 3]
+  >>> trim((1, 2, 3, 4, 5), head=2, tail=2)
+  [3]
+  """
+  if head > 0 or tail > 0: s = list(s)
+  if head > 0: del s[:head]
+  if tail > 0: del s[-tail:]
+  return s
 
 def _partitions(s, n):
   """
@@ -3857,7 +3889,7 @@ def chain(*ss, **kw):
 # interleave values from a bunch of iterators
 # flatten(zip(*ss), fn=iter) works if arguments are the same length
 def interleave(*ss, **kw):
-  ss = list(iter(x) for x in ss)
+  ss = list(iter(s) for s in ss)
   n = len(ss)
   while n > 0:
     i = 0
@@ -4462,6 +4494,23 @@ def algorithmX(X, Y, soln):
 # input: ss = sequence of collections of sets [ [a0, a1, ...], [b1, b2, ...], [c1, c2, ...] ... ]
 # output: sequence of sets (a, b, c, ...) one from each collection
 def exact_cover(sss, tgt=None):
+  """
+  given a collection of sets (of sets):
+    [a0, a1, ...]
+    [b1, b2, ...]
+    ...
+
+  an exact cover is a selection of sets:
+    [a, b, ...]
+
+  where a is chosen from the first collection, b from the second, etc.
+
+  and each element of the target set appears in exactly one of the
+  sets in the cover.
+
+  if the target set is not specified, it is the collection of all elements
+  contained in any of the provided sets.
+  """
   # map elements to indices
   if tgt is None: tgt = union(union(ss) for ss in sss)
   tgt = sorted(tgt)
