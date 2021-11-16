@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Nov 15 21:40:00 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Nov 15 22:29:49 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -23,14 +23,20 @@ The latest version is available at <http://www.magwag.plus.com/jim/enigma.html>.
 
 Currently this module provides the following functions and classes:
 
+all_different          - chack arguments are pairwise distinct
+all_same               - check arguments all have the same value
 arg                    - extract an argument from the command line
 args                   - extract a list of arguments from the command line
+as_int                 - check argument is an integer
 base2int               - convert a string in the specified base to an integer
 base_digits            - get/set digits used in numerical base conversion
 bit_permutations       - generate bit permutations
 C, nCr                 - combinatorial function (nCr)
-cached                 - decorator for caching functions
+cache, cached          - decorator for caching functions
+catch                  - catch errors in a function call
+cb                     - the cube of the argument
 cbrt                   - the (real) cube root of a number
+ceil                   - generalised ceiling function
 chain                  - see: flatten()
 choose                 - choose a sequence of values satisfying some functions
 chunk                  - go through an iterable in chunks
@@ -38,6 +44,7 @@ clock                  - clock arithmetic variant on mod()
 collect                - collect items according to accept/reject criteria
 compare                - comparator function
 concat                 - concatenate a list of values into a string
+contains               - check for contiguous subsequence
 coprime_pairs          - generate coprime pairs
 cslice                 - cumulative slices of an array
 csum                   - cumulative sum
@@ -47,18 +54,22 @@ digit_map              - create a map of digits to corresponding integer values
 digrt                  - the digital root of a number
 divc                   - ceiling division
 divf                   - floor division
-div                    - exact division
+div                    - exact division (or None)
 divisor                - generate the divisors of a number
 divisor_pairs          - generate pairs of divisors of a number
 divisors               - the divisors of a number
 divisors_pairs         - generate pairs of divisors of a number
 drop_factors           - reduce a number by removing factors
 dsum                   - digit sum of a number
+ediv                   - exact division (or raise an error)
 egcd                   - extended gcd
+exact_cover            - find exact covers from a collection of subsets
 express                - express an amount using specific denominations
 factor                 - the prime factorisation of a number
 factorial              - factorial function
 farey                  - generate Farey sequences of coprime pairs
+fcompose               - forward functional composition
+fdiv                   - float division
 fib                    - generate fibonacci sequences
 filter2                - partition an iterator into values that satisfy a predicate, and those that do not
 filter_unique          - partition an iterator into values that are unique, and those that are not
@@ -70,6 +81,7 @@ find_zero              - find where a function is zero
 first                  - return items from the start of an iterator
 flatten                - flatten a list of lists
 flattened              - fully flatten a nested structure
+floor                  - generalised floor function
 format_recurring       - output the result from recurring()
 fraction               - convert numerator / denominator to lowest terms
 gcd                    - greatest common divisor
@@ -77,17 +89,22 @@ grid_adjacency         - adjacency matrix for an n x m grid
 group                  - collect values of a sequences into groups
 hypot                  - calculate hypotenuse
 icount                 - count the number of elements of an iterator that satisfy a predicate
+implies                - logical implication (p -> q)
 int2base               - convert an integer to a string in the specified base
+int2bcd                - convert an integer to binary coded decimal
 int2roman              - convert an integer to a Roman Numeral
 int2words              - convert an integer to equivalent English words
 intc                   - ceiling conversion of float to int
+interleave             - interleave values from a bunch of iterators
+intersect              - find the intersection of a collection of containers
 intf                   - floor conversion of float to int
 invmod                 - multiplicative inverse of n modulo m
 ipartitions            - partition a sequence with repeated values by index
 irange                 - inclusive range iterator
 irangef                - inclusive range iterator with fractional steps
 iroot                  - integer kth root function
-is_cube                - check a number is a perfect cube
+is_coprime             - check two numbers are coprime
+is_cube, is_cube_z     - check a number is a perfect cube
 is_distinct            - check a value is distinct from other values
 is_duplicate           - check to see if value (as a string) contains duplicate characters
 is_pairwise_distinct   - check all arguments are distinct
@@ -98,19 +115,24 @@ is_prime               - simple prime test
 is_prime_mr            - Miller-Rabin fast prime test for large numbers
 is_roman               - check a Roman Numeral is valid
 is_square              - check a number is a perfect square
+is_square_free         - check a number is square free
 is_triangular          - check a number is a triangular number
 isqrt                  - intf(sqrt(x))
 join                   - concatenate strings
 lcm                    - lowest common multiple
 M                      - multichoose function (nMk)
 map2str                - format a map for output
+match                  - match a value against a template
 mgcd                   - multiple gcd
+mlcm                   - multiple lcm
 mod                    - return a function to find residues modulo m
 multiply               - the product of numbers in a sequence
 nconcat                - concatenate single digits into an integer
+ndigits                - number of digits used to represent a number in a base
 nreverse               - reverse the digits in an integer
 nsplit                 - split an integer into single digits
 number                 - create an integer from a string ignoring non-digits
+ordered                - return arguments as an ordered tuple
 P, nPr                 - permutations function (nPr)
 partitions             - partition a sequence of distinct values into tuples
 peek                   - return an element of a container
@@ -122,28 +144,42 @@ prime_factor_rho       - generate prime factors of large numbers
 printf                 - print with interpolated variables
 pythagorean_triples    - generate Pythagorean triples
 quadratic              - determine roots of a quadratic equation
+rational               - represet a rational number
+rcompose               - reverse functional composition
 reciprocals            - generate reciprocals that sum to a given fraction
 recurring              - decimal representation of fractions
-repeat                 - repeatedly apply a function to a value
+recurring2fraction     - find the fraction corrresponding to a decimal expansion
 repdigit               - number consisting of repeated digits
+repeat                 - repeatedly apply a function to a value
 roman2int              - convert a Roman Numeral to an integer
+rotate                 - rotate a sequence
+seq_all_different      - check elements of a sequence are pairwise distinct
+seq_all_same           - check elements of a sequence are all the same
+singleton              - return the value from a single valued container
 split                  - split a value into characters
 sprintf                - interpolate variables into a string
-sqrt                   - the (positive) square root of a number
-subseqs                - sub-sequences of an iterable
-subsets                - generate subsequences of an iterator
+sq                     - square of x
+sqrt, sqrtc, sqrtf     - the (positive) square root of a number
+static                 - decorator to simulate static variables
+subfactorial           - subfactorial function
+subsets, subseqs       - generate subsequences of an iterator
 substitute             - substitute symbols for digits in text
 substituted_expression - a substituted expression (alphametic/cryptarithm) solver
 substituted_sum        - a solver for substituted sums
-T, tri                 - T(n) is the nth triangular number
 tau                    - tau(n) is the number of divisors of n
 timed                  - decorator for timing functions
 timer                  - a Timer object
+translate              - substitute values in text
+tri, T                 - tri(n) is the nth triangular number
+trim                   - remove elements from the start/end of a sequence
 trirt                  - the (positive) triangular root of a number
 tuples                 - generate overlapping tuples from a sequence
-uniq                   - unique elements of an iterator
+ulambda                - complex parameter unpacking
+union                  - construct the union of a bunch of containers
+uniq, uniq1            - unique elements of an iterator
+unzip                  - inverse of zip
 unpack                 - return a function that unpacks its arguments
-update                 - return an updated copy of an object
+update                 - create an updated version of a container object
 
 Accumulator            - a class for accumulating values
 CrossFigure            - a class for solving cross figure puzzles
