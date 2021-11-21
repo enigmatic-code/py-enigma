@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Nov 16 23:08:32 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Nov 21 09:22:34 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -203,7 +203,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-11-16"
+__version__ = "2021-11-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -248,8 +248,10 @@ elif _pythonv[0] > 2:
     Sequence = collections.Sequence
     Iterable = collections.Iterable
 
-# cartesian product (re-exported from itertools to save on imports)
-product = itertools.product
+# re-exported functions from standard library (to save on imports)
+defaultdict = collections.defaultdict
+namedtuple = collections.namedtuple
+product = itertools.product  # cartesian product
 
 # detect if running under PyPy
 _pypy = getattr(sys, 'pypy_version_info', None)
@@ -298,7 +300,12 @@ def static(**kw):
 # useful as a decorator for caching functions (@cached).
 # NOTE: functools.lru_cached() can be used as an alternative in Python 3.2 and later
 def cached(f):
-  """return a cached version of function <f>"""
+  """
+  return a cached version of function <f>.
+
+  cache() is also available which will use Python's own function
+  (functools.cache), if available, otherwise cached().
+  """
   c = dict()
   @functools.wraps(f)
   def _cached(*k):
@@ -611,7 +618,7 @@ def translate(t, m, s="", embed=1):
   string enclosed in curly braces only those sections will be
   translated, otherwise the whole string is processed (providing the
   'embed' parameter is not disabled).
-  
+
   <m> can be:
     - a dict of <letter> -> <replacement> mappings
     - a sequence of letters to replace, in which case <s> should
@@ -1532,7 +1539,7 @@ subseqs = subsets
 # see also partition() recipe from itertools documentation
 # (but note that itertools.partition() returns (false, true) lists)
 
-Filter2 = collections.namedtuple('Filter2', 'true false')
+Filter2 = namedtuple('Filter2', 'true false')
 
 def filter2(p, i, fn=list):
   """
@@ -1572,7 +1579,7 @@ def is_equal(x, y):
   """
   return (x == y)
 
-FilterUnique = collections.namedtuple('FilterUnique', 'unique non_unique')
+FilterUnique = namedtuple('FilterUnique', 'unique non_unique')
 
 def filter_unique(s, f=identity, g=identity):
   """
@@ -1602,8 +1609,8 @@ def filter_unique(s, f=identity, g=identity):
   >>> filter_unique([(1, 1), (1, 3), (2, 1), (3, 1), (3, 2), (3, 3)], (lambda v: v[0]), (lambda v: v[1] % 2)).non_unique
   [(3, 1), (3, 2), (3, 3)]
   """
-  u = collections.defaultdict(set)
-  r = collections.defaultdict(list)
+  u = defaultdict(set)
+  r = defaultdict(list)
   for x in s:
     i = f(x)
     u[i].add(g(x))
@@ -1640,7 +1647,7 @@ def collect(s, accept=None, reject=None, every=0, fn=list):
   except ValueError:
     return None
 
-def group(s, by=identity, st=None, f=identity, fn=identity):
+def group(s, by=identity, st=None, f=identity, fn=None):
   """
   group the items of sequence <s> together using the <by> function.
 
@@ -1671,12 +1678,11 @@ def group(s, by=identity, st=None, f=identity, fn=identity):
     if st is None or st(x):
       k = by(x)
       v = f(x)
-      try:
+      if k in d:
         d[k].append(v)
-      except KeyError:
+      else:
         d[k] = [v]
-
-  if fn is not identity:
+  if fn:
     for (k, vs) in d.items():
       d[k] = fn(vs)
   return d
@@ -3558,7 +3564,7 @@ def M(n, k):
   return C(n + k - 1, k)
 
 
-Recurring = collections.namedtuple('Recurring', 'i nr rr')
+Recurring = namedtuple('Recurring', 'i nr rr')
 
 def recurring(a, b, recur=0, base=10, digits=None):
   """
@@ -4505,7 +4511,7 @@ def algorithmX(X, Y, soln):
     # copy X[c], as X is modified (could use sorted(X[c]) for stability)
     for r in list(X[c]):
       soln.append(r)
- 
+
       # cols = select(X, Y, r)
       cols = list()
       for j in Y[r]:
@@ -4514,9 +4520,9 @@ def algorithmX(X, Y, soln):
             if k != j:
               X[k].remove(i)
         cols.append(X.pop(j))
- 
+
       for z in algorithmX(X, Y, soln): yield z
- 
+
       # deselect(X, Y, r, cols)
       for j in reversed(Y[r]):
         X[j] = cols.pop()
@@ -4524,9 +4530,9 @@ def algorithmX(X, Y, soln):
           for k in Y[i]:
             if k != j:
               X[k].add(i)
- 
+
       soln.pop()
- 
+
 # input: ss = sequence of collections of sets [ [a0, a1, ...], [b1, b2, ...], [c1, c2, ...] ... ]
 # output: sequence of sets (a, b, c, ...) one from each collection
 def exact_cover(sss, tgt=None):
@@ -4552,7 +4558,7 @@ def exact_cover(sss, tgt=None):
   tgt = sorted(tgt)
   n = len(tgt)
   m = dict((x, i) for (i, x) in enumerate(tgt))
- 
+
   # set up Y, one row for each position
   Y = list()
   for (j, ss) in enumerate(sss, start=n):
@@ -4560,13 +4566,13 @@ def exact_cover(sss, tgt=None):
       y = list(m[x] for x in s)
       y.append(j)
       Y.append(y)
- 
+
   # set up X as a dict of sets
   X = dict((k, set()) for k in irange(0, j))
   for (i, y) in enumerate(Y):
     for k in y:
       X[k].add(i)
- 
+
   # find exact covers using algorithmX
   k = len(sss)
   for rs in algorithmX(X, Y, list()):
@@ -5203,7 +5209,6 @@ class Accumulator(object):
     self.count += 1
     self.value = (self.fn1(v) if self.value is None else self.fn(self.value, v))
 
-
   def accumulate_data(self, v, data, target=None):
     """
     Accumulate a value, and check the accumulated value against a target value,
@@ -5263,7 +5268,6 @@ class MultiAccumulator(object):
 
   def __repr__(self):
     return self.__class__.__name__ + '(' + repr(self.multi) + ')'
-    
 
   def accumulate(self, v):
     for x in self.multi:
@@ -7954,8 +7958,8 @@ class Slots(object):
     self._id = 0
 
     # slot properties
-    self._s2p = collections.defaultdict(set) # <slot> -> <props>
-    self._p2s = collections.defaultdict(lambda: collections.defaultdict(set)) # <type> -> <value> -> <slots>
+    self._s2p = defaultdict(set) # <slot> -> <props>
+    self._p2s = defaultdict(lambda: defaultdict(set)) # <type> -> <value> -> <slots>
 
   # allocate a new slot (with (k, v) properties)
   def slot_new(self, *props):
@@ -8072,7 +8076,7 @@ class Slots(object):
 
 # a named tuple for the results (now includes "subs" field)
 # (s is the solution from SubstituteExpression, with eliminated symbols reinstated)
-SubstitutedDivisionSolution = collections.namedtuple('SubstitutedDivisionSolution', 'a b c r subs d s')
+SubstitutedDivisionSolution = namedtuple('SubstitutedDivisionSolution', 'a b c r subs d s')
 
 # the new solver
 
@@ -8326,7 +8330,7 @@ class SubstitutedDivision(SubstitutedExpression):
     opt['s2d'] = s2d
 
     # invalid digits
-    d2i = collections.defaultdict(set)
+    d2i = defaultdict(set)
     if kw.get('d2i', None):
       for (k, v) in kw['d2i'].items():
         d2i[k].update(self.input_symbols[s] for s in v)
@@ -8663,7 +8667,7 @@ class Football(object):
     self._games = tuple(games)
     self._points = points
     self._swap = swap
-    self._table = collections.namedtuple('Table', ('played',) + self._games + ('points',))
+    self._table = namedtuple('Table', ('played',) + self._games + ('points',))
 
   def swap(self, m):
     return self._swap.get(m, m)
