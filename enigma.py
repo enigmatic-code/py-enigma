@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Nov 21 09:22:34 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Nov 21 22:16:39 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -5891,7 +5891,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
       for p in _PrimeSieveE6.generate(self, start, end):
         yield p
       # expand the sieve for the next batch
-      start = self.max + 1
+      start = max(start, self.max + 1)
       if start < end: self.expand()
 
   # make this an iterable object
