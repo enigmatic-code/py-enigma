@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Nov 21 22:19:12 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Nov 28 17:38:58 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -203,7 +203,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-11-20"
+__version__ = "2021-11-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1745,7 +1745,7 @@ def ulambda(args, expr=None):
 
   e.g.:
 
-  >>> dist = ulambda("(x1, y1), (x2, y2)", "hypot(x2 - x1, y2 - y1)")
+  >>> dist = ulambda("(x1, y1), (x2, y2): hypot(x2 - x1, y2 - y1)")
   >>> dist((1, 2), (5, 5))
   5.0
   """
@@ -1753,7 +1753,7 @@ def ulambda(args, expr=None):
     (args, _, expr) = (x.strip() for x in args.partition(":"))
 
   if _python == 2:
-    # in Python 2 is is straightforward lambda
+    # in Python 2 it is straightforward lambda
     expr = sprintf("lambda {args}: {expr}")
   else:
     #expr = sprintf("lambda *_x_: [{expr} for {args} in [_x_]][0]")
@@ -1981,11 +1981,11 @@ def choose(vs, fns, s=None, distinct=0):
     fn = fns[0]
     for v in vs:
       if not(distinct) or v not in s:
-        s1 = copy.copy(s)
-        s1.append(v)
-        if fn is None or fn(*s1):
+        s_ = list(s)
+        s_.append(v)
+        if fn is None or fn(*s_):
           # choose the rest [[Python 3: yield from ...]]
-          for z in choose(vs, fns[1:], s1, distinct): yield z
+          for z in choose(vs, fns[1:], s_, distinct): yield z
 
 
 def first(s, count=1, skip=0, fn=list):
@@ -7069,11 +7069,6 @@ class SubstitutedExpression(object):
       prog.append(sprintf("{_}{s} = {d}", s=sym(s)))
       done.add(s)
 
-    # look for words which can be made
-    for w in words:
-      if all(x in done for x in w):
-        prog.append(sprintf("{_}{w} = {x}", w=sym(w), x=_word(w, base)))
-
     # [denest] workaround statically nested block limit
     if denest:
       #  set other initial values and words to None
@@ -7087,6 +7082,11 @@ class SubstitutedExpression(object):
       block = None
       block_args = join(map(sym, chain(symbols, words)), sep=", ")
       indent_reset = indent
+
+    # look for words which can be made
+    for w in words:
+      if all(x in done for x in w):
+        prog.append(sprintf("{_}{w} = {x}", w=sym(w), x=_word(w, base)))
 
     in_loop = False
     # use_sets = 1 # using sets is slower
