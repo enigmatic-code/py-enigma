@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Nov 28 17:38:58 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Dec 11 09:57:46 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -203,7 +203,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-11-27"
+__version__ = "2021-12-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1426,14 +1426,14 @@ def mcombinations(s, k=None):
 #  107899
 #  [timing] total time: 0.5661372s (566.14ms)
 #
-def mP(d, n):
+def mP(d, n, r=()):
   if n == 0:
-    yield ()
+    yield r
   else:
     for (k, v) in d.items():
       if v > 0:
         d[k] -= 1
-        for t in mP(d, n - 1): yield (k,) + t
+        for t in mP(d, n - 1, r + (k,)): yield t
         d[k] += 1
 
 def mpermutations(s, k=None):
@@ -5578,8 +5578,8 @@ class _PrimeSieveE6(object):
   True
   >>> sum(primes) == 37550402023
   True
-  >>> list(primes.range(2, 47))
-  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43]
+  >>> list(primes.irange(2, 47))
+  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
 
   NOTE: if you make a large sieve it will use up lots of memory.
   """
@@ -5606,6 +5606,7 @@ class _PrimeSieveE6(object):
     self.T = array([1])
     self.F = array([0])
     # other parameters
+    self.expandable = 0  # set to 1 to allow automatic expansion
     self.verbose = verbose
     # now extend the sieve to the required size
     self.extend(n)
@@ -5698,12 +5699,39 @@ class _PrimeSieveE6(object):
     if n < 4: return True # 2, 3 -> T
     (i, r) = divmod(n, 6)
     if r != 1 and r != 5: return False # (n % 6) != (1, 5) -> F
+    if self.expandable: self.expand(n)
     return bool(self.sieve[n // 3])
 
   prime = is_prime
 
   # allows use of "in"
   __contains__ = is_prime
+
+  # before, after: return the prime immediately before/after n
+  def before(self, n):
+    """
+    return the largest parime less than <n>
+    """
+    if n < 3: return None
+    if n < 4: return 2
+    if n < 6: return 3
+    if self.expandable: self.expand(n)
+    i = (n + 1) // 3 - (n % 6 == 5)
+    while True:
+      i -= 1
+      if self.sieve[i]: return (i * 3) + (i & 1) + 1
+
+  def after(self, n):
+    """
+    return the smallest prime greater than <n>
+    """
+    if n < 2: return 2
+    if n < 3: return 3
+    i = (n + 1) // 3 + (n % 6 == 1)
+    while True:
+      if self.expandable and not(i < len(self.sieve)): self.expand()
+      if self.sieve[i]: return (i * 3) + (i & 1) + 1
+      i += 1
 
   # size = number of primes in the sieve
   def size(self):
@@ -5859,8 +5887,9 @@ class _PrimeSieveE6X(_PrimeSieveE6):
 
     the default function doubles the maximum at each expansion.
     """
-    self.chunk = fn
     _PrimeSieveE6.__init__(self, n, array=array, verbose=verbose)
+    self.chunk = fn
+    self.expandable = 1
 
   # expand the sieve up to n, or by the next chunk
   def extend(self, n=None):
@@ -5896,15 +5925,6 @@ class _PrimeSieveE6X(_PrimeSieveE6):
 
   # make this an iterable object
   __iter__ = generate
-
-  # expand the sieve as necessary
-  def is_prime(self, n):
-    "primality test - the sieve is expanded as necessary before testing."
-    self.extend(n)
-    return _PrimeSieveE6.is_prime(self, n)
-
-  # allows use of "in"
-  __contains__ = is_prime
 
   # expand the sieve as necessary
   def range(self, a=0, b=None):
@@ -10440,7 +10460,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.10.0')
+""".format(version=__version__, python='2.7.18', python3='3.10.1')
 
 def _namecheck(name, verbose=0):
   if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
