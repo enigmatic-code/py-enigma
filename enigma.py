@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Dec 11 09:57:46 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Dec 17 23:29:28 2021 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -151,6 +151,7 @@ recurring              - decimal representation of fractions
 recurring2fraction     - find the fraction corrresponding to a decimal expansion
 repdigit               - number consisting of repeated digits
 repeat                 - repeatedly apply a function to a value
+reverse                - reverse a sequence
 roman2int              - convert a Roman Numeral to an integer
 rotate                 - rotate a sequence
 seq_all_different      - check elements of a sequence are pairwise distinct
@@ -203,7 +204,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-12-09"
+__version__ = "2021-12-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -375,7 +376,7 @@ def as_int(x, include="", **kw):
       else:
         return n
     return kw['default']
-  except:
+  except Exception:
     pass
   msg = "invalid integer: " + repr(x)
   if include: msg += ' [include: ' + include + ']'
@@ -461,7 +462,7 @@ def seq_all_different(s, fn=identity):
   True
   >>> seq_all_different([2, 1, 2, 3])
   False
-  >>> seq_all_different(p % 100 for p in Primes())
+  >>> seq_all_different(p % 100 for p in primes)
   False
   """
   seen = set()
@@ -608,6 +609,18 @@ def concat(*args, **kw):
     except:
       raise
   return join(args, sep=sep, enc=enc)
+
+# reverse a sequence
+def reverse(s, fn=list):
+  """
+  reverse a sequence.
+
+  >>> reverse([1, 2, 3])
+  [3, 2, 1]
+  >>> reverse(first(primes, 6))
+  [13, 11, 7, 5, 3, 2]
+  """
+  return fn(s)[::-1]
 
 # translate text <t>, using map <m> (and optional symbols <s>)
 def translate(t, m, s="", embed=1):
@@ -912,9 +925,9 @@ def peek(s, k=0, **kw):
   'b'
   >>> peek("banana", 4)
   'n'
-  >>> peek(Primes(), 10)
+  >>> peek(primes, 10)
   31
-  >>> peek(p for p in Primes() if p % 17 == 1)
+  >>> peek(p for p in primes if p % 17 == 1)
   103
   """
   if not isinstance(s, dict):
@@ -1850,7 +1863,7 @@ def find(s, v):
   -1
 
   and on iterators in general (don't try this with a non-prime value)
-  >>> find(Primes(), 10007)
+  >>> find(primes, 10007)
   1229
 
   Note that this function works by attempting to use the index() method
@@ -2003,7 +2016,7 @@ def first(s, count=1, skip=0, fn=list):
   this would be a way to find the first 10 primes:
   >>> first((n for n in irange(1, inf) if is_prime(n)), count=10)
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
-  >>> first(p for p in Primes() if p % 17 == 1)
+  >>> first(p for p in primes if p % 17 == 1)
   [103]
   """
   if callable(count):
@@ -3839,7 +3852,7 @@ def catch(fn, *args, **kw):
   """
   try:
     return fn(*args, **kw)
-  except:
+  except Exception:
     #print("catch: caught exception!")
     return
 
@@ -4174,7 +4187,7 @@ def contains(seq, subseq):
   3
   >>> contains("abcdefghijkl", "hik")
   -1
-  >>> contains(Primes(), [11, 13, 17, 19])
+  >>> contains(primes, [11, 13, 17, 19])
   4
   >>> contains([1, 2, 3], [1, 2, 3])
   0
@@ -5995,7 +6008,7 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=
   limit will double each time the sieve is expanded.
 
   So, to sum the first 1000 primes:
-  >>> sum(first(Primes(), 1000))
+  >>> sum(first(primes, 1000))
   3682913
   """
   # if n is None then make it expandable by default
@@ -6497,7 +6510,7 @@ class SubstitutedSum(object):
             opt['d2i'][i] = opt['d2i'].get(i, set()).union(s)
         else:
           raise ValueError()
-      except:
+      except Exception:
         printf("{cls.__name__}: invalid option: {arg}")
         return -1
 
@@ -7168,7 +7181,7 @@ class SubstitutedExpression(object):
         prog.append(sprintf("{_}  {vx} = int({x})"))
         prog.append(sprintf("{_}except NameError:")) # catch undefined functions
         prog.append(sprintf("{_}  raise"))
-        prog.append(sprintf("{_}except:")) # maybe "except (ArithmeticError, ValueError)"
+        prog.append(sprintf("{_}except Exception:")) # maybe "except (ArithmeticError, ValueError)"
         prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'return')))
 
       # check the value
@@ -7282,7 +7295,7 @@ class SubstitutedExpression(object):
     gs = update(globals(), env)
     try:
       code = compile(prog, '<string>', 'exec')
-    except:
+    except Exception:
       # the program failed to compile
       # this can be because the supplied expressions do not form valid Python
       # or due to an issue in the Python interpreter itself
@@ -7811,7 +7824,7 @@ class SubstitutedExpression(object):
         if not cls._getopt(k, v, opt):
           return None
 
-      except:
+      except Exception:
         raise ValueError(sprintf("[{cls.__name__}] invalid option: {arg}"))
 
     return opt
