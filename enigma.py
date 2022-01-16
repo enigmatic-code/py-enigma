@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Dec 17 23:29:28 2021 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jan 16 11:39:07 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -204,7 +204,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-12-17"
+__version__ = "2021-12-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -419,6 +419,9 @@ def compare(a, b, vs=None):
   """
   r = (b < a) - (a < b)
   return (vs[r + 1] if vs else r)
+
+# sign of a number (-1, 0, +1)
+sign = lambda x: (0 < x) - (x < 0)  # = compare(x, 0)
 
 # logical implication: p -> q
 def implies(p, q):
@@ -3415,8 +3418,8 @@ def mlcm(a, *rest):
   """
   return reduce(lcm, rest, a)
 
-def is_coprime(a, b):
-  return gcd(a, b) == 1
+def is_coprime(*vs):
+  return mgcd(*vs) == 1
 
 
 # for those times when Rational() is overkill
@@ -10473,7 +10476,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.10.1')
+""".format(version=__version__, python='2.7.18', python3='3.10.2')
 
 def _namecheck(name, verbose=0):
   if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
