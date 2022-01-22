@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jan 22 23:07:58 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jan 22 23:15:19 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2458,7 +2458,7 @@ def prime_factor_rho(n, mrr=0):
   <mrr> is the number of additional rounds performed in the
   is_prime_mr() test for prime factors.
 
-  >>> list(prime_factor_rho(factorial(19) + 1))
+  >> list(prime_factor_rho(factorial(19) + 1))
   [(71, 1), (1713311273363831, 1)]
   """
   while n > 1:
