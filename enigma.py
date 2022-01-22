@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jan 16 11:39:07 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jan 22 23:07:58 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -204,7 +204,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2021-12-20"
+__version__ = "2022-01-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2449,6 +2449,18 @@ def _rho_factor(n, mrr=0):
 
 # NOTE: factors are not neccessarily returned in order
 def prime_factor_rho(n, mrr=0):
+  """
+  generate (<prime>, <exponent>) pairs in the prime factorisation of
+  positive integer <n>.
+
+  note that factors are not necessarily returned in numerical order.
+
+  <mrr> is the number of additional rounds performed in the
+  is_prime_mr() test for prime factors.
+
+  >>> list(prime_factor_rho(factorial(19) + 1))
+  [(71, 1), (1713311273363831, 1)]
+  """
   while n > 1:
     # check for prime
     if is_prime_mr(n, mrr):
