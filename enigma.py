@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jan 22 23:15:19 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jan 31 09:34:42 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -204,7 +204,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-01-21"
+__version__ = "2022-01-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1844,9 +1844,9 @@ def icount(i, p=None, t=None):
   return n
 
 # icount recipes
-icount_exactly = lambda i, p, n: icount(i, p, n + 1) == n
-icount_at_least = lambda i, p, n: icount(i, p, n) == n
-icount_at_most = lambda i, p, n: icount(i, p, n + 1) < n + 1
+icount_exactly = lambda i, p=None, t=None: icount(i, p, t + 1) == t
+icount_at_least = lambda i, p=None, t=None: icount(i, p, t) == t
+icount_at_most = lambda i, p=None, t=None: icount(i, p, t + 1) < t + 1
 
 # find: like index(), but return -1 instead of throwing an error
 def find(s, v):
@@ -2458,8 +2458,8 @@ def prime_factor_rho(n, mrr=0):
   <mrr> is the number of additional rounds performed in the
   is_prime_mr() test for prime factors.
 
-  >> list(prime_factor_rho(factorial(19) + 1))
-  [(71, 1), (1713311273363831, 1)]
+  >> sorted(prime_factor_rho(factorial(23) + 1))
+  [(47, 2), (79, 1), (148139754736864591, 1)]
   """
   while n > 1:
     # check for prime
@@ -2753,6 +2753,7 @@ def is_power(n, k):
   (True, False)
   """
   r = iroot(n, k)
+  if r is None: return None
   return (r if r ** k == n else None)
 
 
@@ -2997,7 +2998,9 @@ def tri(n):
   """
   tri(n) is the nth triangular number.
 
-  tri(n) = n * (n + 1) // 2.
+  tri(n) = n * (n + 1) / 2.
+
+  Note: trif() is available for float arguments.
 
   >>> tri(1)
   1
@@ -3007,6 +3010,9 @@ def tri(n):
   return n * (n + 1) // 2
 
 T = tri
+
+# triangular numbers as floats
+trif = lambda x: 0.5 * x * (x + 1)
 
 
 def trirt(x):
@@ -3019,7 +3025,6 @@ def trirt(x):
   1.56155281
   """
   return 0.5 * (sqrt(8 * x + 1) - 1.0)
-
 
 def is_triangular(n):
   """
