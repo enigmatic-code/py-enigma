@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan 31 09:34:42 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Feb  1 09:18:56 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -204,7 +204,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-01-27"
+__version__ = "2022-01-31"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6379,7 +6379,7 @@ class SubstitutedSum(object):
   solution = output_solution
 
   def run(self, check=None, first=0):
-    """find all solutions (matching the filter <fn>) and output them"""
+    """find all solutions (matching the filter <check>) and output them"""
     for s in self.solve(check=check, verbose=1):
       if first: break
 
