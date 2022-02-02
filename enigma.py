@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Feb  1 09:18:56 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Feb  2 15:33:11 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -204,7 +204,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-01-31"
+__version__ = "2022-02-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1844,9 +1844,9 @@ def icount(i, p=None, t=None):
   return n
 
 # icount recipes
-icount_exactly = lambda i, p=None, t=None: icount(i, p, t + 1) == t
-icount_at_least = lambda i, p=None, t=None: icount(i, p, t) == t
-icount_at_most = lambda i, p=None, t=None: icount(i, p, t + 1) < t + 1
+icount_exactly = lambda i, p=None, n=None: icount(i, p, n + 1) == n
+icount_at_least = lambda i, p=None, n=None: icount(i, p, n) == n
+icount_at_most = lambda i, p=None, n=None: icount(i, p, n + 1) < n + 1
 
 # find: like index(), but return -1 instead of throwing an error
 def find(s, v):
