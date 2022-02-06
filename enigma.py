@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Feb  2 15:33:11 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb  6 10:44:19 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -204,7 +204,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-02-01"
+__version__ = "2022-02-04"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3515,6 +3515,21 @@ def Rational(src=None, verbose=None):
   if verbose: printf("[Rational: using {s}]", s=(s if f else f))
   return f
 
+# create a function that will calculate a/b, and return an int if the result is an integer
+# or a rational object if the result is a rational
+class Rdiv(object):
+  def __init__(self, F=None, src=None, verbose=None):
+    self.F = F
+    self.src = src
+    self.verbose = verbose
+  def __call__(self, a, b):
+    (d, r) = divmod(a, b)
+    if r == 0: return d
+    if self.F is None: self.F = Rational(src=self.src, verbose=self.verbose)
+    return self.F(a, b)
+
+rdiv = Rdiv()
+
 @static(impl=None)
 def rational(*args, **kw):
   """
@@ -5347,6 +5362,8 @@ def poly_from_pairs(ps, p=None):
       p[e] += c
   return poly_trim(p)
 
+poly_to_pairs = enumerate
+
 # remove extraneous zero coefficients
 def poly_trim(p):
   while len(p) > 1 and p[-1] == 0: p.pop()
@@ -5404,7 +5421,7 @@ def poly_sub(p, q):
 # divide two polynomials
 # div() is used for coefficient division, if the leading coefficient of q is not 1
 # (you probably want to use a rational implementation such as fractions.Fraction)
-def poly_divmod(p, q, div=None):
+def poly_divmod(p, q, div=rdiv):
   fn = (identity if q[-1] == 1 else (lambda x: div(x, q[-1])))
   (d, r) = (poly_zero, p)
   while r != poly_zero:
@@ -5446,8 +5463,15 @@ def poly_derivative(p, k=1):
     p = poly_from_pairs((e - 1, e * c) for (e, c) in enumerate(p) if e > 0)
   return p
 
+# integral of a polynomial (with constant c)
+def poly_integral(p, c=0, div=rdiv):
+  k = c
+  p = poly_from_pairs((e + 1, div(c, e + 1)) for (e, c) in enumerate(p))
+  p[0] = k
+  return p
+
 # polynomial interpolation from a number of points
-def poly_interpolate(ps):
+def poly_interpolate(ps, F=None):
   ps = list(ps)
   k = len(ps) - 1
   (A, B) = (list(), list())
@@ -5455,13 +5479,13 @@ def poly_interpolate(ps):
     A.append([1, x] + [x ** i for i in irange(2, k)])
     B.append(y)
   try:
-    return poly_trim(matrix.linear(A, B))
+    return poly_trim(matrix.linear(A, B, F=F))
   except ValueError:
     return
 
 # find rational roots of a polynomial
 # see: [ https://en.wikipedia.org/wiki/Rational_root_theorem ]
-def poly_rational_roots(p, domain="Q", include="+-0"):
+def poly_rational_roots(p, domain="Q", include="+-0", F=None):
   """
   find rational roots for the polynomial p (with rational coefficients).
 
@@ -5478,21 +5502,21 @@ def poly_rational_roots(p, domain="Q", include="+-0"):
   assert domain in "QZ"
   if not p: return
   (pos, neg, zero) = (x in include for x in '+-0')
-  Q = Rational()
+  if F is None: F = Rational()
   # first deal with a root at x=0
   if p[0] == 0:
-    if zero: yield (0 if domain == "Z" else Q(0, 1))
+    if zero: yield (0 if domain == "Z" else F(0, 1))
     while p and p[0] == 0: p = p[1:]
   if not p: return
   # make an equivalent polynomial with integer coefficients
-  p = list(map(Q, p))
+  p = list(map(F, p))
   m = mlcm(*(f.denominator for f in p))
   p = list((m * f).numerator for f in p)
   g = mgcd(*p)
   p = list(x // g for x in p)
   # collect rational roots
   fs = product(divisors(abs(p[0])), divisors(abs(p[-1])))
-  for x in uniq(map(unpack(Q), fs)):
+  for x in uniq(map(unpack(F), fs)):
     if domain == "Z":
       if x.denominator != 1: continue
       x = x.numerator
@@ -5510,6 +5534,41 @@ def poly_drop_factor(p, *qs):
         break
       p = d
   return p
+
+# can be @cached
+def poly_cyclotomic(n, fs=None, div=rdiv):
+  """
+  return the nth cyclotomic polynomial
+
+  >>> poly_cyclotomic(7)
+  [1, 1, 1, 1, 1, 1, 1]
+  >>> poly_cyclotomic(12)
+  [1, 0, -1, 0, 1]
+  >>> poly_cyclotomic(30)
+  [1, 1, 0, -1, -1, -1, 0, 1, 1]
+  """
+  if n < 1: return
+  if n == 1: return [-1, 1] # x - 1
+  if fs is None: fs = list(prime_factor(n))
+  if len(fs) == 1:
+    (p, e) = fs[0]
+    if e == 1: return [1] * p # prime
+    # power of a prime
+    q = n // p
+    return poly_from_pairs((k * q, 1) for k in irange(0, p - 1))
+  elif fs[0] == (2, 1):
+    # 2n, invert the odd positions in cyclotomic[n]
+    p = list(poly_cyclotomic(n // 2, fs=fs[1:], div=div))
+    for i in range(1, len(p), 2): p[i] = -p[i]
+    return p
+  else:
+    p = poly_from_pairs([(0, -1), (n, 1)]) # x^n - 1
+    for d in multiples(fs):
+      if d < n:
+        (p, r) = poly_divmod(p, poly_cyclotomic(d, div=div), div=div)
+        assert r == poly_zero
+    return p
+    
 
 # wrap the whole lot up in a class
 
@@ -5554,32 +5613,54 @@ class Polynomial(list):
       if p[1] != 0:
         yield p
 
+  def is_zero(self):
+    return self == poly_zero
+
+  def is_unit(self):
+    return self == poly_unit
+
   def derivative(self, k=1):
     return self.__class__(poly_derivative(self, k))
 
-  def rational_roots(self, domain="Q", include="+-0"):
-    return poly_rational_roots(self, domain=domain, include=include)
+  def integral(self, c=0, div=rdiv):
+    return self.__class__(poly_integral(self, c=c, div=div))
+
+  def rational_roots(self, domain="Q", include="+-0", F=None):
+    return poly_rational_roots(self, domain=domain, include=include, F=F)
+
+  def divmod(self, q, div=None):
+    (d, r) = poly_divmod(self, q, div)
+    return (self.__class__(d), self.__class__(r))
 
   def drop_factor(self, *qs):
     return self.__class__(poly_drop_factor(self, *qs))
 
   @classmethod
-  def from_pairs(self, ps):
-    return self(poly_from_pairs(ps))
+  def from_pairs(cls, ps):
+    return cls(poly_from_pairs(ps))
 
   @classmethod
-  def unit(self):
-    return self(poly_unit)
+  def unit(cls):
+    return cls(poly_unit)
 
   @classmethod
-  def zero(self):
-    return self(poly_zero)
+  def zero(cls):
+    return cls(poly_zero)
 
   @classmethod
-  def interpolate(self, ps):
-    r = poly_interpolate(ps)
+  def multiply(cls, *ps):
+    return cls(poly_multiply(*ps))
+
+  @classmethod
+  def interpolate(cls, ps, F=None):
+    r = poly_interpolate(ps, F=F)
     if r is None: return
-    return self(r)
+    return cls(r)
+
+  @classmethod
+  def cyclotomic(cls, n, div=rdiv):
+    p = poly_cyclotomic(n, div=div)
+    return (None if p is None else cls(p))
 
 ###############################################################################
 
