@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 12 09:50:46 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 12 14:47:47 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -204,7 +204,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-02-05"
+__version__ = "2022-02-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2495,6 +2495,21 @@ def is_square_free(n, fn=prime_factor):
   True
   """
   return n > 0 and all(e == 1 for (_, e) in fn(n))
+
+def mobius(n, fn=prime_factor):
+  """
+  return the Mobius value for positive integer <n>.
+
+  mobius(n) =  1; if n is square free and has an even number of prime factors
+  mobius(n) = -1; if n is square free and has an odd number of prime factors
+  mobius(n) =  0; if n is not square free
+  """
+  if n < 1: return None
+  r = 1
+  for (p, e) in fn(n):
+    if e > 1: return 0
+    r = -r
+  return r
 
 
 def farey(n):
@@ -5369,24 +5384,26 @@ def poly_trim(p):
   while len(p) > 1 and p[-1] == 0: p.pop()
   return p
 
-# we can multiply two polynomials
+# multiply two polynomials
 def poly_mul(p, q):
+  (np, nq) = (len(p), len(q))
+  if np < nq: (p, q) = (q, p)
   return poly_from_pairs(
     ((i + j, a * b) for (i, a) in enumerate(p) for (j, b) in enumerate(q)),
-    [0] * (len(p) + len(q) - 1)
+    [0] * (np + nq - 1)
   )
 
 poly_zero = [0]
 poly_unit = [1]
 
-# and multiply any number of polynomials
+# multiply any number of polynomials
 def poly_multiply(*ps):
   r = poly_unit
   for p in ps:
     r = poly_mul(r, p)
   return r
 
-# and raise a polynomial to a (non-negative) integer power
+# raise a polynomial to a (non-negative) integer power
 def poly_pow(p, n):
   n = as_int(n, include='0+')
   r = poly_unit
@@ -5538,7 +5555,7 @@ def poly_drop_factor(p, *qs):
 
 # calculate cyclotomic polynomials
 @static(cache={1: [-1, 1]}, cache_enabled=1)
-def poly_cyclotomic(n, fs=None, div=rdiv):
+def poly_cyclotomic(n, fs=None, div=rdiv, fn=prime_factor):
   """
   return the nth cyclotomic polynomial
 
@@ -5554,7 +5571,7 @@ def poly_cyclotomic(n, fs=None, div=rdiv):
     return poly_cyclotomic.cache[n]
   except KeyError:
     pass
-  if fs is None: fs = list(prime_factor(n))
+  if fs is None: fs = list(fn(n))
   if len(fs) == 1:
     (p, e) = fs[0]
     if e == 1:
@@ -5566,14 +5583,26 @@ def poly_cyclotomic(n, fs=None, div=rdiv):
       r = poly_from_pairs((k * q, 1) for k in irange(0, p - 1))
   elif fs[0] == (2, 1):
     # 2n, invert the odd positions in cyclotomic[n]
-    r = list(poly_cyclotomic(n // 2, fs=fs[1:], div=div))
+    r = list(poly_cyclotomic(n // 2, fs=fs[1:], div=div, fn=fn))
     for i in range(1, len(r), 2): r[i] = -r[i]
   else:
-    r = poly_from_pairs([(0, -1), (n, 1)]) # x^n - 1
+    # C[n] = multiply((x^d - 1) ^ mobius(n // d) for d in divisors(n))
+    # we can specialise multiplication and division by (x^d - 1)
+    (r, ds) = ([1], [])
     for d in multiples(fs):
-      if d < n:
-        (r, z) = poly_divmod(r, poly_cyclotomic(d, div=div), div=div)
-        #assert z == poly_zero
+      m = mobius(n // d, fn=fn)
+      if m == 1:
+        # r *= (x^d - 1)
+        r = poly_sub([0] * d + r, r)
+      elif m == -1:
+        ds.append(d)
+    for d in ds:
+      # r /= (x^d - 1)
+      r_ = list()
+      for c in reversed(r[d:]):
+        r_.insert(0, c)
+        if len(r_) > d: r_[0] += r_[d]
+      r = r_
   if poly_cyclotomic.cache_enabled: poly_cyclotomic.cache[n] = r
   return r
     
@@ -5665,8 +5694,8 @@ class Polynomial(list):
     return (None if r is None else cls(r))
 
   @classmethod
-  def cyclotomic(cls, n, div=rdiv):
-    p = poly_cyclotomic(n, div=div)
+  def cyclotomic(cls, n, div=rdiv, fn=prime_factor):
+    p = poly_cyclotomic(n, div=div, fn=fn)
     return (None if p is None else cls(p))
 
 ###############################################################################
