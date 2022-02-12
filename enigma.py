@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb  6 10:44:19 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 12 09:50:46 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -204,7 +204,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-02-04"
+__version__ = "2022-02-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5386,8 +5386,9 @@ def poly_multiply(*ps):
     r = poly_mul(r, p)
   return r
 
-# and raise a polynomial to a (positive) integer power
+# and raise a polynomial to a (non-negative) integer power
 def poly_pow(p, n):
+  n = as_int(n, include='0+')
   r = poly_unit
   while n > 0:
     (n, m) = divmod(n, 2)
@@ -5535,7 +5536,8 @@ def poly_drop_factor(p, *qs):
       p = d
   return p
 
-# can be @cached
+# calculate cyclotomic polynomials
+@static(cache={1: [-1, 1]}, cache_enabled=1)
 def poly_cyclotomic(n, fs=None, div=rdiv):
   """
   return the nth cyclotomic polynomial
@@ -5547,27 +5549,33 @@ def poly_cyclotomic(n, fs=None, div=rdiv):
   >>> poly_cyclotomic(30)
   [1, 1, 0, -1, -1, -1, 0, 1, 1]
   """
-  if n < 1: return
-  if n == 1: return [-1, 1] # x - 1
+  if n < 1: return None
+  try:
+    return poly_cyclotomic.cache[n]
+  except KeyError:
+    pass
   if fs is None: fs = list(prime_factor(n))
   if len(fs) == 1:
     (p, e) = fs[0]
-    if e == 1: return [1] * p # prime
-    # power of a prime
-    q = n // p
-    return poly_from_pairs((k * q, 1) for k in irange(0, p - 1))
+    if e == 1:
+      # n is prime
+      r = [1] * n
+    else:
+      # power of a prime
+      q = n // p
+      r = poly_from_pairs((k * q, 1) for k in irange(0, p - 1))
   elif fs[0] == (2, 1):
     # 2n, invert the odd positions in cyclotomic[n]
-    p = list(poly_cyclotomic(n // 2, fs=fs[1:], div=div))
-    for i in range(1, len(p), 2): p[i] = -p[i]
-    return p
+    r = list(poly_cyclotomic(n // 2, fs=fs[1:], div=div))
+    for i in range(1, len(r), 2): r[i] = -r[i]
   else:
-    p = poly_from_pairs([(0, -1), (n, 1)]) # x^n - 1
+    r = poly_from_pairs([(0, -1), (n, 1)]) # x^n - 1
     for d in multiples(fs):
       if d < n:
-        (p, r) = poly_divmod(p, poly_cyclotomic(d, div=div), div=div)
-        assert r == poly_zero
-    return p
+        (r, z) = poly_divmod(r, poly_cyclotomic(d, div=div), div=div)
+        #assert z == poly_zero
+  if poly_cyclotomic.cache_enabled: poly_cyclotomic.cache[n] = r
+  return r
     
 
 # wrap the whole lot up in a class
@@ -5654,8 +5662,7 @@ class Polynomial(list):
   @classmethod
   def interpolate(cls, ps, F=None):
     r = poly_interpolate(ps, F=F)
-    if r is None: return
-    return cls(r)
+    return (None if r is None else cls(r))
 
   @classmethod
   def cyclotomic(cls, n, div=rdiv):
@@ -8168,7 +8175,7 @@ class Slots(object):
     i = self._slot(i)
     j = self._slot(j)
     if i == j: return
-    (i, j) = (min(i, j), max(i, j))
+    (i, j) = sorted((i, j))
     # copy any properties from slot j to slot i
     self.slot_setprops(i, *(self._s2p[j]))
     # mark slot j as being unified with i
@@ -10340,7 +10347,10 @@ def _enigma_help():
 # run doctests (-t)
 def _enigma_test(verbose=0):
   import doctest
-  return doctest.testmod(enigma, verbose=verbose)
+  print("[testing, testing ...]")
+  r = doctest.testmod(enigma, verbose=verbose)
+  printf("[testing complete]")
+  return r
 
 # check for updates to enigma.py (-u)
 # check = only check the current version
