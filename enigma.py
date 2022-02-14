@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 12 14:47:47 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb 14 10:40:35 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -204,7 +204,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-02-10"
+__version__ = "2022-02-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4518,7 +4518,7 @@ def Decompose(k=None, increasing=1, sep=None, min_v=1, max_v=inf, fn=identity):
         for z in _decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,)): yield z
 
   if increasing == 0:
-    if sep is None:
+    if sep:
       R = (lambda t, k, k_, m: t - k_ * m)
       M = (lambda n, d, m=min_v: m)
       return (lambda t, k=k, min_v=min_v: _decompose(t, k, min_v, max_v, None, R, M, 0, fn))
@@ -5450,6 +5450,13 @@ def poly_divmod(p, q, div=rdiv):
     r = poly_sub(r, poly_mul(m, q))
   return (d, r)
 
+# compose two polynomials: compose(p, q)(x) = p(q(x))
+def poly_compose(p, q):
+  r = poly_zero
+  for (i, a) in enumerate(p):
+    r = poly_sum(r, a * poly_pow(q, i))
+  return r
+
 # print a polynomial in a more friendly form
 def poly_print(p):
   r = list()
@@ -5501,6 +5508,17 @@ def poly_interpolate(ps, F=None):
   except ValueError:
     return
 
+# scale a polynomial to give integer coefficents
+def poly_scale(p, F=None):
+  if not p: return p
+  if F is None: F = Rational()
+  p = list(map(F, p))
+  m = mlcm(*(f.denominator for f in p))
+  p = list(int(m * f) for f in p)
+  g = mgcd(*p)
+  if g > 1: p = list(x // g for x in p)
+  return p
+
 # find rational roots of a polynomial
 # see: [ https://en.wikipedia.org/wiki/Rational_root_theorem ]
 def poly_rational_roots(p, domain="Q", include="+-0", F=None):
@@ -5527,12 +5545,7 @@ def poly_rational_roots(p, domain="Q", include="+-0", F=None):
     while p and p[0] == 0: p = p[1:]
   if not p: return
   # make an equivalent polynomial with integer coefficients
-  p = list(map(F, p))
-  m = mlcm(*(f.denominator for f in p))
-  p = list((m * f).numerator for f in p)
-  g = mgcd(*p)
-  p = list(x // g for x in p)
-  # collect rational roots
+  p = poly_scale(p, F=F)
   fs = product(divisors(abs(p[0])), divisors(abs(p[-1])))
   for x in uniq(map(unpack(F), fs)):
     if domain == "Z":
@@ -5621,7 +5634,12 @@ class Polynomial(list):
     return self.__class__(poly_add(self, other))
 
   def __mul__(self, other):
-    return self.__class__(poly_mul(self, other))
+    if isinstance(other, Polynomial):
+      # multiply polynomials
+      return self.__class__(poly_mul(self, other))
+    else:
+      # multiply coefficients
+      return self.__class__(other * c for c in self)
 
   def __neg__(self):
     return self.__class__(poly_neg(self))
@@ -5656,6 +5674,9 @@ class Polynomial(list):
   def is_unit(self):
     return self == poly_unit
 
+  def scale(self):
+    return self.__class__(poly_scale(self))
+
   def derivative(self, k=1):
     return self.__class__(poly_derivative(self, k))
 
@@ -5665,9 +5686,12 @@ class Polynomial(list):
   def rational_roots(self, domain="Q", include="+-0", F=None):
     return poly_rational_roots(self, domain=domain, include=include, F=F)
 
-  def divmod(self, q, div=None):
-    (d, r) = poly_divmod(self, q, div)
+  def divmod(self, q, div=rdiv):
+    (d, r) = poly_divmod(self, q, div=div)
     return (self.__class__(d), self.__class__(r))
+
+  def compose(self, other):
+    return self.__class__(poly_compose(self, other))
 
   def drop_factor(self, *qs):
     return self.__class__(poly_drop_factor(self, *qs))
