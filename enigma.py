@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 19 09:21:53 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 19 09:23:17 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2313,7 +2313,7 @@ def divisors_tuples(n, k, s=()):
   """
   find ordered <k>-tuples that multiply to give <n>.
 
-  >>> list(divisors_tuples(1335, 3)
+  >>> list(divisors_tuples(1335, 3))
   [(1, 1, 1335), (1, 3, 445), (1, 5, 267), (1, 15, 89), (3, 5, 89)]
   """
   if k == 1:
