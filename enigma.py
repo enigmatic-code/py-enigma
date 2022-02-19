@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb 14 10:40:35 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 19 09:21:53 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -23,7 +23,7 @@ The latest version is available at <http://www.magwag.plus.com/jim/enigma.html>.
 
 Currently this module provides the following functions and classes:
 
-all_different          - chack arguments are pairwise distinct
+all_different          - check arguments are pairwise distinct
 all_same               - check arguments all have the same value
 arg                    - extract an argument from the command line
 args                   - extract a list of arguments from the command line
@@ -59,6 +59,7 @@ divisor                - generate the divisors of a number
 divisor_pairs          - generate pairs of divisors of a number
 divisors               - the divisors of a number
 divisors_pairs         - generate pairs of divisors of a number
+divisors_tuples        - generate tuples of divisors of a number
 drop_factors           - reduce a number by removing factors
 dsum                   - digit sum of a number
 ediv                   - exact division (or raise an error)
@@ -204,7 +205,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-02-12"
+__version__ = "2022-02-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2308,6 +2309,20 @@ def divisors_pairs(n, k=1, fn=prime_factor, every=0):
     if a > b and not(every): break
     yield (a, b)
 
+def divisors_tuples(n, k, s=()):
+  """
+  find ordered <k>-tuples that multiply to give <n>.
+
+  >>> list(divisors_tuples(1335, 3)
+  [(1, 1, 1335), (1, 3, 445), (1, 5, 267), (1, 15, 89), (3, 5, 89)]
+  """
+  if k == 1:
+    if not(s and n < s[-1]):
+      yield s + (n,)
+  else:
+    for (a, b) in divisors_pairs(n):
+      if not(s and a < s[-1]):
+        for z in divisors_tuples(b, k - 1, s + (a,)): yield z
 
 def is_prime(n):
   """
@@ -3541,7 +3556,7 @@ class Rdiv(object):
     (d, r) = divmod(a, b)
     if r == 0: return d
     if self.F is None: self.F = Rational(src=self.src, verbose=self.verbose)
-    return self.F(a, b)
+    return self.F(a) / b  # because mpq(x, y) changes x
 
 rdiv = Rdiv()
 
@@ -5556,13 +5571,71 @@ def poly_rational_roots(p, domain="Q", include="+-0", F=None):
     if neg and poly_value(p, -x) == 0:
       yield -x
 
+# return (n, r) where p = q^n . r
+def poly_div(p, q, div=rdiv):
+  n = 0
+  while True:
+    (p_, z) = poly_divmod(p, q, div=div)
+    if z != poly_zero: break
+    n += 1
+    p = p_
+  return (n, p)
+
+# return factors of polynomial <p> using Kroneker's method
+def poly_factor(p, F=None, div=None):
+  if F is None: F = Rational()
+  if div is None: div = Rdiv(F)
+
+  # first find factors of x
+  n = 0
+  while p[0] == 0:
+    n += 1
+    p.pop(0)
+  if n > 0: yield ([0, 1], n)
+
+  # find other linear factors
+  for x in poly_rational_roots(p, domain='Q', F=F):
+    f = [-int(x.numerator), int(x.denominator)]
+    (n, p) = poly_div(p, f, div=div)
+    if n > 0: yield (f, n)
+
+  # look for factors of degree k
+  k = 2
+  while len(p) > 2 * k:
+    q = poly_scale(p)
+    # evaluate q at (k + 1) values, and record the divisors
+    ds = list()
+    for i in irange(0, k):
+      vs = divisors(poly_value(q, i))
+      if i > 0: vs += list(-x for x in vs)
+      ds.append(vs)
+    # choose potential values for polynomial factor at the values
+    for vs in product(*ds):
+      if mgcd(*vs) != 1: continue
+      # interpolate the polynomial factor
+      f = poly_interpolate(enumerate(vs), F=F)
+      if len(f) - 1 < k: continue
+      (n, p) = poly_div(p, f, div=div)
+      if n > 0:
+        yield (f, n)
+        break
+    else:
+      k += 1
+
+  # anything left?
+  if len(p) > 1:
+    f = poly_scale(p)
+    yield (f, 1)
+    p = [div(p[-1], f[-1])]
+  if p != poly_unit:
+    yield (p, 1)
+
 # drop factors in qs from polynomial p
 def poly_drop_factor(p, *qs):
   for q in qs:
     while True:
       (d, r) = poly_divmod(p, q)
-      if r != poly_zero:
-        break
+      if r != poly_zero: break
       p = d
   return p
 
@@ -5674,6 +5747,9 @@ class Polynomial(list):
   def is_unit(self):
     return self == poly_unit
 
+  def map(self, fn):
+    return self.__class__(poly_map(self, fn))
+
   def scale(self):
     return self.__class__(poly_scale(self))
 
@@ -5692,6 +5768,10 @@ class Polynomial(list):
 
   def compose(self, other):
     return self.__class__(poly_compose(self, other))
+
+  def factor(self, F=None, div=None):
+    for (f, n) in poly_factor(self, F=F, div=div):
+      yield (self.__class__(f), n)
 
   def drop_factor(self, *qs):
     return self.__class__(poly_drop_factor(self, *qs))
