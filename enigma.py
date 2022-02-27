@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb 27 09:13:59 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb 27 09:18:14 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -205,7 +205,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-02-26"
+__version__ = "2022-02-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4129,7 +4129,7 @@ def delete(s, ks=()):
   >>> delete(dict(a=1, b=2, c=3), 'bc') == dict(a=1)
   True
   >>> delete("bananas", [0, 2, 4, 6])
-  "aaa"
+  'aaa'
   """
   fn = None
   if isinstance(s, tuple):
