@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 19 09:23:17 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb 27 09:13:59 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -205,7 +205,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-02-18"
+__version__ = "2022-02-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1143,6 +1143,10 @@ class multiset(dict):
 
   # is_nonempty is faster than using __len__  
   __bool__ = __nonzero__ = is_nonempty
+
+  # return an element
+  def peek(self, k=0, **kw):
+    return peek(self, k=k, **kw)
 
   # does this multiset contain elements with multiplicity greater than n?
   def is_duplicate(self, n=1):
@@ -4117,6 +4121,39 @@ def update(s, ps=(), vs=None):
   # return the new object
   return (fn(s) if fn else s)
 
+# return a copy of object <s> with values at indices <ks> removed
+def delete(s, ks=()):
+  """
+  return an updated version of object <s> with items at keys <ks> removed.
+
+  >>> delete(dict(a=1, b=2, c=3), 'bc') == dict(a=1)
+  True
+  >>> delete("bananas", [0, 2, 4, 6])
+  "aaa"
+  """
+  fn = None
+  if isinstance(s, tuple):
+    fn = type(s)
+    s = list(s)
+    ks = sorted(ks, reverse=1)
+  elif isinstance(s, basestring):
+    fn = ''.join
+    s = list(s)
+    ks = sorted(ks, reverse=1)
+  else:
+    try:
+      # use copy() method if available
+      s = s.copy()
+    except AttributeError:
+      # otherwise create a new object initialised from the old one
+      s = type(s)(s)
+  # remove specified keys
+  for k in ks:
+    del s[k]
+  # return the new object
+  return (fn(s) if fn else s)
+  
+
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
 def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0, include_self=0):
@@ -5581,7 +5618,7 @@ def poly_div(p, q, div=rdiv):
     p = p_
   return (n, p)
 
-# return factors of polynomial <p> using Kroneker's method
+# EXPERIMENTAL: return factors of polynomial <p> using Kroneker's method
 def poly_factor(p, F=None, div=None):
   if F is None: F = Rational()
   if div is None: div = Rdiv(F)
