@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb 27 09:18:14 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 12 10:56:21 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -205,7 +205,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-02-27"
+__version__ = "2022-03-11"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -734,7 +734,7 @@ def nsplit(n, k=None, base=10, fn=tuple):
   (127, 0, 0, 1)
   >>> nsplit(7, 3)
   (0, 0, 7)
-  >>> nsplit(111 ** 2, 3)
+  >>> nsplit(111**2, 3)
   (3, 2, 1)
   """
   return fn(reversed(tuple(nsplitter(n, k=k, base=base))))
@@ -2116,7 +2116,7 @@ def uniq1(i, fn=None):
       seen = r
 
 # root: calculate the (positive) nth root of a (positive) number
-# we use math.pow rather than ** to avoid generating complex numbers
+# we use math.pow rather than **/pow() to avoid generating complex numbers
 root = lambda x, n: (x if not(x) else math.pow(x, 1.0 / n))
 
 def cbrt(x):
@@ -2132,7 +2132,7 @@ def cbrt(x):
   return (-r if x < 0 else r)
 
 #cb = lambda x: x ** 3
-def cb(x): "cb(x) = x ** 3"; return x ** 3
+def cb(x): "cb(x) = pow(x, 3)"; return x ** 3
 
 # for large numbers try Primes.prime_factor(n, mr=100), or sympy.ntheory.factorint(n)
 def prime_factor(n):
@@ -2283,7 +2283,7 @@ def multiples(ps, k=1):
 
 def divisors(n, k=1, fn=prime_factor):
   """
-  return the divisors of positive integer <n> ** <k> as a sorted list.
+  return the divisors of positive integer pow(<n>, <k>) as a sorted list.
 
   >>> divisors(36)
   [1, 2, 3, 4, 6, 9, 12, 18, 36]
@@ -2296,7 +2296,7 @@ def divisors(n, k=1, fn=prime_factor):
 
 def divisors_pairs(n, k=1, fn=prime_factor, every=0):
   """
-  generate divisors pairs (a, b) with a <= b, such that a * b = n**k.
+  generate divisors pairs (a, b) with a <= b, such that a * b = pow(n, k).
 
   pairs are generated in order, by determining the factors of n.
 
@@ -2332,7 +2332,7 @@ def is_prime(n):
   """
   return True if the positive integer <n> is prime.
 
-  Note: for numbers up to 2^64 is_prime_mr() is a fast, accurate prime
+  Note: for numbers up to 2**64 is_prime_mr() is a fast, accurate prime
   test. (And for larger numbers it is probabilistically accurate).
 
   >>> is_prime(101)
@@ -2379,7 +2379,7 @@ def is_prime_mr(n, r=0):
     1 = the number is probably prime
     2 = the number is definitely prime
 
-  for numbers less than 2^64, the prime test is completely accurate,
+  for numbers less than 2**64, the prime test is completely accurate,
   and deterministic, the extra rounds are not performed.
 
   for larger numbers <r> additional rounds are performed, and if the
@@ -2728,7 +2728,7 @@ def fib(*s, **kw):
     yield s.pop(0)
 
 
-# if we don't overflow floats (happens around 2**53) this works...
+# if we don't overflow floats (happens around 2^53) this works...
 #   def is_power(n, m):
 #     i = int(n ** (1.0 / m) + 0.5)
 #     return (i if i ** m == n else None)
@@ -2740,11 +2740,11 @@ def fib(*s, **kw):
 
 def iroot(n, k):
   """
-  compute the largest integer x such that x^k <= n.
+  compute the largest integer x such that pow(x, k) <= n.
 
   i.e. x is the integer k-th root of n.
 
-  it is the exact root if: (x ** k == n)
+  it is the exact root if: pow(x, k) == n
   (which is what is_power() does)
   """
   # binary search
@@ -2780,10 +2780,10 @@ def is_power(n, k):
   False
   >>> is_power(0, 2)
   0
-  >>> n = (2 ** 60 + 1)
-  >>> (is_power(n ** 2, 2) is not None, is_power(n ** 2 + 1, 2) is not None)
+  >>> n = (2**60 + 1)
+  >>> (is_power(n**2, 2) is not None, is_power(n**2 + 1, 2) is not None)
   (True, False)
-  >>> (is_power(n ** 3, 3) is not None, is_power(n ** 3 + 1, 3) is not None)
+  >>> (is_power(n**3, 3) is not None, is_power(n**3 + 1, 3) is not None)
   (True, False)
   """
   r = iroot(n, k)
@@ -2804,7 +2804,7 @@ def sqrt(a, b=None):
   return math.sqrt(a if b is None else a / b)
 
 # sq = lambda x: x * x
-def sq(x): "sq(x) = x ** 2"; return x * x
+def sq(x): "sq(x) = pow(x, 2)"; return x * x
 def sumsq(*xs): "sumsq(xs) = sum(sq(x) for x in xs)"; return sum(x * x for x in xs)
 
 # calculate intf(sqrt(n))
@@ -2888,7 +2888,7 @@ def is_square(n):
 # generate powers from a range
 def powers(a, b, k=2, step=1):
   """
-  generate powers (n ** k) for n in irange(a, b)
+  generate powers pow(n, k) for n in irange(a, b)
 
   >>> list(powers(1, 10))
   [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
@@ -3107,19 +3107,30 @@ def repdigit(n, d=1, base=10):
   True
   """
   assert 0 <= d < base
-  return d * (base ** n - 1) // (base - 1)
+  return d * ((base ** n) - 1) // (base - 1)
 
 # Python 3.8 has math.hypot
-def hypot(*vs):
+def hypot(*vs, **kw):
   """
   return hypotenuse of a right angled triangle with shorter sides <a> and <b>.
 
-  hypot(a, b) = sqrt(a**2 + b**2)
+  hypot(a, b) = sqrt(a^2 + b^2)
 
-  >>> hypot(3.0, 4.0)
+  multiple arguments can be specified to return Euclidean distance in
+  higher dimensions.
+
+  a keyword argument of 'root' may be specified to provide the
+  function used to calculate the root of the sum of the squares.
+
+  >>> hypot(3, 4)
   5.0
+  >>> hypot(3, 4, 12)
+  13.0
+  >>> hypot(3, 4, root=is_square)
+  5
   """
-  return sqrt(sum(v * v for v in vs))
+  root = kw.get('root', sqrt)
+  return root(sum(v * v for v in vs))
 
   
 # return roots of the form n/d in the appropriate domain
@@ -3315,7 +3326,7 @@ def is_duplicate(*s):
   True
   >>> is_duplicate("world")
   False
-  >>> is_duplicate(99 ** 2)
+  >>> is_duplicate(99**2)
   False
   """
   s = join(s)
@@ -3735,10 +3746,10 @@ def recurring2fraction(i, nr, rr, base=10, digits=None):
   i = base2int(i, base=base, digits=digits)
   if q:
     if p:
-      d = base ** (p + q) - base ** p
-      n = base2int(nr, base=base, digits=digits) * (base ** q - 1) + base2int(rr, base=base, digits=digits)
+      d = (base ** (p + q)) - (base ** p)
+      n = base2int(nr, base=base, digits=digits) * ((base ** q) - 1) + base2int(rr, base=base, digits=digits)
     else:
-      d = base ** q - 1
+      d = (base ** q) - 1
       n = base2int(rr, base=base, digits=digits)
   elif p:
     d = base ** p
@@ -4324,7 +4335,7 @@ def bit_permutations(a, b=None):
 
   to generate all numbers with k bits start start with:
 
-    a = 2 ** k - 1
+    a = pow(2, k) - 1
     a = (1 << k) - 1
 
   >>> list(bit_permutations(3, 20))
@@ -4767,7 +4778,7 @@ find_min.__doc__ = """
   fv = the value of the function at v
   t = the tolerance used
 
-  >>> r = find_min(lambda x: (x - 2) ** 2, 0.0, 10.0)
+  >>> r = find_min(lambda x: sq(x - 2), 0.0, 10.0)
   >>> round(r.v, 6)
   2.0
 """
@@ -4787,7 +4798,7 @@ def find_max(f, a, b, t=1e-9):
   fv = the value of the function at v
   t = the tolerance used
 
-  >>> r = find_max(lambda x: 9 - (x - 2) ** 2, 0.0, 10.0)
+  >>> r = find_max(lambda x: 9 - sq(x - 2), 0.0, 10.0)
   >>> round(r.v, 6)
   2.0
   """
@@ -4806,10 +4817,10 @@ def find_zero(f, a, b, t=1e-9, ft=1e-6):
   fv = the value of the function at v
   t = the tolerance used
 
-  >>> r = find_zero(lambda x: x ** 2 - 4, 0.0, 10.0)
+  >>> r = find_zero(lambda x: sq(x) - 4, 0.0, 10.0)
   >>> round(r.v, 6)
   2.0
-  >>> r = find_zero(lambda x: x ** 2 + 4, 0.0, 10.0) # doctest: +IGNORE_EXCEPTION_DETAIL
+  >>> r = find_zero(lambda x: sq(x) + 4, 0.0, 10.0) # doctest: +IGNORE_EXCEPTION_DETAIL
   Traceback (most recent call last):
     ...
   ValueError: Value not found
@@ -4832,7 +4843,7 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   fv = the value of the function at v
   t = the tolerance used
 
-  >>> r = find_value(lambda x: x ** 2 + 4, 8.0, 0.0, 10.0)
+  >>> r = find_value(lambda x: sq(x) + 4, 8.0, 0.0, 10.0)
   >>> round(r.v, 6)
   2.0
   """
@@ -5131,9 +5142,9 @@ def __int2words(n, scale='short', sep='', hyphen=' '):
   convert a large integer (one million or greater) to a string
   representing the number in English, using short or long scale.
 
-  >>> __int2words(10 ** 12, scale='short')
+  >>> __int2words(10**12, scale='short')
   'one trillion'
-  >>> __int2words(10 ** 12, scale='long')
+  >>> __int2words(10**12, scale='long')
   'one billion'
   """
   if scale == 'short':
@@ -7809,7 +7820,7 @@ class SubstitutedExpression(object):
         ts = list(t[-k:] for t in terms)
         ts_ = list(t for t in (t[:-k] for t in terms) if t)
         # upper bound for carry out
-        maxc_ = (sum(pow(base, len(t)) - 1 for t in ts) + maxc) // pow(base, k)
+        maxc_ = (sum((base ** len(t)) - 1 for t in ts) + maxc) // (base ** k)
         assert maxc_ < base, "multi-digit carries unimplemented"
       else:
         # use the remaining term
