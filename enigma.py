@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Mar 17 21:27:50 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Mar 17 21:58:25 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -205,7 +205,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-03-17"
+__version__ = "2022-03-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2884,12 +2884,19 @@ def is_square(n):
   return z
 
 # return k-tuples (a, b, ...) such that n = a^2 + b^2 + ...
-# TODO: maybe specialise k=2
 def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
   if k == 1:
     r = is_square(n)
     if not(r is None or r < min_v):
       yield ss + [r]
+  elif k == 2:
+    i = isqrt(n)
+    j = 0
+    while not(i < j):
+      r = compare(i * i + j * j, n)
+      if r == 0 and not(j < min_v or i - j < sep): yield (ss + [j, i] if ss else [j, i])
+      if r != -1: i -= 1
+      if r != 1: j += 1
   else:
     for x in irange(min_v, inf):
       x2 = x * x
