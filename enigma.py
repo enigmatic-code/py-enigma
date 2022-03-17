@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 12 10:56:21 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Mar 17 21:27:50 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -205,7 +205,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-03-11"
+__version__ = "2022-03-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2876,14 +2876,25 @@ def is_square(n):
   if not is_square.residues: is_square.residues = set((i * i) % is_square.mod for i in xrange(is_square.mod))
   if (n % is_square.mod) not in is_square.residues: return None
   # otherwise use isqrt and check the result
-  try:
-    return is_square.cache[n]
-  except KeyError:
-    pass
-  r = isqrt(n)
-  z = (r if r * r == n else None)
-  if is_square.cache_enabled: is_square.cache[n] = z
+  z = is_square.cache.get(n)
+  if z is None:
+    r = isqrt(n)
+    z = (r if r * r == n else None)
+    if is_square.cache_enabled: is_square.cache[n] = z
   return z
+
+# return k-tuples (a, b, ...) such that n = a^2 + b^2 + ...
+# TODO: maybe specialise k=2
+def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
+  if k == 1:
+    r = is_square(n)
+    if not(r is None or r < min_v):
+      yield ss + [r]
+  else:
+    for x in irange(min_v, inf):
+      x2 = x * x
+      if x2 * (k - 1) > n: break
+      for z in sum_of_squares(n - x2, k - 1, x + sep, sep, ss + [x]): yield z
 
 # generate powers from a range
 def powers(a, b, k=2, step=1):
@@ -2959,12 +2970,10 @@ def is_cube(n):
   if n < 2: return n
   if not is_cube.residues: is_cube.residues = set((i * i * i) % is_cube.mod for i in xrange(is_cube.mod))
   if (n % is_cube.mod) not in is_cube.residues: return None
-  try:
-    return is_cube.cache[n]
-  except KeyError:
-    pass
-  z = is_power(n, 3)
-  if is_cube.cache_enabled: is_cube.cache[n] = z
+  z = is_cube.cache.get(n)
+  if z is None:
+    z = is_power(n, 3)
+    if is_cube.cache_enabled: is_cube.cache[n] = z
   return z
 
 is_cube_p = (lambda x: is_cube(x) is not None) # = fcompose(is_cube, is_not_none)
@@ -3110,6 +3119,7 @@ def repdigit(n, d=1, base=10):
   return d * ((base ** n) - 1) // (base - 1)
 
 # Python 3.8 has math.hypot
+# Python 3.6: ...(*vs, root=sqrt)
 def hypot(*vs, **kw):
   """
   return hypotenuse of a right angled triangle with shorter sides <a> and <b>.
@@ -3689,13 +3699,13 @@ def recurring(a, b, recur=0, base=10, digits=None):
   s = ''
   n = 0
   while True:
-    try:
+    j = r.get(a)
+    if j is not None:
       # have we had this dividend before?
-      j = r[a]
       (i, nr, rr) = (int2base(i, base, digits=digits), s[:j], s[j:])
       if neg and (nr or rr or i != '0'): i = '-' + i
       return Recurring(i, nr, rr)
-    except KeyError:
+    else:
       # no, we haven't
       r[a] = n
       n += 1
@@ -5701,43 +5711,41 @@ def poly_cyclotomic(n, fs=None, div=rdiv, fn=prime_factor):
   [1, 1, 0, -1, -1, -1, 0, 1, 1]
   """
   if n < 1: return None
-  try:
-    return poly_cyclotomic.cache[n]
-  except KeyError:
-    pass
-  if fs is None: fs = list(fn(n))
-  if len(fs) == 1:
-    (p, e) = fs[0]
-    if e == 1:
-      # n is prime
-      r = [1] * n
+  r = poly_cyclotomic.cache.get(n)
+  if r is None:
+    if fs is None: fs = list(fn(n))
+    if len(fs) == 1:
+      (p, e) = fs[0]
+      if e == 1:
+        # n is prime
+        r = [1] * n
+      else:
+        # power of a prime
+        q = n // p
+        r = poly_from_pairs((k * q, 1) for k in irange(0, p - 1))
+    elif fs[0] == (2, 1):
+      # 2n, invert the odd positions in cyclotomic[n]
+      r = list(poly_cyclotomic(n // 2, fs=fs[1:], div=div, fn=fn))
+      for i in range(1, len(r), 2): r[i] = -r[i]
     else:
-      # power of a prime
-      q = n // p
-      r = poly_from_pairs((k * q, 1) for k in irange(0, p - 1))
-  elif fs[0] == (2, 1):
-    # 2n, invert the odd positions in cyclotomic[n]
-    r = list(poly_cyclotomic(n // 2, fs=fs[1:], div=div, fn=fn))
-    for i in range(1, len(r), 2): r[i] = -r[i]
-  else:
-    # C[n] = multiply((x^d - 1) ^ mobius(n // d) for d in divisors(n))
-    # we can specialise multiplication and division by (x^d - 1)
-    (r, ds) = ([1], [])
-    for d in multiples(fs):
-      m = mobius(n // d, fn=fn)
-      if m == 1:
-        # r *= (x^d - 1)
-        r = poly_sub([0] * d + r, r)
-      elif m == -1:
-        ds.append(d)
-    for d in ds:
-      # r /= (x^d - 1)
-      r_ = list()
-      for c in reversed(r[d:]):
-        r_.insert(0, c)
-        if len(r_) > d: r_[0] += r_[d]
-      r = r_
-  if poly_cyclotomic.cache_enabled: poly_cyclotomic.cache[n] = r
+      # C[n] = multiply((x^d - 1) ^ mobius(n // d) for d in divisors(n))
+      # we can specialise multiplication and division by (x^d - 1)
+      (r, ds) = ([1], [])
+      for d in multiples(fs):
+        m = mobius(n // d, fn=fn)
+        if m == 1:
+          # r *= (x^d - 1)
+          r = poly_sub([0] * d + r, r)
+        elif m == -1:
+          ds.append(d)
+      for d in ds:
+        # r /= (x^d - 1)
+        r_ = list()
+        for c in reversed(r[d:]):
+          r_.insert(0, c)
+          if len(r_) > d: r_[0] += r_[d]
+        r = r_
+    if poly_cyclotomic.cache_enabled: poly_cyclotomic.cache[n] = r
   return r
     
 
