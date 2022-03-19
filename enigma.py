@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Mar 17 21:58:25 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 19 10:40:55 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -205,7 +205,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-03-18"
+__version__ = "2022-03-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1756,7 +1756,7 @@ unzip = unpack(zip)
 #
 def ulambda(args, expr=None):
   """
-  provide an equivalent to:
+  provide an equivalent to the Python 2 expression:
 
     lambda {args}: {expr}
 
@@ -2883,7 +2883,7 @@ def is_square(n):
     if is_square.cache_enabled: is_square.cache[n] = z
   return z
 
-# return k-tuples (a, b, ...) such that n = a^2 + b^2 + ...
+# return ordered k-tuples (a, b, ...) such that n = a^2 + b^2 + ...
 def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
   if k == 1:
     r = is_square(n)
