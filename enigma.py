@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Mar 20 13:13:36 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 23 17:32:10 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -205,7 +205,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-03-20"
+__version__ = "2022-03-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -221,7 +221,7 @@ import copy
 import re
 
 # maybe use the "six" module for some of this stuff
-_pythonv = sys.version_info[0:2]  # Python version e.g. (2, 7) or (3, 9)
+_pythonv = sys.version_info[0:2]  # Python version e.g. (2, 7) or (3, 10)
 if _pythonv[0] == 2:
   # Python 2.x
   _python = 2
@@ -293,11 +293,11 @@ def static(**kw):
 
   (for better performance you can use global variables)
   """
-  def decorate(fn):
+  def _decorate(fn):
     for (k, v) in kw.items():
       setattr(fn, k, v)
     return fn
-  return decorate
+  return _decorate
 
 # useful as a decorator for caching functions (@cached).
 # NOTE: functools.lru_cached() can be used as an alternative in Python 3.2 and later
@@ -538,10 +538,24 @@ def all_same(*args, **kw):
   """
   return seq_all_same(args, **kw)
 
-# check sequences have the same elements
-# 'strict' is passed to zip (which is supported in some Python versions, and throws an error if the inputs are not of equal length)
-# 'first' limits checks to the first <k> elements
 def zip_eq(*ss, **kw):
+  """
+  check sequences have the same elements.
+
+  the 'strict' argument is passsed to zip (which supported in some Python versions,
+  and throws an error if the inputs are not of equal length)
+
+  the 'first' parameter limits checks for the first <k> elements
+
+  >>> zip_eq((1, 2, 3), [1, 2, 3])
+  True
+  >>> zip_eq((1, 2, 3), [1, 2, 3], map(int, "123"))
+  True
+  >>> zip_eq((1, 2, 3, 4), [1, 2, 4, 8])
+  False
+  >>> zip_eq((1, 2, 3, 4), [1, 2, 4, 8], first=2)
+  True
+  """
   z = (zip(*ss, strict=kw['strict']) if 'strict' in kw else zip(*ss))
   k = kw.get('first')
   if k is not None: z = first(z, count=k, fn=iter)
@@ -4736,6 +4750,7 @@ def exact_cover(sss, tgt=None):
 # (Python 3.3 introduced types.SimpleNamespace)
 class Record(object):
 
+  # best called as Record.update(self, ...)
   def update(self, **vs):
     """update values in a record"""
     self.__dict__.update(vs)
@@ -4743,7 +4758,7 @@ class Record(object):
     
   # __init__ is the same as update
   def __init__(self, **vs):
-    self.update(**vs)
+    Record.update(self, **vs)
 
   def __iter__(self):
     d = self.__dict__
@@ -4753,6 +4768,7 @@ class Record(object):
   def __repr__(self):
     return self.__class__.__name__ + map2str((k, repr(v)) for (k, v) in self)
 
+  # best called as Record.map(self, ...)
   def map(self):
     return self.__dict__
 
