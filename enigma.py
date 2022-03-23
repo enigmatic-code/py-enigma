@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 23 17:32:10 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 23 17:33:56 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -182,6 +182,7 @@ uniq, uniq1            - unique elements of an iterator
 unzip                  - inverse of zip
 unpack                 - return a function that unpacks its arguments
 update                 - create an updated version of a container object
+zip_eq                 - check sequences contain the same elements
 
 Accumulator            - a class for accumulating values
 CrossFigure            - a class for solving cross figure puzzles
