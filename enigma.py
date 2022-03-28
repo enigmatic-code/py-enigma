@@ -1,4 +1,4 @@
-#!/usr/bin/env python3 -t
+#! python3
 ###############################################################################
 #
 # File:         enigma.py
@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Mar 25 18:22:48 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Mar 28 12:55:00 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -206,7 +206,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-03-25"
+__version__ = "2022-03-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
