@@ -6,12 +6,12 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Mar 28 12:55:00 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Apr  3 11:10:24 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
 #
-# (c) Copyright 2009-2021, Jim Randell, all rights reserved.
+# (c) Copyright 2009-2022, Jim Randell, all rights reserved.
 #
 ###############################################################################
 # -*- mode: Python; py-indent-offset: 2; -*-
@@ -206,7 +206,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-03-27"
+__version__ = "2022-04-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -328,6 +328,11 @@ cache = getattr(functools, 'cache', cached)
 def identity(x):
   """the identity function: identity(x) == x"""
   return x
+
+# a function that returns a true value
+def true(*args, **kw):
+  """a function that returns True"""
+  return True
 
 # can we treat x as an integer?
 # include = +/-/0, check for +ve, -ve, 0
@@ -1855,7 +1860,7 @@ def icount(i, p=None, t=None):
         d = collections.deque(enumerate(i, start=1), maxlen=1)
         return (d[0][0] if d else 0)
     else:
-      p = (lambda x: True)
+      p = true
   n = 0
   for x in i:
     if p(x):
@@ -3336,7 +3341,7 @@ def ediv(a, b):
   if r != 0: raise ValueError("inexact division")
   return d
 
-def fdiv(a, b):
+def fdiv(a, b, fn=float):
   """
   float result of <a> divided by <b>.
 
@@ -3346,7 +3351,7 @@ def fdiv(a, b):
   >>> fdiv(9, 3)
   3.0
   """
-  return float(a) / float(b)
+  return fn(a) / fn(b)
 
 
 
@@ -3551,6 +3556,10 @@ def format_fraction(n, d, base=10):
 #   >> x = mpq(64)
 #   >> y = mpq(x, 2)
 # will end up setting both x and y to 32 (they are the same object)
+# I have submitted a bug against gmpy2 (#334)
+# instead do this:
+#   >> x = mpq(64)
+#   >> y = x / 2
 @static(src="gmpy2.mpq gmpy.mpq fractions.Fraction", impl=dict())
 def Rational(src=None, verbose=None):
   """
