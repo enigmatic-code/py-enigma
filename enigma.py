@@ -14,7 +14,7 @@
 # (c) Copyright 2009-2022, Jim Randell, all rights reserved.
 #
 ###############################################################################
-# -*- mode: Python; py-indent-offset: 2; -*-
+# -*- mode: Python; python-indent-offset: 2; -*-
 
 """
 A collection of useful code for solving New Scientist Enigma (and similar) puzzles.
@@ -206,7 +206,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-04-06"
+__version__ = "2022-04-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -331,7 +331,7 @@ def identity(x):
 
 # a function that returns a true value
 def true(*args, **kw):
-  """a function that returns True"""
+  """a function that ignores any arguments and returns True"""
   return True
 
 # can we treat x as an integer?
@@ -515,7 +515,7 @@ def seq_all_same(s, **kw):
   True
   >>> seq_all_same([1, 1, 1, 1, 1, 1], value=4)
   False
-  >>> seq_all_same(Primes(expandable=True))
+  >>> seq_all_same(Primes(expandable=1))
   False
   """
   i = iter(s)
@@ -1251,7 +1251,7 @@ class multiset(dict):
 
     if n is specifed only the first n items are returned.
     """
-    s = sorted(self.items(), key=lambda t: t[::-1], reverse=True)
+    s = sorted(self.items(), key=lambda t: t[::-1], reverse=1)
     return (s if n is None else s[:n])
 
   # provide some useful operations on multisets
@@ -3266,6 +3266,25 @@ def intc(x):
   r = int(x)
   return (r + 1 if x > r else r)
 
+def intr(x):
+  """
+  round to nearest integer.
+
+  if x is exactly between two integers (i.e. x = n + 0.5) then the
+  answer is the integer further away from 0.
+
+  >>> intr(0.0)
+  0
+  >>> intr(2.5)
+  3
+  >>> intr(-2.5)
+  -3
+  """
+  if x < 0:
+    x = -x
+    return -int((x + x + 1) // 2)
+  else:
+    return int((x + x + 1) // 2)
 
 def divf(a, b):
   """
@@ -3282,7 +3301,6 @@ def divf(a, b):
   4
   """
   return int(a // b)
-
 
 def floor(x, m=1):
   """
@@ -3312,10 +3330,11 @@ def divc(a, b):
 cdiv = divc
 
 def ceil(x, m=1):
-  "return lowest multiple of m, not less than x."
+  """
+  return lowest multiple of m, not less than x
+  """
   if m == 1: return intc(x)
   return m * -int(-x // m)
-
 
 def div(a, b):
   """
@@ -3352,7 +3371,6 @@ def fdiv(a, b, fn=float):
   3.0
   """
   return fn(a) / fn(b)
-
 
 
 def is_duplicate(*s):
@@ -3396,7 +3414,7 @@ def is_palindrome(s):
     j -= 1
   return True
 
-# originally called product(), but renamed to avoid name clashes with itertools.product
+# originally called product(), but renamed to avoid name clashes with itertools.product()
 # Python 3.8 has math.prod
 def multiply(s, r=1):
   """
@@ -8049,7 +8067,7 @@ class SubstitutedExpression(object):
       "  --first (or -1) = stop after the first solution",
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
       "  --denest=<n> (or -X<n>) = workaround statically nested block limit (0 = off, 1 = on, 2+ = depth)",
-      "  --sane=<n> (or -Y<n>) = enable/disable sanitfy checks (0 = off, 1 = on)",
+      "  --sane=<n> (or -Y<n>) = enable/disable sanity checks (0 = off, 1 = on)",
       "  --verbose[=<s>] (or -v[<s>]) = verbosity (0 = off, 1 = on, HTSAitC = more)",
       "  --help (or -h) = show command-line usage",
       "",
