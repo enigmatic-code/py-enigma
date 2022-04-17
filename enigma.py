@@ -6,10 +6,11 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Apr  3 11:10:24 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Apr 17 11:48:32 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
+# URI:          [ http://www.magwag.plus.com/jim/enigma.html ]
 #
 # (c) Copyright 2009-2022, Jim Randell, all rights reserved.
 #
@@ -206,7 +207,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-04-10"
+__version__ = "2022-04-16"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1161,7 +1162,7 @@ class multiset(dict):
   def is_nonempty(self):
     return dict.__len__(self) > 0
 
-  # is_nonempty is faster than using __len__  
+  # is_nonempty is faster than using __len__
   __bool__ = __nonzero__ = is_nonempty
 
   # return an element
@@ -1670,7 +1671,7 @@ def _collect(s, accept, reject, every):
     if (accept is None or accept(x)) and (reject is None or not(reject(x))):
       yield x
     elif every:
-      raise ValueError()    
+      raise ValueError()
 
 def collect(s, accept=None, reject=None, every=0, fn=list):
   """
@@ -2037,7 +2038,7 @@ def first(s, count=1, skip=0, fn=list):
   <count> can be a callable object, in which case items are collected
   from <i> while <count> returns a true value when it is passed each
   item (after skipping the first <skip> items).
-  
+
   <skip> can also be a callable, in which case items are skipped while
   <skip> returns a true value when it is passed each item.
 
@@ -3169,7 +3170,7 @@ def hypot(*vs, **kw):
   root = kw.get('root', sqrt)
   return root(sum(v * v for v in vs))
 
-  
+
 # return roots of the form n/d in the appropriate domain
 def _roots(domain, F, *nds):
   for (n, d) in nds:
@@ -3601,7 +3602,7 @@ def Rational(src=None, verbose=None):
         break
       except KeyError:
         pass
-      (mod, fn) = s.split('.', 2) 
+      (mod, fn) = s.split('.', 2)
       # Python3: could use importlib.util.find_spec() to see if the module exists
       # and then importlib.util.module_from_spec() to load it
       try:
@@ -3615,7 +3616,7 @@ def Rational(src=None, verbose=None):
       Rational.impl[s] = f
       if '*' not in Rational.impl and src == Rational.src: Rational.impl['*'] = (s, f)
       break
-  if verbose is None: verbose = ('v' in _PY_ENIGMA)    
+  if verbose is None: verbose = ('v' in _PY_ENIGMA)
   if verbose: printf("[Rational: using {s}]", s=(s if f else f))
   return f
 
@@ -3792,7 +3793,7 @@ def recurring2fraction(i, nr, rr, base=10, digits=None):
   turn the decimal representation <i>.<nr>(<rr>)...
   into a fraction in its lowest terms.
 
-  >>> recurring2fraction('0', '', '142857')  
+  >>> recurring2fraction('0', '', '142857')
   (1, 7)
   >>> recurring2fraction('1', '5', '')
   (3, 2)
@@ -4222,7 +4223,7 @@ def delete(s, ks=()):
     del s[k]
   # return the new object
   return (fn(s) if fn else s)
-  
+
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
@@ -4335,7 +4336,7 @@ def tuples(s, n=2, circular=0):
       i = itertools.chain(xs, i, (xs[k % m] for k in xrange(n - 1)))
     else:
       i = itertools.chain(xs, i, xs)
-  
+
   t = list()
   try:
     # collect the first tuple
@@ -4783,7 +4784,7 @@ class Record(object):
     """update values in a record"""
     self.__dict__.update(vs)
     return self
-    
+
   # __init__ is the same as update
   def __init__(self, **vs):
     Record.update(self, **vs)
@@ -5800,7 +5801,7 @@ def poly_cyclotomic(n, fs=None, div=rdiv, fn=prime_factor):
         r = r_
     if poly_cyclotomic.cache_enabled: poly_cyclotomic.cache[n] = r
   return r
-    
+
 
 # wrap the whole lot up in a class
 
@@ -6585,7 +6586,7 @@ def substitute(s2d, text, digits=None):
 
   >>> substitute(dict(zip('DEMNORSY', (7, 5, 1, 6, 0, 8, 9, 2))), "SEND + MORE = MONEY")
   '9567 + 1085 = 10652'
-  
+
   """
   if text is None: return None
   if digits is None: digits = base_digits()
@@ -7907,7 +7908,7 @@ class SubstitutedExpression(object):
     if extra:
       extra = list(extra)
       exprs.extend(extra)
-      template_ += " " + join(extra, sep=") (", enc="()")      
+      template_ += " " + join(extra, sep=") (", enc="()")
     symbols = join(sorted(union(words)))
     carries = join(cs)
     if template is None: template = template_
@@ -8255,7 +8256,7 @@ class SubstitutedExpression(object):
     if opt:
       argv = opt.pop('_argv')
       return cls(argv, **opt)
-    
+
   # class method to provide a read/eval/print loop
   @classmethod
   def repl(cls, args=(), timed=1):
@@ -9683,7 +9684,7 @@ class Timer(object):
     exit_report = should the report be generated at exit
     auto_start = should the timer be automatically started
     """
-    if Timer.timers is None: Timer.init()    
+    if Timer.timers is None: Timer.init()
     self._t0 = None
     self._t1 = None
     self._name = name
