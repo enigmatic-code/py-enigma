@@ -7,4 +7,5 @@ See:
 
 http://www.magwag.plus.com/jim/enigma.html - documentation
 
-https://enigmaticcode.wordpress.com/ - archive of Enigma puzzles
+https://enigmaticcode.wordpress.com/ - archive of New Scientist "Enigma" puzzles
+https://s2t2.home.blog/ - archive of Sunday Times "Teaser" puzzles
