@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Apr 18 09:48:35 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr 19 12:58:33 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -100,6 +100,7 @@ intc                   - ceiling conversion of float to int
 interleave             - interleave values from a bunch of iterators
 intersect              - find the intersection of a collection of containers
 intf                   - floor conversion of float to int
+intr                   - round a value to the nearest integer
 invmod                 - multiplicative inverse of n modulo m
 ipartitions            - partition a sequence with repeated values by index
 irange                 - inclusive range iterator
@@ -207,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-04-17"
+__version__ = "2022-04-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4316,7 +4317,7 @@ def cslice(x):
 
 
 # overlapping tuples from a sequence
-def tuples(s, n=2, circular=0):
+def tuples(s, n=2, circular=0, fn=tuple):
   """
   generate overlapping <n>-tuples from sequence <s>.
   (for non-overlapping tuples see chunk()).
@@ -4350,12 +4351,30 @@ def tuples(s, n=2, circular=0):
       t.append(next(i))
     while True:
       # return the tuple
-      yield tuple(t)
+      yield fn(t)
       # move the next value in to the tuple
       t.pop(0)
       t.append(next(i))
   except StopIteration:
     pass
+
+def last(s, count=1, fn=list):
+  """
+  find the last <count> items in sequence <s>.
+
+  >>> last([1, 2, 3, 4])
+  [4]
+  >>> last(Primes(30), 3)
+  [19, 23, 29]
+  """
+  try:
+    x = s[-count:]
+    if len(x) < count: return
+  except TypeError:
+    x = None
+    for x in tuples(s, count, fn=list): pass
+    if x is None: return
+  return (x if fn == list else fn(x))
 
 def contains(seq, subseq):
   """
