@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Apr 25 11:18:22 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Apr 25 11:20:58 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3623,7 +3623,7 @@ def Rational(src=None, verbose=None, fix=1):
       break
   if verbose is None: verbose = ('v' in _PY_ENIGMA)
   if verbose: printf("[Rational: using {s}]", s=(s if f else f))
-  # fix for gmpy2.mpq() behaviour (issue #334)
+  # fix for gmpy2.mpq() behaviour (issue #334) - may be fixed in gmpy2.version() > 2.1.2
   if fix and s == 'gmpy2.mpq': f = lambda x, y=None, fn=f: (fn(x) if y is None else fn(x) / y)
   return f
 
