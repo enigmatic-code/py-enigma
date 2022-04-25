@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Apr 25 11:06:27 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Apr 25 11:18:22 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3583,8 +3583,9 @@ def format_fraction(n, d, base=10):
 # instead do this:
 #   >> x = mpq(64)
 #   >> y = x / 2
+# if the fix=1 parameter is set, a workaround will be used
 @static(src="gmpy2.mpq gmpy.mpq fractions.Fraction", impl=dict())
-def Rational(src=None, verbose=None):
+def Rational(src=None, verbose=None, fix=1):
   """
   select a class for representing rationals.
 
@@ -3617,13 +3618,13 @@ def Rational(src=None, verbose=None):
         f = t.__dict__[fn]
       except KeyError:
         continue
-      # fix for gmpy2.mpq() behaviour (issue #334)
-      if s == 'gmpy2.mpq': f = lambda x, y=None, fn=f: (fn(x) if y is None else fn(x) / y)
       Rational.impl[s] = f
       if '*' not in Rational.impl and src == Rational.src: Rational.impl['*'] = (s, f)
       break
   if verbose is None: verbose = ('v' in _PY_ENIGMA)
   if verbose: printf("[Rational: using {s}]", s=(s if f else f))
+  # fix for gmpy2.mpq() behaviour (issue #334)
+  if fix and s == 'gmpy2.mpq': f = lambda x, y=None, fn=f: (fn(x) if y is None else fn(x) / y)
   return f
 
 # create a function that will calculate a/b, and return an int if the result is an integer
