@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr 19 12:58:33 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Apr 25 11:06:27 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-04-18"
+__version__ = "2022-04-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3617,6 +3617,8 @@ def Rational(src=None, verbose=None):
         f = t.__dict__[fn]
       except KeyError:
         continue
+      # fix for gmpy2.mpq() behaviour (issue #334)
+      if s == 'gmpy2.mpq': f = lambda x, y=None, fn=f: (fn(x) if y is None else fn(x) / y)
       Rational.impl[s] = f
       if '*' not in Rational.impl and src == Rational.src: Rational.impl['*'] = (s, f)
       break
