@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Apr 25 11:20:58 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Apr 28 16:14:15 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-04-24"
+__version__ = "2022-04-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3333,6 +3333,26 @@ def divc(a, b):
   return -int(-a // b)
 
 cdiv = divc
+
+def divr(a, b):
+  """
+  round the value of a/b to the nearest integer.
+
+    divr(a, b) = intr(fdiv(a, b))
+
+  >>> divr(0, 1)
+  0
+  >>> divr(5, 2)
+  3
+  >>> divr(10, -4)
+  -3
+  """
+  if b < 0: (a, b) = (-a, -b)
+  if a < 0:
+    a = -a
+    return -int((a + a + b) // (2 * b))
+  else:
+    return int((a + a + b) // (2 * b))
 
 def ceil(x, m=1):
   """
