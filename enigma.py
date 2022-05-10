@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Apr 28 16:14:15 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue May 10 11:39:12 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-04-27"
+__version__ = "2022-05-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3563,6 +3563,17 @@ def mlcm(a, *rest):
 def is_coprime(*vs):
   return mgcd(*vs) == 1
 
+# multiple divmod
+# hours, minutes, seconds: (h, m, s) = mdivmod(x, 60, 60)
+# days, hours, minutes, seconds: (d, h, m, s) = mdivmod(x, 24, 60, 60)
+# days, hours, minutes, seconds, fractional seconds: (d, h, m, s, f) = mdivmod(x, 24, 60, 60, 1)
+def mdivmod(x, *vs):
+  rs = list()
+  for v in reversed(vs):
+    (x, r) = divmod(x, v)
+    rs.insert(0, r)
+  rs.insert(0, x)
+  return rs
 
 # for those times when Rational() is overkill
 def fraction(a, b, *rest):
@@ -3993,7 +4004,8 @@ def sprintf(fmt='', **kw):
 # print with local variables interpolated into the format string
 def printf(fmt='', **kw):
   """
-  print format string <fmt> with interpolated local variables and keyword arguments.
+  print format string <fmt> with interpolated local variables and
+  keyword arguments.
 
   the final newline can be suppressed by ending the string with '\\'.
 
