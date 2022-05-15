@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue May 10 11:39:12 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May 15 15:42:31 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-05-08"
+__version__ = "2022-05-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2513,6 +2513,88 @@ def prime_factor_rho(n, mrr=0):
     yield (p, e)
 
 
+def prime_factor_h(n, ps=None, end=None, nf=0, mr=0, mrr=0):
+  """
+  find prime factors using various heuristics
+
+    ps = can be a prime sieve to check (end = upper limit on primes)
+    nf = number of tolerated failures (after which we switch to heuristics)
+    mr = enable Pollard Rho/Miller Rabin (mrr = number of Miller-Rabin rounds)
+
+  Depending on the arguments the factorisation may be incomplete
+  (e.g. if a sieve is specified and mr=0, large factors outside the
+  sieve will not be found).
+
+  >>> list(prime_factor_h(factorial(18) + 1, ps=primes, end=100, mr=1))
+  [(19, 1), (23, 1), (29, 1), (61, 1), (67, 1), (123610951, 1)]
+
+  """
+  f = 0  # number of failed primes for n
+  psi = (None if ps is None else ps.generate(end=end))
+  pmax = 0
+
+  # first use primes from the sieve
+  while psi is not None and n > 1:
+
+    # is this a prime in the sieve?
+    if n < ps.max:
+      if f == 0 and ps.is_prime(n):
+        yield (n, 1)
+        return
+
+    # try the next prime in the sieve
+    try:
+      p = next(psi)
+    except StopIteration:
+      # the sieve is exhausted, so n is a product of primes larger than the sieve
+      pmax = end or ps.max
+      if n < pmax * pmax:
+        # n must be a prime
+        yield (n, 1)
+        return
+      else:
+        # move to probabalistic tests
+        psi = None
+    else:
+      # check prime p
+      (e, n) = drop_factors(n, p)
+      if e > 0:
+        yield (p, e)
+        f = 0
+      else:
+        f += 1
+        if f == nf:
+          # move to probabalistic tests
+          pmax = end or ps.max
+          psi = None
+
+  # now try heuristic tests on what is left
+  if mr and n > 1:
+    m = 1  # multiplicity of factors
+
+    # check to see if the number is an exact power
+    k = 2
+    while True:
+      r = iroot(n, k)
+      if pow(r, k) == n:
+        m *= k
+        n = r
+      elif k == 2:
+        k = 3
+      else:
+        k += 2
+      # limit the search
+      if k > 20 or r < pmax: break
+
+    # n could now be in the sieve
+    if ps is not None and n < pmax * pmax:
+      yield (n, m)
+      return
+
+    # look for probabalistic factors (not necessarily in order)
+    for (p, e) in prime_factor_rho(n, mrr=mrr):
+      yield (p, e * m)
+
 def tau(n, fn=prime_factor):
   """
   count the number of divisors of a positive integer <n>.
@@ -3618,7 +3700,7 @@ def format_fraction(n, d, base=10):
 @static(src="gmpy2.mpq gmpy.mpq fractions.Fraction", impl=dict())
 def Rational(src=None, verbose=None, fix=1):
   """
-  select a class for representing rationals.
+  select a class for representing rational numbers.
 
   >> Q = Rational(verbose=1)
   [Rational: using gmpy2.mpq]
@@ -3693,7 +3775,7 @@ def rational(*args, **kw):
   if rational.impl is None: rational.impl = Rational()
   return rational.impl(*args, **kw)
 
-def factorial(a, b=1):
+def factorial(a, *bs):
   """
   return a! / b!.
 
@@ -3703,7 +3785,10 @@ def factorial(a, b=1):
   720
   """
   r = math.factorial(a)
-  return (r if b == 1 else r // math.factorial(b))
+  for b in bs:
+    if b != 1:
+      r //= math.factorial(b)
+  return r
 
 # Python 3.8 has math.perm
 def nPr(n, r):
@@ -6185,66 +6270,12 @@ class _PrimeSieveE6(object):
     """
     n = as_int(n, "0+")
     if n > 1:
-      f = 0
-      m = 1
-      i = self.generate(end=end)
-      while n > 1:
-
-        # is n a prime in the sieve?
-        if n < self.max:
-          if f == 0 and self.is_prime(n):
-            yield (n, m)
-            return
-
-        # have the last <mr> primes failed?
-        elif mr and f == mr:
-
-          # check to see if the number is an exact power
-          k = 2
-          while True:
-            r = iroot(n, k)
-            if r ** k == n:
-              m *= k
-              n = r
-            elif k == 2:
-              k = 3
-            else:
-              k += 2
-            # limit the search
-            if r < self.max or k > 20: break
-
-          # if the sieve is exhausted
-          if i is None:
-            # look for probabalistic factors (not necessarily in order)
-            for (p, e) in prime_factor_rho(n, mrr):
-              yield (p, e * m)
-
-          else:
-            # check to see if whats left is a large prime
-            if is_prime_mr(n, mrr):
-              yield (n, m)
-              return
-
-        # try the next prime in the sieve
-        if i is None: break
-        try:
-          p = next(i)
-        except StopIteration:
-          # run out of primes
-          i = None
-          f = mr
-        else:
-          (e, n) = drop_factors(n, p)
-          if e > 0:
-            yield (p, e * m)
-            f = 0
-          else:
-            f += 1
+      return prime_factor_h(n, self, end=end, nf=mr, mr=mr, mrr=mrr)
 
   # functions that can use self.prime_factor() instead of simple prime_factor()
 
   # return a list of the factors of n
-  def factor(self, n):
+  def factor(self, n, end=None, mr=0, mrr=0):
     """
     return a list of the prime factors of positive integer <n>.
 
@@ -6252,19 +6283,19 @@ class _PrimeSieveE6(object):
     this is a complete factorisation for <n> up to the square of the
     limit of the sieve.
     """
-    return factor(n, fn=self.prime_factor)
+    return factor(n, fn=(lambda n: self.prime_factor(n, end=end, mr=mr, mrr=mrr)))
 
-  def divisors(self, n):
-    return divisors(n, fn=self.prime_factor)
+  def divisors(self, n, end=None, mr=0, mrr=0):
+    return divisors(n, fn=(lambda n: self.prime_factor(n, end=end, mr=mr, mrr=mrr)))
 
-  def divisors_pairs(self, n):
-    return divisors_pairs(n, fn=self.prime_factor)
+  def divisors_pairs(self, n, end=None, mr=0, mrr=0):
+    return divisors_pairs(n, fn=(lambda n: self.prime_factor(n, end=end, mr=mr, mrr=mrr)))
 
-  def tau(self, n):
-    return tau(n, fn=self.prime_factor)
+  def tau(self, n, end=None, mr=0, mrr=0):
+    return tau(n, fn=(lambda n: self.prime_factor(n, end=end, mr=mr, mrr=mrr)))
 
-  def is_square_free(self, n):
-    return is_square_free(n, fn=self.prime_factor)
+  def is_square_free(self, n, end=None, mr=0, mrr=0):
+    return is_square_free(n, fn=(lambda n: self.prime_factor(n, end=end, mr=mr, mrr=mrr)))
 
 # an expandable version of the sieve
 
