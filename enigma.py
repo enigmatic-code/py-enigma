@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 15 15:42:31 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May 15 16:07:51 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-05-14"
+__version__ = "2022-05-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2525,7 +2525,7 @@ def prime_factor_h(n, ps=None, end=None, nf=0, mr=0, mrr=0):
   (e.g. if a sieve is specified and mr=0, large factors outside the
   sieve will not be found).
 
-  >>> list(prime_factor_h(factorial(18) + 1, ps=primes, end=100, mr=1))
+  >> list(prime_factor_h(factorial(18) + 1, ps=primes, end=100, mr=1))
   [(19, 1), (23, 1), (29, 1), (61, 1), (67, 1), (123610951, 1)]
 
   """
