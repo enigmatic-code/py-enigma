@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 15 16:07:51 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed May 18 09:59:22 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import print_function, division
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-05-15"
+__version__ = "2022-05-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2153,7 +2153,7 @@ def cbrt(x):
   r = root(abs(x), 3.0)
   return (-r if x < 0 else r)
 
-#cb = lambda x: x ** 3
+# cb = lambda x: x ** 3
 def cb(x): "cb(x) = pow(x, 3)"; return x ** 3
 
 # for large numbers try Primes.prime_factor(n, mr=100), or sympy.ntheory.factorint(n)
@@ -2521,14 +2521,21 @@ def prime_factor_h(n, ps=None, end=None, nf=0, mr=0, mrr=0):
     nf = number of tolerated failures (after which we switch to heuristics)
     mr = enable Pollard Rho/Miller Rabin (mrr = number of Miller-Rabin rounds)
 
+  Primes found using the sieve will be generated in numerical order.
+  Primes found heuristically may not be generated in order.
+
   Depending on the arguments the factorisation may be incomplete
   (e.g. if a sieve is specified and mr=0, large factors outside the
-  sieve will not be found).
+  sieve may not be found).
 
-  >> list(prime_factor_h(factorial(18) + 1, ps=primes, end=100, mr=1))
+  The following example uses the prime sieve <primes> for factors up to
+  1000, and then probabalistic tests to find the rest:
+
+  >> list(prime_factor_h(factorial(18) + 1, ps=primes, end=1000, mr=1))
   [(19, 1), (23, 1), (29, 1), (61, 1), (67, 1), (123610951, 1)]
 
   """
+  assert not(ps is None and mr == 0) # otherwise we won't find anything
   f = 0  # number of failed primes for n
   psi = (None if ps is None else ps.generate(end=end))
   pmax = 0
@@ -3787,8 +3794,12 @@ def factorial(a, *bs):
   r = math.factorial(a)
   for b in bs:
     if b != 1:
-      r //= math.factorial(b)
+      (r, z) = divmod(r, math.factorial(b))
+      if z != 0: raise ValueError("inexact division")
   return r
+
+# multinomial coefficiant
+multinomial = lambda n, ks: factorial(n, *ks)
 
 # Python 3.8 has math.perm
 def nPr(n, r):
