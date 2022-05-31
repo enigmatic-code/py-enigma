@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed May 18 09:59:22 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue May 31 08:35:18 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -205,10 +205,10 @@ Timer                  - a class for measuring elapsed timings
 """
 
 # Python 3 style print() and division
-from __future__ import print_function, division
+from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-05-17"
+__version__ = "2022-05-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -248,7 +248,7 @@ elif _pythonv[0] > 2:
   if _pythonv > (3, 6):
     # Python 3.7 onwards
     # not: [[ Sequence = collections.abc.Sequence ]]
-    from collections.abc import Sequence, Iterable
+    from collections.abc import (Sequence, Iterable)
   else:
     Sequence = collections.Sequence
     Iterable = collections.Iterable
@@ -333,12 +333,14 @@ def identity(x):
 
 # a function that returns a true value
 def true(*args, **kw):
+  # type: (...) -> bool
   """a function that ignores any arguments and returns True"""
   return True
 
 # can we treat x as an integer?
 # include = +/-/0, check for +ve, -ve, 0
 def as_int(x, include="", **kw):
+  # type: (...) -> int
   """
   can argument <x> be treated as an integer?
 
@@ -2063,6 +2065,7 @@ def first(s, count=1, skip=0, fn=list):
   return (r if fn is None else fn(r))
 
 # return the single value if s contains only a single value (else None)
+# NOTE: similar to the Python expression : [[ [x] = s ]]
 def singleton(s, skip=0, default=None):
   """
   if the container <s> contains only a single value return it,
@@ -2684,7 +2687,7 @@ def coprime_pairs(n=None, order=0):
   fn = ((lambda p: p[0] <= n) if n else (lambda p: True))
   if order:
     # use a heap to order the pairs
-    from heapq import heapify, heappush, heappop
+    from heapq import (heapify, heappush, heappop)
     ps = list()
     heapify(ps)
     _push = heappush
@@ -2712,7 +2715,7 @@ def _pythagorean_primitive(Z=None, order=0):
   fn = ((lambda z: True) if Z is None else (lambda z: z <= Z))
   if order:
     # use a heap
-    from heapq import heapify, heappush, heappop
+    from heapq import (heapify, heappush, heappop)
     ts = list()
     heapify(ts)
     _push = heappush
@@ -2746,7 +2749,7 @@ def _pythagorean_primitive(Z=None, order=0):
 def _pythagorean_all(Z, order=0):
   if order:
     # use a heap to save the multiples
-    from heapq import heapify, heappush, heappop
+    from heapq import (heapify, heappush, heappop)
     ms = list()
     heapify(ms)
     for (x, y, z) in _pythagorean_primitive(Z, order=1):
@@ -3528,19 +3531,31 @@ def is_palindrome(s):
     j -= 1
   return True
 
-# originally called product(), but renamed to avoid name clashes with itertools.product()
+# originally called product(), but renamed to avoid name confusion with itertools.product()
 # Python 3.8 has math.prod
-def multiply(s, r=1):
+def multiply(s, r=1, mod=None):
   """
-  return the product of the sequence <s>.
+  return the product of the numeric sequence <s>.
 
-  >>> multiply(irange(1, 6))
-  720
+  if <r> is specified this is used as the initial value of the product
+  (and is the value returned when <s> is empty).
+
+  if <mod> is specified, the result at each stage is calculate mod <mod>.
+
+  >>> multiply(irange(1, 7))
+  5040
   >>> multiply([2] * 8)
   256
+  >>> multiply(irange(100, 200), mod=1234)
+  18
   """
-  for x in s:
-    r *= x
+  if mod is None:
+    for x in s:
+      r *= x
+  else:
+    for x in s:
+      r *= x
+      r %= mod
   return r
 
 def _gcd(a, b):
@@ -6188,7 +6203,7 @@ class _PrimeSieveE6(object):
 
     (this will require less memory than list())
     """
-    if end is None or end > self.max: end = self.max
+    if end is None or end > self.max: end = self.max + 1
     if start < 3 and end > 2: yield 2
     if start < 4 and end > 3: yield 3
     s = self.sieve
@@ -6230,7 +6245,7 @@ class _PrimeSieveE6(object):
   # before, after: return the prime immediately before/after n
   def before(self, n):
     """
-    return the largest parime less than <n>
+    return the largest prime less than <n>
     """
     if n < 3: return None
     if n < 4: return 2
