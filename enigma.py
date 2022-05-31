@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue May 31 08:35:18 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue May 31 16:18:26 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-05-28"
+__version__ = "2022-05-30"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6268,9 +6268,9 @@ class _PrimeSieveE6(object):
       if self.sieve[i]: return (i * 3) + (i & 1) + 1
       i += 1
 
-  # size = number of primes in the sieve
+  # size = number of primes (currently) in the sieve
   def size(self):
-    if self.num is None: self.num = icount(self.generate())
+    if self.num is None: self.num = icount(self.generate(0, self.max + 1))
     return self.num
 
   __len__ = size
@@ -6419,10 +6419,6 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     # otherwise, upper limit is provided
     self.extend(b)
     return _PrimeSieveE6.range(self, a, b)
-
-  # don't ask for the size of an expandable sieve (__len__ can't return inf)
-  def size(self): raise ValueError("expandable sieve has no finite size")
-  __len__ = size
 
 # create a suitable prime sieve
 def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=0):
