@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun  1 07:57:30 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun  1 13:23:34 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-05-31"
+__version__ = "2022-06-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -511,6 +511,47 @@ def is_pairwise_distinct(*args, **kw):
 pairwise_distinct = is_pairwise_distinct
 all_different = is_pairwise_distinct
 
+# returns a Record() with various information on sequence <s>
+def seq_all_same_r(s, **kw):
+  """
+  check to see if a sequence consists of values that are all the same
+  (testing using equality (==)).
+
+  if a 'value' parameter is passed, elements are checked to see if
+  it is the same as this value, otherwise the elements should be the
+  same as each other.
+
+  a Record() is returned with the following attributes:
+
+    same - true if all values in the sequence have the same value
+    value - the value of all elements (or None)
+    empty - if the sequence was empty
+
+  if the sequence has no elements, a 'value' of None is returned, and
+  'empty' is set to true.
+
+  if the sequence contains different values a 'value' of None is
+  returned.
+
+  if the sequence has fewer than 2 elements, 'same' is trivially true.
+  """
+  i = iter(s)
+  n = 0
+  try:
+    v = kw['value']
+  except KeyError:
+    try:
+      v = next(i)
+      n = 1
+    except StopIteration:
+      return Record(same=True, empty=True, value=None)
+  # check the rest of the sequence
+  for x in i:
+    if x != v:
+      return Record(same=False, empty=False, value=None)
+    n = 1
+  return Record(same=True, empty=(n == 0), value=v)
+
 def seq_all_same(s, **kw):
   """
   >>> seq_all_same([1, 2, 3])
@@ -522,15 +563,7 @@ def seq_all_same(s, **kw):
   >>> seq_all_same(Primes(expandable=1))
   False
   """
-  i = iter(s)
-  try:
-    v = kw['value']
-  except KeyError:
-    try:
-      v = next(i)
-    except StopIteration:
-      return True
-  return all(x == v for x in i)
+  return seq_all_same_r(s, **kw).same
 
 # same as distinct_values(args, 1)
 def all_same(*args, **kw):
@@ -546,7 +579,7 @@ def all_same(*args, **kw):
   >>> all_same()
   True
   """
-  return seq_all_same(args, **kw)
+  return seq_all_same_r(args, **kw).same
 
 def zip_eq(*ss, **kw):
   """
