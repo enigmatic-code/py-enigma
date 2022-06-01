@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue May 31 16:18:26 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun  1 07:54:42 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -639,7 +639,7 @@ def concat(*args, **kw):
   return join(args, sep=sep, enc=enc)
 
 # reverse a sequence
-def reverse(s, fn=list):
+def reverse(s, fn=None):
   """
   reverse a sequence.
 
@@ -647,7 +647,10 @@ def reverse(s, fn=list):
   [3, 2, 1]
   >>> reverse(first(primes, 6))
   [13, 11, 7, 5, 3, 2]
+  >>> reverse("stratagem")
+  'megatarts'
   """
+  if fn is None: fn = (str if isinstance(s, basestring) else list)
   return fn(s)[::-1]
 
 # translate text <t>, using map <m> (and optional symbols <s>)
