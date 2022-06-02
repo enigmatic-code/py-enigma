@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun  1 13:23:34 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun  2 10:01:40 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-06-01"
+__version__ = "2022-06-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6124,7 +6124,7 @@ class Polynomial(list):
 # Prime Sieves
 
 _primes_array = bytearray
-_primes_size = 1024
+_primes_size = 1088
 _primes_chunk = lambda n: 2 * n
 
 
@@ -6140,7 +6140,7 @@ class _PrimeSieveE6(object):
   bytearray - faster and uses less space (default)
   bitarray - (if you have it) less space that bytearray, but more time than list
 
-  >>> _PrimeSieveE6(50).list()
+  >>> _PrimeSieveE6(50).contents()
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
   >>> primes = _PrimeSieveE6(1000000)
   >>> primes.is_prime(10001)
@@ -6220,14 +6220,15 @@ class _PrimeSieveE6(object):
     self.num = None
     if self.verbose: printf("[{x}: expanded to {n}: {b} bytes used]", x=self.__class__.__name__, b=s.__alloc__())
 
-  # return a list of primes (more space)
-  def list(self):
+  # return the contents of the sieve (more space) [used to be called list()]
+  def contents(self, fn=list):
     """
-    return a list of primes in the sieve (in numerical order).
+    return a collection of primes in the sieve (default is a list
+    in numerical order).
 
-    (this will require more memory than generate()).
+    this will require more memory than using generate().
     """
-    return list(_PrimeSieveE6.generate(self))
+    return fn(_PrimeSieveE6.generate(self))
 
   # return a generator (less space)
   def generate(self, start=0, end=None):
@@ -6303,6 +6304,14 @@ class _PrimeSieveE6(object):
       if self.expandable and not(i < len(self.sieve)): self.expand()
       if self.sieve[i]: return (i * 3) + (i & 1) + 1
       i += 1
+
+  def between(self, a, b, fn=list):
+    """
+    return primes in [a, b]
+    """
+    if self.expandable: self.extend(b)
+    r = self.irange(a, b)
+    return (r if fn is None else fn(r))
 
   # size = number of primes (currently) in the sieve
   def size(self):
@@ -6418,6 +6427,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     """
     if n is None: n = self.chunk(self.max)
     _PrimeSieveE6.extend(self, n)
+    return self
 
   # for backwards compatibility
   expand = extend
@@ -6461,7 +6471,7 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=
   """
   Return a suitable prime sieve object.
 
-  n - initial limit of the sieve (the sieve contains primes less than n)
+  n - initial limit of the sieve (the sieve contains primes up to <n>)
   expandable - should the sieve expand as necessary
   array - list implementation to use
   fn - function used to increase the limit on expanding sieves
@@ -6470,7 +6480,7 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=
   this:
 
   >>> primes = Primes(50)
-  >>> primes.list()
+  >>> primes.contents()
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
   >>> sum(primes)
   328
@@ -6495,7 +6505,7 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=
   We can find out the current size and contents of the sieve:
   >>> primes.max
   50
-  >>> primes.list()
+  >>> primes.contents()
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
 
   But if we use it as a generator it will expand indefinitely, so we
