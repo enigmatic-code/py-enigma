@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun  2 10:01:40 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jun  7 10:13:33 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2086,6 +2086,10 @@ def first(s, count=1, skip=0, fn=list):
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
   >>> first(p for p in primes if p % 17 == 1)
   [103]
+
+  this finds squares less than 200
+  >>> first((sq(x) for x in irange(0, inf)), count=(lambda x: x < 200))
+  [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196]
   """
   if callable(count):
     if skip == 0:
@@ -2390,6 +2394,7 @@ def divisors_tuples(n, k, s=()):
         for z in divisors_tuples(b, k - 1, s + (a,)): yield z
 
 def is_prime(n):
+  # type: (int) -> bool
   """
   return True if the positive integer <n> is prime.
 
@@ -2400,7 +2405,6 @@ def is_prime(n):
   True
   >>> is_prime(1001)
   False
-
   """
   if n < 2: return False # 0, 1 -> F
   if n < 4: return True # 2, 3 -> T
@@ -6238,7 +6242,7 @@ class _PrimeSieveE6(object):
     the range of primes can be restricted to starting at <start>
     and ending at <end> (primes less than <end> will be returned)
 
-    (this will require less memory than list())
+    (this will require less memory than contents())
     """
     if end is None or end > self.max: end = self.max + 1
     if start < 3 and end > 2: yield 2
@@ -10986,7 +10990,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.10.4')
+""".format(version=__version__, python='2.7.18', python3='3.10.5')
 
 def _namecheck(name, verbose=0):
   if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
