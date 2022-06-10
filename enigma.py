@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jun  7 17:49:13 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun 10 10:09:47 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-06-07"
+__version__ = "2022-06-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -671,7 +671,7 @@ def concat(*args, **kw):
       raise
   return join(args, sep=sep, enc=enc)
 
-# reverse a sequence
+# reverse a sequence or a map
 def reverse(s, fn=None):
   """
   reverse a sequence.
@@ -682,7 +682,12 @@ def reverse(s, fn=None):
   [13, 11, 7, 5, 3, 2]
   >>> reverse("stratagem")
   'megatarts'
+  >>> reverse(dict(a=1, b=2, c=3))
+  {1: 'a', 2: 'b', 3: 'c'}
   """
+  # if it is a dict, return a reverse map
+  if isinstance(s, dict): return type(s)((v, k) for (k, v) in s.items())
+  # if it is a string, return a string
   if fn is None: fn = (str if isinstance(s, basestring) else list)
   return fn(s)[::-1]
 
