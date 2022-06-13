@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun 10 10:09:47 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun 13 13:44:26 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-06-09"
+__version__ = "2022-06-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -674,7 +674,10 @@ def concat(*args, **kw):
 # reverse a sequence or a map
 def reverse(s, fn=None):
   """
-  reverse a sequence.
+  reverse a sequence, string, or map.
+
+  note: when reversing a map, data may be lost if the original map
+  does not have distinct values.
 
   >>> reverse([1, 2, 3])
   [3, 2, 1]
@@ -684,6 +687,7 @@ def reverse(s, fn=None):
   'megatarts'
   >>> reverse(dict(a=1, b=2, c=3))
   {1: 'a', 2: 'b', 3: 'c'}
+
   """
   # if it is a dict, return a reverse map
   if isinstance(s, dict): return type(s)((v, k) for (k, v) in s.items())
@@ -4833,8 +4837,8 @@ def Decompose(k=None, increasing=1, sep=None, min_v=1, max_v=inf, fn=identity):
   that sum to a chosen total
 
     k = length of sequences to generate
-    increasing = +1 (increasing sequences); -1 (decreasing sequences); or 0
-    sep = separation between numbers; 0 allows repeats
+    increasing = +1 (increasing sequences [default]); -1 (decreasing sequences); or 0
+    sep = separation between numbers; 0 allows repeats [default: 1]
     min_v = minimum permissible value (non-negative integer)
     max_v = maximum permissible value (non-negative integer, or inf)
     fn = return type (default is to return tuples)
@@ -4847,7 +4851,9 @@ def Decompose(k=None, increasing=1, sep=None, min_v=1, max_v=inf, fn=identity):
   # fn = return type
   # ns = numbers collected so far
   def _decompose(t, k, min_v, max_v, d, R, M, r, fn, ns=()):
-    if k == 1:
+    if k == 0:
+      if t == 0: yield fn(())
+    elif k == 1:
       if not(t < min_v or t > max_v):
         ns += (t,)
         yield fn(ns[::-1] if r else ns)
@@ -4857,19 +4863,13 @@ def Decompose(k=None, increasing=1, sep=None, min_v=1, max_v=inf, fn=identity):
         for z in _decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,)): yield z
 
   if increasing == 0:
-    if sep:
-      R = (lambda t, k, k_, m: t - k_ * m)
-      M = (lambda n, d, m=min_v: m)
-      return (lambda t, k=k, min_v=min_v: _decompose(t, k, min_v, max_v, None, R, M, 0, fn))
-    else:
-      # increasing = 0, and sep is set
-      # so generate increasing sequences with the appropriate sep value
-      # and then permute the answers (which may contain repeats if sep=0)
-      f = Decompose(k, increasing=1, sep=sep, min_v=min_v, max_v=max_v, fn=fn)
-      perm = (mpermutations if sep == 0 else itertools.permutations)
-      return (lambda t, k=k: flatten((perm(ns, k) for ns in f(t, k)), fn=iter))
+    # generate increasing sequences with the appropriate sep value
+    # and then permute the answers (which may contain repeats if sep=0)
+    f = Decompose(k, increasing=1, sep=sep, min_v=min_v, max_v=max_v, fn=fn)
+    perm = (mpermutations if sep == 0 else itertools.permutations)
+    return (lambda t, k=k: flatten((perm(ns, k) for ns in f(t, k)), fn=iter))
   else:
-    d = (1 if sep is None else abs(sep)) # default sep is 1
+    d = (1 if sep is None else abs(sep))  # default sep is 1
     if d == 0:
       R = (lambda t, k, k_, m: t // k)
       M = (lambda n, d: n)
