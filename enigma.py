@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun 20 14:01:19 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun 20 18:24:25 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-06-18"
+__version__ = "2022-06-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3665,11 +3665,13 @@ def egcd(a, b):
     (a, b, x0, x1, y0, y1) = (b, r, x1, x0 - q * x1, y1, y0 - q * y1)
   return (x0, y0, a)
 
-# multiplicative inverse mod m
+# multiplicative inverse of <n> mod <m>
 def _invmod(n, m):
   """
   return the multiplicative inverse of n mod m
   (or None if there is no inverse)
+
+  i.e. the value x such that (n * x) % m = 1
 
   e.g. the inverse of 2 (mod 9) is 5, as (2 * 5) % 9 = 1
   >>> invmod(2, 9)
@@ -3684,6 +3686,26 @@ if _pythonv > (3, 7):
   invmod.__doc__ = _invmod.__doc__
 else:
   invmod = _invmod
+
+# find square roots of <n> mod <m>
+# this is OK for relatively small m,
+# but more complex approaches are available (e.g. sympy.ntheory.sqrt_mod_iter)
+def sqrtmod(n, m):
+  """
+  find square roots of n mod m.
+
+  i.e. values x such that (x * x) % m = n % m
+
+  >>> sorted(sqrtmod(1, 16))
+  [1, 7, 9, 15]
+  >>> sorted(sqrtmod(17, 43))
+  [19, 24]
+  """
+  n %= m
+  for x in irange(0, m // 2):
+    if (x * x) % m == n:
+      yield x
+      if 2 * x < m: yield m - x
 
 # multiple GCD
 # from Python 3.9 math.gcd can take multiple arguments
