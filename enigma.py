@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun 13 13:44:26 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun 20 14:01:19 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-06-12"
+__version__ = "2022-06-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2152,7 +2152,7 @@ def uniq(i, fn=None, verbose=0):
   [5, 7, 0]
   >>> list(uniq('mississippi'))
   ['m', 'i', 's', 'p']
-  >>> list(uniq([1, 2, 3, 4, 5, 6, 7, 8, 9], fn=lambda x: x % 3))
+  >>> list(uniq([1, 2, 3, 4, 5, 6, 7, 8, 9], fn=(lambda x: x % 3)))
   [1, 2, 3]
   """
   seen = set()
@@ -3767,9 +3767,9 @@ def format_fraction(n, d, base=10):
 # instead do this:
 #   >> x = mpq(64)
 #   >> y = x / 2
-# if the fix=1 parameter is set, a workaround will be used
-@static(src="gmpy2.mpq gmpy.mpq fractions.Fraction", impl=dict())
-def Rational(src=None, verbose=None, fix=1):
+# if fix_gmpy2=1 is set, a workaround will be used
+@static(src="gmpy2.mpq gmpy.mpq fractions.Fraction", impl=dict(), fix_gmpy2=1)
+def Rational(src=None, verbose=None):
   """
   select a class for representing rational numbers.
 
@@ -3804,11 +3804,13 @@ def Rational(src=None, verbose=None, fix=1):
         continue
       Rational.impl[s] = f
       if '*' not in Rational.impl and src == Rational.src: Rational.impl['*'] = (s, f)
+      # if gmpy2 is fixed we could remove the autofix with something like ...
+      #if s == 'gmpy2.mpq' and t.version() > '2.1.2': Rational.fix_gmpy2 = 0
       break
   if verbose is None: verbose = ('v' in _PY_ENIGMA)
   if verbose: printf("[Rational: using {s}]", s=(s if f else f))
   # fix for gmpy2.mpq() behaviour (issue #334) - may be fixed in gmpy2.version() > 2.1.2
-  if fix and s == 'gmpy2.mpq': f = lambda x, y=None, fn=f: (fn(x) if y is None else fn(x) / y)
+  if Rational.fix_gmpy2 and s == 'gmpy2.mpq': f = lambda x, y=None, fn=f: (fn(x) if y is None else fn(x) / y)
   return f
 
 # create a function that will calculate a/b, and return an int if the result is an integer
@@ -4831,7 +4833,7 @@ class Denominations(object):
     return (None if m == inf else m - self.denominations[0])
 
 # return a function to generate k-sequences of positive integers with a particular total
-def Decompose(k=None, increasing=1, sep=None, min_v=1, max_v=inf, fn=identity):
+def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   """
   return a function to generate k-sequences of non-negative integers
   that sum to a chosen total
@@ -4869,7 +4871,7 @@ def Decompose(k=None, increasing=1, sep=None, min_v=1, max_v=inf, fn=identity):
     perm = (mpermutations if sep == 0 else itertools.permutations)
     return (lambda t, k=k: flatten((perm(ns, k) for ns in f(t, k)), fn=iter))
   else:
-    d = (1 if sep is None else abs(sep))  # default sep is 1
+    d = abs(sep)
     if d == 0:
       R = (lambda t, k, k_, m: t // k)
       M = (lambda n, d: n)
@@ -4897,6 +4899,12 @@ def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
 
   >>> sorted(decompose(10, 3, increasing=1, min_v=1))
   [(1, 2, 7), (1, 3, 6), (1, 4, 5), (2, 3, 5)]
+  >>> sorted(decompose(8, 3, increasing=1, min_v=0))
+  [(0, 1, 7), (0, 2, 6), (0, 3, 5), (1, 2, 5), (1, 3, 4)]
+  >>> sorted(decompose(8, 3, increasing=1, sep=0, min_v=1))
+  [(1, 1, 6), (1, 2, 5), (1, 3, 4), (2, 2, 4), (2, 3, 3)]
+  >>> sorted(decompose(5, 3, increasing=0, sep=0, min_v=1))
+  [(1, 1, 3), (1, 2, 2), (1, 3, 1), (2, 1, 2), (2, 2, 1), (3, 1, 1)]
   """
   return call(Decompose(increasing=increasing, sep=sep, min_v=min_v, max_v=max_v, fn=fn), (t, k))
 
@@ -5915,7 +5923,7 @@ def poly_factor(p, F=None, div=None):
   if div is None: div = Rdiv(F)
 
   # first find factors of x
-  n = 0
+  (n, p) = (0, list(p))
   while p[0] == 0:
     n += 1
     p.pop(0)
@@ -10585,7 +10593,7 @@ def parsefile(path, args=None, interleave=None):
   if interleave is None:
     interleave = (cmd not in { 'SubstitutedExpression', 'SubstitutedDivision' })
 
-  def divide(s, fn=lambda s: s.startswith('-')):
+  def divide(s, fn=(lambda s: s.startswith('-'))):
     for (i, x) in enumerate(s):
       if not fn(x):
         return (s[:i], s[i:])
