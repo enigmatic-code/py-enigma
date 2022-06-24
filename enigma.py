@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun 20 18:24:25 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun 23 23:04:28 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-06-19"
+__version__ = "2022-06-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3240,7 +3240,7 @@ def trirt(x):
   >>> round(trirt(2), 8)
   1.56155281
   """
-  return 0.5 * (sqrt(8 * x + 1) - 1.0)
+  return 0.5 * (math.sqrt(8 * x + 1) - 1.0)
 
 def is_triangular(n):
   """
@@ -3705,7 +3705,7 @@ def sqrtmod(n, m):
   for x in irange(0, m // 2):
     if (x * x) % m == n:
       yield x
-      if 2 * x < m: yield m - x
+      if 0 < x and 2 * x < m: yield m - x
 
 # multiple GCD
 # from Python 3.9 math.gcd can take multiple arguments
@@ -5056,7 +5056,7 @@ class Record(object):
 def gss_minimiser(f, a, b, t=1e-9, m=None):
   # apply any metric
   fn = (f if m is None else lambda x: m(f(x)))
-  R = 0.5 * (sqrt(5.0) - 1.0)
+  R = 0.5 * (math.sqrt(5.0) - 1.0)
   C = 1.0 - R
   (x1, x2) = (R * a + C * b, C * a + R * b)
   (f1, f2) = (fn(x1), fn(x2))
