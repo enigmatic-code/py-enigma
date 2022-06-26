@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun 23 23:04:28 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 26 10:55:20 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-06-22"
+__version__ = "2022-06-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3688,8 +3688,8 @@ else:
   invmod = _invmod
 
 # find square roots of <n> mod <m>
-# this is OK for relatively small m,
-# but more complex approaches are available (e.g. sympy.ntheory.sqrt_mod_iter)
+# this is OK for relatively small m, but more efficient (and complex)
+# approaches are available (e.g. sympy.ntheory.sqrt_mod_iter)
 def sqrtmod(n, m):
   """
   find square roots of n mod m.
@@ -3704,8 +3704,10 @@ def sqrtmod(n, m):
   n %= m
   for x in irange(0, m // 2):
     if (x * x) % m == n:
+      # x is a root
       yield x
-      if 0 < x and 2 * x < m: yield m - x
+      # -x (mod m) is also a root
+      if x > 0 and m > 2 * x: yield m - x
 
 # multiple GCD
 # from Python 3.9 math.gcd can take multiple arguments
@@ -5696,32 +5698,43 @@ class Accumulator(object):
       self.accumulate_data(value(x), data(x))
     return self
 
+  # rs = Accumulator.multi(fns=[min, max])
+  @classmethod
+  def multi(cls, *args, **kw):
+    return MultiAccumulator(*args, **kw)
+
+  # combine multiple Accumulator objects into a MultiAccumulator
+  # rs = Accumulator.combine(Accumulator(fn=min), Accumulator(fn=max), ...)
+  @classmethod
+  def combine(cls, *args):
+    self = MultiAccumulator()
+    self.multi = rs
+    return self
+
 # multiple accumulators: e.g. MultiAccumulator(fns=[min, max])
 class MultiAccumulator(object):
 
-  def __init__(self, fns):
-    self.multi = list(Accumulator(fn) for fn in fns)
+  def __init__(self, fns, *args, **kw):
+    self.multi = list(Accumulator(fn, *args, **kw) for fn in fns)
 
   def __repr__(self):
     return self.__class__.__name__ + '(' + repr(self.multi) + ')'
 
-  def accumulate(self, v):
+  def perform(self, fn, *args, **kw):
     for x in self.multi:
-      x.accumulate(v)
+      fn(x, *args, **kw)
+
+  def accumulate(self, v):
+    self.perform(Accumulator.accumulate, v)
 
   def accumulate_data(self, v, data):
-    for x in self.multi:
-      x.accumulate_data(v, data)
+    self.perform(Accumulator.accumulate_data, v, data)
 
   def accumulate_from(self, s):
-    s = list(s)
-    for x in self.multi:
-      x.accumulate_from(s)
+    self.perform(Accumulator.accumulate_from, list(s))
 
   def accumulate_data_from(self, s, value=0, data=1):
-    s = list(s)
-    for x in self.multi:
-      x.accumulate_data_from(s, value=value, data=data)
+    self.perform(Accumulator.accumulate_data_from, list(s), value=value, data=data)
 
   def __getitem__(self, i):
     return self.multi[i]
