@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 26 10:55:20 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 29 10:42:40 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-06-25"
+__version__ = "2022-06-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3687,23 +3687,23 @@ if _pythonv > (3, 7):
 else:
   invmod = _invmod
 
-# find square roots of <n> mod <m>
+# find square roots of <a> mod <m>
 # this is OK for relatively small m, but more efficient (and complex)
 # approaches are available (e.g. sympy.ntheory.sqrt_mod_iter)
-def sqrtmod(n, m):
+def sqrtmod(a, m):
   """
-  find square roots of n mod m.
+  find square roots of a mod m.
 
-  i.e. values x such that (x * x) % m = n % m
+  i.e. values x such that (x * x) is congurent to a (mod m).
 
   >>> sorted(sqrtmod(1, 16))
   [1, 7, 9, 15]
   >>> sorted(sqrtmod(17, 43))
   [19, 24]
   """
-  n %= m
+  a %= m
   for x in irange(0, m // 2):
-    if (x * x) % m == n:
+    if (x * x) % m == a:
       # x is a root
       yield x
       # -x (mod m) is also a root
@@ -9334,7 +9334,7 @@ class Football(object):
     return self._table(*((played,) + tuple(r[x] for x in self._games) + (points,)))
 
   # generate possible score lines
-  def scores(self, gs, ts, f, a, pss=None, pts=None, min_goals=0, s=[]):
+  def scores(self, gs, ts, f, a, pss=None, pts=None, min_goals=0, valid=true, s=[]):
     """
     Generate possible score lines for a sequence of match outcomes <gs>,
     team assignments <ts>, and total goals for <f> and against <a>.
@@ -9345,6 +9345,9 @@ class Football(object):
     <a> before the score lines are calculated.
 
     <min_goals> is the minimum number of goals scored by each team.
+
+    <valid> is a function that can be used to validate scores
+    (which will be None, or (x, y)).
 
     A sequence of scores matching the input templates will be
     produced. Each score is a tuple (<team 0>, <team 1>) for a played
@@ -9358,9 +9361,9 @@ class Football(object):
     if pss:
       (pf, pa) = self.goals(pss, pts)
       (f, a) = (f - pf, a - pa)
-    return self._scores(gs, ts, f, a, min_goals, [])
+    return self._scores(gs, ts, f, a, min_goals, valid, [])
 
-  def _scores(self, gs, ts, f, a, min_goals, s):
+  def _scores(self, gs, ts, f, a, min_goals, valid, s):
     # are we done?
     if not gs:
       if f == a == 0:
@@ -9373,27 +9376,32 @@ class Football(object):
       if t: g = self._swap.get(g, g)
       # is it unplayed?
       if g == 'x':
-        # [Python 3]: yield from ...
-        for r in self._scores(gs, ts, f, a, min_goals, s + [None]): yield r
+        if valid(None):
+          # [Python 3]: yield from ...
+          for r in self._scores(gs, ts, f, a, min_goals, valid, s + [None]): yield r
       # is it a draw?
       elif g == 'd':
         for i in irange(min_goals, min(f, a)):
-          # [Python 3]: yield from ...
-          for r in self._scores(gs, ts, f - i, a - i, min_goals, s + [(i, i)]): yield r
+          s0 = (i, i)
+          if valid(s0):
+            # [Python 3]: yield from ...
+            for r in self._scores(gs, ts, f - i, a - i, min_goals, valid, s + [s0]): yield r
       # is it a win?
       elif g == 'w':
         for j in irange(min_goals, a):
           for i in irange(j + 1, f):
             s0 = ((j, i) if t else (i, j))
-            # [Python 3]: yield from ...
-            for r in self._scores(gs, ts, f - i, a - j, min_goals, s + [s0]): yield r
+            if valid(s0):
+              # [Python 3]: yield from ...
+              for r in self._scores(gs, ts, f - i, a - j, min_goals, valid, s + [s0]): yield r
       # is it a loss?
       elif g == 'l':
         for i in irange(min_goals, f):
           for j in irange(i + 1, a):
             s0 = ((j, i) if t else (i, j))
-            # [Python 3]: yield from
-            for r in self._scores(gs, ts, f - i, a - j, min_goals, s + [s0]): yield r
+            if valid(s0):
+              # [Python 3]: yield from
+              for r in self._scores(gs, ts, f - i, a - j, min_goals, valid, s + [s0]): yield r
 
   # compute goals for, against
   def goals(self, ss, ts):
@@ -9561,7 +9569,7 @@ class Football(object):
     for z in self._substituted_table(table, n, teams, matches, d, vs): yield z
 
 
-  def _substituted_table_goals(self, gf, ga, matches, d, teams, scores, min_goals):
+  def _substituted_table_goals(self, gf, ga, matches, d, teams, scores, min_goals, valid):
     # are we done?
     if not teams:
       yield scores
@@ -9578,21 +9586,30 @@ class Football(object):
       # check the values
       (f, a) = self.goals(list(scores[m] for m in ms), list(m.index(t) for m in ms))
       if f == d[gf[t]] and a == d[ga[t]]:
-        for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores, min_goals): yield z
-      return
-
-    # matches we already have scores for
-    sms = list(m for m in ms if m in scores)
-    # find possible scores for each remaining match
-    for s in self.scores(list(matches[m] for m in rs), list(m.index(t) for m in rs), d[gf[t]], d[ga[t]], list(scores[m] for m in sms), list(m.index(t) for m in sms), min_goals):
-      scores2 = update(scores, rs, s)
-      for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores2, min_goals): yield z
+        for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores, min_goals, valid): yield z
+    else:
+      # matches we already have scores for
+      sms = list(m for m in ms if m in scores)
+      # find possible scores for each remaining match
+      ss = self.scores(
+        list(matches[m] for m in rs),
+        list(m.index(t) for m in rs),
+        d[gf[t]],
+        d[ga[t]],
+        list(scores[m] for m in sms),
+        list(m.index(t) for m in sms),
+        min_goals,
+        valid
+      )
+      for s in ss:
+        scores2 = update(scores, rs, s)
+        for z in self._substituted_table_goals(gf, ga, matches, d, teams[1:], scores2, min_goals, valid): yield z
 
   # gf, ga - goals for, goals against (map: team -> symbol)
   # matches - match outcomes
   # teams - order teams are processed in
   # scores - score lines
-  def substituted_table_goals(self, gf, ga, matches, d=None, teams=None, scores=None, min_goals=0):
+  def substituted_table_goals(self, gf, ga, matches, d=None, teams=None, scores=None, min_goals=0, valid=true):
     """
     determine the scores in matches from a substituted table football problem.
 
@@ -9619,7 +9636,7 @@ class Football(object):
     # fill out unplayed matches
     for (k, v) in matches.items():
       if v == 'x': scores[k] = None
-    for z in self._substituted_table_goals(gf, ga, matches, d, teams, scores, min_goals): yield z
+    for z in self._substituted_table_goals(gf, ga, matches, d, teams, scores, min_goals, valid): yield z
 
 
   def output_matches(self, matches, scores=None, teams=None, d=None, start=None, end=''):
