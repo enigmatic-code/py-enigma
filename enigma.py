@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 29 10:42:40 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 29 11:33:50 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-06-28"
+__version__ = "2022-06-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -590,6 +590,8 @@ def zip_eq(*ss, **kw):
 
   the 'first' parameter limits checks for the first <k> elements
 
+  if 'reverse' is set the comparison starts from end
+
   >>> zip_eq((1, 2, 3), [1, 2, 3])
   True
   >>> zip_eq((1, 2, 3), [1, 2, 3], irange(1, 3), map(int, "123"))
@@ -599,6 +601,7 @@ def zip_eq(*ss, **kw):
   >>> zip_eq((1, 2, 3, 4), [1, 2, 4, 8], first=2)
   True
   """
+  if kw.get('reverse', 0): ss = (reversed(s) for s in ss)
   z = (zip(*ss, strict=kw['strict']) if 'strict' in kw else zip(*ss))
   k = kw.get('first')
   if k is not None: z = first(z, count=k, fn=iter)
