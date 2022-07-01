@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 29 11:33:50 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jul  1 14:03:58 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-06-29"
+__version__ = "2022-06-30"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -599,6 +599,8 @@ def zip_eq(*ss, **kw):
   >>> zip_eq((1, 2, 3, 4), [1, 2, 4, 8])
   False
   >>> zip_eq((1, 2, 3, 4), [1, 2, 4, 8], first=2)
+  True
+  >>> zip_eq((0, 2, 4, 8), [1, 2, 4, 8], reverse=1, first=2)
   True
   """
   if kw.get('reverse', 0): ss = (reversed(s) for s in ss)
@@ -7280,9 +7282,9 @@ class SubstitutedExpression(object):
     digits - the digits to be substituted in (default: determined from base)
     s2d - initial map of symbols to digits (default: all symbols unassigned)
     d2i - map of digits to invalid symbol assignments (default: leading digits cannot be 0)
+    distinct - symbols which should have distinct values (1 = all, 0 = none) (default: 1)
     answer - an expression for the answer value
     accumulate - accumulate answers using the specified object
-    distinct - symbols which should have distinct values (1 = all, 0 = none) (default: 1)
     check - a boolean function used to accept/reject solutions (default: None)
     env - additional environment for evaluation (default: None)
     code - additional lines of code evaluated before solving (default: None)
@@ -8023,7 +8025,7 @@ class SubstitutedExpression(object):
   @classmethod
   def split_sum(cls,
     terms, result=None, k=1, carries=None, extra=None,
-    base=None, d2i=None, answer=None, accumulate=None, template=None, verbose=None
+    base=None, s2d=None, d2i=None, answer=None, accumulate=None, template=None, distinct=None, verbose=None
   ):
     """
     split the alphametic sum represented by [[ sum(<terms>) = <result> ]]
@@ -8036,7 +8038,9 @@ class SubstitutedExpression(object):
     the following parameters are passed to the SubstitutedExpression solver:
 
       base - the number base to operate in (default: 10)
+      s2d - initial symbol to digit mapping
       d2i - initial invalid digits
+      distinct - symbols which should have distinct values
       answer - expression for the answer value
       accumulate - accumulate answers using specified object
       template - solution template
@@ -8051,6 +8055,7 @@ class SubstitutedExpression(object):
       symbols - the symbols used in the original sum
       carries - the symbols used in the carries between chunks
       d2i - is augmented with additional restrictions for carry symbols
+      distinct - symbols which should have distinct values
       template - template for original sum
       answer - answer parameter
       accumulate - accumulate parameter
@@ -8063,7 +8068,9 @@ class SubstitutedExpression(object):
     # defaults
     if base is None: base = cls.defaults.get('base', 10)
     if carries is None: carries = list('abcdefghijklmnopqrstuvwxyz')
+    if s2d is None: s2d = cls.defaults.get('s2d', None)
     if d2i is None: d2i = cls.defaults.get('d2i', None)
+    if distinct is None: distinct = cls.defaults.get('distinct', None)
     if answer is None: answer = cls.defaults.get('answer', None)
     if accumulate is None: accumulate = cls.defaults.get('accumulate', None)
     if verbose is None: verbose = cls.defaults.get('verbose', None)
@@ -8125,19 +8132,22 @@ class SubstitutedExpression(object):
       template_ += " " + join(extra, sep=") (", enc="()")
     symbols = join(sorted(union(words)))
     carries = join(cs)
+    if distinct is None: distinct = symbols
     if template is None: template = template_
     # a solver with "standard" arguments
     solver = Delay(
       SubstitutedExpression,
       exprs,
-      base=base, distinct=symbols, d2i=d2i, template=template, solution=symbols,
+      base=base, distinct=distinct, s2d=s2d, d2i=d2i, template=template, solution=distinct,
       answer=answer, accumulate=accumulate, verbose=verbose,
     )
     return Record(
       exprs=exprs,
       base=base,
       symbols=symbols,
+      distinct=distinct,
       carries=cs,
+      s2d=s2d,
       d2i=d2i,
       template=template,
       answer=answer,
