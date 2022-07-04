@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jul  1 14:03:58 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jul  4 13:07:13 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-06-30"
+__version__ = "2022-07-03"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6397,8 +6397,8 @@ class _PrimeSieveE6(object):
     probabalistic prime factors.
     """
     n = as_int(n, "0+")
-    if n > 1:
-      return prime_factor_h(n, self, end=end, nf=mr, mr=mr, mrr=mrr)
+    if n == 1: return ()
+    return prime_factor_h(n, self, end=end, nf=mr, mr=mr, mrr=mrr)
 
   # functions that can use self.prime_factor() instead of simple prime_factor()
 
