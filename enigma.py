@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jul  4 13:07:13 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul  9 22:55:19 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -208,7 +208,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-07-03"
+__version__ = "2022-07-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1815,6 +1815,9 @@ def unpack(fn):
 
 # unpacked form of zip (which also serves as an inverse to zip)
 unzip = unpack(zip)
+
+# unpacked form of product (i.e. the cartesian product of a sequence)
+seq_product = unpack(product)
 
 # here's workaround for more complicated parameter unpacking in Python 3
 #
@@ -4057,7 +4060,7 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
   M = maximum allowed number
   g = minimum allowed gap between numbers
 
-  e.g. sums of 3 reciprocals that sum to 1
+  e.g. 3 reciprocals that sum to 1:
   1/2 + 1/3 + 1/6 = 1
   1/2 + 1/4 + 1/4 = 1
   1/3 + 1/3 + 1/3 = 1
@@ -9641,7 +9644,7 @@ class Football(object):
 
     scores - known scores. usually this is empty.
 
-    min_goals - minumum number of goals for each team in a match (usually 0).
+    min_goals - minimum number of goals for each team in a match (usually 0).
     """
     if d is None: d = digit_map(0, 9)
     if teams is None: teams = (list(gf.keys()) if hasattr(gf, 'keys') else list(xrange(0, len(gf))))
