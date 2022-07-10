@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul  9 22:55:19 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 10 09:18:02 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -159,6 +159,7 @@ roman2int              - convert a Roman Numeral to an integer
 rotate                 - rotate a sequence
 seq_all_different      - check elements of a sequence are pairwise distinct
 seq_all_same           - check elements of a sequence are all the same
+seq_product            - cartesian product of a sequence of sequences
 singleton              - return the value from a single valued container
 split                  - split a value into characters
 sprintf                - interpolate variables into a string
@@ -208,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-07-07"
+__version__ = "2022-07-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1816,8 +1817,8 @@ def unpack(fn):
 # unpacked form of zip (which also serves as an inverse to zip)
 unzip = unpack(zip)
 
-# unpacked form of product (i.e. the cartesian product of a sequence)
-seq_product = unpack(product)
+# cartesian product of a sequence
+cproduct = unpack(product)
 
 # here's workaround for more complicated parameter unpacking in Python 3
 #
