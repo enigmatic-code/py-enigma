@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 10 09:18:02 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 10 10:48:54 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -47,6 +47,7 @@ compare                - comparator function
 concat                 - concatenate a list of values into a string
 contains               - check for contiguous subsequence
 coprime_pairs          - generate coprime pairs
+cproduct               - cartesian product of a sequence of sequences
 cslice                 - cumulative slices of an array
 csum                   - cumulative sum
 decompose              - construct and call a Decompose() function
@@ -159,7 +160,6 @@ roman2int              - convert a Roman Numeral to an integer
 rotate                 - rotate a sequence
 seq_all_different      - check elements of a sequence are pairwise distinct
 seq_all_same           - check elements of a sequence are all the same
-seq_product            - cartesian product of a sequence of sequences
 singleton              - return the value from a single valued container
 split                  - split a value into characters
 sprintf                - interpolate variables into a string
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-07-09"
+__version__ = "2022-07-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1444,7 +1444,7 @@ class multiset(dict):
     # distinct elements
     ks = list(self.keys())
     # choose the number of elements for each key
-    for ns in product(*(irange(0, self[k]) for k in ks)):
+    for ns in cproduct(irange(0, self[k]) for k in ks):
       if min_size <= sum(ns) <= max_size:
         yield multiset.from_pairs(zip(ks, ns))
 
@@ -1817,7 +1817,9 @@ def unpack(fn):
 # unpacked form of zip (which also serves as an inverse to zip)
 unzip = unpack(zip)
 
-# cartesian product of a sequence
+# cartesian product of a sequence, so:
+#   itertools.product(*(<generator>)) --> cproduct(<generator>)
+#   itertools.product(As, Bs, Cs) --> cproduct([As, Bs, Cs])
 cproduct = unpack(product)
 
 # here's workaround for more complicated parameter unpacking in Python 3
@@ -5990,7 +5992,7 @@ def poly_factor(p, F=None, div=None):
       if i > 0: vs += list(-x for x in vs)
       ds.append(vs)
     # choose potential values for polynomial factor at the values
-    for vs in product(*ds):
+    for vs in cproduct(ds):
       if mgcd(*vs) != 1: continue
       # interpolate the polynomial factor
       f = poly_interpolate(enumerate(vs), F=F)
@@ -9316,7 +9318,7 @@ class Football(object):
       for r in gs[0]: yield r
     else:
       # [Python 3]: yield from ...
-      for r in product(*gs): yield r
+      for r in cproduct(gs): yield r
 
   # points for a game
   def points(self, g, t=0):
@@ -10208,7 +10210,7 @@ def __grouping():
       yield tuple(s)
     else:
       # otherwise choose the next group to go with category 0
-      for v in product(*(enumerate(x) for x in vs[1:])):
+      for v in cproduct(enumerate(x) for x in vs[1:]):
         # find indices and elements of the other categories
         (js, t) = zip(*v)
         # the full group is
