@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 10 10:48:54 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 10 15:45:35 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-07-10"
+__version__ = "2022-07-11"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1817,10 +1817,19 @@ def unpack(fn):
 # unpacked form of zip (which also serves as an inverse to zip)
 unzip = unpack(zip)
 
-# cartesian product of a sequence, so:
-#   itertools.product(*(<generator>)) --> cproduct(<generator>)
-#   itertools.product(As, Bs, Cs) --> cproduct([As, Bs, Cs])
-cproduct = unpack(product)
+# cartesian product of a sequence, cproduct = unpack(itertools.product)
+def cproduct(ss, **kw):
+  """
+  the cartesian product of a sequence.
+
+  so:
+    itertools.product(*(<generator>)) --> cproduct(<generator>)
+    itertools.product(As, Bs, Cs) --> cproduct([As, Bs, Cs])
+
+  >>> set(cproduct(chunk(irange(1, 4), 2))) == {(1, 3), (1, 4), (2, 3), (2, 4)}
+  True
+  """
+  return itertools.product(*ss, **kw)
 
 # here's workaround for more complicated parameter unpacking in Python 3
 #
@@ -10698,6 +10707,7 @@ def run(cmd, *args, **kw):
   additional options are:
 
     timed - if set, time the execution of <cmd>
+    repeat - for repeated runs (usually for timing purposes)
     flags - 'p' = enable prompts, 'v' = enable verbose
     interpreter - interpreter to use
     verbose - enable informational output
@@ -10711,6 +10721,12 @@ def run(cmd, *args, **kw):
   flags = kw.get('flags', '')
   interp = kw.get('interpreter')
   #interact = kw.get('interact')
+
+  if 'repeat' in kw:
+    n = int(kw.pop('repeat', 1))
+    for _ in irange(1, n):
+      run(cmd, *args, **kw)
+    return
 
   # enabling 'prompt' disables timing
   if 'p' in _PY_ENIGMA or 'p' in flags: timed = 0
