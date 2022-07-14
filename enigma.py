@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jul 14 10:03:49 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jul 14 14:04:12 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-07-12"
+__version__ = "2022-07-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3800,9 +3800,9 @@ def fraction(a, b, *rest):
 
   >>> fraction(286, 1001)
   (2, 7)
-  >>> fraction(1, 2, 1, 3, 1, 6)
+  >>> fraction(1, 2,  1, 3,  1, 6)  # 1/2 + 1/3 + 1/6 = 1
   (1, 1)
-  >>> fraction(1, 2, 3, 4, 5, 6)
+  >>> fraction(1, 2,  3, 4,  5, 6)  # 1/2 + 3/4 + 5/6 = 25/12
   (25, 12)
   """
   if rest:
@@ -4102,15 +4102,28 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
       yield rs + [d]
   elif k == 2:
     # special case k = 2
-    dmin = divc(b + 1, a)
-    dmax = divf(2 * b, a)
+    if M == inf:
+      dmin = divc(b + 1, a)
+    else:
+      dmin = divc(b * M, a * M - b)
+    dmax = divf(b + b, a)
     for d in irange(max(m, dmin), min(M, dmax)):
       (e, r) = divmod(d * b, d * a - b)
       if r == 0 and not(e < d + g or e > M):
         yield rs + [d, e]
   else:
+    if M == inf:
+      # general case
+      dmin = divc(b + 1, a)
+    else:
+      # but if M is given we can find a better dmin [suggested by frits]
+      xs = list(M - g * i for i in xrange(k - 1))
+      xd = multiply(xs)
+      xn = sum(xd // x for x in xs)
+      dmin = divc(b * xd, a * xd - b * xn)
+    dmax = divf(k * b, a)
     # find a suitable reciprocal
-    for d in irange(max(m, divc(b + 1, a)), min(M, divf(k * b, a))):
+    for d in irange(max(m, dmin), min(M, dmax)):
       # solve for the remaining fraction [[Python 3: yield from ... ]]
       for ds in reciprocals(k - 1, b * d, a * d - b, d + g, M, g, rs + [d]): yield ds
 
