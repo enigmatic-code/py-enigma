@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 10 15:45:35 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jul 14 10:03:49 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-07-11"
+__version__ = "2022-07-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -698,7 +698,13 @@ def reverse(s, fn=None):
   # if it is a dict, return a reverse map
   if isinstance(s, dict): return type(s)((v, k) for (k, v) in s.items())
   # if it is a string, return a string
-  if fn is None: fn = (str if isinstance(s, basestring) else list)
+  if fn is None:
+    if isinstance(s, basestring):
+      fn = str
+    elif isinstance(s, tuple):
+      fn = tuple
+    else:
+      fn = list
   return fn(s)[::-1]
 
 # translate text <t>, using map <m> (and optional symbols <s>)
@@ -1478,9 +1484,19 @@ class multiset(dict):
     """
     return fn(v * k for (k, v) in dict.items(self))
 
+  # generate elements in order
+  def sorted(self, key=None, reverse=False, fn=None):
+    for k in sorted(self.keys(), key=key, reverse=reverse):
+      for _ in xrange(self.get(k)):
+        yield k
+
   def map2str(self, sort=1, enc='()', sep=', ', arr='='):
     """call map2str() on the multiset"""
     return map2str(self, sort=sort, enc=enc, sep=sep, arr=arr)
+
+  # generate item pairs
+  def to_pairs(self):
+    return tuple(sorted(self.items()))
 
   # allow operator overloading on multisets
   # (let me know if these don't do what you expect)
@@ -4086,7 +4102,9 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
       yield rs + [d]
   elif k == 2:
     # special case k = 2
-    for d in irange(max(m, divc(b + 1, a)), min(M, divf(2 * b, a))):
+    dmin = divc(b + 1, a)
+    dmax = divf(2 * b, a)
+    for d in irange(max(m, dmin), min(M, dmax)):
       (e, r) = divmod(d * b, d * a - b)
       if r == 0 and not(e < d + g or e > M):
         yield rs + [d, e]
