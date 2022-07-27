@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jul 14 14:04:12 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 27 14:19:18 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-07-13"
+__version__ = "2022-07-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1485,7 +1485,7 @@ class multiset(dict):
     return fn(v * k for (k, v) in dict.items(self))
 
   # generate elements in order
-  def sorted(self, key=None, reverse=False, fn=None):
+  def sorted(self, key=None, reverse=False):
     for k in sorted(self.keys(), key=key, reverse=reverse):
       for _ in xrange(self.get(k)):
         yield k
@@ -8178,7 +8178,7 @@ class SubstitutedExpression(object):
       template_ += " " + join(extra, sep=") (", enc="()")
     symbols = join(sorted(union(words)))
     carries = join(cs)
-    if distinct is None: distinct = symbols
+    if distinct == 1: distinct = symbols
     if template is None: template = template_
     # a solver with "standard" arguments
     solver = Delay(
@@ -10766,6 +10766,7 @@ def run(cmd, *args, **kw):
   # an alternative way to run a solver is to use "-r[t] / --run[:timed] <file> <additional-args>"
   if cmd.startswith('-r') or cmd.startswith('--run'):
     if cmd == "-rt" or cmd == "--run:timed": timed = 1
+    if not args: raise ValueError("missing argument for -r / --run")
     (cmd, args) = (args[0], args[1:])
   elif cmd.startswith('-'):
     if verbose: printf("run: unrecognised command \"{cmd}\"")
