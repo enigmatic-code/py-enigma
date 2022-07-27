@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 27 14:19:18 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 27 15:41:57 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-07-26"
+__version__ = "2022-07-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7260,6 +7260,13 @@ def _digits(s):
   # "<d>"
   return tuple(int(d) for d in _split(s, _split_sep))
 
+# fix up implicit parameters
+# if <s> contains no {word} parameters, then enclose words from <symbols>
+def _fix_implicit(s, symbols):
+  if s is None: return None
+  if re.search('{\w+}', s): return s # was: [[ if '{' in s: return s ]]
+  return re.sub('[' + symbols + ']+', (lambda m: '{' + m.group(0) + '}'), s)
+
 
 class SubstitutedExpression(object):
   """
@@ -7435,12 +7442,6 @@ class SubstitutedExpression(object):
       # allow expr to be a single string
       if isinstance(exprs, basestring): exprs = [exprs]
 
-      # function fix up implicit parameters
-      def fix(s):
-        if s is None: return None
-        if re.search('{\w+}', s): return s # was: [[ if '{' in s: return s ]]
-        return re.sub('[' + symbols + ']+', (lambda m: '{' + m.group(0) + '}'), s)
-
       # now process the list
       xs = list()
       for expr in exprs:
@@ -7456,7 +7457,7 @@ class SubstitutedExpression(object):
         # convert implicit (without braces) into explicit (with braces)
         if symbols:
           if isinstance(v, basestring) and '{' not in v and '{' not in expr and all(x in symbols for x in v): v = '{' + v + '}'
-          expr = fix(expr)
+          expr = _fix_implicit(expr, symbols)
 
         # value is either an alphabetic or a numeric literal
         if isinstance(v, basestring) and '{' not in v:
@@ -7467,8 +7468,8 @@ class SubstitutedExpression(object):
       exprs = xs
 
       # fix up implicit (old style) parameters
-      answer = fix(answer)
-      template = fix(template)
+      answer = _fix_implicit(answer, symbols)
+      template = _fix_implicit(template, symbols)
 
     # make the output template (which is kept in input order)
     # and also categorise the expressions to (<expr>, <value>, <cat>), where <cat> is:
@@ -8172,12 +8173,15 @@ class SubstitutedExpression(object):
       if not rs_: break
       (terms, result, maxc) = (ts_, rs_, maxc_)
 
-    if extra:
-      extra = list(extra)
-      exprs.extend(extra)
-      template_ += " " + join(extra, sep=") (", enc="()")
     symbols = join(sorted(union(words)))
     carries = join(cs)
+
+    if extra:
+      extra = list(_fix_implicit(x, symbols) for x in extra)
+      exprs.extend(extra)
+      template_ += " " + join(extra, sep=") (", enc="()")
+    if answer:
+      template_ += " (" + _fix_implicit(answer, symbols) + ")"
     if distinct == 1: distinct = symbols
     if template is None: template = template_
     # a solver with "standard" arguments
