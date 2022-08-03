@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 27 15:41:57 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Aug  3 08:33:09 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-07-27"
+__version__ = "2022-08-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -393,6 +393,7 @@ def as_int(x, include="", **kw):
   msg = "invalid integer: " + repr(x)
   if include: msg += ' [include: ' + include + ']'
   raise ValueError(msg)
+
 
 # useful routines for solving Enigma puzzles
 
@@ -622,6 +623,8 @@ def ordered(*args, **kw):
   (1, 2, 3)
   >>> ordered(2, 1, 3, reverse=1)
   (3, 2, 1)
+  >>> ordered(42)
+  (42,)
   """
   return tuple(sorted(args, **kw))
 
@@ -3085,6 +3088,16 @@ def is_square(n):
     if is_square.cache_enabled: is_square.cache[n] = z
   return z
 
+# is <n> the square of a rational number?
+def is_square_q(n, F=None):
+  if F is None: F = Rational()
+  n = F(n)
+  p = is_square(n.numerator)
+  if p is None: return None
+  q = is_square(n.denominator)
+  if q is None: return None
+  return F(p, q)
+
 # return ordered k-tuples (a, b, ...) such that n = a^2 + b^2 + ...
 def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
   if k == 1:
@@ -3367,7 +3380,7 @@ def _roots(domain, F, *nds):
 
 # find roots of a quadratic equation
 # domain = "Z" (integer), "Q" (rational), "F" (float), "C" (complex float)
-def quadratic(a, b, c, domain="Q"):
+def quadratic(a, b, c, domain="Q", F=None):
   """
   find roots of the equation:
 
@@ -3404,12 +3417,9 @@ def quadratic(a, b, c, domain="Q"):
       return _roots(domain, F, (b + r, d), (b - r, d))
 
   elif domain in "QZ":
-    F = Rational()
-    D = F(D)
-    p = is_square(D.numerator)
-    q = is_square(D.denominator)
-    if not(p is None or q is None):
-      r = F(p, q)
+    if F is None: F = Rational()
+    r = is_square_q(D, F=F)
+    if r is not None:
       d = -2 * a
       if r == 0:
         return _roots(domain, F, (b, d))
@@ -11126,7 +11136,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.10.5')
+""".format(version=__version__, python='2.7.18', python3='3.10.6')
 
 def _namecheck(name, verbose=0):
   if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
