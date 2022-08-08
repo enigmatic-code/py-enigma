@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Aug  3 08:33:09 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Aug  8 11:44:14 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-08-02"
+__version__ = "2022-08-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -274,7 +274,7 @@ _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
 
 # add attributes to a function (to use as static variables)
-# (but for better performance use global variables)
+# (but for better performance use global variables, or mutable default parameters)
 def static(**kw):
   """
   simulates static variables in a function by adding attributes to it.
@@ -2010,23 +2010,27 @@ def rfind(s, v):
   return (-1 if i == -1 else len(s) - i - 1)
 
 # trim elements from a sequence
-def trim(s, head=0, tail=0):
+def trim(s, head=0, tail=0, fn=None):
   """
-  return a new list derived from input sequence <s>, but with <head>
+  return a new sequence derived from input sequence <s>, but with <head>
   elements removed from the front and <tail> elements removed from the
   end.
 
-  >>> trim((1, 2, 3, 4, 5), head=2)
+  >>> trim([1, 2, 3, 4, 5], head=2)
   [3, 4, 5]
-  >>> trim((1, 2, 3, 4, 5), tail=2)
+  >>> trim([1, 2, 3, 4, 5], tail=2)
   [1, 2, 3]
-  >>> trim((1, 2, 3, 4, 5), head=2, tail=2)
+  >>> trim([1, 2, 3, 4, 5], head=2, tail=2)
   [3]
   """
-  if head > 0 or tail > 0: s = list(s)
-  if head > 0: del s[:head]
-  if tail > 0: del s[-tail:]
-  return s
+  if head > 0 or tail > 0:
+    if fn is None:
+      if isinstance(s, basestring): fn = join
+      elif isinstance(s, tuple): fn = tuple
+    s = list(s)
+    if head > 0: del s[:head]
+    if tail > 0: del s[-tail:]
+  return (fn(s) if fn else s)
 
 def _partitions(s, n):
   """
