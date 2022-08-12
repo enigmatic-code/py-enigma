@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Aug  8 11:44:14 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug 12 09:39:12 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-08-06"
+__version__ = "2022-08-11"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1315,7 +1315,7 @@ class multiset(dict):
 
     if n is specifed only the first n items are returned.
     """
-    s = sorted(self.items(), key=lambda t: t[::-1], reverse=1)
+    s = sorted(self.items(), key=(lambda t: t[::-1]), reverse=1)
     return (s if n is None else s[:n])
 
   # provide some useful operations on multisets
@@ -1831,7 +1831,7 @@ def unpack(fn):
   >>> list(filter(fn, [(1, 2), (2, 3), (3, 4), (4, 5)]))
   [(3, 4)]
   """
-  return lambda args, kw=None: (fn(*args, **kw) if kw else fn(*args))
+  return (lambda args, kw=None: (fn(*args, **kw) if kw else fn(*args)))
 
 # unpacked form of zip (which also serves as an inverse to zip)
 unzip = unpack(zip)
@@ -2776,7 +2776,7 @@ def coprime_pairs(n=None, order=0):
   >>> list(coprime_pairs(6, order=1))
   [(1, 2), (1, 3), (2, 3), (1, 4), (3, 4), (1, 5), (2, 5), (3, 5), (4, 5), (1, 6), (5, 6)]
   """
-  fn = ((lambda p: p[0] <= n) if n else (lambda p: True))
+  fn = ((lambda p: p[0] <= n) if n else true)
   if order:
     # use a heap to order the pairs
     from heapq import (heapify, heappush, heappop)
@@ -2804,7 +2804,7 @@ def coprime_pairs(n=None, order=0):
 # if Z is None, then triples will be generated indefinitely
 # if order is True, then triples will be returned in order
 def _pythagorean_primitive(Z=None, order=0):
-  fn = ((lambda z: True) if Z is None else (lambda z: z <= Z))
+  fn = (true if Z is None else (lambda z: z <= Z))
   if order:
     # use a heap
     from heapq import (heapify, heappush, heappop)
@@ -5006,7 +5006,7 @@ def algorithmX(X, Y, soln):
   if not X:
     yield soln
   else:
-    c = min(X.keys(), key=lambda k: len(X[k]))
+    c = min(X.keys(), key=(lambda k: len(X[k])))
     # copy X[c], as X is modified (could use sorted(X[c]) for stability)
     for r in list(X[c]):
       soln.append(r)
@@ -5122,7 +5122,7 @@ class Record(object):
 # m - metric
 def gss_minimiser(f, a, b, t=1e-9, m=None):
   # apply any metric
-  fn = (f if m is None else lambda x: m(f(x)))
+  fn = (f if m is None else (lambda x: m(f(x))))
   R = 0.5 * (math.sqrt(5.0) - 1.0)
   C = 1.0 - R
   (x1, x2) = (R * a + C * b, C * a + R * b)
@@ -5179,7 +5179,7 @@ def find_max(f, a, b, t=1e-9):
   >>> round(r.v, 6)
   2.0
   """
-  return gss_minimiser(f, a, b, t=t, m=lambda x: -x)
+  return gss_minimiser(f, a, b, t=t, m=(lambda x: -x))
 
 def find_zero(f, a, b, t=1e-9, ft=1e-6):
   """
@@ -5224,7 +5224,7 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   >>> round(r.v, 6)
   2.0
   """
-  r = find_zero(lambda x: f(x) - v, a, b, t, ft)
+  r = find_zero((lambda x: f(x) - v), a, b, t, ft)
   r.fv += v
   return r
 
@@ -9225,7 +9225,7 @@ class CrossFigure(object):
     self.grid = list(grid)
     self.answers = list()
     self.groups = list()
-    self.fn = (lambda grid: True)
+    self.fn = true
 
   # set answers and their candidate solutions
   def set_answer(self, answers, candidates):
@@ -10476,7 +10476,7 @@ def __matrix():
     """
     # map symbols to indices
     sym = dict((s, i) for (i, s) in enumerate(symbols))
-    return lambda cs, k=k, z=z: _equation(sym, len(sym.keys()), cs, k, z)
+    return (lambda cs, k=k, z=z: _equation(sym, len(sym.keys()), cs, k, z))
 
   def _equation(sym, n, coeffs, k, z):
     row = [z] * n
@@ -10765,6 +10765,7 @@ def run(cmd, *args, **kw):
   global _run_exit, _PY_ENIGMA
   _run_exit = None
 
+  args = list(str(x) for x in args)
   verbose = kw.get('verbose')
   timed = kw.get('timed')
   flags = kw.get('flags', '')
