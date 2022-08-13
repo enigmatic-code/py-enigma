@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug 12 09:39:12 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Aug 13 18:00:57 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-08-11"
+__version__ = "2022-08-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2190,6 +2190,8 @@ def repeat(fn, v=0, k=inf):
 def uniq(i, fn=None, verbose=0):
   """
   generate unique values from iterator <i> (maintaining order).
+
+  i.e. repeated values are suppressed.
 
   >>> list(uniq([5, 7, 0, 0, 5]))
   [5, 7, 0]
@@ -7623,8 +7625,21 @@ class SubstitutedExpression(object):
     if self.verbose & self.vP:
       print("-- [code] --" + nl + join(self.save(quote=1), sep=nl) + nl + "-- [/code] --")
 
+    # # remove assigned symbols from distinct groups [suggested by Frits]
+    # if s2d:
+    #   # update invalid pairs
+    #   for (k, v) in s2d.items():
+    #     for ds in distinct:
+    #       if k in ds:
+    #         invalid.update((d, v) for d in ds if d != k)
+    #   # update distinct
+    #   distinct = list(join(x) for x in (diff(x, s2d.keys()) for x in distinct) if len(x) > 1)
+
     # valid digits for each symbol
-    valid = dict((s, list(digits.difference(d for (x, d) in invalid if x == s))) for s in symbols)
+    valid = dict()
+    for s in symbols:
+      if s in s2d: continue
+      valid[s] = list(digits.difference(d for (x, d) in invalid if x == s))
     #for k in sorted(valid.keys()): printf("{k} -> {v}", v=valid[k])
 
     # at this point we can apply some heuristic re-writing rules:
@@ -10765,7 +10780,13 @@ def run(cmd, *args, **kw):
   global _run_exit, _PY_ENIGMA
   _run_exit = None
 
+  # cmd could be a list of [cmd, args]
+  if not args and not isinstance(cmd, basestring) and isinstance(cmd, Sequence):
+    args = list(cmd)
+    cmd = args.pop(0)
+  # make sure arguments are strings
   args = list(str(x) for x in args)
+
   verbose = kw.get('verbose')
   timed = kw.get('timed')
   flags = kw.get('flags', '')
