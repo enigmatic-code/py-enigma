@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug 13 18:00:57 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Aug 17 17:13:37 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-08-12"
+__version__ = "2022-08-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2462,7 +2462,7 @@ def is_prime(n):
   """
   if n < 2: return False # 0, 1 -> F
   if n < 4: return True # 2, 3 -> T
-  (i, r) = divmod(n, 6)
+  r = n % 6
   if r != 1 and r != 5: return False # (n % 6) != (1, 5) -> F
 
   for (p, e) in prime_factor(n):
@@ -3019,7 +3019,7 @@ def sq(x): "sq(x) = pow(x, 2)"; return x * x
 def sumsq(*xs): "sumsq(xs) = sum(sq(x) for x in xs)"; return sum(x * x for x in xs)
 
 # calculate intf(sqrt(n))
-# Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt())
+# (Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt()))
 @static(impl=getattr(math, 'isqrt', None))
 def isqrt(n):
   # type: (int) -> int | NoneType
@@ -3346,7 +3346,7 @@ def repdigit(n, d=1, base=10):
   assert 0 <= d < base
   return d * ((base ** n) - 1) // (base - 1)
 
-# Python 3.8 has math.hypot
+# (Python 3.8 has math.hypot)
 # Python 3.6: ...(*vs, root=sqrt)
 def hypot(*vs, **kw):
   """
@@ -3633,7 +3633,7 @@ def is_palindrome(s):
   return True
 
 # originally called product(), but renamed to avoid name confusion with itertools.product()
-# Python 3.8 has math.prod
+# (Python 3.8 has math.prod)
 def multiply(s, r=1, mod=None):
   """
   return the product of the numeric sequence <s>.
@@ -3943,7 +3943,7 @@ def factorial(a, *bs):
 # multinomial coefficiant
 multinomial = lambda n, ks: factorial(n, *ks)
 
-# Python 3.8 has math.perm
+# (Python 3.8 has math.perm)
 def nPr(n, r):
   """
   permutations functions: n P r.
@@ -3961,7 +3961,7 @@ def nPr(n, r):
 
 P = nPr
 
-# Python 3.8 has math.comb
+# (Python 3.8 has math.comb)
 def nCr(n, r):
   """
   combinatorial function: n C r.
@@ -4202,7 +4202,7 @@ def args(vs, n, fn=identity, prompt=None, argv=None):
 def __sprintf(fmt, vs):
   return fmt.format(**vs)
 
-# Python3 has str.format_map(vs)
+# Python 3 has str.format_map(vs)
 def __sprintf3(fmt, vs):
   return fmt.format_map(vs)
 
@@ -4605,6 +4605,7 @@ def cslice(x):
 
 
 # overlapping tuples from a sequence
+# (Python 3.10 has itertools.pairwise, which acts like tuples(s, 2))
 def tuples(s, n=2, circular=0, fn=tuple):
   """
   generate overlapping <n>-tuples from sequence <s>.
@@ -6243,9 +6244,9 @@ class Polynomial(list):
 # Prime Sieves
 
 _primes_array = bytearray
-_primes_size = 1088
+_primes_size = 1295
 _primes_chunk = lambda n: 2 * n
-
+_primes_array_optimise = 1  # turn this off to disable bitarray optimisations
 
 class _PrimeSieveE6(object):
 
@@ -6292,9 +6293,14 @@ class _PrimeSieveE6(object):
     self.sieve = array([0])
     self.max = 1
     self.num = None # record the number of primes
-    # singleton arrays for True and False values
-    self.T = array([1])
-    self.F = array([0])
+    # return n copies of True or False values
+    self.T = (lambda n, v=array([1]): v * n) # used to extend the array
+    self.F = (lambda n, v=array([0]): v * n) # used to exclude non-primes
+    if _primes_array_optimise:
+      if array.__name__ == 'bitarray':
+        # bitarray can set all values in a slice to the same boolean value
+        if verbose: printf("[{x}: optimising for array={a}]", x=self.__class__.__name__, a=array.__name__)
+        self.F = (lambda n: 0)
     # other parameters
     self.expandable = 0  # set to 1 to allow automatic expansion
     self.verbose = verbose
@@ -6313,11 +6319,11 @@ class _PrimeSieveE6(object):
 
     # extend the sieve to the right size
     s = self.sieve
-    l = len(s) + 1
-    h = ((n + 1) // 3) + (n % 6 == 1)
-    s.extend(self.T * (h - l + 1))
+    lo = len(s) + 1
+    hi = ((n + 1) // 3) + (n % 6 == 1)
+    s.extend(self.T(hi - lo + 1))
 
-    # remove multiples of primes p from indices l to h
+    # remove multiples of primes p from indices lo to hi
     for i in irange(1, isqrt(n) // 3):
       if s[i]:
         odd = (i & 1)
@@ -6325,19 +6331,24 @@ class _PrimeSieveE6(object):
         k = 2 * p
         # remove multiples of p starting from p^2
         j = (p * p) // 3
-        if j < l: j += k * ((l - j) // k)
-        s[j::k] = self.F * ((h - j - 1) // k + 1)
-        #printf("eliminating {p} {ns}", ns=tuple((z * 3) + (z & 1) + 1 for z in irange(j, h-1, step=k)))
+        if j < lo: j += k * ((lo - j) // k)
+        s[j::k] = self.F((hi - j - 1) // k + 1)
+        ##printf("eliminating {p} {ns}", ns=list((z * 3) + (z & 1) + 1 for z in irange(j, hi-1, step=k)))
         # remove multiples with the other residue
         q = p + (2 if odd else 4)
         j = (p * q) // 3
-        if j < l: j += k * ((l - j) // k)
-        s[j::k] = self.F * ((h - j - 1) // k + 1)
-        #printf("eliminating {p} {ns}", ns=tuple((z * 3) + (z & 1) + 1 for z in irange(j, h-1, step=k)))
+        if j < lo: j += k * ((lo - j) // k)
+        s[j::k] = self.F((hi - j - 1) // k + 1)
+        ##printf("eliminating {p} {ns}", ns=list((z * 3) + (z & 1) + 1 for z in irange(j, hi-1, step=k)))
 
     self.max = n
     self.num = None
-    if self.verbose: printf("[{x}: expanded to {n}: {b} bytes used]", x=self.__class__.__name__, b=s.__alloc__())
+    if self.verbose:
+      if s.__class__.__name__ == 'bitarray' and hasattr(s, 'buffer_info'): b = s.buffer_info()[1]
+      elif hasattr(s, '__sizeof__'): b = s.__sizeof__()
+      else: b = ''
+      if b: b = sprintf(" ({b} bytes used)")
+      printf("[{x}: expanded to {n}{b}]", x=self.__class__.__name__)
 
   # return the contents of the sieve (more space) [used to be called list()]
   def contents(self, fn=list):
@@ -6388,7 +6399,7 @@ class _PrimeSieveE6(object):
     """
     if n < 2: return False # 0, 1 -> F
     if n < 4: return True # 2, 3 -> T
-    (i, r) = divmod(n, 6)
+    r = n % 6
     if r != 1 and r != 5: return False # (n % 6) != (1, 5) -> F
     if self.expandable: self.expand(n)
     return bool(self.sieve[n // 3])
