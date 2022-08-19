@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Aug 17 17:13:37 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug 19 09:18:42 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-08-15"
+__version__ = "2022-08-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -9983,8 +9983,8 @@ class Timer(object):
   value of 'P' use process (CPU) time. 'E' should always be available,
   'P' may not be. You can specify 'PE', to try 'P' first, and then 'E'.
 
-  If you know what timeing function you want to use you can pass it
-  directly. (Or pass the name of the function in the 'time' module).
+  If you know what timing function you want to use you can pass it
+  directly. (Or pass the name of a function in the 'time' module).
 """
 
   # lookup for timers
