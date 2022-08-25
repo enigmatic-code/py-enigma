@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug 19 09:18:42 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Aug 25 09:24:58 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-08-17"
+__version__ = "2022-08-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2254,6 +2254,9 @@ def cbrt(x):
 def cb(x): "cb(x) = pow(x, 3)"; return x ** 3
 
 # for large numbers try Primes.prime_factor(n, mr=100), or sympy.ntheory.factorint(n)
+# basis = [2, 3, 5]
+_prime_factor_ds = (1, 2, 2, 4, 2, 4, 2, 4, 6, 2, 6)  # deltas
+_prime_factor_js = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3)  # next index
 def prime_factor(n):
   """
   generate (<prime>, <exponent>) pairs in the prime factorisation of
@@ -2269,22 +2272,22 @@ def prime_factor(n):
   >>> list(prime_factor(factorial(12)))
   [(2, 10), (3, 5), (5, 2), (7, 1), (11, 1)]
   """
-  n = as_int(n, "0+")
   if n > 1:
-    i = 2
-    # generate a list of deltas: 1, 2, 2 then 4, 2, 4, 2, 4, 6, 2, 6 repeatedly
-    ds = (1, 2, 2, 4, 2, 4, 2, 4, 6, 2, 6)
-    js = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3)
+    ds = _prime_factor_ds
+    js = _prime_factor_js
+    x = 2
     j = 0
-    while i * i <= n:
+    while True:
       e = 0
       while True:
-        (d, r) = divmod(n, i)
+        (d, r) = divmod(n, x)
         if r > 0: break
         e += 1
         n = d
-      if e > 0: yield (i, e)
-      i += ds[j]
+      if e > 0:
+        yield (x, e)
+      x += ds[j]
+      if x * x > n: break
       j = js[j]
     # anything left is prime
     if n > 1: yield (n, 1)
@@ -6469,7 +6472,6 @@ class _PrimeSieveE6(object):
     when <mr> is set it will also attempt to look for larger
     probabalistic prime factors.
     """
-    n = as_int(n, "0+")
     if n == 1: return ()
     return prime_factor_h(n, self, end=end, nf=mr, mr=mr, mrr=mrr)
 
