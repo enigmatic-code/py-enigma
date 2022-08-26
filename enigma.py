@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Aug 25 09:24:58 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug 26 11:32:37 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-08-24"
+__version__ = "2022-08-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7336,13 +7336,13 @@ class SubstitutedExpression(object):
     base=10, distinct=1, process=1, reorder=1, first=0, denest=0, sane=1, verbose=1,
     # other parameters
     exprs=None, symbols=None, digits=None, s2d=None, d2i=None, answer=None, accumulate=None,
-    template=None, solution=None, header=None,
+    literal=None, template=None, solution=None, header=None,
     check=None, env=None, code=None,
   )
 
   def __init__(self,
     exprs, base=None, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None,
-    accumulate=None, template=None, solution=None, header=None, distinct=None, check=None,
+    accumulate=None, literal=None, template=None, solution=None, header=None, distinct=None, check=None,
     env=None, code=None, process=None, reorder=None, first=None, denest=None, sane=None, verbose=None
   ):
     """
@@ -7365,6 +7365,7 @@ class SubstitutedExpression(object):
     s2d - initial map of symbols to digits (default: all symbols unassigned)
     d2i - map of digits to invalid symbol assignments (default: leading digits cannot be 0)
     distinct - symbols which should have distinct values (1 = all, 0 = none) (default: 1)
+    literal - symbols which stand for themselves (e.g. "012") (default: None)
     answer - an expression for the answer value
     accumulate - accumulate answers using the specified object
     check - a boolean function used to accept/reject solutions (default: None)
@@ -7447,6 +7448,7 @@ class SubstitutedExpression(object):
     answer = self.answer
     template = self.template
     distinct = self.distinct
+    literal = self.literal
     denest = self.denest
     process = self.process
     sane = self.sane
@@ -7601,6 +7603,7 @@ class SubstitutedExpression(object):
     self.s2d = s2d
     self.answer = answer
     self.distinct = distinct
+    self.literal = literal
     self.denest = denest
     self.verbose = verbose
     self._words = words
@@ -7622,6 +7625,7 @@ class SubstitutedExpression(object):
     d2i = self.d2i
     answer = self.answer
     distinct = self.distinct
+    literal = self.literal
     env = self.env
     code = self.code
     reorder = self.reorder
@@ -7637,6 +7641,11 @@ class SubstitutedExpression(object):
     # output run parameters
     if self.verbose & self.vP:
       print("-- [code] --" + nl + join(self.save(quote=1), sep=nl) + nl + "-- [/code] --")
+
+    # literals are symbols that stand for themselves
+    if literal:
+      for s in literal:
+        s2d[s] = base2int(s, base=base)
 
     # # remove assigned symbols from distinct groups [suggested by Frits]
     # if s2d:
@@ -8114,7 +8123,8 @@ class SubstitutedExpression(object):
   @classmethod
   def split_sum(cls,
     terms, result=None, k=1, carries=None, extra=None,
-    base=None, s2d=None, d2i=None, answer=None, accumulate=None, template=None, distinct=None, verbose=None
+    base=None, s2d=None, d2i=None, answer=None, accumulate=None, template=None, distinct=None, literal=None,
+    verbose=None
   ):
     """
     split the alphametic sum represented by [[ sum(<terms>) = <result> ]]
@@ -8130,6 +8140,7 @@ class SubstitutedExpression(object):
       s2d - initial symbol to digit mapping
       d2i - initial invalid digits
       distinct - symbols which should have distinct values
+      literal - symbols which stand for themselves
       answer - expression for the answer value
       accumulate - accumulate answers using specified object
       template - solution template
@@ -8145,6 +8156,7 @@ class SubstitutedExpression(object):
       carries - the symbols used in the carries between chunks
       d2i - is augmented with additional restrictions for carry symbols
       distinct - symbols which should have distinct values
+      literal - symbols which stand for themselves
       template - template for original sum
       answer - answer parameter
       accumulate - accumulate parameter
@@ -8160,6 +8172,7 @@ class SubstitutedExpression(object):
     if s2d is None: s2d = cls.defaults.get('s2d', None)
     if d2i is None: d2i = cls.defaults.get('d2i', None)
     if distinct is None: distinct = cls.defaults.get('distinct', None)
+    if literal is None: literal = cls.defaults.get('literal', None)
     if answer is None: answer = cls.defaults.get('answer', None)
     if accumulate is None: accumulate = cls.defaults.get('accumulate', None)
     if verbose is None: verbose = cls.defaults.get('verbose', None)
@@ -8230,7 +8243,8 @@ class SubstitutedExpression(object):
     solver = Delay(
       SubstitutedExpression,
       exprs,
-      base=base, distinct=distinct, s2d=s2d, d2i=d2i, template=template, solution=distinct,
+      base=base, distinct=distinct, literal=literal,
+      s2d=s2d, d2i=d2i, template=template, solution=distinct,
       answer=answer, accumulate=accumulate, verbose=verbose,
     )
     return Record(
@@ -8238,6 +8252,7 @@ class SubstitutedExpression(object):
       base=base,
       symbols=symbols,
       distinct=distinct,
+      literal=literal,
       carries=cs,
       s2d=s2d,
       d2i=d2i,
@@ -8275,6 +8290,9 @@ class SubstitutedExpression(object):
           distinct = join(distinct, sep=",")
         distinct = q + distinct + q
       args.append(sprintf("--distinct={distinct}"))
+
+    if self.literal:
+      args.append(sprintf("--literal={q}{self.literal}{q}"))
 
     if self.digits:
       args.append(sprintf("--digits={q}{digits}{q}", digits=join(self.digits, sep=",")))
@@ -8380,6 +8398,7 @@ class SubstitutedExpression(object):
       "  --solution=<string> (or -S<s>) = solution symbols",
       "  --header=<string> (or -H<s>) = solution header",
       "  --distinct=<string> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
+      "  --literal=<strong> (or -L<s>) = symbols that stand for themselves",
       "  --code=<string> (or -C<s>) = initialisation code (can be used multiple times)",
       "  --first (or -1) = stop after the first solution",
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
@@ -8444,6 +8463,8 @@ class SubstitutedExpression(object):
       else:
         v = _split(v)
       opt['distinct'] = v
+    elif k == 'L' or k == 'literal':
+      opt['literal'] = v
     elif k == 'C' or k == 'code':
       if 'code' not in opt: opt['code'] = []
       opt['code'].append(v)
@@ -11177,11 +11198,8 @@ enigma.py has the following command-line usage:
 
 """.format(version=__version__, python='2.7.18', python3='3.10.6')
 
-def _namecheck(name, verbose=0):
-  if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
-  return name == "__main__" or name == "<run_path>"
-
-if _namecheck(__name__):
+def _enigma_main(args=None):
+  if args is None: args=argv()
 
   # allow solvers to run from the command line:
   #   % python enigma.py <class> <args> ...
@@ -11189,7 +11207,6 @@ if _namecheck(__name__):
   #   % python enigma.py -r <file> <additional-args>
   #   % python enigma.py --run <file> <additional-args>
   #   % python enigma.py <file> <additional-args>
-  args = argv()
   if args:
     run(*args)
     if _run_exit is not None:
@@ -11203,13 +11220,11 @@ if _namecheck(__name__):
   args = dict((arg[1], arg[2:]) for arg in args if len(arg) > 1 and arg[0] == '-')
 
   # -h => help
-  if 'h' in args:
-    _enigma_help()
+  if 'h' in args: _enigma_help()
 
   # -t => run tests
   # -tv => in verbose mode
-  if 't' in args:
-    _enigma_test(verbose=('v' in args['t']))
+  if 't' in args: _enigma_test(verbose=('v' in args['t']))
 
   # -u => check for updates, and download newer version
   # -uc => just check for updates (don't download)
@@ -11218,3 +11233,9 @@ if _namecheck(__name__):
   if 'u' in args:
     kw = dict((w, w[0] in args['u']) for w in ('check', 'download', 'rename', 'quiet', 'verbose'))
     _enigma_update(**kw)
+
+def _namecheck(name, verbose=0):
+  if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
+  return name == "__main__" or name == "<run_path>"
+
+if _namecheck(__name__): _enigma_main()
