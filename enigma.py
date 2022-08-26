@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug 26 11:32:37 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug 26 11:55:31 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-08-25"
+__version__ = "2022-08-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7529,6 +7529,11 @@ class SubstitutedExpression(object):
     # initial mapping of symbols to digits
     if s2d is None: s2d = dict()
 
+    # literal values are symbols which stand for themselves
+    if literal is None: literal = ()
+    for s in literal:
+      s2d[s] = base2int(s, base=base)
+
     # allowable digits (and invalid digits)
     if digits is None:
       digits = set(xrange(base))
@@ -7543,6 +7548,7 @@ class SubstitutedExpression(object):
               printf("WARNING: SubstitutedExpression: non-valid digit {d} for base {base} specified", d=repr(d))
         digits.intersection_update(ds)
     # TODO: I suspect this needs to work with more values of "distinct"
+    # if all values are distinct (including literals), remove them from digits
     if distinct == 1: digits = digits.difference(s2d.values())
     idigits = set(xrange(base)).difference(digits)
 
@@ -7590,7 +7596,7 @@ class SubstitutedExpression(object):
 
     # add the value of the symbols into the template
     self.template = (_template if template is None else template)
-    if self.solution is None: self.solution = symbols
+    if self.solution is None: self.solution = join(diff(symbols, literal))
     if self.header is None: self.header = _replace_words(self.template, identity)
 
     # sort out denest=1
@@ -7641,11 +7647,6 @@ class SubstitutedExpression(object):
     # output run parameters
     if self.verbose & self.vP:
       print("-- [code] --" + nl + join(self.save(quote=1), sep=nl) + nl + "-- [/code] --")
-
-    # literals are symbols that stand for themselves
-    if literal:
-      for s in literal:
-        s2d[s] = base2int(s, base=base)
 
     # # remove assigned symbols from distinct groups [suggested by Frits]
     # if s2d:
