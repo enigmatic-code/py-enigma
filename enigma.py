@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug 26 11:55:31 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep  1 09:18:47 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-08-26"
+__version__ = "2022-08-31"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -338,6 +338,10 @@ def true(*args, **kw):
   """a function that ignores any arguments and returns True"""
   return True
 
+# a function that returns its arguments
+#def tupl(*args, fn=None):
+#,  return (args if fn is None else fn(args))
+
 # can we treat x as an integer?
 # include = +/-/0, check for +ve, -ve, 0
 def as_int(x, include="", **kw):
@@ -396,6 +400,13 @@ def as_int(x, include="", **kw):
 
 
 # useful routines for solving Enigma puzzles
+
+# less than/greater than (or equal) to a target; useful for filter() etc.
+def lt(t): return (lambda x: x < t)
+def le(t): return (lambda x: x <= t)
+def gt(t): return (lambda x: x > t)
+def ge(t): return (lambda x: x >= t)
+def between(a, b): return (lambda x: a < x < b)
 
 def mod(m):
   """
@@ -644,8 +655,8 @@ def join(s, sep='', enc=''):
 
   >>> join(['a', 'b', 'cd'])
   'abcd'
-  >>> join(['a', 'b', 'cd'], sep=',')
-  'a,b,cd'
+  >>> join(['a', 'b', 'cd'], sep=',', enc='{}')
+  '{a,b,cd}'
   >>> join([5, 700, 5])
   '57005'
   """
@@ -2809,7 +2820,7 @@ def coprime_pairs(n=None, order=0):
 # if Z is None, then triples will be generated indefinitely
 # if order is True, then triples will be returned in order
 def _pythagorean_primitive(Z=None, order=0):
-  fn = (true if Z is None else (lambda z: z <= Z))
+  fn = (true if Z is None else le(Z))
   if order:
     # use a heap
     from heapq import (heapify, heappush, heappop)
@@ -4522,6 +4533,27 @@ def delete(s, ks=()):
   # return the new object
   return (fn(s) if fn else s)
 
+def append(s, v):
+  """
+  make a new container, the same as <s> but with <v> added.
+
+  >>> append((1, 2, 3), 4)
+  (1, 2, 3, 4)
+  >>> append([1, 2, 3], 4)
+  [1, 2, 3, 4]
+  >>> append({1, 2, 3}, 4) == {1, 2, 3, 4}
+  True
+  """
+  if isinstance(s, tuple):
+    return s + (v,)
+  if isinstance(s, list):
+    return s + [v]
+  if isinstance(s, set):
+    s = set(s)
+    s.add(v)
+    return s
+  if isinstance(s, frozenset):
+    return s | {v}
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
