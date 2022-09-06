@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep  1 09:18:47 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep  6 14:50:07 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-08-31"
+__version__ = "2022-09-04"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5478,6 +5478,7 @@ def digit_map(a=0, b=9, digits=None):
   if digits is None: digits = base_digits()
   return dict((digits[i], i) for i in irange(a, b))
 
+# int2words implementation for lang='en' (English)
 
 _numbers = {
   0: 'zero',
@@ -5488,30 +5489,6 @@ _numbers = {
 _tens = {
   1: 'teen', 2: 'twenty', 3: 'thirty', 4: 'forty', 5: 'fifty', 6: 'sixty', 7: 'seventy', 8: 'eighty', 9: 'ninety'
 }
-
-def int2words(n, scale='short', sep='', hyphen=' ', lang='en'):
-  """
-  convert an integer <n> to a string representing the number in English.
-
-  scale - 'short' (for short scale numbers), or 'long' (for long scale numbers)
-  sep - separator between groups
-  hyphen - separator between tens and units
-
-  >>> int2words(1234)
-  'one thousand two hundred and thirty four'
-  >>> int2words(-7)
-  'minus seven'
-  >>> int2words(factorial(13))
-  'six billion two hundred and twenty seven million twenty thousand eight hundred'
-  >>> int2words(factorial(13), sep=',')
-  'six billion, two hundred and twenty seven million, twenty thousand, eight hundred'
-  >>> int2words(factorial(13), sep=',', hyphen='-')
-  'six billion, two hundred and twenty-seven million, twenty thousand, eight hundred'
-  >>> int2words(factorial(13), scale='long')
-  'six thousand two hundred and twenty seven million twenty thousand eight hundred'
-  """
-  assert lang == 'en'
-  return _int2words(int(n), scale, sep, hyphen)
 
 def _int2words(n, scale='short', sep='', hyphen=' '):
   if n in _numbers:
@@ -5575,6 +5552,33 @@ def __int2words(n, scale='short', sep='', hyphen=' '):
   if r == 0: return x
   if r < 100: return x + ' and ' + _int2words(r, scale, sep, hyphen)
   return x + sep + ' ' + _int2words(r, scale, sep, hyphen)
+
+def int2words(n, scale='short', sep='', hyphen=' ', lang='en'):
+  """
+  convert an integer <n> to a string representing the number (in English).
+
+  scale - 'short' (for short scale numbers), or 'long' (for long scale numbers)
+  sep - separator between groups
+  hyphen - separator between tens and units
+  lang - language (only 'en' (for English) is currently accepted)
+
+  >>> int2words(1234)
+  'one thousand two hundred and thirty four'
+  >>> int2words(-7)
+  'minus seven'
+  >>> int2words(factorial(13))
+  'six billion two hundred and twenty seven million twenty thousand eight hundred'
+  >>> int2words(factorial(13), sep=',')
+  'six billion, two hundred and twenty seven million, twenty thousand, eight hundred'
+  >>> int2words(factorial(13), sep=',', hyphen='-')
+  'six billion, two hundred and twenty-seven million, twenty thousand, eight hundred'
+  >>> int2words(factorial(13), scale='long')
+  'six thousand two hundred and twenty seven million twenty thousand eight hundred'
+  >>> sorted(irange(1, 10), key=int2words)
+  [8, 5, 4, 9, 1, 7, 6, 10, 3, 2]
+  """
+  if lang != 'en': raise ValueError(sprintf("int2words: lang='{lang}' not implemented"))
+  return _int2words(int(n), scale, sep, hyphen)
 
 # convert an integer to BCD (binary coded decimal)
 # same as: nconcat(nsplit(n, base=10), base=16)
@@ -5987,7 +5991,10 @@ def poly_integral(p, c=0, div=rdiv):
 # polynomial interpolation from a number of points
 def poly_interpolate(ps, F=None):
   ps = list(ps)
-  k = len(ps) - 1
+  k = len(ps)
+  if k == 0: return None
+  if k == 1: return [ps[0][1]]
+  k -= 1
   (A, B) = (list(), list())
   for (x, y) in ps:
     A.append([1, x] + [x ** i for i in irange(2, k)])
