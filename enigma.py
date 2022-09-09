@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep  7 14:54:21 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Sep  9 09:53:01 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -209,7 +209,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-09-05"
+__version__ = "2022-09-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -455,7 +455,7 @@ def implies(p, q):
   >>> list(p for p in irange(1, 100) if not implies(is_prime(p), p % 6 in (1, 5)))
   [2, 3]
   """
-  return not(p) or q
+  return (not p) or q
 
 # it's probably quicker (and shorter) to just use:
 #   X not in args
@@ -755,7 +755,7 @@ def translate(t, m, s="", embed=1):
     if not isinstance(m, dict): m = dict(zip(m, s))
     f = (lambda x: m.get(x, x))
   fn = (lambda t: join(map(f, t)))
-  if not embed or '{' not in t: return fn(t)
+  if (not embed) or ('{' not in t): return fn(t)
   return re.sub(r'{(.*?)}', (lambda x: fn(x.group(1))), t)
 
 
@@ -1422,13 +1422,13 @@ class multiset(dict):
   def issuperset(self, m, strict=0):
     """test if the multiset contains multiset <m>"""
     (d1, d2) = self.differences(m)
-    return not(d2) and (not(strict) or bool(d1))
+    return (not d2) and ((not strict) or bool(d1))
 
   # is multiset m a superset of self?
   def issubset(self, m, strict=0):
     """test if the multiset is contained in multiset <m>"""
     (d1, d2) = self.differences(m)
-    return not(d1) and (not(strict) or bool(d2))
+    return (not d1) and ((not strict) or bool(d2))
 
   # absolute difference in item counts of the two multisets
   def symmetric_difference(self, m):
@@ -1478,7 +1478,7 @@ class multiset(dict):
 
     equivalent to: min(self)
     """
-    if not(self) and 'default' in kw: return kw['default']
+    if (not self) and 'default' in kw: return kw['default']
     return min(dict.keys(self))
 
   def max(self, **kw):
@@ -1487,7 +1487,7 @@ class multiset(dict):
 
     equivalent to: max(self)
     """
-    if not(self) and 'default' in kw: return kw['default']
+    if (not self) and 'default' in kw: return kw['default']
     return max(dict.keys(self))
 
   def sum(self, fn=sum):
@@ -1752,7 +1752,7 @@ partition_unique = filter_unique
 
 def _collect(s, accept, reject, every):
   for x in s:
-    if (accept is None or accept(x)) and (reject is None or not(reject(x))):
+    if (accept is None or accept(x)) and (reject is None or not reject(x)):
       yield x
     elif every:
       raise ValueError()
@@ -2053,7 +2053,7 @@ def _partitions(s, n):
   >>> list(_partitions((1, 2, 3, 4), 2))
   [((1, 2), (3, 4)), ((1, 3), (2, 4)), ((1, 4), (2, 3))]
   """
-  if not(len(s) > n):
+  if not (len(s) > n):
     yield (s,)
   else:
     for x in itertools.combinations(s[1:], n - 1):
@@ -2124,7 +2124,7 @@ def choose(vs, fns, s=None, distinct=0):
     # choose the next value
     fn = fns[0]
     for v in vs:
-      if not(distinct) or v not in s:
+      if (not distinct) or v not in s:
         s_ = list(s)
         s_.append(v)
         if fn is None or fn(*s_):
@@ -2247,7 +2247,7 @@ def uniq1(i, fn=None):
 
 # root: calculate the (positive) nth root of a (positive) number
 # we use math.pow rather than **/pow() to avoid generating complex numbers
-root = lambda x, n: (x if not(x) else math.pow(x, 1.0 / n))
+root = lambda x, n: (x if not x else math.pow(x, 1.0 / n))
 
 def cbrt(x):
   """
@@ -2443,7 +2443,7 @@ def divisors_pairs(n, k=1, fn=prime_factor, every=0):
   nk = (n ** k if k != 1 else n)
   for a in divisors(n, k=k, fn=fn):
     b = nk // a
-    if a > b and not(every): break
+    if a > b and (not every): break
     yield (a, b)
 
 def divisors_tuples(n, k, s=()):
@@ -2454,11 +2454,11 @@ def divisors_tuples(n, k, s=()):
   [(1, 1, 1335), (1, 3, 445), (1, 5, 267), (1, 15, 89), (3, 5, 89)]
   """
   if k == 1:
-    if not(s and n < s[-1]):
+    if not (s and n < s[-1]):
       yield s + (n,)
   else:
     for (a, b) in divisors_pairs(n):
-      if not(s and a < s[-1]):
+      if not (s and a < s[-1]):
         for z in divisors_tuples(b, k - 1, s + (a,)): yield z
 
 def is_prime(n):
@@ -2646,7 +2646,7 @@ def prime_factor_h(n, ps=None, end=None, nf=0, mr=0, mrr=0):
   [(19, 1), (23, 1), (29, 1), (61, 1), (67, 1), (123610951, 1)]
 
   """
-  assert not(ps is None and mr == 0) # otherwise we won't find anything
+  assert not (ps is None and mr == 0) # otherwise we won't find anything
   f = 0  # number of failed primes for n
   psi = (None if ps is None else ps.generate(end=end))
   pmax = 0
@@ -2979,7 +2979,7 @@ def iroot(n, k):
   b = a << 1
   #assert (a ** k <= n and b ** k > n)
   # if this assertion fails we need:
-  #while not(b ** k > n): (a, b) = (b, b << 1)
+  #while not (b ** k > n): (a, b) = (b, b << 1)
   while b - a > 1:
     r = (a + b) // 2
     x = r ** k
@@ -3122,14 +3122,14 @@ def is_square_q(n, F=None):
 def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
   if k == 1:
     r = is_square(n)
-    if not(r is None or r < min_v):
+    if not (r is None or r < min_v):
       yield ss + [r]
   elif k == 2:
     i = isqrt(n)
     j = 0
-    while not(i < j):
+    while not (i < j):
       r = compare(i * i + j * j, n)
-      if r == 0 and not(j < min_v or i - j < sep): yield (ss + [j, i] if ss else [j, i])
+      if r == 0 and not (j < min_v or i - j < sep): yield (ss + [j, i] if ss else [j, i])
       if r != -1: i -= 1
       if r != 1: j += 1
   else:
@@ -3323,7 +3323,7 @@ def is_triangular(n):
   >>> is_triangular(49) is not None
   False
   """
-  if not(n % 9 in {0, 1, 3, 6}): return
+  if n % 9 not in {0, 1, 3, 6}: return
   x = is_square(8 * n + 1)
   return (None if x is None else x // 2)
 
@@ -4051,7 +4051,7 @@ def recurring(a, b, recur=0, base=10, digits=None):
       n += 1
       (d, a) = divmod(base * a, b)
       if recur and a == 0: (d, a) = (d - 1, b)
-      if not(d == a == 0):
+      if not (d == a == 0):
         # add to the digit string
         s += int2base(d, base, digits=digits)
 
@@ -4128,7 +4128,7 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
   # are we done?
   if k == 1:
     (d, r) = divmod(b, a)
-    if r == 0 and not(d < m or d > M):
+    if r == 0 and not (d < m or d > M):
       yield rs + [d]
   elif k == 2:
     # special case k = 2
@@ -4139,7 +4139,7 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
     dmax = divf(b + b, a)
     for d in irange(max(m, dmin), min(M, dmax)):
       (e, r) = divmod(d * b, d * a - b)
-      if r == 0 and not(e < d + g or e > M):
+      if r == 0 and not (e < d + g or e > M):
         yield rs + [d, e]
   else:
     if M == inf:
@@ -4601,7 +4601,7 @@ def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0, in
       s = list()
       for (dx, dy) in deltas:
         (x1, y1) = (x + dx, y + dy)
-        if not(x1 < 0 or y1 < 0 or x1 + 1 > n or y1 + 1 > m):
+        if not (x1 < 0 or y1 < 0 or x1 + 1 > n or y1 + 1 > m):
           s.append(x1 + y1 * n)
       r[x + y * n] = s
   return r
@@ -4799,7 +4799,7 @@ def express(t, ds, qs=None, min_q=0):
 # express total <t> using denominations <ds>
 def express_denominations(t, ds, ss=[]):
   if t == 0:
-    if not(ds):
+    if not ds:
       yield ss
     else:
       yield ss + [0] * len(ds)
@@ -4829,7 +4829,7 @@ def express_denominations_min(t, ds, min_q):
 # express total <t> using denominations <ds>, quantities chosen from <qs>
 def express_quantities(t, ds, qs, ss=[]):
   if t == 0:
-    if not(ds):
+    if not ds:
       yield ss
     elif 0 in qs:
       yield ss + [0] * len(ds)
@@ -4983,7 +4983,7 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
     if k == 0:
       if t == 0: yield fn(())
     elif k == 1:
-      if not(t < min_v or t > max_v):
+      if not (t < min_v or t > max_v):
         ns += (t,)
         yield fn(ns[::-1] if r else ns)
     else:
@@ -5302,7 +5302,7 @@ def int2roman(x):
   'MCMXCIX'
   """
   x = as_int(x)
-  if not(0 < x < 5000): raise ValueError("integer out of range: {x}".format(x=x))
+  if not (0 < x < 5000): raise ValueError("integer out of range: {x}".format(x=x))
   s = list()
   for (n, i, m) in _romans:
     (d, r) = divmod(x, i)
@@ -5957,7 +5957,7 @@ def poly_print(p):
   for (e, c) in enumerate(p):
     if c == 0: continue
     s = str(c)
-    if not(c < 0): s = '+' + s
+    if not (c < 0): s = '+' + s
     s = '(' + s + ')'
     if e == 0:
       pass
@@ -6357,7 +6357,7 @@ class _PrimeSieveE6(object):
     """
     extend the sieve up to (at least) <n>
     """
-    if not(n > self.max): return
+    if not (n > self.max): return
     #if self.verbose: printf("[{x}: expanding to {n}]", x=self.__class__.__name__)
 
     # extend the sieve to the right size
@@ -6430,7 +6430,7 @@ class _PrimeSieveE6(object):
 
   # irange = inclusive range
   def irange(self, a, b):
-    if not(b is None or b == inf): b += 1
+    if not (b is None or b == inf): b += 1
     return self.generate(a, b)
 
   # prime test (may throw IndexError if n is too large)
@@ -6474,7 +6474,7 @@ class _PrimeSieveE6(object):
     if n < 3: return 3
     i = (n + 1) // 3 + (n % 6 == 1)
     while True:
-      if self.expandable and not(i < len(self.sieve)): self.expand()
+      if self.expandable and not (i < len(self.sieve)): self.expand()
       if self.sieve[i]: return (i * 3) + (i & 1) + 1
       i += 1
 
@@ -7014,7 +7014,7 @@ class SubstitutedSum(object):
       printf("{self.text}")
 
     for s in substituted_sum(self.terms, self.result, base=self.base, digits=self.digits, l2d=self.l2d, d2i=self.d2i):
-      if check and not(check(s)): continue
+      if check and (not check(s)): continue
       if verbose > 0:
         self.output_solution(s)
       yield s
@@ -7307,7 +7307,7 @@ def _split(s, sep=_split_sep, maxsplit=0):
   d = sep[0]
   if len(sep) > 1:
     # map all other separators to d
-    s = re.sub('[' + re.escape(sep[1:]) + ']', d, s)
+    s = re.sub(r'[' + re.escape(sep[1:]) + r']', d, s)
   if maxsplit == 0:
     return s.split(d)
   elif maxsplit > 0:
@@ -7333,8 +7333,8 @@ def _digits(s):
 # if <s> contains no {word} parameters, then enclose words from <symbols>
 def _fix_implicit(s, symbols):
   if s is None: return None
-  if re.search('{\w+}', s): return s # was: [[ if '{' in s: return s ]]
-  return re.sub('[' + symbols + ']+', (lambda m: '{' + m.group(0) + '}'), s)
+  if re.search(r'{\w+}', s): return s # was: [[ if '{' in s: return s ]]
+  return re.sub(r'[' + symbols + r']+', (lambda m: '{' + m.group(0) + '}'), s)
 
 
 class SubstitutedExpression(object):
@@ -7715,17 +7715,17 @@ class SubstitutedExpression(object):
         # ("<word> == <expr>", None, 1)  -->  ("<expr>", "<word>", 3)
         if k == 1:
           word = xpr = None
-          m = re.match('\s*\{([' + symbols + ']+)\}\s*==\s*(.+)\s*$', expr)
+          m = re.match(r'\s*\{([' + symbols + r']+)\}\s*==\s*(.+)\s*$', expr)
           if m:
             (word, xpr) = m.groups()
           else:
             # try: "<expr> == <word>"
-            m = re.match('\s*(.+?)\s*==\s*\{([' + symbols + ']+)\}\s*$', expr)
+            m = re.match(r'\s*(.+?)\s*==\s*\{([' + symbols + r']+)\}\s*$', expr)
             if m:
               (xpr, word) = m.groups()
 
           if word and expr:
-            if re.search('\{[' + symbols + ']+\}', xpr) is None:
+            if re.search(r'\{[' + symbols + r']+\}', xpr) is None:
               if verbose > 0: printf("[SubstitutedExpression: replacing ({t}) -> ({xpr} = {word})]", t=ts[i])
               exprs[i] = (xpr, word, 3)
               (xs[i], vs[i]) = (vs[i], xs[i])
@@ -7881,7 +7881,7 @@ class SubstitutedExpression(object):
               prog.append(sprintf("{_}{w} = {x}", w=sym(w), x=_word(w, base)))
 
       # calculate the expression
-      if k != 0 and not(expr.endswith(':')): # (but not for the answer expression)
+      if k != 0 and (not expr.endswith(':')): # (but not for the answer expression)
         x = _replace_words(expr, (lambda w: '(' + sym(w) + ')'))
         prog.append(sprintf("{_}try:"))
         prog.append(sprintf("{_}  {vx} = int({x})"))
@@ -8008,7 +8008,7 @@ class SubstitutedExpression(object):
       # (e.g. in standard Python you can't have more than 20 nested blocks,
       # or more than 100 indent levels - PyPy does not have these limitations)
       printf("SubstitutedExpression: compilation error from Python interpreter [{sys.executable}]")
-      if not(verbose & self.vC):
+      if not (verbose & self.vC):
         printf("(use verbose level 256 to output code before compilation)")
         printf("(or use the \"denest=1\" option (--denest, -X) to reduce program complexity)")
       raise
@@ -8044,7 +8044,7 @@ class SubstitutedExpression(object):
 
     n = 0
     for s in solver():
-      if check and not(check(s)): continue
+      if check and (not check(s)): continue
       if verbose & self.vT: self.output_solution((s[0] if answer else s))
       # return the result
       yield s
@@ -8981,7 +8981,7 @@ class SubstitutedDivision(SubstitutedExpression):
     rem = []
     for i in irange(-1, -len(subs), step=-1):
       if subs[i]:
-        if (not(subs[i][-1]) or subs[i][-1] == '0'): subs[i][-1] = None
+        if ((not subs[i][-1]) or subs[i][-1] == '0'): subs[i][-1] = None
         if subs[i][-1] is not None: rem.insert(0, subs[i][-1])
         break
       else:
@@ -9147,7 +9147,7 @@ class SubstitutedDivision(SubstitutedExpression):
         if k not in s: s[k] = s[v]
       # made a solution object
       ss = SubstitutedDivisionSolution(a, b, c, r, subs, d, s)
-      if check and not(check(ss)): continue
+      if check and (not check(ss)): continue
       # output the solution
       if verbose & self.vT: self.output_solution(ss)
       # return the result
@@ -10142,7 +10142,7 @@ class Timer(object):
 
     The report will only be generated once (if it's not been disabled).
     """
-    if self._report and not(force): return self._report
+    if self._report and (not force): return self._report
     if self._t1 is None: self.stop()
     e = self.elapsed()
     self._report = sprintf("[{n}] total time: {e:.7f}s ({f})", n=self._name, f=self.format(e))
@@ -10634,7 +10634,7 @@ def __matrix():
 
     # for each column i
     for i in itertools.count(0):
-      if not(i < m): break
+      if not (i < m): break
       if n < m: raise ValueError("incomplete")
 
       # choose the row with the largest value in the column i
@@ -11237,7 +11237,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.10.6')
+""".format(version=__version__, python='2.7.18', python3='3.10.7')
 
 def _enigma_main(args=None):
   if args is None: args=argv()
