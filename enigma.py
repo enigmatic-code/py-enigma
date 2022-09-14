@@ -6,8 +6,8 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Sep  9 09:53:01 2022 (Jim Randell) jim.randell@gmail.com
-# Language:     Python
+# Modified:     Wed Sep 14 21:32:48 2022 (Jim Randell) jim.randell@gmail.com
+# Language:     Python (Python 2.7, Python 3.6+)
 # Package:      N/A
 # Status:       Free for non-commercial use
 # URI:          http://www.magwag.plus.com/jim/enigma.html
@@ -42,6 +42,7 @@ chain                  - see: flatten()
 choose                 - choose a sequence of values satisfying some functions
 chunk                  - go through an iterable in chunks
 clock                  - clock arithmetic variant on mod()
+clump                  - collect contiguous blocks of the same value
 collect                - collect items according to accept/reject criteria
 compare                - comparator function
 concat                 - concatenate a list of values into a string
@@ -209,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-09-07"
+__version__ = "2022-09-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -257,7 +258,7 @@ elif _pythonv[0] > 2:
 # re-exported functions from standard library (to save on imports)
 defaultdict = collections.defaultdict
 namedtuple = collections.namedtuple
-product = itertools.product  # cartesian product
+product = itertools.product  # cartesian product, but see also: cproduct()
 
 # detect if running under PyPy
 _pypy = getattr(sys, 'pypy_version_info', None)
@@ -481,9 +482,9 @@ def distinct_values(s, n=None):
   if n is None: n = len(s)
   return len(set(s)) == n
 
-def seq_all_different(s, fn=identity):
+def seq_all_different(seq, fn=None):
   """
-  check all elements of <s> are pairwise distinct
+  check all elements of <seq> are pairwise distinct
 
   >>> seq_all_different([0, 1, 2, 3])
   True
@@ -493,8 +494,8 @@ def seq_all_different(s, fn=identity):
   False
   """
   seen = set()
-  for x in s:
-    x = fn(x)
+  for x in seq:
+    if fn: x = fn(x)
     if x in seen: return False
     seen.add(x)
   return True
@@ -524,8 +525,8 @@ def is_pairwise_distinct(*args, **kw):
 pairwise_distinct = is_pairwise_distinct
 all_different = is_pairwise_distinct
 
-# returns a Record() with various information on sequence <s>
-def seq_all_same_r(s, **kw):
+# returns a Record() with various information on sequence <seq>
+def seq_all_same_r(seq, **kw):
   """
   check to see if a sequence consists of values that are all the same
   (testing using equality (==)).
@@ -548,7 +549,7 @@ def seq_all_same_r(s, **kw):
 
   if the sequence has fewer than 2 elements, 'same' is trivially true.
   """
-  i = iter(s)
+  i = iter(seq)
   n = 0
   try:
     v = kw['value']
@@ -565,7 +566,7 @@ def seq_all_same_r(s, **kw):
     n = 1
   return Record(same=True, empty=(n == 0), value=v)
 
-def seq_all_same(s, **kw):
+def seq_all_same(seq, **kw):
   """
   >>> seq_all_same([1, 2, 3])
   False
@@ -576,7 +577,7 @@ def seq_all_same(s, **kw):
   >>> seq_all_same(Primes(expandable=1))
   False
   """
-  return seq_all_same_r(s, **kw).same
+  return seq_all_same_r(seq, **kw).same
 
 # same as distinct_values(args, 1)
 def all_same(*args, **kw):
@@ -641,17 +642,17 @@ def ordered(*args, **kw):
 
 # I would prefer join() to be a method of sequences: s.join(sep='')
 # but for now we define a utility function
-def join(s, sep='', enc=''):
+def join(seq, sep='', enc=''):
   """
-  join the items in sequence <s> as strings, separated by separator <sep>.
+  join the items in sequence <seq> as strings, separated by separator <sep>.
 
   the default separator is the empty string so you can just use:
 
-    join(s)
+    join(seq)
 
   instead of:
 
-    ''.join(s)
+    ''.join(seq)
 
   >>> join(['a', 'b', 'cd'])
   'abcd'
@@ -660,7 +661,7 @@ def join(s, sep='', enc=''):
   >>> join([5, 700, 5])
   '57005'
   """
-  r = str.join(sep, (str(x) for x in s))
+  r = str.join(sep, (str(x) for x in seq))
   if enc: r = enc[0] + r + enc[1]
   return r
 
@@ -968,9 +969,9 @@ def rotate(s, k=1):
   return s[k:] + s[:k]
 
 # or you can use itertools.izip_longest(*[iter(l)]*n) for padded chunks
-def chunk(s, n=2, pad=0, value=None, fn=tuple):
+def chunk(seq, n=2, pad=0, value=None, fn=tuple):
   """
-  iterate through iterable <s> in chunks of size <n>.
+  iterate through iterable <seq> in chunks of size <n>.
 
   (for overlapping tuples see tuples())
 
@@ -979,12 +980,42 @@ def chunk(s, n=2, pad=0, value=None, fn=tuple):
   >>> list(chunk(irange(1, 8), 3))
   [(1, 2, 3), (4, 5, 6), (7, 8)]
   """
-  i = iter(s)
+  i = iter(seq)
   while True:
     s = fn(itertools.islice(i, 0, n))
     if not s: break
     x = (n - len(s) if pad else 0)
     yield (s if x == 0 else s + fn([value] * x))
+
+# find contiguous blocks of values (according to fn)
+def clump(seq, fn=None):
+  """
+  generate (<value>, <count>) pairs for contiguous blocks of repeated values
+  in sequence <seq> (according to function <fn>).
+
+  >>> list(clump([1, 1, 1, 2, 2, 3]))
+  [[1, 1, 1], [2, 2], [3]]
+  >>> list(clump("bookkeeper"))
+  [['b'], ['o', 'o'], ['k', 'k'], ['e', 'e'], ['p'], ['e'], ['r']]
+  >>> list(clump(map(tri, irange(1, 10)), fn=mod(2)))
+  [[1, 3], [6, 10], [15, 21], [28, 36], [45, 55]]
+  """
+  seq = iter(seq)
+  try:
+    v = next(seq)
+  except StopIteration:
+    return
+  xs = [v]
+  if fn is not None: v = fn(v)
+  for x in seq:
+    v_ = (x if fn is None else fn(x))
+    if v_ == v:
+      xs.append(x)
+    else:
+      yield xs
+      v = v_
+      xs = [x]
+  yield xs
 
 # set union of a bunch of sequences
 def union(ss, fn=set):
@@ -1755,7 +1786,7 @@ def _collect(s, accept, reject, every):
     if (accept is None or accept(x)) and (reject is None or not reject(x)):
       yield x
     elif every:
-      raise ValueError()
+      raise ValueError(sprintf("collect: failed to collect item: {x}"))
 
 def collect(s, accept=None, reject=None, every=0, fn=list):
   """
@@ -2198,52 +2229,44 @@ def repeat(fn, v=0, k=inf):
     if i == k: break
     v = fn(v)
 
-def uniq(i, fn=None, verbose=0):
+def uniq(seq, fn=None, verbose=0):
   """
-  generate unique values from iterator <i> (maintaining order).
+  generate unique values from <seq> (maintaining order).
 
   i.e. repeated values are suppressed.
 
   >>> list(uniq([5, 7, 0, 0, 5]))
   [5, 7, 0]
-  >>> list(uniq('mississippi'))
-  ['m', 'i', 's', 'p']
-  >>> list(uniq([1, 2, 3, 4, 5, 6, 7, 8, 9], fn=(lambda x: x % 3)))
-  [1, 2, 3]
+  >>> join(uniq('mississippi'))
+  'misp'
+  >>> list(uniq(irange(1, 9), fn=(lambda x: x // 3)))
+  [1, 3, 6, 9]
   """
   seen = set()
-  for x in i:
+  for x in seq:
     r = (x if fn is None else fn(x))
     if r not in seen:
       yield x
       seen.add(r)
   if verbose: printf("[uniq: found {n} unique items]")
 
-def uniq1(i, fn=None):
+def uniq1(seq, fn=None):
   """
-  generate unique consecutive values from iterator <i> (maintaining
-  order), where values are compared using <fn>.
+  collapse repeated consecutive values (according to <fn>) in <seq>
+  down to single values.
 
-  this function assumes that common elements are generated in <i>
-  together, so it only needs to track the last value.
-
-  essentially it collapses repeated consecutive values to a single
-  value.
+  i.e. repeated _consecutive_ values are suppressed.
 
   >>> list(uniq1((1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5)))
   [1, 2, 3, 4, 5]
-  >>> list(uniq1('mississippi'))
-  ['m', 'i', 's', 'i', 's', 'i', 'p', 'i']
+  >>> join(uniq1('mississippi'))
+  'misisipi'
+  >>> join(uniq1('bookkeeper'))
+  'bokeper'
   """
-  i = iter(i)
-  x = next(i)
-  yield x
-  seen = (x if fn is None else fn(x))
-  for x in i:
-    r = (x if fn is None else fn(x))
-    if r != seen:
-      yield x
-      seen = r
+  for vs in clump(seq, fn=fn):
+    yield vs[0]
+
 
 # root: calculate the (positive) nth root of a (positive) number
 # we use math.pow rather than **/pow() to avoid generating complex numbers
@@ -4640,13 +4663,13 @@ def cslice(x):
 
 
 # overlapping tuples from a sequence
-# (Python 3.10 has itertools.pairwise, which acts like tuples(s, 2))
-def tuples(s, n=2, circular=0, fn=tuple):
+# (Python 3.10 has itertools.pairwise, which acts like tuples(seq, 2))
+def tuples(seq, n=2, circular=0, fn=tuple):
   """
-  generate overlapping <n>-tuples from sequence <s>.
+  generate overlapping <n>-tuples from sequence <seq>.
   (for non-overlapping tuples see chunk()).
 
-  if 'circular' is set to true, then values from the beginning of <s>
+  if 'circular' is set to true, then values from the beginning of <seq>
   will be used to complete tuples when the end is reached.
 
   >>> list(tuples('ABCDE'))
@@ -4657,7 +4680,7 @@ def tuples(s, n=2, circular=0, fn=tuple):
   [(1, 2, 3), (2, 3, 4), (3, 4, 5), (4, 5, 1), (5, 1, 2)]
   """
   assert n > 0
-  i = iter(s)
+  i = iter(seq)
   if circular and n > 1:
     # we need extract the first (n - 1) items and add them to the end
     xs = first(i, n - 1)
@@ -4680,11 +4703,11 @@ def tuples(s, n=2, circular=0, fn=tuple):
       t.pop(0)
       t.append(next(i))
   except StopIteration:
-    pass
+    return
 
-def last(s, count=1, fn=list):
+def last(seq, count=1, fn=list):
   """
-  find the last <count> items in sequence <s>.
+  find the last <count> items in sequence <seq>.
 
   >>> last([1, 2, 3, 4])
   [4]
@@ -4692,11 +4715,11 @@ def last(s, count=1, fn=list):
   [19, 23, 29]
   """
   try:
-    x = s[-count:]
+    x = seq[-count:]
     if len(x) < count: return
   except TypeError:
     x = None
-    for x in tuples(s, count, fn=list): pass
+    for x in tuples(seq, count, fn=list): pass
     if x is None: return
   return (x if fn == list else fn(x))
 
@@ -7081,7 +7104,7 @@ class SubstitutedSum(object):
 
   # class method to call from the command line
   @classmethod
-  def command_line(cls, args):
+  def run_command_line(cls, args):
     """
     run the SubstitutedSum solver with the specified command line arguments.
 
@@ -8575,7 +8598,7 @@ class SubstitutedExpression(object):
 
   # class method to call from the command line
   @classmethod
-  def command_line(cls, args):
+  def run_command_line(cls, args):
     """
     run the SubstitutedExpression solver with the specified command
     line arguments.
@@ -8617,11 +8640,36 @@ class SubstitutedExpression(object):
       self = cls.from_args(args)
       if self is not None:
         # call the solver
-        self.run()
-        return 0
+        if self.run():
+          return 0
 
     # failure, output usage message
     print(join(cls._usage(), sep=nl))
+    return -1
+
+  @classmethod
+  def run_split_sum(cls, args):
+    if args:
+      # parse the args, and sort out the supported ones
+      # TODO: no obvious way to set the k argument
+      opt = cls._opt_from_args(args)
+      extra = opt.pop('_argv')
+      expr = extra.pop(0)
+      kw = dict()
+      if extra: kw['extra'] = extra
+      if 'distinct' in opt:
+        assert len(opt['distinct']) == 1
+        opt['distinct'] = opt['distinct'][0]
+      for k in ['base', 's2d', 'd2i', 'answer', 'accumulate', 'template', 'distinct', 'literal', 'verbose']:
+        if k in opt:
+          kw[k] = opt.pop(k)
+      #if opt: printf("SubstitutedExpression.run_split_sum: ignoring args: {opt}")
+      self = cls.split_sum(expr, **kw)
+      if self.run():
+        return 0
+
+    # failure
+    print("SubstitutedExpression.run_split_sum: failed")
     return -1
 
   # class method to load a run file
@@ -9186,7 +9234,7 @@ class SubstitutedDivision(SubstitutedExpression):
 
 
   @classmethod
-  def command_line(cls, args):
+  def run_command_line(cls, args):
     """
     run the SubstitutedDivision solver with the specified command line
     arguments.
@@ -10851,7 +10899,6 @@ def run(cmd, *args, **kw):
     interpreter - interpreter to use
     verbose - enable informational output
   """
-
   global _run_exit, _PY_ENIGMA
   _run_exit = None
 
@@ -10862,7 +10909,7 @@ def run(cmd, *args, **kw):
   # make sure arguments are strings
   args = list(str(x) for x in args)
 
-  verbose = kw.get('verbose')
+  verbose = kw.get('verbose') or ('v' in _PY_ENIGMA)
   timed = kw.get('timed')
   flags = kw.get('flags', '')
   interp = kw.get('interpreter')
@@ -10952,6 +10999,7 @@ def run(cmd, *args, **kw):
   # if cmd names a class[.method]
   (obj, _, fn_name) = cmd.partition('.')
   if not fn_name: fn_name = 'command_line'
+  fn_name = "run_" + fn_name
   fn = globals().get(run.alias.get(obj, obj))
   if fn:
     fn = getattr(fn, fn_name, None)
