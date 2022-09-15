@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 15 12:04:51 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 15 14:11:02 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6+)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-09-15"
+__version__ = "2022-09-16"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -8129,7 +8129,7 @@ class SubstitutedExpression(object):
 
     # measure internal time
     if verbose & self.vE:
-      t = Timer()
+      t = Timer(name="internal")
       t.start()
 
     # solve the problem, counting the answers
@@ -8187,7 +8187,7 @@ class SubstitutedExpression(object):
   @classmethod
   def split_sum(cls,
     terms, result=None, k=1, carries=None, extra=None,
-    base=None, s2d=None, d2i=None, answer=None, accumulate=None, template=None, distinct=None, literal=None,
+    base=None, symbols=None, s2d=None, d2i=None, answer=None, accumulate=None, template=None, distinct=None, literal=None,
     verbose=None
   ):
     """
@@ -8195,7 +8195,7 @@ class SubstitutedExpression(object):
     into sums consisting of <k> columns of the original sum with carries
     between the chunks.
 
-      carries - symbols to be used for carries between chunks
+      carries - symbols that can be used for carries between chunks
       extra - extra expressions (that don't get split)
 
     the following parameters are passed to the SubstitutedExpression solver:
@@ -8211,7 +8211,7 @@ class SubstitutedExpression(object):
       verbose - control informational output
 
     if <result> is None, then <terms> can contain the sum respresented
-    as a string (e.g. "ABC + DEF = GHI").
+    as a string (e.g. "ABC + DEF = GHI" or "{ABC} + {DEF} = {GHI}").
 
     return value is an object with the following attributes:
 
@@ -8232,7 +8232,9 @@ class SubstitutedExpression(object):
     """
     # defaults
     if base is None: base = cls.defaults.get('base', 10)
-    if carries is None: carries = list('abcdefghijklmnopqrstuvwxyz')
+    if symbols is None: symbols = _SYMBOLS  # default is upper case
+    if carries is None: carries = 'abcdefghijklmnopqrstuvwxyzZYXWVUTSRQPONMLKJIHGFEDCBA'
+    if extra is None: extra = ()
     if s2d is None: s2d = cls.defaults.get('s2d', None)
     if d2i is None: d2i = cls.defaults.get('d2i', None)
     if distinct is None: distinct = cls.defaults.get('distinct', None)
@@ -8246,16 +8248,28 @@ class SubstitutedExpression(object):
       terms = re.split(r'[\s\+\=]+', terms)
       result = terms.pop()
 
-    # terms/result must be fully alphametic
-    xs = terms + [result]
-    if any('{' in x or '}' in x for x in xs):
-      assert all(x[0] == '{' and x[-1] == '}' for x in xs), "terms/result must be fully alphametic"
-      terms = list(x[1:-1] for x in terms)
-      result = result[1:-1]
+    # convert implicit (without braces) into explicit (with braces)
+    terms = list(_fix_implicit(x, symbols) for x in terms)
+    result = _fix_implicit(result, symbols)
+    extra = list(_fix_implicit(x, symbols) for x in extra)
+    answer = _fix_implicit(answer, symbols)
+
+    # check terms/result are fully alphametic, and strip braces
+    assert all(x[0] == '{' and x[-1] == '}' for x in terms + [result]), "terms/result must be fully alphametic"
+    terms = list(x[1:-1] for x in terms)
+    result = result[1:-1]
+
+    # find words in: terms, result, extra, answer
+    words = { result }
+    words.update(terms)
+    for x in extra: words.update(_find_words(x))
+    if answer: words.update(_find_words(answer))
+
+    # determine symbols that are used, and available carries
+    symbols = join(sorted(union(words)))
+    carries = diff(carries, symbols, fn=list)
 
     # no leading zeros by default
-    # TODO: need to incorporate words from answer
-    words = union([terms, [result]])
     if d2i is None:
       d2i = set((0, w[0]) for w in words)
     elif isinstance(d2i, dict):
@@ -8268,7 +8282,7 @@ class SubstitutedExpression(object):
     # k=0 disables splitting
     if k == 0: k = len(result)
 
-    # enclose a string with braces
+    # construct the sub-expressions for each chunk
     (exprs, cs, carry, maxc) = (list(), list(), None, 0)
     while terms:
       if len(terms) > 1:
@@ -8299,15 +8313,13 @@ class SubstitutedExpression(object):
       if not rs_: break
       (terms, result, maxc) = (ts_, rs_, maxc_)
 
-    symbols = join(sorted(union(words)))
     carries = join(cs)
 
     if extra:
-      extra = list(_fix_implicit(x, symbols) for x in extra)
       exprs.extend(extra)
       template_ += " " + join(extra, sep=") (", enc="()")
     if answer:
-      template_ += " (" + _fix_implicit(answer, symbols) + ")"
+      template_ += " (" + answer + ")"
     if distinct == 1: distinct = symbols
     if template is None: template = template_
     # a solver with "standard" arguments
