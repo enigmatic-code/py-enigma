@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 15 10:06:21 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 15 12:04:51 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6+)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-09-14"
+__version__ = "2022-09-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -8475,13 +8475,12 @@ class SubstitutedExpression(object):
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
       "  --denest=<n> (or -X<n>) = workaround statically nested block limit (0 = off, 1 = on, 2+ = depth)",
       "  --sane=<n> (or -Y<n>) = enable/disable sanity checks (0 = off, 1 = on)",
-      #"  --split=<n> (or -k<n>) = enable experimental split sum mode",
       "  --verbose[=<s>] (or -v[<s>]) = verbosity (0 = off, 1 = on, HTSAitC = more)",
       "  --help (or -h) = show command-line usage",
       "",
       "verbosity levels:",
-      "    4 = output solutions (1,2,3)",
-      "    8 = output header (1,2,3)",
+      "    4 = output header (1,2,3)",
+      "    8 = output solutions (1,2,3)",
       "   16 = output solution count (1,2,3)",
       "   32 = output timing info (3)",
       "   64 = output parameters",
@@ -8662,24 +8661,28 @@ class SubstitutedExpression(object):
     if args:
       # parse the args, and sort out the supported ones
       opt = cls._opt_from_args(args, allow_split=1)
-      extra = opt.pop('_argv')
-      expr = extra.pop(0)
-      cols = opt.pop('split', 1)
-      kw = dict()
-      if extra: kw['extra'] = extra
-      if 'distinct' in opt:
-        assert len(opt['distinct']) == 1
-        opt['distinct'] = opt['distinct'][0]
-      for k in ['base', 's2d', 'd2i', 'answer', 'accumulate', 'template', 'distinct', 'literal', 'verbose']:
-        if k in opt:
-          kw[k] = opt.pop(k)
-      #if opt: printf("SubstitutedExpression.run_split_sum: ignoring args: {opt}")
-      self = cls.split_sum(expr, k=cols, **kw)
-      if self.run():
-        return 0
+      if opt is not None:
+        extra = opt.pop('_argv')
+        expr = extra.pop(0)
+        cols = opt.pop('split', 1)
+        kw = dict()
+        if extra: kw['extra'] = extra
+        if 'distinct' in opt:
+          assert len(opt['distinct']) == 1
+          opt['distinct'] = opt['distinct'][0]
+        for k in ['base', 's2d', 'd2i', 'answer', 'accumulate', 'template', 'distinct', 'literal', 'verbose']:
+          if k in opt:
+            kw[k] = opt.pop(k)
+        #if opt: printf("SubstitutedExpression.run_split_sum: ignoring args: {opt}")
+        self = cls.split_sum(expr, k=cols, **kw)
+        if self.run():
+          return 0
 
     # failure
-    print("SubstitutedExpression.run_split_sum: failed")
+    print(join(cls._usage(), sep=nl))
+    printf("SubstitutedExpression.split_sum also accepts the following option:")
+    printf("  --split=<n> (or -k<n>) = split the sum into groups of <n> columns")
+    printf()
     return -1
 
   # class method to load a run file
