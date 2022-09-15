@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep 14 21:32:48 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 15 10:06:21 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6+)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-09-13"
+__version__ = "2022-09-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7380,7 +7380,7 @@ class SubstitutedExpression(object):
   1
 
 
-  See SubstitutedExpression.command_line() for more examples.
+  See SubstitutedExpression.run_command_line() for more examples.
   """
 
   @classmethod
@@ -8246,6 +8246,13 @@ class SubstitutedExpression(object):
       terms = re.split(r'[\s\+\=]+', terms)
       result = terms.pop()
 
+    # terms/result must be fully alphametic
+    xs = terms + [result]
+    if any('{' in x or '}' in x for x in xs):
+      assert all(x[0] == '{' and x[-1] == '}' for x in xs), "terms/result must be fully alphametic"
+      terms = list(x[1:-1] for x in terms)
+      result = result[1:-1]
+
     # no leading zeros by default
     # TODO: need to incorporate words from answer
     words = union([terms, [result]])
@@ -8468,6 +8475,7 @@ class SubstitutedExpression(object):
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
       "  --denest=<n> (or -X<n>) = workaround statically nested block limit (0 = off, 1 = on, 2+ = depth)",
       "  --sane=<n> (or -Y<n>) = enable/disable sanity checks (0 = off, 1 = on)",
+      #"  --split=<n> (or -k<n>) = enable experimental split sum mode",
       "  --verbose[=<s>] (or -v[<s>]) = verbosity (0 = off, 1 = on, HTSAitC = more)",
       "  --help (or -h) = show command-line usage",
       "",
@@ -8487,7 +8495,7 @@ class SubstitutedExpression(object):
   #   True = option processed
   #   Exception = error
   @classmethod
-  def _getopt(cls, k, v, opt):
+  def _getopt(cls, k, v, opt, allow_split=0):
 
     if k == 'h' or k == 'help':
       # --help (or -h)
@@ -8546,9 +8554,11 @@ class SubstitutedExpression(object):
       opt['denest'] = (int(v) if v else 1)
     elif k == 'Y' or k == 'sane':
       opt['sane'] = (int(v) if v else 0)
+    elif allow_split and (k == 'k' or k == 'split'):
+      opt['split'] = (int(v) if v else 1)
 
+    # unrecognised option
     else:
-      # unrecognised option
       raise ValueError()
 
     return True
@@ -8556,7 +8566,7 @@ class SubstitutedExpression(object):
 
   # class method to make options from arguments
   @classmethod
-  def _opt_from_args(cls, args):
+  def _opt_from_args(cls, args, allow_split=0):
     #if not args: return
 
     # process options
@@ -8573,11 +8583,11 @@ class SubstitutedExpression(object):
           opt['_argv'].append(arg)
           continue
 
-        if not cls._getopt(k, v, opt):
+        if not cls._getopt(k, v, opt, allow_split=allow_split):
           return None
 
       except Exception:
-        raise ValueError(sprintf("[{cls.__name__}] invalid option: {arg}"))
+        raise ValueError(sprintf("[{cls.__name__}] invalid option: {arg}")) # from None
 
     return opt
 
@@ -8651,10 +8661,10 @@ class SubstitutedExpression(object):
   def run_split_sum(cls, args):
     if args:
       # parse the args, and sort out the supported ones
-      # TODO: no obvious way to set the k argument
-      opt = cls._opt_from_args(args)
+      opt = cls._opt_from_args(args, allow_split=1)
       extra = opt.pop('_argv')
       expr = extra.pop(0)
+      cols = opt.pop('split', 1)
       kw = dict()
       if extra: kw['extra'] = extra
       if 'distinct' in opt:
@@ -8664,7 +8674,7 @@ class SubstitutedExpression(object):
         if k in opt:
           kw[k] = opt.pop(k)
       #if opt: printf("SubstitutedExpression.run_split_sum: ignoring args: {opt}")
-      self = cls.split_sum(expr, **kw)
+      self = cls.split_sum(expr, k=cols, **kw)
       if self.run():
         return 0
 
@@ -8725,7 +8735,7 @@ class SubstitutedExpression(object):
       # solve alphametic expressions
       if exprs:
         try:
-          cls.command_line(exprs)
+          cls.run_command_line(exprs)
         except Exception as e:
           print(e)
           print("[ERROR: try again]")
@@ -8927,7 +8937,7 @@ class SubstitutedDivision(SubstitutedExpression):
   1
 
 
-  See SubstitutedDivision.command_line() for more examples.
+  See SubstitutedDivision.run_command_line() for more examples.
   """
 
   def __init__(self, *args, **kw):
@@ -9298,7 +9308,7 @@ class SubstitutedDivision(SubstitutedExpression):
     [1 solution]
     """
     # this function is only here so we can set the docstring, so just call the parent class
-    return super(SubstitutedDivision, cls).command_line(args)
+    return super(SubstitutedDivision, cls).run_command_line(args)
 
 ###############################################################################
 
@@ -11038,7 +11048,7 @@ def timed_run(*args):
 # help (-h)
 def _enigma_help():
   print('command line arguments:')
-  print('  <class> <args> = run command_line(<args>) method on class')
+  print('  <class> <args> = run run_command_line(<args>) method on class')
   print('  [-r[t] | --run[:timed]] <file> [<additional-args>] = run the solver and args specified in <file>')
   print('  -t[v] = run tests [v = verbose]')
   print('  -u[cdr] = check for updates [c = only check, d = always download, r = rename after download]')
@@ -11239,13 +11249,13 @@ enigma.py has the following command-line usage:
       % python enigma.py -h
       [enigma.py version {version} (Python {python})]
       command line arguments:
-        <class> <args> = run command_line(<args>) method on class
+        <class> <args> = run run_command_line(<args>) method on class
         [-r | --run] <file> [<additional-args>] = run the solver and args specified in <file>
         -t[v] = run tests [v = verbose]
         -u[cdr] = check for updates [c = only check, d = always download, r = rename]
         -h = this help
 
-  Solvers that support the command_line() class method can be invoked
+  Solvers that support the run_command_line() class method can be invoked
   directly from the command line like this:
 
   python enigma.py <class> <args> ...
