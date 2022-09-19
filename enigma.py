@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 15 14:11:02 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Sep 18 09:58:21 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6+)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-09-16"
+__version__ = "2022-09-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -477,10 +477,11 @@ def is_distinct(value, *args):
 
 distinct = is_distinct
 
-# <s> has <n> distinct values
-def distinct_values(s, n=None):
-  if n is None: n = len(s)
-  return len(set(s)) == n
+# <seq> has <n> distinct values
+def distinct_values(seq, n=None):
+  seq = list(seq)
+  if n is None: n = len(seq)
+  return len(set(seq)) == n
 
 def seq_all_different(seq, fn=None):
   """
@@ -2004,7 +2005,7 @@ icount_at_least = lambda i, p=None, n=None: icount(i, p, n) == n
 icount_at_most = lambda i, p=None, n=None: icount(i, p, n + 1) < n + 1
 
 # find: like index(), but return -1 instead of throwing an error
-def find(s, v):
+def find(seq, v):
   """
   find the first index of a value in a sequence, return -1 if not found.
 
@@ -2029,30 +2030,30 @@ def find(s, v):
   this function won't work.
   """
   try:
-    return s.index(v)
+    return seq.index(v)
   except ValueError:
     return -1
   except AttributeError:
     pass
-  if isinstance(s, dict):
+  if isinstance(seq, dict):
     # search the keys
     # (or we could use find() in the values, and return the correspond index in keys)
     for (k, x) in s.items():
       if x == v: return k
   else:
     # search the sequence
-    for (i, x) in enumerate(s):
+    for (i, x) in enumerate(seq):
       if x == v: return i
   # not found
   return -1
 
-def rfind(s, v):
+def rfind(seq, v):
   """find the last index of a value in a sequence, return -1 if not found"""
-  i = find(s[::-1], v)
+  i = find(seq[::-1], v)
   return (-1 if i == -1 else len(s) - i - 1)
 
 # trim elements from a sequence
-def trim(s, head=0, tail=0, fn=None):
+def trim(seq, head=0, tail=0, fn=None):
   """
   return a new sequence derived from input sequence <s>, but with <head>
   elements removed from the front and <tail> elements removed from the
@@ -2067,69 +2068,69 @@ def trim(s, head=0, tail=0, fn=None):
   """
   if head > 0 or tail > 0:
     if fn is None:
-      if isinstance(s, basestring): fn = join
-      elif isinstance(s, tuple): fn = tuple
-    s = list(s)
-    if head > 0: del s[:head]
-    if tail > 0: del s[-tail:]
-  return (fn(s) if fn else s)
+      if isinstance(seq, basestring): fn = join
+      elif isinstance(seq, tuple): fn = tuple
+    s = list(seq)
+    if head > 0: del seq[:head]
+    if tail > 0: del seq[-tail:]
+  return (fn(seq) if fn else seq)
 
-def _partitions(s, n):
+def _partitions(seq, n):
   """
-  partition a sequence <s> of distinct elements into subsequences of length <n>.
+  partition a sequence <seq> of distinct elements into subsequences of length <n>.
 
-  <s> should be sequenceable type (tuple, list, str).
+  <seq> should be sequenceable type (tuple, list, str).
   <n> should be a factor of the size of the sequence.
 
   >>> list(_partitions((1, 2, 3, 4), 2))
   [((1, 2), (3, 4)), ((1, 3), (2, 4)), ((1, 4), (2, 3))]
   """
-  if not (len(s) > n):
-    yield (s,)
+  if not (len(seq) > n):
+    yield (seq,)
   else:
-    for x in itertools.combinations(s[1:], n - 1):
-      p = (s[0],) + tuple(x)
-      for ps in _partitions(diff(s[1:], x), n):
+    for x in itertools.combinations(seq[1:], n - 1):
+      p = (seq[0],) + tuple(x)
+      for ps in _partitions(diff(seq[1:], x), n):
         yield (p,) + ps
 
 
-def ipartitions(s, n):
+def ipartitions(seq, n):
   """
   partition a sequence by index.
 
   >>> list(ipartitions((1, 0, 1, 0), 2))
   [((1, 0), (1, 0)), ((1, 1), (0, 0)), ((1, 0), (0, 1))]
   """
-  for p in _partitions(tuple(xrange(len(s))), n):
-    yield tuple(tuple(s[i] for i in x) for x in p)
+  for p in _partitions(tuple(xrange(len(seq))), n):
+    yield tuple(tuple(seq[i] for i in x) for x in p)
 
 
-def partitions(s, n, pad=0, value=None, distinct=None):
+def partitions(seq, n, pad=0, value=None, distinct=None):
   """
-  partition a sequence <s> into subsequences of length <n>.
+  partition a sequence <seq> into subsequences of length <n>.
 
   if <pad> is True then the sequence will be padded (using <value>)
   until its length is a integer multiple of <n>.
 
-  if sequence <s> contains distinct elements then <distinct> can be
-  set to True, if it is not set then <s> will be examined for repeated
+  if sequence <seq> contains distinct elements then <distinct> can be
+  set to True, if it is not set then <seq> will be examined for repeated
   elements.
 
   >>> list(partitions((1, 2, 3, 4), 2))
   [((1, 2), (3, 4)), ((1, 3), (2, 4)), ((1, 4), (2, 3))]
   """
-  if not isinstance(s, (tuple, list, str)): s = tuple(s)
-  (d, r) = divmod(len(s), n)
+  if not isinstance(seq, (tuple, list, str)): seq = tuple(seq)
+  (d, r) = divmod(len(seq), n)
   if r != 0:
-    if not pad: raise ValueError("invalid sequence length {l} for {n}-tuples".format(l=len(s), n=n))
-    s = tuple(s) + (value,) * (n - r)
+    if not pad: raise ValueError("invalid sequence length {l} for {n}-tuples".format(l=len(seq), n=n))
+    seq = tuple(seq) + (value,) * (n - r)
   if d == 0 or (d == 1 and r == 0):
-    yield (s,)
+    yield (seq,)
   else:
-    if distinct is None: distinct = is_pairwise_distinct(*s)
+    if distinct is None: distinct = is_pairwise_distinct(*seq)
     fn = (_partitions if distinct else ipartitions)
-    # or in Python 3: [[ yield from fn(s, n) ]]
-    for p in fn(s, n): yield p
+    # or in Python 3: [[ yield from fn(seq, n) ]]
+    for z in fn(seq, n): yield z
 
 
 # see: [ https://enigmaticcode.wordpress.com/2017/05/17/tantalizer-482-lapses-from-grace/#comment-7169 ]
@@ -3162,7 +3163,7 @@ def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
       for z in sum_of_squares(n - x2, k - 1, x + sep, sep, ss + [x]): yield z
 
 # generate powers from a range
-def powers(a, b, k=2, step=1):
+def powers(a, b, k=2, step=1, fn=None):
   """
   generate powers pow(n, k) for n in irange(a, b)
 
@@ -3171,7 +3172,9 @@ def powers(a, b, k=2, step=1):
   >>> list(powers(1, 10, 3))
   [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000]
   """
-  return (n ** k for n in irange(a, b, step=step))
+  for n in irange(a, b, step=step):
+    x = n ** k
+    yield (x if fn is None else fn(x))
 
 # compose functions in order (forward functional composition, "and then")
 # so: fcompose(f, g, h)(x) == h(g(f(x)))
@@ -4632,34 +4635,40 @@ def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0, in
 
 # cumulative sum
 # (see also itertools.accumulate() from Python 3.2)
-def csum(i, s=0, fn=operator.add):
+def csum(seq, s=0, fn=operator.add, empty=0):
   """
-  generate an iterator that is the cumulative sum of an iterator.
+  generate cumulative partial sums from sequence <seq>.
+
+  's' is the initial value, and 'fn' is the function used to update it
+  with each element of the sequence.
+
+  if 'empty' is set to a true value then the initial value 's' will be
+  initially returned.
 
   >>> list(csum(irange(1, 10)))
   [1, 3, 6, 10, 15, 21, 28, 36, 45, 55]
   >>> list(csum(irange(1, 10), fn=operator.mul, s=1))
   [1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800]
+
   """
-  for x in i:
+  if empty: yield s
+  for x in seq:
     s = fn(s, x)
     yield s
 
 
 # cumulative slice
-def cslice(x):
+def cslice(seq, empty=0):
   """
-  generate an iterator that is the cumulative slices of an array.
+  generate an iterator that is the cumulative slices of a sequence.
 
   >>> list(cslice([1, 2, 3]))
   [[1], [1, 2], [1, 2, 3]]
   >>> list(cslice('python'))
   ['p', 'py', 'pyt', 'pyth', 'pytho', 'python']
   """
-  i = 0
-  while i < len(x):
-    i += 1
-    yield x[:i]
+  for i in irange((0 if empty else 1), len(seq)):
+    yield seq[:i]
 
 
 # overlapping tuples from a sequence
@@ -7269,7 +7278,7 @@ class SubstitutedSum(object):
 # [ "primes.irange(1000, 9999) -> WILL", "primes.irange(10, 99) -> AM" ], or
 # [Teaser 3018] could use [ "powers(31, 99, 2) -> ABCD" ])
 #
-# TODO: spotting it expressions for independent groups and solving
+# TODO: spotting expressions for independent groups and solving
 # each group separately [Teaser 2990]
 
 _SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -7359,6 +7368,10 @@ def _fix_implicit(s, symbols):
   if re.search(r'{\w+}', s): return s # was: [[ if '{' in s: return s ]]
   return re.sub(r'[' + symbols + r']+', (lambda m: '{' + m.group(0) + '}'), s)
 
+def _fix_implicit_seq(seq, symbols):
+  if seq is None: return None
+  return list(_fix_implicit(x, symbols) for x in seq)
+
 
 class SubstitutedExpression(object):
   """
@@ -7368,8 +7381,8 @@ class SubstitutedExpression(object):
   symbols (by default the capital letters) in it to digits and returns those
   assignments which result in the expression having a True value.
 
-  While this is slower than the specialised solvers, like SubstitutedSum(),
-  it does allow for more general expressions to be evaluated.
+  This allows for more general expressions to be evaluated than specialised
+  solvers, like SubstitutedSum(), alow.
 
 
   Enigma 1530 <https://enigmaticcode.wordpress.com/2012/07/09/enigma-1530-tom-daley/>
@@ -8187,8 +8200,9 @@ class SubstitutedExpression(object):
   @classmethod
   def split_sum(cls,
     terms, result=None, k=1, carries=None, extra=None,
-    base=None, symbols=None, s2d=None, d2i=None, answer=None, accumulate=None, template=None, distinct=None, literal=None,
-    verbose=None
+    base=None, symbols=None, s2d=None, d2i=None, distinct=None, literal=None,
+    answer=None, accumulate=None, env=None, code=None,
+    template=None, verbose=None
   ):
     """
     split the alphametic sum represented by [[ sum(<terms>) = <result> ]]
@@ -8207,11 +8221,15 @@ class SubstitutedExpression(object):
       literal - symbols which stand for themselves
       answer - expression for the answer value
       accumulate - accumulate answers using specified object
+      env - additional environment for evaluation
+      code - additional lines of code evaluated before solving
       template - solution template
       verbose - control informational output
 
     if <result> is None, then <terms> can contain the sum respresented
-    as a string (e.g. "ABC + DEF = GHI" or "{ABC} + {DEF} = {GHI}").
+    as a string (e.g. "ABC + DEF = GHI" or "{ABC} + {DEF} = {GHI}"),
+    or a sequence of sums, each represented as a string or as a
+    (<terms>, <result>) pair.
 
     return value is an object with the following attributes:
 
@@ -8224,6 +8242,8 @@ class SubstitutedExpression(object):
       template - template for original sum
       answer - answer parameter
       accumulate - accumulate parameter
+      env - env parameter
+      code - code parameter
       verbose - verbose parameter
       extra - extra expressions
       solver - a function to return the solver (with "standard" arguments)
@@ -8241,29 +8261,51 @@ class SubstitutedExpression(object):
     if literal is None: literal = cls.defaults.get('literal', None)
     if answer is None: answer = cls.defaults.get('answer', None)
     if accumulate is None: accumulate = cls.defaults.get('accumulate', None)
+    if env is None: env = cls.defaults.get('env', None)
+    if code is None: code = cls.defaults.get('code', None)
     if verbose is None: verbose = cls.defaults.get('verbose', None)
 
-    # if result is None, terms can be the sum represented as a string
-    if result is None:
-      terms = re.split(r'[\s\+\=]+', terms)
-      result = terms.pop()
+    # process the sums
+    sums = list()
+
+    # if result is given, there is one sum: sum(terms) = result
+    if result is not None:
+      sums.append((terms, result))
+
+    else:
+      # result is None, terms can be:
+      # - the sum represented as a string
+      # - a sequence of sums, represented as strings or (terms, result) pairs
+      if isinstance(terms, basestring): terms = [terms]
+
+      for v in terms:
+        if isinstance(v, basestring):
+          ts = re.split(r'[\s\+\=]+', v)
+          r = ts.pop()
+          sums.append((ts, r))
+        else:
+          sums.append(v)
 
     # convert implicit (without braces) into explicit (with braces)
-    terms = list(_fix_implicit(x, symbols) for x in terms)
-    result = _fix_implicit(result, symbols)
-    extra = list(_fix_implicit(x, symbols) for x in extra)
+    sums = list((_fix_implicit_seq(terms, symbols), _fix_implicit(result, symbols)) for (terms, result) in sums)
+    extra = _fix_implicit_seq(extra, symbols)
     answer = _fix_implicit(answer, symbols)
 
     # check terms/result are fully alphametic, and strip braces
-    assert all(x[0] == '{' and x[-1] == '}' for x in terms + [result]), "terms/result must be fully alphametic"
-    terms = list(x[1:-1] for x in terms)
-    result = result[1:-1]
+    for i in xrange(len(sums)):
+      (terms, result) = sums[i]
+      assert all(x[0] == '{' and x[-1] == '}' for x in terms + [result]), "terms/result must be fully alphametic"
+      sums[i] = (list(x[1:-1] for x in terms), result[1:-1])
 
     # find words in: terms, result, extra, answer
-    words = { result }
-    words.update(terms)
-    for x in extra: words.update(_find_words(x))
-    if answer: words.update(_find_words(answer))
+    words = set()
+    for (terms, result) in sums:
+      words.update(terms)
+      words.add(result)
+    for x in extra:
+      words.update(_find_words(x))
+    if answer:
+      words.update(_find_words(answer))
 
     # determine symbols that are used, and available carries
     symbols = join(sorted(union(words)))
@@ -8276,42 +8318,47 @@ class SubstitutedExpression(object):
       d2i = set((d, s) for (d, ss) in d2i.items() for s in ss)
 
     # prepare return values
-    enc = lambda s, b="{}": b[0] + s + b[-1]
-    template_ = enc(join(map(enc, terms), sep=' + ') + " = " + enc(result), b="()")
+    enc = lambda s, b="{}": b[0] + s + b[1]
+    template_ = list()
+    for (terms, result) in sums:
+      template_.append(enc(join(map(enc, terms), sep=' + ') + " = " + enc(result), b="()"))
+    template_ = join(template_, sep=' ')
 
     # k=0 disables splitting
     if k == 0: k = len(result)
 
     # construct the sub-expressions for each chunk
-    (exprs, cs, carry, maxc) = (list(), list(), None, 0)
-    while terms:
-      if len(terms) > 1:
-        # chop k characters off the end of each term
-        ts = list(t[-k:] for t in terms)
-        ts_ = list(t for t in (t[:-k] for t in terms) if t)
-        # upper bound for carry out
-        maxc_ = (sum((base ** len(t)) - 1 for t in ts) + maxc) // (base ** k)
-        assert maxc_ < base, "multi-digit carries unimplemented"
-      else:
-        # use the remaining term
-        (ts, ts_) = (terms, None)
-      if carry: ts.append(carry)
-      if ts_:
-        # chop k characters off the end of the result
-        (rs, rs_) = (result[-k:], result[:-k])
-      else:
-        # otherwise, use the whole result
-        (rs, rs_) = (result, None)
-      # allocate a carry out
-      carry = (carries.pop(0) if rs_ else '')
-      if carry: cs.append(carry)
-      exprs.append(join(map(enc, ts), sep=" + ") + " = " + enc(carry + rs))
-      # determine d2i values
-      if carry:
-        #printf("maxc {carry} = {maxc_}")
-        d2i.update((d, carry) for d in irange(maxc_ + 1, base - 1))
-      if not rs_: break
-      (terms, result, maxc) = (ts_, rs_, maxc_)
+    (exprs, cs) = (list(), list())
+    for (terms, result) in sums:
+      (carry, maxc) = (None, 0)
+      while terms:
+        if len(terms) > 1:
+          # chop k characters off the end of each term
+          ts = list(t[-k:] for t in terms)
+          ts_ = list(t for t in (t[:-k] for t in terms) if t)
+          # upper bound for carry out
+          maxc_ = (sum((base ** len(t)) - 1 for t in ts) + maxc) // (base ** k)
+          assert maxc_ < base, "multi-digit carries unimplemented"
+        else:
+          # use the remaining term
+          (ts, ts_) = (terms, None)
+        if carry: ts.append(carry)
+        if ts_:
+          # chop k characters off the end of the result
+          (rs, rs_) = (result[-k:], result[:-k])
+        else:
+          # otherwise, use the whole result
+          (rs, rs_) = (result, None)
+        # allocate a carry out
+        carry = (carries.pop(0) if rs_ else '')
+        if carry: cs.append(carry)
+        exprs.append(join(map(enc, ts), sep=" + ") + " = " + enc(carry + rs))
+        # determine d2i values
+        if carry:
+          #printf("maxc {carry} = {maxc_}")
+          d2i.update((d, carry) for d in irange(maxc_ + 1, base - 1))
+        if not rs_: break
+        (terms, result, maxc) = (ts_, rs_, maxc_)
 
     carries = join(cs)
 
@@ -8326,7 +8373,7 @@ class SubstitutedExpression(object):
     solver = Delay(
       SubstitutedExpression,
       exprs,
-      base=base, distinct=distinct, literal=literal,
+      base=base, distinct=distinct, literal=literal, env=env, code=code,
       s2d=s2d, d2i=d2i, template=template, solution=distinct,
       answer=answer, accumulate=accumulate, verbose=verbose,
     )
@@ -8342,6 +8389,8 @@ class SubstitutedExpression(object):
       template=template,
       answer=answer,
       accumulate=accumulate,
+      env=env,
+      code=code,
       verbose=verbose,
       solver=(lambda: solver.value),
       solve=(lambda *args, **kw: solver.value.solve(*args, **kw)),
@@ -8506,7 +8555,7 @@ class SubstitutedExpression(object):
   #   True = option processed
   #   Exception = error
   @classmethod
-  def _getopt(cls, k, v, opt, allow_split=0):
+  def _getopt(cls, k, v, opt, allow=()):
 
     if k == 'h' or k == 'help':
       # --help (or -h)
@@ -8565,7 +8614,10 @@ class SubstitutedExpression(object):
       opt['denest'] = (int(v) if v else 1)
     elif k == 'Y' or k == 'sane':
       opt['sane'] = (int(v) if v else 0)
-    elif allow_split and (k == 'k' or k == 'split'):
+    elif 'extra' in allow and (k == 'E' or k == 'extra'):
+      if opt.get('extra', None) is None: opt['extra'] = list()
+      opt['extra'].append(v)
+    elif 'split' in allow and (k == 'k' or k == 'split'):
       opt['split'] = (int(v) if v else 1)
 
     # unrecognised option
@@ -8577,7 +8629,7 @@ class SubstitutedExpression(object):
 
   # class method to make options from arguments
   @classmethod
-  def _opt_from_args(cls, args, allow_split=0):
+  def _opt_from_args(cls, args, **kw):
     #if not args: return
 
     # process options
@@ -8585,16 +8637,18 @@ class SubstitutedExpression(object):
     for arg in args:
       # deal with option args
       try:
+        k = v = None
         if arg.startswith('--'):
           (k, _, v) = arg.lstrip('-').partition('=')
         elif arg.startswith('-'):
           (k, v) = (arg[1], arg[2:])
-        else:
+
+        if not k:
           # push non-option args onto _argv
           opt['_argv'].append(arg)
           continue
 
-        if not cls._getopt(k, v, opt, allow_split=allow_split):
+        if not cls._getopt(k, v, opt, **kw):
           return None
 
       except Exception:
@@ -8624,9 +8678,7 @@ class SubstitutedExpression(object):
     run the SubstitutedExpression solver with the specified command
     line arguments.
 
-    we can solve substituted sum problems (although using
-    SubstitutedSum would be faster)
-
+    we can solve substituted sum problems:
 
     Enigma 327 <https://enigmaticcode.wordpress.com/2016/01/08/enigma-327-it-all-adds-up/>
     % python enigma.py SubstitutedExpression "KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE"
@@ -8672,21 +8724,35 @@ class SubstitutedExpression(object):
   def run_split_sum(cls, args):
     if args:
       # parse the args, and sort out the supported ones
-      opt = cls._opt_from_args(args, allow_split=1)
+      opt = cls._opt_from_args(args, allow={'split', 'extra'})
       if opt is not None:
-        extra = opt.pop('_argv')
-        expr = extra.pop(0)
+
+        # "--" can be used to separate sums to split from extra expressions
+        argv = opt.pop('_argv')
+        i = find(argv, '--')
+        if i != -1:
+          sums = argv[:i]
+          extra = argv[i + 1:]
+        else:
+          # attempt to split everything
+          sums = argv
+          extra = list()
+
         cols = opt.pop('split', 1)
         kw = dict()
-        if extra: kw['extra'] = extra
+        if opt.get('extra') is not None: extra = opt['extra'] + extra
+        kw['extra'] = extra
+        # check restricted arguments
+        assert 'digits' not in opt, "split_sum: doesn't handle 'digits' specification (use 'invalid' instead)"
         if 'distinct' in opt:
-          assert len(opt['distinct']) == 1
+          assert len(opt['distinct']) == 1, "split_sum: doesn't handle multiple 'distinct' values"
           opt['distinct'] = opt['distinct'][0]
-        for k in ['base', 's2d', 'd2i', 'answer', 'accumulate', 'template', 'distinct', 'literal', 'verbose']:
+        # copy accepted arguments
+        for k in ['base', 's2d', 'd2i', 'answer', 'accumulate', 'env', 'code', 'template', 'distinct', 'literal', 'verbose']:
           if k in opt:
             kw[k] = opt.pop(k)
         #if opt: printf("SubstitutedExpression.run_split_sum: ignoring args: {opt}")
-        self = cls.split_sum(expr, k=cols, **kw)
+        self = cls.split_sum(sums, result=None, k=cols, **kw)
         if self.run():
           return 0
 
@@ -8699,14 +8765,28 @@ class SubstitutedExpression(object):
 
   # class method to load a run file
   @classmethod
-  def from_file(cls, path, args=None):
-    argv = parsefile(path, args)
-    if run.alias.get(argv[0], argv[0]) != cls.__name__:
-      printf("WARNING: ignoring cmd = {argv[0]}")
-    opt = cls._opt_from_args(*argv[1:])
+  def from_file(cls, path, args=None, env=None):
+    (cmd, argv) = parsefile(path, args)
+    if run.alias.get(cmd, cmd) != cls.__name__:
+      printf("WARNING: loading '{cmd}' into '{cls.__name__}'")
+    opt = cls._opt_from_args(argv)
     if opt:
       argv = opt.pop('_argv')
+      if env: opt['env'] = env
       return cls(argv, **opt)
+
+  # parse a string as a run-file
+  @classmethod
+  def from_string(cls, string, args=None, env=None):
+    (cmd, argv) = parsefile('<string>', args, string=string)
+    if argv:
+      if run.alias.get(cmd, cmd) != cls.__name__:
+        printf("WARNING: loading '{cmd}' into '{cls.__name__}'")
+      opt = cls._opt_from_args(argv)
+      if opt:
+        argv = opt.pop('_argv')
+        if env: opt['env'] = env
+        return cls(argv, **opt)
 
   # class method to provide a read/eval/print loop
   @classmethod
@@ -9143,7 +9223,7 @@ class SubstitutedDivision(SubstitutedExpression):
       expr.append(sprintf("{x} - {y} = {z}"))
 
     # add in any additional expressions
-    if 'extra' in kw: expr.extend(kw['extra'])
+    if kw.get('extra') is not None: expr.extend(kw['extra'])
 
     # remove duplicate expressions
     expr = list(uniq(expr))
@@ -9247,16 +9327,20 @@ class SubstitutedDivision(SubstitutedExpression):
 
 
   @classmethod
-  def _getopt(cls, k, v, opt):
-    if k == 'E' or k == 'extra':
-      if not opt.get('extra', None): opt['extra'] = []
-      opt['extra'].append(v)
+  def _getopt(cls, k, v, opt, **kw):
+    kw['allow'] = ({'extra'} if kw.get('allow') is None else append(kw['allow'], 'extra'))
+    return SubstitutedExpression._getopt(k, v, opt, **kw)
 
-    else:
-      return SubstitutedExpression._getopt(k, v, opt)
-
-    return True
-
+  @classmethod
+  def _opt_from_args(cls, args, **kw):
+    opt = super(SubstitutedDivision, cls)._opt_from_args(args, **kw)
+    # "--" can be used to separate division sum from extra expressions
+    argv = opt['_argv']
+    i = find(argv, '--')
+    if i != -1:
+      opt['extra'] = opt.get('extra', []) + argv[i + 1:]
+      opt['_argv'] = argv[:i]
+    return opt
 
   @classmethod
   def run_command_line(cls, args):
@@ -10871,14 +10955,22 @@ sigusr2 = lambda pid: os.kill(pid, signal.SIGUSR2)
 
 # parse a run file (which uses a shell-like syntax)
 
-def parsefile(path, args=None, interleave=None):
-  import shlex
+def parsefile(path, args=None, interleave=None, string=None):
 
-  with open(path, 'r') as f:
-    # parse the file removing whitespace, comments, quotes
+  # parse from a file or string
+  def parse(f):
+    import shlex
+    # parse it removing whitespace, comments, quotes
     lexer = shlex.shlex(f, posix=1)
     lexer.whitespace_split = True
-    words = list(lexer)
+    return list(lexer)
+
+  if path == '<string>':
+    words = parse(string)
+  else:
+    # it should be a file
+    with open(path, 'r') as f:
+      words = parse(f)
 
   cmd = words.pop(0)
 
@@ -11279,6 +11371,7 @@ enigma.py has the following command-line usage:
       SubstitutedSum
       SubstitutedDivision
       SubstitutedExpression
+      SubstitutedExpression.split_sum
 
     For example, Enigma 327 can be solved using:
 
