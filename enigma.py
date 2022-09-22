@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 22 14:29:34 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 22 15:47:39 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6+)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-09-21"
+__version__ = "2022-09-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3987,9 +3987,9 @@ def factorial(a, *bs):
     bs.pop(0)
   if r is None: r = math.factorial(a)
   for b in bs:
-    if b != 1:
-      (r, z) = divmod(r, math.factorial(b))
-      if z != 0: raise ValueError("inexact division")
+    if b == 1: break
+    (r, z) = divmod(r, math.factorial(b))
+    if z != 0: raise ValueError("inexact division")
   return r
 
 # multinomial coefficient
