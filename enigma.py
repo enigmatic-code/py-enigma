@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Sep 18 09:58:21 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 22 14:29:34 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6+)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-09-17"
+__version__ = "2022-09-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -407,7 +407,8 @@ def lt(t): return (lambda x: x < t)
 def le(t): return (lambda x: x <= t)
 def gt(t): return (lambda x: x > t)
 def ge(t): return (lambda x: x >= t)
-def between(a, b): return (lambda x: a < x < b)
+def between(a, b): return (lambda x: a < x < b)  # exclusive between
+def betweene(a, b): return (lambda x: a <= x <= b)  # inclusive between
 
 def mod(m):
   """
@@ -2109,7 +2110,7 @@ def partitions(seq, n, pad=0, value=None, distinct=None):
   """
   partition a sequence <seq> into subsequences of length <n>.
 
-  if <pad> is True then the sequence will be padded (using <value>)
+  if <pad> is true then the sequence will be padded (using <value>)
   until its length is a integer multiple of <n>.
 
   if sequence <seq> contains distinct elements then <distinct> can be
@@ -2842,7 +2843,7 @@ def coprime_pairs(n=None, order=0):
 
 # generate primitive pythagorean triples (x, y, z) with hypotenuse not exceeding Z
 # if Z is None, then triples will be generated indefinitely
-# if order is True, then triples will be returned in order
+# if order is true, then triples will be returned in order
 def _pythagorean_primitive(Z=None, order=0):
   fn = (true if Z is None else le(Z))
   if order:
@@ -2906,7 +2907,7 @@ def _pythagorean_all(Z, order=0):
 # n - specifies the maximum hypotenuse allowed
 # primitive - if set only primitive triples are generated
 # order - if set triples are generated in order
-# if primitive is False, then a value for n must be specified
+# if primitive is false, then a value for n must be specified
 def pythagorean_triples(n=None, primitive=0, order=0):
   """
   generate pythagorean triples (x, y, z) where x < y < z and x^2 + y^2 = z^2.
@@ -3972,16 +3973,39 @@ def factorial(a, *bs):
   720
   >>> factorial(10, 7)
   720
+
+  number of anagrams of "mississippi" (len = 11; 4x i, 4x s, 2x p)
+  >>> factorial(11, 4, 4, 2)
+  34650
   """
-  r = math.factorial(a)
+  if not bs: return math.factorial(a)
+  r = None
+  bs = sorted(bs, reverse=1)
+  b = bs[0]
+  if a - b < 100:
+    r = multiply(irange(b + 1, a))
+    bs.pop(0)
+  if r is None: r = math.factorial(a)
   for b in bs:
     if b != 1:
       (r, z) = divmod(r, math.factorial(b))
       if z != 0: raise ValueError("inexact division")
   return r
 
-# multinomial coefficiant
-multinomial = lambda n, ks: factorial(n, *ks)
+# multinomial coefficient
+def multinomial(ks, n=None):
+  """
+  calculate multinomial coefficient.
+
+  e.g. number of anagrams of "mississippi" (len = 11; 4x i, 4x s, 2x p)
+  >>> multinomial([4, 4, 2, 1])
+  34650
+  >>> multinomial([4, 4, 2], 11)
+  34650
+  """
+  if n is None: n = sum(ks)
+  return factorial(n, *ks)
+
 
 # (Python 3.8 has math.perm)
 def nPr(n, r):
