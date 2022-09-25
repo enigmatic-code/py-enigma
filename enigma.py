@@ -6,8 +6,8 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 22 15:59:00 2022 (Jim Randell) jim.randell@gmail.com
-# Language:     Python (Python 2.7, Python 3.6+)
+# Modified:     Sun Sep 25 14:48:49 2022 (Jim Randell) jim.randell@gmail.com
+# Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
 # URI:          http://www.magwag.plus.com/jim/enigma.html
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-09-23"
+__version__ = "2022-09-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3802,6 +3802,8 @@ def sqrtmod(a, m):
   [1, 7, 9, 15]
   >>> sorted(sqrtmod(17, 43))
   [19, 24]
+  >>> sorted(sqrtmod(-1, 25))
+  [7, 18]
   """
   a %= m
   for x in irange(0, m // 2):
@@ -3882,6 +3884,18 @@ def format_fraction(n, d, base=10):
   s = int2base(n, base=base)
   if d == 1: return s
   return s + "/" + int2base(d, base=base)
+
+def ratio(*ns):
+  """
+  return ratio of integers in <ns> in lowest terms.
+
+  >>> ratio(6, 8)
+  (3, 4)
+  >>> ratio(6, 8, 10)
+  (3, 4, 5)
+  """
+  g = mgcd(*ns)
+  return (ns if g == 1 else tuple(v // g for v in ns))
 
 # find an appropriate rational class
 # (could also try "sympy.Rational", but not for speed)
@@ -4612,7 +4626,7 @@ def append(s, v):
     s.add(v)
     return s
   if isinstance(s, frozenset):
-    return s | {v}
+    return s.union({v})
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
@@ -4705,7 +4719,7 @@ def cslice(seq, empty=0):
 
 
 # overlapping tuples from a sequence
-# (Python 3.10 has itertools.pairwise, which acts like tuples(seq, 2))
+# (Python 3.10 has itertools.pairwise() [poorly named], which acts like tuples(seq, 2))
 def tuples(seq, n=2, circular=0, fn=tuple):
   """
   generate overlapping <n>-tuples from sequence <seq>.
@@ -5479,10 +5493,13 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   """
   assert base > 1, "invalid base {base}".format(base=base)
   if digits is None: digits = base_digits()
-  if i == 0:
+  (p, r) = ('', None)
+  if i < 0: (p, i) = ('-', -i)
+  # if there aren't enough digits switch to {<digit>:<digit>:...} format
+  if len(digits) < base:
+    r = join(nsplit(i, base=base), sep=':', enc="{}")
+  elif i == 0:
     r = digits[0]
-  elif i < 0:
-    return '-' + int2base(-i, base=base, width=width, pad=pad, group=group, sep=sep, digits=digits)
   else:
     r = list()
     while i > 0:
@@ -5495,7 +5512,7 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   if group is not None:
     (s, group) = ((-1, group) if group > 0 else (1, -group))
     r = join((join(x) for x in chunk(r[::s], group)), sep=sep[::s])[::s]
-  return r
+  return (p + r if p else r)
 
 def base2int(s, base=10, strip=0, digits=None):
   """
