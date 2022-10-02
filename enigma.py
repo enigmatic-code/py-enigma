@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Sep 25 14:48:49 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Oct  2 18:15:05 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-09-24"
+__version__ = "2022-09-30"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2295,8 +2295,8 @@ def cbrt(x):
   r = root(abs(x), 3.0)
   return (-r if x < 0 else r)
 
-# cb = lambda x: x ** 3
-def cb(x): "cb(x) = pow(x, 3)"; return x ** 3
+# cb = lambda x: x**3
+def cb(x): "cb(x) = x**3"; return x**3
 
 # for large numbers try Primes.prime_factor(n, mr=100), or sympy.ntheory.factorint(n)
 # basis = [2, 3, 5]
@@ -2474,7 +2474,7 @@ def divisors_pairs(n, k=1, fn=prime_factor, every=0):
   if n == 0 and k > 0:
     yield (0, 0)
     return
-  nk = (n ** k if k != 1 else n)
+  nk = (n**k if k != 1 else n)
   for a in divisors(n, k=k, fn=fn):
     b = nk // a
     if a > b and (not every): break
@@ -2989,8 +2989,8 @@ def fib(*s, **kw):
 
 # if we don't overflow floats (happens around 2^53) this works...
 #   def is_power(n, m):
-#     i = int(n ** (1.0 / m) + 0.5)
-#     return (i if i ** m == n else None)
+#     i = int(n**(1.0 / m) + 0.5)
+#     return (i if i**m == n else None)
 # but here we use a binary search, which should work on arbitrary large integers
 #
 # NOTE: that this will return 0 if n = 0 and None if n is not a perfect k-th power,
@@ -3011,12 +3011,12 @@ def iroot(n, k):
   if n >> k == 0: return int(n > 0)
   a = 1 << ((n.bit_length() - 1) // k)
   b = a << 1
-  #assert (a ** k <= n and b ** k > n)
+  #assert (a**k <= n and b**k > n)
   # if this assertion fails we need:
-  #while not (b ** k > n): (a, b) = (b, b << 1)
+  #while not (b**k > n): (a, b) = (b, b << 1)
   while b - a > 1:
     r = (a + b) // 2
-    x = r ** k
+    x = r**k
     if x < n:
       a = r
     elif x > n:
@@ -3047,7 +3047,7 @@ def is_power(n, k):
   """
   r = iroot(n, k)
   if r is None: return None
-  return (r if r ** k == n else None)
+  return (r if r**k == n else None)
 
 
 def sqrt(a, b=None):
@@ -3063,7 +3063,7 @@ def sqrt(a, b=None):
   return math.sqrt(a if b is None else a / b)
 
 # sq = lambda x: x * x
-def sq(x): "sq(x) = pow(x, 2)"; return x * x
+def sq(x): "sq(x) = x**2"; return x * x
 def sumsq(*xs): "sumsq(xs) = sum(sq(x) for x in xs)"; return sum(x * x for x in xs)
 
 # calculate intf(sqrt(n))
@@ -3183,7 +3183,7 @@ def powers(a, b, k=2, step=1, fn=None):
   [1, 8, 27, 64, 125, 216, 343, 512, 729, 1000]
   """
   for n in irange(a, b, step=step):
-    x = n ** k
+    x = n**k
     yield (x if fn is None else fn(x))
 
 # compose functions in order (forward functional composition, "and then")
@@ -3394,7 +3394,7 @@ def repdigit(n, d=1, base=10):
   True
   """
   assert 0 <= d < base
-  return d * ((base ** n) - 1) // (base - 1)
+  return d * ((base**n) - 1) // (base - 1)
 
 # (Python 3.8 has math.hypot)
 # Python 3.6: ...(*vs, root=sqrt)
@@ -3469,7 +3469,7 @@ def quadratic(a, b, c, domain="Q", F=None):
     if D == 0:
       return _roots(domain, F, (b, d))
     else:
-      r = D ** 0.5
+      r = D**0.5
       return _roots(domain, F, (b + r, d), (b - r, d))
 
   elif domain in "QZ":
@@ -3669,7 +3669,7 @@ def is_palindrome(s):
   True
   >>> is_palindrome("ABBA")
   True
-  >>> first(n for n in irange(0, inf) if not is_palindrome(nsplit(11 ** n)))
+  >>> first(n for n in irange(0, inf) if not is_palindrome(nsplit(11**n)))
   [5]
   """
   j = len(s)
@@ -3681,6 +3681,27 @@ def is_palindrome(s):
     i += 1
     j -= 1
   return True
+
+# is a number palindromic in base b
+def is_npalindrome(n, base=10):
+  """
+  check if integer <n> is palindromic in base <base>.
+
+  >>> is_npalindrome(123321)
+  True
+  >>> is_npalindrome(65535, base=16)
+  True
+  """
+  n = abs(n)
+  if n % base == 0: return (n == 0)
+  (a, b) = (n, 0)
+  while a > b:
+    (d, r) = divmod(a, base)
+    b *= base
+    b += r
+    if a == b: return True
+    a = d
+  return a == b
 
 # originally called product(), but renamed to avoid name confusion with itertools.product()
 # (Python 3.8 has math.prod)
@@ -4169,13 +4190,13 @@ def recurring2fraction(i, nr, rr, base=10, digits=None):
   i = base2int(i, base=base, digits=digits)
   if q:
     if p:
-      d = (base ** (p + q)) - (base ** p)
-      n = base2int(nr, base=base, digits=digits) * ((base ** q) - 1) + base2int(rr, base=base, digits=digits)
+      d = (base**(p + q)) - (base**p)
+      n = base2int(nr, base=base, digits=digits) * ((base**q) - 1) + base2int(rr, base=base, digits=digits)
     else:
-      d = (base ** q) - 1
+      d = (base**q) - 1
       n = base2int(rr, base=base, digits=digits)
   elif p:
-    d = base ** p
+    d = base**p
     n = base2int(nr, base=base, digits=digits)
   else:
     return (i, 1)
@@ -5628,7 +5649,7 @@ def __int2words(n, scale='short', sep='', hyphen=' '):
   else:
     raise ValueError('Unsupported scale type: ' + scale)
   i = (len(str(n)) - 1) // g
-  (d, r) = divmod(n, p ** i)
+  (d, r) = divmod(n, p**i)
   w = _illions[i - k] + 'illion'
   x = _int2words(d, scale, sep, hyphen) + ' ' + w
   if r == 0: return x
@@ -6080,7 +6101,7 @@ def poly_interpolate(ps, F=None):
   k -= 1
   (A, B) = (list(), list())
   for (x, y) in ps:
-    A.append([1, x] + [x ** i for i in irange(2, k)])
+    A.append([1, x] + [x**i for i in irange(2, k)])
     B.append(y)
   try:
     return poly_trim(matrix.linear(A, B, F=F))
@@ -8387,7 +8408,7 @@ class SubstitutedExpression(object):
           ts = list(t[-k:] for t in terms)
           ts_ = list(t for t in (t[:-k] for t in terms) if t)
           # upper bound for carry out
-          maxc_ = (sum((base ** len(t)) - 1 for t in ts) + maxc) // (base ** k)
+          maxc_ = (sum((base**len(t)) - 1 for t in ts) + maxc) // (base**k)
           assert maxc_ < base, "multi-digit carries unimplemented"
         else:
           # use the remaining term
