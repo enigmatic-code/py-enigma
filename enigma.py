@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Oct  3 11:44:28 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct  6 22:35:56 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-10-02"
+__version__ = "2022-10-03"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1938,9 +1938,10 @@ def ulambda(args, expr=None):
     # in Python 2 it is straightforward lambda
     expr = sprintf("lambda {args}: {expr}")
   else:
-    #expr = sprintf("lambda *_x_: [{expr} for {args} in [_x_]][0]")
-    #expr = sprintf("lambda *_x_: peek({expr} for {args} in [_x_])")
-    expr = sprintf("lambda *_x_: next({expr} for {args} in [_x_])")
+    # in Python 3 any of the following achieve the same
+    #expr = sprintf("lambda *_x_: [{expr} for [{args}] in [_x_]][0]")
+    #expr = sprintf("lambda *_x_: peek({expr} for [{args}] in [_x_])")
+    expr = sprintf("lambda *_x_: next({expr} for [{args}] in [_x_])")
   return eval(expr)
 
 # count the number of occurrences of a predicate in an iterator
@@ -8819,7 +8820,7 @@ class SubstitutedExpression(object):
           assert len(opt['distinct']) == 1, "split_sum: doesn't handle multiple 'distinct' values"
           opt['distinct'] = opt['distinct'][0]
         # copy accepted arguments
-        for k in ['base', 's2d', 'd2i', 'answer', 'accumulate', 'env', 'code', 'template', 'distinct', 'literal', 'verbose']:
+        for k in ['base', 'symbols', 's2d', 'd2i', 'answer', 'accumulate', 'env', 'code', 'template', 'distinct', 'literal', 'verbose']:
           if k in opt:
             kw[k] = opt.pop(k)
         #if opt: printf("SubstitutedExpression.run_split_sum: ignoring args: {opt}")
