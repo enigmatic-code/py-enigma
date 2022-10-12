@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Oct  7 08:49:57 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Oct 12 08:02:22 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-10-06"
+__version__ = "2022-10-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -409,6 +409,9 @@ def gt(t): return (lambda x: x > t)
 def ge(t): return (lambda x: x >= t)
 def between(a, b): return (lambda x: a < x < b)  # exclusive between
 def betweene(a, b): return (lambda x: a <= x <= b)  # inclusive between
+
+# return a function that increments by a fixed amount
+def inc(i=1): return (lambda x, i=i: x + i)
 
 def mod(m):
   """
@@ -11475,7 +11478,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.10.7')
+""".format(version=__version__, python='2.7.18', python3='3.10.8')
 
 def _enigma_main(args=None):
   if args is None: args=argv()
