@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Oct 12 08:02:22 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Oct 15 10:30:12 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-10-07"
+__version__ = "2022-10-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -872,9 +872,9 @@ def ndigits(n, base=10):
   #return sum(1 for _ in nsplitter(n, base=base))
   return icount(nsplitter(n, base=base))
 
-def nreverse(n, base=10):
+def nreverse(n, k=None, base=10):
   """
-  reverse an integer (using base <base> representation)
+  reverse an integer (as a <k> digit number using base <base> representation)
 
   >>> nreverse(12345)
   54321
@@ -884,11 +884,13 @@ def nreverse(n, base=10):
   True
   >>> nreverse(100)
   1
+  >>> nreverse(1, 3)
+  100
   """
   if n < 0:
     return -nreverse(-n, base=base)
   else:
-    return nconcat(nsplitter(n, base=base), base=base)
+    return nconcat(nsplitter(n, k=k, base=base), base=base)
 
 from fnmatch import fnmatch
 
@@ -3401,7 +3403,7 @@ def repdigit(n, d=1, base=10):
   return d * ((base**n) - 1) // (base - 1)
 
 # (Python 3.8 has math.hypot)
-# Python 3.6: ...(*vs, root=sqrt)
+# Python 3.6: ...(*vs, root=math.sqrt)
 def hypot(*vs, **kw):
   """
   return hypotenuse of a right angled triangle with shorter sides <a> and <b>.
@@ -3421,9 +3423,11 @@ def hypot(*vs, **kw):
   >>> hypot(3, 4, root=is_square)
   5
   """
-  root = kw.get('root', sqrt)
+  root = kw.get('root', math.sqrt)
   return root(sum(v * v for v in vs))
 
+# alias for: hypot(..., root=is_square)
+ihypot = lambda *vs: hypot(*vs, root=is_square)
 
 # return roots of the form n/d in the appropriate domain
 def _roots(domain, F, *nds):
