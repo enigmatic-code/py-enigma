@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct 20 12:00:46 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct 20 12:07:29 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2081,6 +2081,8 @@ def trim(seq, head=0, tail=0, fn=None):
   [1, 2, 3]
   >>> trim([1, 2, 3, 4, 5], head=2, tail=2)
   [3]
+  >>> trim('progress', head=2, tail=2)
+  'ogre'
   """
   if head > 0 or tail > 0:
     if fn is None:
