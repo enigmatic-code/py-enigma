@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Oct 15 10:30:12 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct 20 12:00:46 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-10-14"
+__version__ = "2022-10-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2086,7 +2086,7 @@ def trim(seq, head=0, tail=0, fn=None):
     if fn is None:
       if isinstance(seq, basestring): fn = join
       elif isinstance(seq, tuple): fn = tuple
-    s = list(seq)
+    seq = list(seq)
     if head > 0: del seq[:head]
     if tail > 0: del seq[-tail:]
   return (fn(seq) if fn else seq)
