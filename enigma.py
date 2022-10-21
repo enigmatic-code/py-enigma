@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct 20 12:07:29 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Oct 21 23:04:44 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-10-19"
+__version__ = "2022-10-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1023,6 +1023,14 @@ def clump(seq, fn=None):
       v = v_
       xs = [x]
   yield xs
+
+# union of a set and a sequence of values, only if values are not already in the set
+def disjoint_union(s, vs):
+  s = set(s)
+  for v in vs:
+    if v in s: return
+    s.add(v)
+  return s
 
 # set union of a bunch of sequences
 def union(ss, fn=set):
@@ -2086,8 +2094,10 @@ def trim(seq, head=0, tail=0, fn=None):
   """
   if head > 0 or tail > 0:
     if fn is None:
-      if isinstance(seq, basestring): fn = join
-      elif isinstance(seq, tuple): fn = tuple
+      if isinstance(seq, basestring):
+        fn = join
+      elif isinstance(seq, tuple):
+        fn = tuple
     seq = list(seq)
     if head > 0: del seq[:head]
     if tail > 0: del seq[-tail:]
@@ -4637,7 +4647,12 @@ def delete(s, ks=()):
   # return the new object
   return (fn(s) if fn else s)
 
-def append(s, v):
+# this unifies adding an element to a container:
+# - string: '123' + '4'      -> append('123', '4')
+# - list:   [1, 2, 3] + [4]  -> append([1, 2, 3], 4)
+# - tuple:  (1, 2, 3) + (4,) -> append((1, 2, 3), 4)
+# - set:    {1, 2, 3} | {4}  -> append({1, 2, 3}, 4)
+def append(s, *vs):
   """
   make a new container, the same as <s> but with <v> added.
 
@@ -4647,17 +4662,46 @@ def append(s, v):
   [1, 2, 3, 4]
   >>> append({1, 2, 3}, 4) == {1, 2, 3, 4}
   True
+  >>> append('123', '4')
+  '1234'
   """
-  if isinstance(s, tuple):
-    return s + (v,)
   if isinstance(s, list):
-    return s + [v]
+    s = type(s)(s)
+    s.extend(vs)
+    return s
+  if isinstance(s, tuple):
+    return s + vs
+  if isinstance(s, basestring):
+    return s + (vs[0] if len(vs) == 1 else join(vs))
   if isinstance(s, set):
-    s = set(s)
-    s.add(v)
+    s = type(s)(s)
+    s.update(vs)
     return s
   if isinstance(s, frozenset):
-    return s.union({v})
+    return s.union(vs)
+  if isinstance(s, multiset):
+    return s.copy().update_from_seq(vs)
+  raise ValueError(sprintf("append() can't handle container of type {x}", x=type(s)))
+
+  # with pattern matching (Python 3.10+) we can do this ...
+  # (but with older versions of Python it will fail to parse)
+  #
+  # match s:
+  #   case str():
+  #     return s + v
+  #   case list():
+  #     return s + [v]
+  #   case tuple():
+  #     return s + (v,)
+  #   case set():
+  #     s = set(s)
+  #     s.add(v)
+  #     return s
+  #   case frozenset():
+  #     return s.union({v})
+  #   case multiset():
+  #     return s.copy().add(v)
+  # raise ValueError(sprintf("append() can't handle container of type {x}", x=type(s)))
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
