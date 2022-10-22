@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Oct 21 23:04:44 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Oct 22 16:05:28 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-10-20"
+__version__ = "2022-10-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -697,10 +697,10 @@ def concat(*args, **kw):
       raise
   return join(args, sep=sep, enc=enc)
 
-# reverse a sequence or a map
+# reverse a sequence or a map (maybe -> rev())
 def reverse(s, fn=None):
   """
-  reverse a sequence, string, or map.
+  return the reverse of a sequence (str, tuple, list) or map (dict).
 
   note: when reversing a map, data may be lost if the original map
   does not have distinct values.
@@ -715,17 +715,21 @@ def reverse(s, fn=None):
   {1: 'a', 2: 'b', 3: 'c'}
 
   """
+  ## if it has a 'rev' attribute call that (note: list.reverse() modifies the list)
+  #if hasattr(s, 'rev'): return (s.rev() if fn is None else fn(s.rev()))
   # if it is a dict, return a reverse map
   if isinstance(s, dict): return type(s)((v, k) for (k, v) in s.items())
   # if it is a string, return a string
   if fn is None:
     if isinstance(s, basestring):
-      fn = str
+      fn = join
     elif isinstance(s, tuple):
       fn = tuple
     else:
       fn = list
-  return fn(s)[::-1]
+  return fn(reversed(s))
+
+rev = reverse
 
 # translate text <t>, using map <m> (and optional symbols <s>)
 def translate(t, m, s="", embed=1):
@@ -872,6 +876,7 @@ def ndigits(n, base=10):
   #return sum(1 for _ in nsplitter(n, base=base))
   return icount(nsplitter(n, base=base))
 
+# maybe -> nrev()
 def nreverse(n, k=None, base=10):
   """
   reverse an integer (as a <k> digit number using base <base> representation)
@@ -891,6 +896,9 @@ def nreverse(n, k=None, base=10):
     return -nreverse(-n, base=base)
   else:
     return nconcat(nsplitter(n, k=k, base=base), base=base)
+
+nrev = nreverse
+
 
 from fnmatch import fnmatch
 
@@ -1024,18 +1032,34 @@ def clump(seq, fn=None):
       xs = [x]
   yield xs
 
-# union of a set and a sequence of values, only if values are not already in the set
-def disjoint_union(s, vs):
-  s = set(s)
-  for v in vs:
-    if v in s: return
-    s.add(v)
-  return s
-
 # set union of a bunch of sequences
 def union(ss, fn=set):
   """construct a set that is the union of the sequences in <ss>"""
   return fn().union(*ss)
+
+# disjoint set union of a bunch of sequences (or None)
+# any value may appear in only one of the sequences
+def disjoint_union(ss, fn=set):
+  """
+  construct a set that is the union of the sequences in <ss>.
+
+  each value in the returned set only appears in one of the sequences.
+  if this is not possible None is returned.
+
+  >>> disjoint_union([[1], [2], [3], [4]]) == {1, 2, 3, 4}
+  True
+  >>> disjoint_union([[1], [2], [3], [2]]) is None
+  True
+  """
+  s = fn()
+  n = 0
+  for xs in ss:
+    x = set(xs)
+    s.update(x)
+    n_ = len(s)
+    if n_ != n + len(x): return
+    n = n_
+  return s
 
 # set intersection of a bunch of sequences
 def intersect(ss, fn=set):
@@ -1566,6 +1590,9 @@ class multiset(dict):
   # generate item pairs
   def to_pairs(self):
     return tuple(sorted(self.items()))
+
+  def to_dict(self):
+    return dict(self)
 
   # allow operator overloading on multisets
   # (let me know if these don't do what you expect)
@@ -4665,6 +4692,9 @@ def append(s, *vs):
   >>> append('123', '4')
   '1234'
   """
+  # we could use structural pattern matching in Python 3.10+ [see: enigma_py310.py]
+  # however there does not seem to be a performance advantage
+  # and it will fail to parse with older versions of Python
   if isinstance(s, list):
     s = type(s)(s)
     s.extend(vs)
@@ -4672,7 +4702,7 @@ def append(s, *vs):
   if isinstance(s, tuple):
     return s + vs
   if isinstance(s, basestring):
-    return s + (vs[0] if len(vs) == 1 else join(vs))
+    return s + join(vs)
   if isinstance(s, set):
     s = type(s)(s)
     s.update(vs)
@@ -4682,26 +4712,6 @@ def append(s, *vs):
   if isinstance(s, multiset):
     return s.copy().update_from_seq(vs)
   raise ValueError(sprintf("append() can't handle container of type {x}", x=type(s)))
-
-  # with pattern matching (Python 3.10+) we can do this ...
-  # (but with older versions of Python it will fail to parse)
-  #
-  # match s:
-  #   case str():
-  #     return s + v
-  #   case list():
-  #     return s + [v]
-  #   case tuple():
-  #     return s + (v,)
-  #   case set():
-  #     s = set(s)
-  #     s.add(v)
-  #     return s
-  #   case frozenset():
-  #     return s.union({v})
-  #   case multiset():
-  #     return s.copy().add(v)
-  # raise ValueError(sprintf("append() can't handle container of type {x}", x=type(s)))
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
@@ -6361,6 +6371,9 @@ class Polynomial(list):
     return self.__class__(poly_sub(self, other))
 
   __call__ = poly_value
+
+  def copy(self):
+    return self.__class__(self)
 
   # degree of polynomial
   def degree(self):
