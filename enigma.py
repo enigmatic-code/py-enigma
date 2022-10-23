@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Oct 22 16:05:28 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Oct 23 15:55:13 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-10-23"
+__version__ = "2022-10-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1043,8 +1043,10 @@ def disjoint_union(ss, fn=set):
   """
   construct a set that is the union of the sequences in <ss>.
 
-  each value in the returned set only appears in one of the sequences.
-  if this is not possible None is returned.
+  each value in the returned set only appears in one of the sequences
+  (although it may appear multiple times in that sequence).
+
+  if this is not possible a value of None is returned.
 
   >>> disjoint_union([[1], [2], [3], [4]]) == {1, 2, 3, 4}
   True
@@ -1054,10 +1056,10 @@ def disjoint_union(ss, fn=set):
   s = fn()
   n = 0
   for xs in ss:
-    x = set(xs)
-    s.update(x)
+    xs = set(xs)
+    s.update(xs)
     n_ = len(s)
-    if n_ != n + len(x): return
+    if n_ != n + len(xs): return
     n = n_
   return s
 
@@ -4681,7 +4683,7 @@ def delete(s, ks=()):
 # - set:    {1, 2, 3} | {4}  -> append({1, 2, 3}, 4)
 def append(s, *vs):
   """
-  make a new container, the same as <s> but with <v> added.
+  make a new container, the same as <s> but with additional values <vs> added.
 
   >>> append((1, 2, 3), 4)
   (1, 2, 3, 4)
@@ -4702,7 +4704,7 @@ def append(s, *vs):
   if isinstance(s, tuple):
     return s + vs
   if isinstance(s, basestring):
-    return s + join(vs)
+    return s + str.join('', vs)
   if isinstance(s, set):
     s = type(s)(s)
     s.update(vs)
@@ -10669,7 +10671,7 @@ def __grouping():
     output a sequence of groups <gs>
     """
     for g in gs:
-      print(sep.join(g))
+      print(str.join(sep, g))
     print(end)
 
   def solve(vs, fn, sep=", ", end=""):
@@ -10719,7 +10721,7 @@ def __grouping():
 
   def output_gangs(xs, ys, sep=", ", end=""):
     for (x, y) in zip(xs, ys):
-      print(x + ": " + sep.join(y))
+      print(x + ": " + str.join(sep, y))
     print(end)
 
 
