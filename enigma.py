@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Oct 23 15:55:13 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Oct 26 09:57:28 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-10-24"
+__version__ = "2022-10-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -903,7 +903,7 @@ nrev = nreverse
 from fnmatch import fnmatch
 
 # match a value (as a string) to a template
-# NOTE: match is a soft keyword in Python 3.10
+# NOTE: match is a soft keyword in Python 3.10+
 def match(v, t):
   """
   match a value (as a string) to a template (see fnmatch.fnmatch).
@@ -4453,9 +4453,8 @@ def irange(a, b=None, step=1):
   """
   a range iterator that includes both integer endpoints, <a> and <b>.
 
-  if only one value <n> is specified for the endpoints, then <n>
-  values are produced suitable for indexing into an array of size <n>
-  (so irange(n) produces n integers from 0 to n - 1).
+  if only one value <n> is specified for the endpoints, then endpoints of
+  0 and (n - 1) are used. (so irange(n) produces n integers from 0 to n - 1).
 
   if <b> is specified as inf (or -inf for negative steps) the iterator
   generate will values indefinitely.
@@ -11543,7 +11542,7 @@ enigma.py has the following command-line usage:
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.10.8')
+""".format(version=__version__, python='2.7.18', python3='3.11.0')
 
 def _enigma_main(args=None):
   if args is None: args=argv()
