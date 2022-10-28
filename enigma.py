@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Oct 26 09:57:28 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct 27 10:12:07 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-10-25"
+__version__ = "2022-10-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1053,15 +1053,16 @@ def disjoint_union(ss, fn=set):
   >>> disjoint_union([[1], [2], [3], [2]]) is None
   True
   """
-  s = fn()
-  n = 0
+  rs = None
   for xs in ss:
-    xs = set(xs)
-    s.update(xs)
-    n_ = len(s)
-    if n_ != n + len(xs): return
-    n = n_
-  return s
+    if not rs:
+      rs = fn(xs)
+    else:
+      # this seems to be faster than updating rs and checking cardinality
+      for x in xs:
+        if x in rs: return
+        rs.add(x)
+  return rs
 
 # set intersection of a bunch of sequences
 def intersect(ss, fn=set):
@@ -8347,6 +8348,14 @@ class SubstitutedExpression(object):
     split the alphametic sum represented by [[ sum(<terms>) = <result> ]]
     into sums consisting of <k> columns of the original sum with carries
     between the chunks.
+
+    alternatively, if just the <terms> parameter is passed (and the <result>
+    parameter is None), then the <terms> parameter can be given as:
+      - a string representing the sum: "<term> + <term> + ... = <result>"
+      - a sequence of simultaneous sums, represented as strings or
+        (<terms>, <result>) pairs.
+
+    additional parameters:
 
       carries - symbols that can be used for carries between chunks
       extra - extra expressions (that don't get split)
