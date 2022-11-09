@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Nov  9 09:37:16 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Nov  9 11:57:11 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-11-07"
+__version__ = "2022-11-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -11245,17 +11245,16 @@ def run(cmd, *args, **kw):
         if flags:
           saved = [_PY_ENIGMA]
           _PY_ENIGMA = join(sorted(uniq(_PY_ENIGMA + flags)))
+        _run_exit = -1
         try:
           if verbose: printf("run: calling {cmd}")
           # use elapsed time for subprocesses, rather than process time
           if timed: timed = Timer(name=timed, timer="E")
-          subprocess.call(cmd)
+          _run_exit = subprocess.call(cmd)
           if timed: timed.report()
-          r = 1
         finally:
           if saved:
             [PY_ENIGMA] = saved
-        _run_exit = (0 if r else -1)
       if verbose: printf("run: _run_exit = {_run_exit}")
       return
   else:
