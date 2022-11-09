@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct 27 10:12:07 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Nov  9 09:37:16 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-10-26"
+__version__ = "2022-11-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -267,7 +267,7 @@ _pypy = getattr(sys, 'pypy_version_info', None)
 enigma = sys.modules[__name__]
 nl = "\n"
 pi = math.pi
-two_pi = 2.0 * pi
+two_pi = pi * 2
 inf = float('+inf')
 empty = frozenset()  # the empty set
 
@@ -4002,15 +4002,16 @@ def Rational(src=None, verbose=None):
         break
       except KeyError:
         pass
-      (mod, fn) = s.split('.', 2)
+      (mod, fn) = s.split('.', 1)
       # Python3: could use importlib.util.find_spec() to see if the module exists
       # and then importlib.util.module_from_spec() to load it
       try:
-        t = __import__(mod)
+        f = __import__(mod)
       except ImportError:
         continue
       try:
-        f = t.__dict__[fn]
+        for x in fn.split('.'):
+          f = f.__dict__[x]
       except KeyError:
         continue
       Rational.impl[s] = f
@@ -4021,7 +4022,7 @@ def Rational(src=None, verbose=None):
   if verbose is None: verbose = ('v' in _PY_ENIGMA)
   if verbose: printf("[Rational: using {s}]", s=(s if f else f))
   # fix for gmpy2.mpq() behaviour (issue #334) - may be fixed in gmpy2.version() > 2.1.2
-  if Rational.fix_gmpy2 and s == 'gmpy2.mpq': f = lambda x, y=None, fn=f: (fn(x) if y is None else fn(x) / y)
+  if Rational.fix_gmpy2 and s == 'gmpy2.mpq': f = (lambda x, y=None, fn=f: (fn(x) if y is None else fn(x) / y))
   return f
 
 # create a function that will calculate a/b, and return an int if the result is an integer
@@ -4593,6 +4594,11 @@ def flattened(s, depth=None, test=_flatten_test, fn=None):
   else:
     return _flattened(z, depth, test)
 
+# in Python 3 we could use functools.singledispatch
+# or in Python 3.10+ we could use structural pattern matching
+# to implement polymorphic functions (update(), delete(), append())
+# however there does not seem to be a performance advantage
+# and it will fail with older versions of Python
 
 # return a copy of object <s>, but with value <v> at index <k> for (k, v) in <ps>
 # <ps> can be a sequence of (k, v) pairs, or a sequence of keys, in which case
@@ -4625,16 +4631,15 @@ def update(s, ps=(), vs=None):
     fn = ''.join
     s = list(s)
   else:
-    try:
-      # use copy() method if available
-      s = s.copy()
-    except AttributeError:
-      # otherwise create a new object initialised from the old one
-      s = type(s)(s)
-  try:
-    # use update() method if available
-    s.update(ps)
-  except AttributeError:
+    # use copy() method if available
+    # otherwise create a new object initialised from the old one
+    cpy = getattr(s, 'copy', None)
+    s = (cpy() if cpy else type(s)(s))
+  # use update() method if available
+  upd = getattr(s, 'update', None)
+  if upd:
+    upd(ps)
+  else:
     # otherwise update the pairs individually
     for (k, v) in ps:
       s[k] = v
@@ -4664,19 +4669,17 @@ def delete(s, ks=()):
     s = list(s)
     ks = sorted(ks, reverse=1)
   else:
-    try:
-      # use copy() method if available
-      s = s.copy()
-    except AttributeError:
-      # otherwise create a new object initialised from the old one
-      s = type(s)(s)
+    # use copy() method if available
+    # otherwise create a new object initialised from the old one
+    cpy = getattr(s, 'copy', None)
+    s = (cpy() if cpy else type(s)(s))
   # remove specified keys
   for k in ks:
     del s[k]
   # return the new object
   return (fn(s) if fn else s)
 
-# this unifies adding an element to a container:
+# this unifies adding an element (or elements) to a container:
 # - string: '123' + '4'      -> append('123', '4')
 # - list:   [1, 2, 3] + [4]  -> append([1, 2, 3], 4)
 # - tuple:  (1, 2, 3) + (4,) -> append((1, 2, 3), 4)
@@ -4694,9 +4697,6 @@ def append(s, *vs):
   >>> append('123', '4')
   '1234'
   """
-  # we could use structural pattern matching in Python 3.10+ [see: enigma_py310.py]
-  # however there does not seem to be a performance advantage
-  # and it will fail to parse with older versions of Python
   if isinstance(s, list):
     s = type(s)(s)
     s.extend(vs)
@@ -4706,7 +4706,7 @@ def append(s, *vs):
   if isinstance(s, basestring):
     return s + str.join('', vs)
   if isinstance(s, set):
-    s = type(s)(s)
+    s = s.copy()
     s.update(vs)
     return s
   if isinstance(s, frozenset):
