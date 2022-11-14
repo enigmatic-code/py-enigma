@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Nov  9 11:57:11 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Nov 14 11:05:00 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-11-08"
+__version__ = "2022-11-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -556,9 +556,9 @@ def seq_all_same_r(seq, **kw):
   """
   i = iter(seq)
   n = 0
-  try:
+  if 'value' in kw:
     v = kw['value']
-  except KeyError:
+  else:
     try:
       v = next(i)
       n = 1
@@ -3778,6 +3778,22 @@ def multiply(s, r=1, mod=None):
     for x in s:
       r *= x
       r %= mod
+  return r
+
+# multiple argument versions of basic operations:
+# - add, mul, bit_or, bit_and, bit_xor
+add = lambda *vs: sum(vs)
+mul = lambda *vs: multiply(vs)
+def bit_or(*vs):
+  r = 0
+  for v in vs: r |= v
+  return r
+def bit_xor(*vs):
+  r = 0
+  for v in vs: r ^= v
+  return r
+def bit_and(r, *vs):
+  for v in vs: r &= v
   return r
 
 def _gcd(a, b):
