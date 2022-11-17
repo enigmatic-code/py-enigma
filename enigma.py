@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Nov 14 11:05:00 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Nov 15 23:20:32 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-11-12"
+__version__ = "2022-11-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4733,28 +4733,31 @@ def append(s, *vs):
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
-def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0, include_self=0):
+def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0, include_self=0, fn=None):
   """
   this function generates the adjacency matrix for a grid with n
-  columns and m rows, represented by a linear array of size n*m
+  columns and m rows, represented by a linear array of size n * m.
 
-  the element in the (i, j)th position in the grid is at index (i + n*j)
-  in the array
+  the element in the (i, j)th position in the grid is at index (i + n * j)
+  in the array.
 
-  it returns an array, where the entry at index k is a list of indices
-  into the linear array that are adjacent to the square at index k.
+  it returns an array, where the entry at index k is the collection of
+  indices into the linear array that are adjacent to the square at index k.
+
+  if 'fn' is specified then it is used to collect the indices,
+  otherwise they are returned as a list.
 
   the default behaviour is to treat the squares immediately N, S, E, W
   of the target square as being adjacent, although this can be controlled
   with the 'deltas' parameter, it can be specified as a list of (x, y)
   deltas to use instead.
 
-  if 'deltas' is not specified the 'include_adjacent',
-  'include_diagonal' and 'include_self' flags are used to specify
-  which squares are adjacent to the target square.
-  'include_adjacent' includes the N, S, E, W squares
-  'include_diagonal' includes the NW, NE, SW, SE squares
-  'include_self' includes the square itself
+  if 'deltas' is not specified the 'include_adjacent', 'include_diagonal'
+  and 'include_self' flags are used to specify which squares are adjacent
+  to the target square:
+    'include_adjacent' includes the N, S, E, W squares
+    'include_diagonal' includes the NW, NE, SW, SE squares
+    'include_self' includes the square itself
 
   >>> grid_adjacency(2, 2)
   [[1, 2], [0, 3], [0, 3], [1, 2]]
@@ -4762,6 +4765,7 @@ def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0, in
   [1, 3, 5, 7]
   >>> sorted(grid_adjacency(3, 3, include_diagonal=1)[4])
   [0, 1, 2, 3, 5, 6, 7, 8]
+
   """
   # if deltas aren't provided use standard deltas
   if deltas is None:
@@ -4779,7 +4783,7 @@ def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0, in
         (x1, y1) = (x + dx, y + dy)
         if not (x1 < 0 or y1 < 0 or x1 + 1 > n or y1 + 1 > m):
           s.append(x1 + y1 * n)
-      r[x + y * n] = s
+      r[x + y * n] = (fn(s) if fn else s)
   return r
 
 
