@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Nov 15 23:20:32 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Nov 28 09:41:52 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -210,7 +210,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-11-14"
+__version__ = "2022-11-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3179,7 +3179,7 @@ def is_square(n):
   if n < 2: return n
   # early rejection: check <square> mod <some value> against a precomputed cache
   # e.g. <square> mod 80 = 0, 1, 4, 9, 16, 20, 25, 36, 41, 49, 64, 65 (rejects 88% of numbers)
-  # mod 720 rejects 93% of candidates
+  # mod 720 (= factorial(6)) rejects 93% of candidates
   if not is_square.residues: is_square.residues = set((i * i) % is_square.mod for i in xrange(is_square.mod))
   if (n % is_square.mod) not in is_square.residues: return None
   # otherwise use isqrt and check the result
@@ -4946,6 +4946,28 @@ def bit_permutations(a, b=None):
     t = (a | (a - 1)) + 1
     a = t | ((((t & -t) // (a & -a)) >> 1) - 1)
 
+def bit_from_positions(ps):
+  """
+  construct an integer with bit positions in <ps> set
+
+  >>> bit_from_positions({1, 3, 7, 11})
+  2186
+  """
+  return bit_or(*(1 << p for p in ps))
+
+# return the positions of bits set in integer x
+def bit_positions(x):
+  """
+  return the positions of bits set in integer <x>
+
+  >>> list(bit_positions(2186))
+  [1, 3, 7, 11]
+  """
+  i = 0
+  while x:
+    if x & 1: yield i
+    x >>= 1
+    i += 1
 
 # for "coin puzzles", see also: Denominations()
 
