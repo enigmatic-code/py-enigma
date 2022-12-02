@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Nov 28 09:41:52 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Dec  2 09:42:36 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -31,7 +31,9 @@ args                   - extract a list of arguments from the command line
 as_int                 - check argument is an integer
 base2int               - convert a string in the specified base to an integer
 base_digits            - get/set digits used in numerical base conversion
+bit_from_positions     - construct an integer by setting bits in specified positions
 bit_permutations       - generate bit permutations
+bit_positions          - return positions of bits set
 C, nCr                 - combinatorial function (nCr)
 cache, cached          - decorator for caching functions
 catch                  - catch errors in a function call
@@ -210,7 +212,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-11-27"
+__version__ = "2022-11-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4955,7 +4957,6 @@ def bit_from_positions(ps):
   """
   return bit_or(*(1 << p for p in ps))
 
-# return the positions of bits set in integer x
 def bit_positions(x):
   """
   return the positions of bits set in integer <x>
@@ -5328,7 +5329,57 @@ def exact_cover(sss, tgt=None):
       r[y[-1] - n] = list(tgt[i] for i in y[:-1])
     yield r
 
-# for multiset cover using the same idea see: Enigma 1712
+# exact multiset cover (see: Enigma 1712)
+def mcover(m, tgt, reject=None):
+  """
+  <m> is a map of keys to multisets of values
+  <tgt> is a multiset of values to target
+  <reject> is a function that can be used to reject partial solutions
+
+  solutions are returned as an (unordered) list of keys, where the
+  combined multisets of values corresponding to those keys give
+  exactly the target multiset
+  """
+  # a variation on Knuth's Algorithm X
+  def _mcover(m, tgt, X, ss):
+    # are we done?
+    if not tgt:
+      yield ss
+    else:
+      # choose a column to work on
+      c = min(tgt.keys(), key=(lambda k: (len(X[k]), -tgt[k])))
+      # consider subsets with this value
+      xs = sorted(X[c])
+      for (j, n) in enumerate(xs, start=1):
+        s = m[n]
+        # update the target
+        (tgt_, rs) = tgt.differences(s)
+        if rs: continue
+        # is this sequence acceptable?
+        ss_ = ss + [n]
+        if reject and reject(ss_): continue
+        # remove the value (and any prior values) from consideration
+        discard = set(xs[:j])
+        # remove any values in columns that have reached 0
+        for (k, v) in X.items():
+          if v and tgt_.count(k) == 0:
+            discard.update(v)
+        # recurse with a new target and X
+        X_ = dict((k, v.difference(discard)) for (k, v) in X.items())
+        for z in _mcover(m, tgt_, X_, ss_): yield z
+
+  # X tells us what elements of the target are involved in which values
+  if not isinstance(tgt, multiset): tgt = multiset(tgt)
+  ks = set(tgt.keys())
+  X = dict((k, set()) for k in ks)
+  for (v, s) in m.items():
+    if ks.issuperset(s.keys()):
+      for k in s.keys():
+        X[k].add(v)
+  # check each target element appears
+  if not all(X.values()): return ()
+  # solve using the variation on Algorithm X
+  return _mcover(m, tgt, X, list())
 
 ###############################################################################
 
@@ -9497,9 +9548,9 @@ class SubstitutedDivision(SubstitutedExpression):
       yield ((ss, ans) if answer else ss)
       if first: break
 
-  def output_solution(self, s):
+  def output_solution(self, s, template=None, solution=None):
     # copy any input symbols that were eliminated
-    SubstitutedExpression.output_solution(self, s.s)
+    SubstitutedExpression.output_solution(self, s.s, template=template, solution=solution)
 
   def solution_intermediates(self, s):
     # the intermediate subtraction sums are now part of the solution
