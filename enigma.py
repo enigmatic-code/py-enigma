@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Dec  2 09:42:36 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Dec  6 08:45:56 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -212,7 +212,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-11-29"
+__version__ = "2022-12-03"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5329,16 +5329,18 @@ def exact_cover(sss, tgt=None):
       r[y[-1] - n] = list(tgt[i] for i in y[:-1])
     yield r
 
-# exact multiset cover (see: Enigma 1712)
+# exact multiset cover (see: Enigma 1712, Teaser 2690)
 def mcover(m, tgt, reject=None):
   """
+  find exact multiset covers.
+
   <m> is a map of keys to multisets of values
   <tgt> is a multiset of values to target
   <reject> is a function that can be used to reject partial solutions
 
   solutions are returned as an (unordered) list of keys, where the
   combined multisets of values corresponding to those keys give
-  exactly the target multiset
+  exactly the target multiset.
   """
   # a variation on Knuth's Algorithm X
   def _mcover(m, tgt, X, ss):
@@ -5525,6 +5527,44 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   r.fv += v
   return r
 
+def line_intersect(p1, p2, p3, p4, internal=0, div=fdiv):
+  """
+  Find the intersection of 2 lines defined by points:
+
+    line 1 passes through p1 and p2 (= (x1, y1) and (x2, y2))
+    line 2 passes through p3 and p4 (= (x3, y3) and (x4, y4))
+
+  internal can be set to: 1, 2, 1+2 to check the intersection is internal
+  to the specified line segments, if not an exception is raised
+
+  div is set to an appropriate division function (default is fdiv()
+  for floats, but the result of Rational() could be used)
+
+  return value is a Record object:
+    pt = (x, y) value of intersection
+    x = x
+    y = y
+    q1 = fraction along line 1 (0 = p1, 1 = p2)
+    q2 = fraction along line 2 (0 = p3, 1 = p4)
+  """
+  ((x1, y1), (x2, y2), (x3, y3), (x4, y4)) = (p1, p2, p3, p4)
+  (dx21, dx43, dx31) = (x2 - x1, x4 - x3, x3 - x1)
+  (dy21, dy43, dy31) = (y2 - y1, y4 - y3, y3 - y1)
+  z = dx21 * dy43 - dy21 * dx43
+  if z == 0: raise ValueError("invalid lines")
+  # calculate parameter for line 1 = (x1 + r1(x2 - x1), y1 + r1(y2 - y1))
+  q1 = div(dx31 * dy43 - dy31 * dx43, z)
+  if internal & 1 and (q1 < 0 or q1 > 1): raise ValueError("external intersection on line 1")
+  # calculate intersection point
+  (x, y) = (x1 + q1 * dx21, y1 + q1 * dy21)
+  # calculate parameter for line 2 = (x3 + q2(x4 - x3), y3 + q2(y4 - x3))
+  if abs(dx43) > abs(dy43):
+    q2 = div(x - x3, dx43)
+  else:
+    q2 = div(y - y3, dy43)
+  if internal & 2 and (q2 < 0 or q2 > 1): raise ValueError("external intersection on line 2")
+  # return intersection point (pt) (also: x, y, q1, q2)
+  return Record(pt=(x, y), x=x, y=y, q1=q1, q2=q2)
 
 ###############################################################################
 
@@ -10545,9 +10585,10 @@ class Timer(object):
     e = self.elapsed()
     self._report = sprintf("[{n}] total time: {e:.7f}s ({f})", n=self._name, f=self.format(e))
     print(self._report, file=self._file)
+    return self._report
 
   def printf(self, fmt='', **kw):
-    e = self.elapsed()
+    e = self.elapsed(disable_report=0)
     s = _sprintf(fmt, kw, sys._getframe(1))
     printf("[{n} {e}] {s}", n=self._name, e=self.format(e))
 
