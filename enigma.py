@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Dec  6 08:45:56 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Dec  6 10:14:42 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -212,7 +212,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-12-03"
+__version__ = "2022-12-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -275,6 +275,7 @@ empty = frozenset()  # the empty set
 
 _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
+version = lambda: __version__
 
 # add attributes to a function (to use as static variables)
 # (but for better performance use global variables, or mutable default parameters)
@@ -11143,6 +11144,26 @@ matrix = make_namespace('matrix', __matrix())
 ###############################################################################
 
 # some handy development routines
+
+# require version to be at least specified value
+# e.g.:
+#   require("enigma.version", "2022-12-05")
+#
+# currently this won't work:
+#   require("sys.version", "3.10")
+# as '3.7' > '3.10'
+# maybe there is a cmp function in the standard library that works on Python versions?
+# or use:
+#   require("sys.version_info", (3, 10))
+def require(key, value, cmp=compare):
+  (mod, k) = key.split('.')
+  try:
+    v = getattr(sys.modules[mod], k)
+    if callable(v): v = v()
+  except (KeyError, AttributeError, ValueError):
+    raise ValueError(sprintf("unable to extract \"{key}\""))
+  if cmp(v, value) < 0: raise ValueError(sprintf("version mismatch \"{key}\" = \"{v}\"; require >= \"{value}\""))
+  return v
 
 
 # this looks for a "STOP" file, and if present removes it and returns True
