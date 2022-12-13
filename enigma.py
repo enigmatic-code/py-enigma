@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Dec  7 09:14:00 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Dec 13 15:21:35 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -212,7 +212,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-12-06"
+__version__ = "2022-12-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -318,7 +318,7 @@ def cached(f):
   """
   c = dict()
   @functools.wraps(f)
-  def _cached(*k):
+  def _inner(*k):
     try:
       #if k in c: printf("[{f.__name__}: cache hit, {k}")
       return c[k]
@@ -326,10 +326,19 @@ def cached(f):
       r = c[k] = f(*k)
       #printf("[{f.__name__}: {k} -> {r}]")
       return r
-  return _cached
+  return _inner
 
 # or you can use cache, to get functools.cache() (if available) or cached() if not.
 cache = getattr(functools, 'cache', cached)
+
+# wrap a function in another function, e.g. @wrap(uniq, verbose=1)
+def wrap(fn, *args, **kw):
+  def _inner(f):
+    @functools.wraps(f)
+    def __inner(*fargs, **fkw):
+      return fn(f(*fargs, **fkw), *args, **kw)
+    return __inner
+  return _inner
 
 # the identity function
 def identity(x):
@@ -1157,7 +1166,7 @@ def diff(a, b, *rest, **kw):
 
 
 # unique combinations:
-# like uniq(combinations(s, k) but more efficient
+# like uniq(combinations(s, k)) but more efficient
 def uC(s, k):
   if k == 0:
     yield ()
@@ -2310,7 +2319,7 @@ def uniq(seq, fn=None, verbose=0):
     if r not in seen:
       yield x
       seen.add(r)
-  if verbose: printf("[uniq: found {n} unique items]")
+  if verbose: printf("[uniq: found {n} unique items]", n=len(seen))
 
 def uniq1(seq, fn=None):
   """
@@ -5566,6 +5575,20 @@ def line_intersect(p1, p2, p3, p4, internal=0, div=fdiv):
   if internal & 2 and (q2 < 0 or q2 > 1): raise ValueError("external intersection on line 2")
   # return intersection point (pt) (also: x, y, q1, q2)
   return Record(pt=(x, y), x=x, y=y, q1=q1, q2=q2)
+
+# return a line segment the same length as (p1, p2) that is its perpendicular bisector
+# i.e. (p1, p2) forms the diagonal of a square, the other diagonal is the return value (p3, p4)
+def line_bisect(p1, p2, div=fdiv):
+  """
+  Return a line segment that is a perpendicular bisector of the
+  line segment defined by p1 and p2 (= (x1, y1) and (x2, y2)).
+
+  The value returned (p3, p4) (= (x3, y3), (x4, y4)) is a line segment
+  that forms a diagonal of a square, where the other diagonal is (p1, p2).
+  """
+  ((x1, y1), (x2, y2)) = (p1, p2)
+  s = fdiv(x1 + x2 + y1 + y2, 2)
+  return ((s - y1, s - x2), (s - y2, s - x1))
 
 ###############################################################################
 
@@ -10603,14 +10626,14 @@ class Timer(object):
 def timed(f):
   """return a timed version of function <f>"""
   @functools.wraps(f)
-  def _timed(*args, **kw):
+  def _inner(*args, **kw):
     n = f.__name__
     t = Timer(n)
     r = f(*args, **kw)
     #printf("[{n} {args} {kw} => {r}]")
     t.report()
     return r
-  return _timed
+  return _inner
 
 # create a default timer
 timer = Timer(auto_start=0)
