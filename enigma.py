@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Dec 13 15:21:35 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Dec 17 10:07:31 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -212,7 +212,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-12-12"
+__version__ = "2022-12-16"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -301,11 +301,11 @@ def static(**kw):
 
   (for better performance you can use global variables)
   """
-  def _decorate(fn):
+  def _inner(fn):
     for (k, v) in kw.items():
       setattr(fn, k, v)
     return fn
-  return _decorate
+  return _inner
 
 # useful as a decorator for caching functions (@cached).
 # NOTE: functools.lru_cached() can be used as an alternative in Python 3.2 and later
@@ -333,10 +333,24 @@ cache = getattr(functools, 'cache', cached)
 
 # wrap a function in another function, e.g. @wrap(uniq, verbose=1)
 def wrap(fn, *args, **kw):
+  """
+  a decorator that allows a function to be wrapped in another function.
+
+  for example:
+
+  >>> @wrap(uniq)
+  ... def sqmod(n, m):
+  ...   for i in irange(1, n):
+  ...     yield sq(i) % m
+
+  will only provide values the first time they are encountered:
+
+  >>> list(sqmod(10, 10))
+  [1, 4, 9, 6, 5, 0]
+  """
   def _inner(f):
     @functools.wraps(f)
-    def __inner(*fargs, **fkw):
-      return fn(f(*fargs, **fkw), *args, **kw)
+    def __inner(*fargs, **fkw): return fn(f(*fargs, **fkw), *args, **kw)
     return __inner
   return _inner
 
@@ -352,8 +366,7 @@ def true(*args, **kw):
   return True
 
 # a function that returns its arguments
-#def tupl(*args, fn=None):
-#,  return (args if fn is None else fn(args))
+#def tupl(*args, fn=None): return (args if fn is None else fn(args))
 
 # can we treat x as an integer?
 # include = +/-/0, check for +ve, -ve, 0
@@ -3996,6 +4009,24 @@ def ratio(*ns):
   g = mgcd(*ns)
   return (ns if g == 1 else tuple(v // g for v in ns))
 
+# import a function from a spec, e.g.:
+#   Q = import_fn('fractions.Fraction')
+#   Q = import_fn('gmpy2.mpq')
+#   Q = import_fn('mpmath.rational.mpq')
+#   urlopen = import_fn('urllib2.urlopen')  # Python 2
+#   urlopen = import_fn('urllib.request.urlopen')  # Python 3
+# Python3: could use importlib.util.find_spec() to see if the module exists
+# and then importlib.util.module_from_spec() to load it
+def import_fn(spec):
+  if '.' not in spec:
+    mod = spec
+  else:
+    (mod, _) = spec.rsplit('.', 1)
+  f = __import__(mod)
+  for x in spec.split('.')[1:]:
+    f = f.__dict__[x]
+  return f
+
 # find an appropriate rational class
 # (could also try "sympy.Rational", but not for speed)
 # be aware when using gmpy2.mpq:
@@ -4030,17 +4061,9 @@ def Rational(src=None, verbose=None):
         break
       except KeyError:
         pass
-      (mod, fn) = s.split('.', 1)
-      # Python3: could use importlib.util.find_spec() to see if the module exists
-      # and then importlib.util.module_from_spec() to load it
       try:
-        f = __import__(mod)
-      except ImportError:
-        continue
-      try:
-        for x in fn.split('.'):
-          f = f.__dict__[x]
-      except KeyError:
+        f = import_fn(s)
+      except (ImportError, KeyError):
         continue
       Rational.impl[s] = f
       if '*' not in Rational.impl and src == Rational.src: Rational.impl['*'] = (s, f)
@@ -11489,7 +11512,7 @@ def _enigma_help():
 
 # run doctests (-t)
 def _enigma_test(verbose=0):
-  import doctest
+  doctest = import_fn("doctest")
   print("[testing, testing ...]")
   r = doctest.testmod(enigma, verbose=verbose)
   printf("[testing complete]")
@@ -11503,12 +11526,8 @@ def __enigma_update(url, check=1, download=0, rename=0, verbose=1):
 
   if verbose > 1: printf("update: url = {url}")
 
-  if _python == 2:
-    # Python 2.x
-    from urllib2 import urlopen
-  else:
-    # Python 3.x
-    from urllib.request import urlopen
+  # import urlopen from the appropriate module
+  urlopen = import_fn(("urllib2" if _python == 2 else "urllib.request") + '.urlopen')
 
   # py-enigma-version.txt = "<version>[ <md5sum>]"
   if verbose > 1: printf("update: downloading [ {url}py-enigma-version.txt ] ...")
@@ -11526,7 +11545,7 @@ def __enigma_update(url, check=1, download=0, rename=0, verbose=1):
   if verbose > 0: printf("latest version is {v}")
 
   if (__version__ < v and not check) or download:
-    import hashlib
+    hashlib = import_fn("hashlib")
     h = hashlib.md5()
     name = v + '-enigma.py'
     if verbose > 0: printf("downloading latest version to \"{name}\"")
@@ -11556,7 +11575,7 @@ def __enigma_update(url, check=1, download=0, rename=0, verbose=1):
     if verbose > 0: print("enigma.py is up to date")
     if cksum:
       # verify checksum of local file matches
-      import hashlib
+      hashlib = import_fn("hashlib")
       h = hashlib.md5()
       with open(__file__, 'rb') as f:
         if verbose > 1: printf("update: verifying checksum for \"{__file__}\"")
