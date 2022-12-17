@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Dec 17 11:29:49 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Dec 17 23:34:06 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -212,7 +212,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-12-18"
+__version__ = "2022-12-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2982,7 +2982,8 @@ def _pythagorean_all(Z, order=0):
   else:
     # return the multiples with the primitives
     for (x, y, z) in _pythagorean_primitive(Z, order=0):
-      for k in irange(1, Z // z):
+      yield (x, y, z)
+      for k in irange(2, Z // z):
         yield (k * x, k * y, k * z)
 
 # generate pythagorean triples
@@ -3137,7 +3138,7 @@ def sqrt(a, b=None):
 
 # sq = lambda x: x * x
 def sq(x): "sq(x) = x**2"; return x * x
-def sumsq(*xs): "sumsq(xs) = sum(sq(x) for x in xs)"; return sum(x * x for x in xs)
+def sumsq(xs): "sumsq(xs) = sum(sq(x) for x in xs)"; return sum(x * x for x in xs)
 
 # calculate intf(sqrt(n))
 # (Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt()))
@@ -4009,17 +4010,18 @@ def ratio(*ns):
   g = mgcd(*ns)
   return (ns if g == 1 else tuple(v // g for v in ns))
 
-# import a function from a spec, e.g.:
+# import a value from a qualified spec, e.g.:
 #   Q = import_fn('fractions.Fraction')
 #   Q = import_fn('gmpy2.mpq')
 #   Q = import_fn('mpmath.rational.mpq')
 #   urlopen = import_fn('urllib2.urlopen')  # Python 2
 #   urlopen = import_fn('urllib.request.urlopen')  # Python 3
-# in Python 3 we could use importlib.import_module()
 def import_fn(spec):
-  if '.' not in spec: return __import__(spec)
+  # we could use importlib.import_module() here
+  importer = lambda x: __import__(x, fromlist=[''])
+  if '.' not in spec: return importer(spec)
   (mod, fn) = spec.rsplit('.', 1)
-  return getattr(__import__(mod, fromlist=['']), fn)
+  return getattr(importer(mod), fn)
 
 # find an appropriate rational class
 # (could also try "sympy.Rational", but not for speed)
