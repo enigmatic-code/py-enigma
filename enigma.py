@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Dec 17 10:07:31 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Dec 17 11:25:08 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -212,7 +212,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-12-16"
+__version__ = "2022-12-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4015,17 +4015,11 @@ def ratio(*ns):
 #   Q = import_fn('mpmath.rational.mpq')
 #   urlopen = import_fn('urllib2.urlopen')  # Python 2
 #   urlopen = import_fn('urllib.request.urlopen')  # Python 3
-# Python3: could use importlib.util.find_spec() to see if the module exists
-# and then importlib.util.module_from_spec() to load it
+# in Python 3 we could use importlib.import_module()
 def import_fn(spec):
-  if '.' not in spec:
-    mod = spec
-  else:
-    (mod, _) = spec.rsplit('.', 1)
-  f = __import__(mod)
-  for x in spec.split('.')[1:]:
-    f = f.__dict__[x]
-  return f
+  if '.' not in spec: return __import__(spec)
+  (mod, fn) = spec.rsplit('.', 1)
+  return getattr(__import__(mod, fromlist=['']), fn)
 
 # find an appropriate rational class
 # (could also try "sympy.Rational", but not for speed)
@@ -9129,11 +9123,7 @@ class SubstitutedExpression(object):
     timed=1 will time the evaluation.
 
     """
-
-    try:
-      import readline
-    except ImportError:
-      pass
+    catch(import_fn, "readline")
 
     v = (4 | 8 | 16)
     if timed: v |= 32
@@ -11265,9 +11255,9 @@ if 'i' in _PY_ENIGMA:
     if env:
       vs = update(vs, env)
 
-    import code
-    import readline
-    import rlcompleter
+    code = import_fn("code")
+    readline = import_fn("readline")
+    import_fn("rlcompleter")
     readline.parse_and_bind('tab: complete')
     code.interact(local=vs)
 
