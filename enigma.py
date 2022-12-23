@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Dec 17 23:34:06 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Dec 23 08:49:44 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -212,7 +212,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-12-19"
+__version__ = "2022-12-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -308,13 +308,14 @@ def static(**kw):
   return _inner
 
 # useful as a decorator for caching functions (@cached).
-# NOTE: functools.lru_cached() can be used as an alternative in Python 3.2 and later
 def cached(f):
   """
   return a cached version of function <f>.
 
   cache() is also available which will use Python's own function
   (functools.cache), if available, otherwise cached().
+
+  See also: functools.lru_cache() (Python 3.2+), functools.cache() (Python 3.9+).
   """
   c = dict()
   @functools.wraps(f)
@@ -1786,7 +1787,7 @@ def filter2(p, i, fn=list):
 
     (<values for which p is true>, <values for which p is false>)
 
-  which can calso be accessed from return value r as:
+  which can also be accessed from return value r as:
 
     r.true
     r.false
@@ -3141,12 +3142,13 @@ def sq(x): "sq(x) = x**2"; return x * x
 def sumsq(xs): "sumsq(xs) = sum(sq(x) for x in xs)"; return sum(x * x for x in xs)
 
 # calculate intf(sqrt(n))
-# (Python 3.8 has math.isqrt(), (and there is also gmpy2.isqrt()))
 @static(impl=getattr(math, 'isqrt', None))
 def isqrt(n):
   # type: (int) -> int | NoneType
   """
   calculate intf(sqrt(n)), for integers n.
+
+  See also: math.isqrt (Python 3.8+), gmpy2.isqrt().
 
   >>> isqrt(9)
   3
@@ -3470,7 +3472,6 @@ def repdigit(n, d=1, base=10):
   assert 0 <= d < base
   return d * ((base**n) - 1) // (base - 1)
 
-# (Python 3.8 has math.hypot)
 # Python 3.6: ...(*vs, root=math.sqrt)
 def hypot(*vs, **kw):
   """
@@ -3483,6 +3484,8 @@ def hypot(*vs, **kw):
 
   a keyword argument of 'root' may be specified to provide the
   function used to calculate the root of the sum of the squares.
+
+  See also: math.hypot() (Python 3.8+).
 
   >>> hypot(3, 4)
   5.0
@@ -3780,7 +3783,6 @@ def is_npalindrome(n, base=10):
   return a == b
 
 # originally called product(), but renamed to avoid name confusion with itertools.product()
-# (Python 3.8 has math.prod)
 def multiply(s, r=1, mod=None):
   """
   return the product of the numeric sequence <s>.
@@ -3789,6 +3791,8 @@ def multiply(s, r=1, mod=None):
   (and is the value returned when <s> is empty).
 
   if <mod> is specified, the result at each stage is calculate mod <mod>.
+
+  See also: math.prod() (Python 3.8+).
 
   >>> multiply(irange(1, 7))
   5040
@@ -3927,10 +3931,11 @@ def sqrtmod(a, m):
       if x > 0 and m > 2 * x: yield m - x
 
 # multiple GCD
-# from Python 3.9 math.gcd can take multiple arguments
 def mgcd(a, *rest):
   """
   GCD of multiple (two or more) integers.
+
+  See also: math.gcd() (Python 3.9+)
 
   >>> mgcd(123, 456)
   3
@@ -3944,10 +3949,11 @@ def mgcd(a, *rest):
   return reduce(gcd, rest, a)
 
 # multiple LCM
-# from Python 3.9 math.lcm can take multiple arguments
 def mlcm(a, *rest):
   """
   LCM of multiple (two or more) integers.
+
+  See also: math.lcm() (Python 3.9+)
 
   >>> mlcm(2, 3, 5, 9)
   90
@@ -4149,13 +4155,14 @@ def multinomial(ks, n=None):
   return factorial(n, *ks)
 
 
-# (Python 3.8 has math.perm)
 def nPr(n, r):
   """
   permutations functions: n P r.
 
   the number of ordered r-length selections from n elements
   (elements can only be used once).
+
+  See also: math.perm() (Python 3.8+).
 
   >>> nPr(10, 3)
   720
@@ -4167,13 +4174,14 @@ def nPr(n, r):
 
 P = nPr
 
-# (Python 3.8 has math.comb)
 def nCr(n, r):
   """
   combinatorial function: n C r.
 
   the number of unordered r-length selections from n elements
   (elements can only be used once).
+
+  See also: math.comb() (Python 3.8+).
 
   >>> nCr(10, 3)
   120
@@ -4819,7 +4827,6 @@ def grid_adjacency(n, m, deltas=None, include_adjacent=1, include_diagonal=0, in
 
 
 # cumulative sum
-# (see also itertools.accumulate() from Python 3.2)
 def csum(seq, s=0, fn=operator.add, empty=0):
   """
   generate cumulative partial sums from sequence <seq>.
@@ -4829,6 +4836,8 @@ def csum(seq, s=0, fn=operator.add, empty=0):
 
   if 'empty' is set to a true value then the initial value 's' will be
   initially returned.
+
+  See also: itertools.accumulate() (Python 3.2+).
 
   >>> list(csum(irange(1, 10)))
   [1, 3, 6, 10, 15, 21, 28, 36, 45, 55]
@@ -4857,7 +4866,6 @@ def cslice(seq, empty=0):
 
 
 # overlapping tuples from a sequence
-# (Python 3.10 has itertools.pairwise() [poorly named], which acts like tuples(seq, 2))
 def tuples(seq, n=2, circular=0, fn=tuple):
   """
   generate overlapping <n>-tuples from sequence <seq>.
@@ -4865,6 +4873,8 @@ def tuples(seq, n=2, circular=0, fn=tuple):
 
   if 'circular' is set to true, then values from the beginning of <seq>
   will be used to complete tuples when the end is reached.
+
+  See also: itertools.pairwise() (Python 3.10+).
 
   >>> list(tuples('ABCDE'))
   [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'E')]
