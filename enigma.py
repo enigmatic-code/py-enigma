@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec 26 22:10:13 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Dec 26 22:31:44 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -212,7 +212,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-12-24"
+__version__ = "2022-12-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -11424,7 +11424,6 @@ def run(cmd, *args, **kw):
         try:
           if timed: timed = Timer(name=timed)
           r = runpy.run_path(cmd, run_name=kw.get('run_name', '__main__'))
-          print([r])
           if timed: timed.report()
         finally:
           if saved: [_PY_ENIGMA] = saved
