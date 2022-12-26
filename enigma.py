@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec 26 21:44:06 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Dec 26 22:10:13 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -11409,11 +11409,11 @@ def run(cmd, *args, **kw):
   if os.path.isfile(cmd):
     if verbose: printf("run: attempting to run file \"{cmd}\"")
     if timed and not isinstance(timed, basestring): timed = os.path.basename(cmd)
-    if cmd.endswith(".run"):
+    if (not interp) and cmd.endswith(".run"):
       # *.run => treat it as a run file
       (cmd, args) = parsefile(cmd, args)
     else:
-      if any(cmd.endswith(x) for x in (".py", ".py2", ".py3")) and not interp:
+      if (not interp) and any(cmd.endswith(x) for x in (".py", ".py2", ".py3")):
         # use runpy for *.py
         import runpy
         get_argv(force=1, args=args)
@@ -11424,10 +11424,10 @@ def run(cmd, *args, **kw):
         try:
           if timed: timed = Timer(name=timed)
           r = runpy.run_path(cmd, run_name=kw.get('run_name', '__main__'))
+          print([r])
           if timed: timed.report()
         finally:
-          if saved:
-            [_PY_ENIGMA] = saved
+          if saved: [_PY_ENIGMA] = saved
         _run_exit = (0 if r else -1)
       else:
         import shlex
@@ -11459,8 +11459,7 @@ def run(cmd, *args, **kw):
           _run_exit = subprocess.call(cmd)
           if timed: timed.report()
         finally:
-          if saved:
-            [PY_ENIGMA] = saved
+          if saved: [PY_ENIGMA] = saved
       if verbose: printf("run: _run_exit = {_run_exit}")
       return
   else:
@@ -11482,9 +11481,12 @@ def run(cmd, *args, **kw):
         if timed: timed = Timer(name=timed)
         _run_exit = (fn(list(args)) or 0)
         if timed: timed.report()
+      except Exception as e:
+        printf("run: FAILURE in {cmd} ...\n\nException details:\n{e}\n")
+        _run_exit = -1
+        if timed: timed.report()
       finally:
-        if saved:
-          [_PY_ENIGMA] = saved
+        if saved: [_PY_ENIGMA] = saved
       if verbose: printf("run: _run_exit = {_run_exit}")
       return
     else:
