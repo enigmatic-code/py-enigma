@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Dec 29 09:46:29 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Dec 29 09:59:43 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -174,6 +174,8 @@ subsets, subseqs       - generate subsequences of an iterator
 substitute             - substitute symbols for digits in text
 substituted_expression - a substituted expression (alphametic/cryptarithm) solver
 substituted_sum        - a solver for substituted sums
+sum_of_squares         - decompose an integer into a sum of squares
+sumsq                  - calculate the sum of the squares of a sequence of values
 tau                    - tau(n) is the number of divisors of n
 timed                  - decorator for timing functions
 timer                  - a Timer object
@@ -212,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-12-27"
+__version__ = "2022-12-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7640,7 +7642,7 @@ def _replace_words(s, fn):
   return re.sub(r'{(\w+?)}', _fn, s)
 
 # local variable used to represent symbol x
-sym = lambda x: '_' + x
+_sym = lambda x: '_' + x
 
 # return an expression that evaluates word <w> in base <base>
 def _word(w, base):
@@ -7648,7 +7650,7 @@ def _word(w, base):
   for x in w[::-1]:
     d[x] = d.get(x, 0) + m
     m *= base
-  return join((concat((sym(k),) + (() if v == 1 else ('*', v))) for (k, v) in d.items()), sep=' + ')
+  return join((concat((_sym(k),) + (() if v == 1 else ('*', v))) for (k, v) in d.items()), sep=' + ')
 
 @static(i=0)
 def gensym(x):
@@ -8168,7 +8170,7 @@ class SubstitutedExpression(object):
 
     # generate the program (line by line)
     (prog, _, indent) = ([], "", "  ")
-    (vx, vy, vr) = ("_x_", "_y_", "_r_") # local variables (that don't clash with sym(x))
+    (vx, vy, vr) = ("_x_", "_y_", "_r_") # local variables (that don't clash with _sym(x))
 
     # start with any initialisation code
     if code:
@@ -8184,7 +8186,7 @@ class SubstitutedExpression(object):
     # set initial values
     done = set()
     for (s, d) in s2d.items():
-      prog.append(sprintf("{_}{s} = {d}", s=sym(s)))
+      prog.append(sprintf("{_}{s} = {d}", s=_sym(s)))
       done.add(s)
 
     # [denest] workaround statically nested block limit
@@ -8192,19 +8194,19 @@ class SubstitutedExpression(object):
       #  set other initial values and words to None
       for s in symbols:
         if s not in s2d:
-          prog.append(sprintf("{_}{s} = None", s=sym(s)))
+          prog.append(sprintf("{_}{s} = None", s=_sym(s)))
       for w in words:
-        prog.append(sprintf("{_}{w} = None", w=sym(w)))
+        prog.append(sprintf("{_}{w} = None", w=_sym(w)))
       # keep track of nested functions
       blocks = [ gensym('_substituted_expression_block') ]
       block = None
-      block_args = join(map(sym, chain(symbols, words)), sep=", ")
+      block_args = join(map(_sym, chain(symbols, words)), sep=", ")
       indent_reset = indent
 
     # look for words which can be made
     for w in words:
       if all(x in done for x in w):
-        prog.append(sprintf("{_}{w} = {x}", w=sym(w), x=_word(w, base)))
+        prog.append(sprintf("{_}{w} = {x}", w=_sym(w), x=_word(w, base)))
 
     in_loop = False
     # use_sets = 1 # using sets is slower
@@ -8226,7 +8228,7 @@ class SubstitutedExpression(object):
       if k == 3 and expr.endswith(':'):
         prog.append(sprintf("{_}for {vx} in {expr}")) # expr already has a colon
         _ += indent
-        #prog.append(sprintf("{_}{w} = {vx}", w=sym(val)))
+        #prog.append(sprintf("{_}{w} = {vx}", w=_sym(val)))
         done.update(xsyms)
 
       else:
@@ -8238,30 +8240,30 @@ class SubstitutedExpression(object):
           # allowable digits for s
           ds = valid[s]
           in_loop = True
-          prog.append(sprintf("{_}for {s} in {ds}:", s=sym(s)))
+          prog.append(sprintf("{_}for {s} in {ds}:", s=_sym(s)))
           _ += indent
           if done and s in distinct:
             # TODO: we should exclude initial values (that are excluded from ds) here
-            check = list(sym(x) for x in done if x in distinct[s])
+            check = list(_sym(x) for x in done if x in distinct[s])
             if check:
               #if use_sets:
               #  if len(check) == 1:
-              #    check = sym(s) + " != " + check[0]
+              #    check = _sym(s) + " != " + check[0]
               #  else:
-              #    check = sym(s) + " not in " + join(check, sep=", ", enc="{}")
+              #    check = _sym(s) + " not in " + join(check, sep=", ", enc="{}")
               #else:
-              check = join(((sym(s) + ' != ' + x) for x in check), sep=' and ')
+              check = join(((_sym(s) + ' != ' + x) for x in check), sep=' and ')
               prog.append(sprintf("{_}if {check}:"))
               _ += indent
           done.add(s)
           # look for words which can now be made
           for w in words:
             if s in w and all(x in done for x in w):
-              prog.append(sprintf("{_}{w} = {x}", w=sym(w), x=_word(w, base)))
+              prog.append(sprintf("{_}{w} = {x}", w=_sym(w), x=_word(w, base)))
 
       # calculate the expression
       if k != 0 and (not expr.endswith(':')): # (but not for the answer expression)
-        x = _replace_words(expr, (lambda w: '(' + sym(w) + ')'))
+        x = _replace_words(expr, (lambda w: '(' + _sym(w) + ')'))
         prog.append(sprintf("{_}try:"))
         prog.append(sprintf("{_}  {vx} = int({x})"))
         prog.append(sprintf("{_}except NameError:")) # catch undefined functions
@@ -8280,7 +8282,7 @@ class SubstitutedExpression(object):
             # this is a symbol with an assigned value
             prog.append(sprintf("{_}{vy} = {vx} % {base}"))
             # check the value
-            prog.append(sprintf("{_}if {vy} == {y}:", y=sym(y)))
+            prog.append(sprintf("{_}if {vy} == {y}:", y=_sym(y)))
             _ += indent
             prog.append(sprintf("{_}{vx} //= {base}"))
             # and check x == 0 for the final value
@@ -8289,22 +8291,22 @@ class SubstitutedExpression(object):
               _ += indent
           else:
             # this is a new symbol...
-            prog.append(sprintf("{_}{y} = {vx} % {base}", y=sym(y)))
+            prog.append(sprintf("{_}{y} = {vx} % {base}", y=_sym(y)))
             check = list()
             # check it is different from existing symbols
             if y in distinct:
-              check.extend(sym(x) for x in done if x in distinct[y])
+              check.extend(_sym(x) for x in done if x in distinct[y])
             # check any invalid values for this symbol
             for v in idigits.union(v for (s, v) in invalid if y == s):
               check.append(str(v))
             if check:
               #if use_sets:
               #  if len(check) == 1:
-              #    check = sym(y) + " != " + check[0]
+              #    check = _sym(y) + " != " + check[0]
               #  else:
-              #    check = sym(y) + " not in " + join(check, sep=", ", enc="{}")
+              #    check = _sym(y) + " not in " + join(check, sep=", ", enc="{}")
               #else:
-              check = join((sym(y) + " != " + x for x in check), sep=" and ")
+              check = join((_sym(y) + " != " + x for x in check), sep=" and ")
               prog.append(sprintf("{_}if {check}:"))
               _ += indent
             prog.append(sprintf("{_}{vx} //= {base}"))
@@ -8316,7 +8318,7 @@ class SubstitutedExpression(object):
             # look for words which can now be made
             for w in words:
               if y in w and all(x in done for x in w):
-                prog.append(sprintf("{_}{w} = {x}", w=sym(w), x=_word(w, base)))
+                prog.append(sprintf("{_}{w} = {x}", w=_sym(w), x=_word(w, base)))
 
       elif k == 1:
         # look for a True value
@@ -8355,10 +8357,10 @@ class SubstitutedExpression(object):
       _ += indent
 
     # yield solutions as dictionaries
-    d = join((("'" + s + "': " + sym(s)) for s in sorted(done)), sep=', ')
+    d = join((("'" + s + "': " + _sym(s)) for s in sorted(done)), sep=', ')
     if answer:
       # compute the answer
-      r = _replace_words(answer, (lambda w: '(' + sym(w) + ')'))
+      r = _replace_words(answer, (lambda w: '(' + _sym(w) + ')'))
       prog.append(sprintf("{_}{vr} = {r}"))
       prog.append(sprintf("{_}yield ({{ {d} }}, {vr})"))
     else:
