@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec 26 22:31:44 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Dec 29 09:46:29 2022 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -212,7 +212,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-12-25"
+__version__ = "2022-12-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3228,8 +3228,22 @@ def is_square_q(n, F=None):
   if q is None: return None
   return F(p, q)
 
-# return ordered k-tuples (a, b, ...) such that n = a^2 + b^2 + ...
 def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
+  """
+  return ordered k-sequences of non-negative integers (a, b, ...) such that:
+
+    n = a**2 + b**2 + ...
+
+  min_v - specifies the minimum allowable value in the returned sequences
+  sep - specified the minimum separation between values
+
+  >>> list(sum_of_squares(50, 2))
+  [[1, 7], [5, 5]]
+  >>> list(sum_of_squares(50, 2, sep=1))
+  [[1, 7]]
+  >>> list(sum_of_squares(637, 3))
+  [[0, 14, 21], [3, 12, 22], [5, 6, 24], [12, 13, 18]]
+  """
   if k == 1:
     r = is_square(n)
     if not (r is None or r < min_v):
