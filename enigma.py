@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Dec 29 09:59:43 2022 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jan  2 13:28:39 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-12-28"
+__version__ = "2022-12-30"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2438,7 +2438,7 @@ def factor(n, fn=prime_factor):
     factors.extend([p] * e)
   return factors
 
-# divsors are based on:
+# divsors (for non-negative integers) are based on:
 #
 #  (a, b) is a divisor pair of n iff: a, b in [0, n] and a.b = n
 #
@@ -2453,6 +2453,16 @@ def factor(n, fn=prime_factor):
 #  divisor pairs 2 = (1, 2); divisors 2 = (1, 2)
 #  divisor pairs 1 = (1, 1); divisors 1 = (1)
 #  divisor pairs 0 = (0, 0); divisors 0 = (0)
+
+# is <x> a divisor of <n>?
+def is_divisor(n, x, proper=0):
+  if x < 0 or x > n: return False
+  if n == 0: return (x == 0)
+  return (x > 0 and n % x == 0 and ((not proper) or x < n))
+
+# you can use the following to look for multiples
+# but note argument order is opposite of div()
+is_multiple = lambda n, x, proper=0: is_divisor(x, n, proper=proper)
 
 def divisor_pairs(n):
   """
@@ -3714,8 +3724,6 @@ def div(a, b):
   (d, r) = divmod(a, b)
   if r != 0: return None
   return d
-
-is_multiple = div
 
 def ediv(a, b):
   "return (a // b) if b exactly divides a, otherwise raise a ValueError."
