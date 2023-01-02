@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan  2 13:28:39 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jan  2 14:46:04 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2022-12-30"
+__version__ = "2023-01-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2456,8 +2456,26 @@ def factor(n, fn=prime_factor):
 
 # is <x> a divisor of <n>?
 def is_divisor(n, x, proper=0):
+  """
+  determine if <x> is a divisor of <n> (both are non-negative integers).
+
+  if 'proper' is set then the divisor <x> must be smaller than <n>.
+
+  >>> is_divisor(42, 7)
+  True
+  >>> is_divisor(43, 7)
+  False
+  >>> is_divisor(7, 7)
+  True
+  >>> is_divisor(7, 7, proper=1)
+  False
+  >>> is_divisor(1, 0)
+  False
+  >>> is_divisor(0, 0)
+  True
+  """
   if x < 0 or x > n: return False
-  if n == 0: return (x == 0)
+  if n == 0: return (not proper) and (x == 0)
   return (x > 0 and n % x == 0 and ((not proper) or x < n))
 
 # you can use the following to look for multiples
