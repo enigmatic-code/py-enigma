@@ -6,13 +6,13 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan  2 14:46:04 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jan  7 00:09:09 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
 # URI:          http://www.magwag.plus.com/jim/enigma.html
 #
-# (c) Copyright 2009-2022, Jim Randell, all rights reserved.
+# (c) Copyright 2009-2023, Jim Randell, all rights reserved.
 #
 ###############################################################################
 # -*- mode: Python; python-indent-offset: 2; -*-
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-01"
+__version__ = "2023-01-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -250,6 +250,7 @@ elif _pythonv[0] > 2:
   reduce = functools.reduce
   basestring = str
   raw_input = input
+  # call(<function>, <sequence of args>, [<dict of keywords>])
   call = lambda fn, args=(), kw=dict(): fn(*args, **kw)
   if _pythonv > (3, 6):
     # Python 3.7 onwards
@@ -1773,7 +1774,6 @@ _subsets_init()
 powerset = subsets
 subseqs = subsets
 
-
 # like filter() but also returns the elements that don't satisfy the predicate
 # see also partition() recipe from itertools documentation
 # (but note that itertools.partition() returns (false, true) lists)
@@ -1972,7 +1972,7 @@ def cproduct(ss, **kw):
   >>> set(cproduct(chunk(irange(1, 4), 2))) == {(1, 3), (1, 4), (2, 3), (2, 4)}
   True
   """
-  return itertools.product(*ss, **kw)
+  return itertools.product(*ss, **kw)  # = call(itertools.product, ss, kw)
 
 # here's workaround for more complicated parameter unpacking in Python 3
 #
@@ -2478,9 +2478,9 @@ def is_divisor(n, x, proper=0):
   if n == 0: return (not proper) and (x == 0)
   return (x > 0 and n % x == 0 and ((not proper) or x < n))
 
-# you can use the following to look for multiples
-# but note argument order is opposite of div()
-is_multiple = lambda n, x, proper=0: is_divisor(x, n, proper=proper)
+# you can use the following to look for multiples but note argument order is opposite of div()
+# and this will only work for multiples from 1 upwards (or from 2 if 'proper' is set)
+#is_multiple = lambda n, x, proper=0: is_divisor(x, n, proper=proper)
 
 def divisor_pairs(n):
   """
@@ -3675,7 +3675,7 @@ def divf(a, b):
 
 def floor(x, m=1):
   """
-  return largest multiple of m, not greater than x
+  return largest multiple of <m>, not greater than <x>.
   """
   # [[ m is 1 ]] gives a SyntaxWarning
   if m == 1: return intf(x)
@@ -3722,7 +3722,7 @@ def divr(a, b):
 
 def ceil(x, m=1):
   """
-  return lowest multiple of m, not less than x
+  return lowest multiple of <m>, not less than <x>
   """
   if m == 1: return intc(x)
   return m * -int(-x // m)
@@ -4082,7 +4082,7 @@ def import_fn(spec):
 #   >> x = mpq(64)
 #   >> y = x / 2
 # if fix_gmpy2=1 is set, a workaround will be used
-@static(src="gmpy2.mpq gmpy.mpq fractions.Fraction", impl=dict(), fix_gmpy2=1)
+@static(src="gmpy2.mpq gmpy.mpq fractions.Fraction", impl=dict(), fix_gmpy2=None)
 def Rational(src=None, verbose=None):
   """
   select a class for representing rational numbers.
@@ -4111,13 +4111,15 @@ def Rational(src=None, verbose=None):
         continue
       Rational.impl[s] = f
       if '*' not in Rational.impl and src == Rational.src: Rational.impl['*'] = (s, f)
-      # if gmpy2 is fixed we could remove the autofix with something like ...
-      #if s == 'gmpy2.mpq' and t.version() > '2.1.2': Rational.fix_gmpy2 = 0
+      # gmpy2 is fixed in v2.1.5+
+      if s == 'gmpy2.mpq' and Rational.fix_gmpy2 is None: Rational.fix_gmpy2 = (not catch(require, "gmpy2.version", "2.1.4"))
       break
   if verbose is None: verbose = ('v' in _PY_ENIGMA)
   if verbose: printf("[Rational: using {s}]", s=(s if f else f))
   # fix for gmpy2.mpq() behaviour (issue #334) - may be fixed in gmpy2.version() > 2.1.2
-  if Rational.fix_gmpy2 and s == 'gmpy2.mpq': f = (lambda x, y=None, fn=f: (fn(x) if y is None else fn(x) / y))
+  if Rational.fix_gmpy2 and s == 'gmpy2.mpq':
+    if verbose: printf("[Rational: applying fix for {s}]")
+    f = (lambda x, y=None, fn=f: (fn(x) if y is None else fn(x) / y))
   return f
 
 # create a function that will calculate a/b, and return an int if the result is an integer
@@ -11238,26 +11240,29 @@ matrix = make_namespace('matrix', __matrix())
 
 # some handy development routines
 
+# compare version numbers (numeric components separated by non-numeric components)
+def compare_versions(x, y):
+  args = list()
+  for s in (x, y):
+    s = s.split(None, 1)[0]
+    args.append(tuple(map(int, re.split(r'[^\d]+', s))))
+  return compare(*args)
+
 # require version to be at least specified value
 # e.g.:
 #   require("enigma.version", "2022-12-05")
 #
-# currently this won't work:
-#   require("sys.version", "3.10")
-# as '3.7' > '3.10'
-# maybe there is a cmp function in the standard library that works on Python versions?
-# or use:
-#   require("sys.version_info", (3, 10))
-def require(key, value, cmp=compare):
+# this works for versions with numeric components separated by non-numeric components
+# so: require("sys.version", "3.10") will work on Python 3.9
+def require(key, value, cmp=compare_versions):
   (mod, k) = key.split('.')
   try:
     v = getattr(sys.modules[mod], k)
     if callable(v): v = v()
   except (KeyError, AttributeError, ValueError):
     raise ValueError(sprintf("unable to extract \"{key}\""))
-  if cmp(v, value) < 0: raise ValueError(sprintf("version mismatch \"{key}\" = \"{v}\"; require >= \"{value}\""))
+  if cmp(v, value) < 0: raise ValueError(sprintf("version mismatch \"{key}\" = {v!r}; require >= {value!r}"))
   return v
-
 
 # this looks for a "STOP" file, and if present removes it and returns True
 def stop(files=None, files_extra=None, use_exit=0, verbose=1):
