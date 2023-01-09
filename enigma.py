@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jan  7 00:09:09 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jan  9 15:00:16 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-05"
+__version__ = "2023-01-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4081,7 +4081,7 @@ def import_fn(spec):
 # instead do this:
 #   >> x = mpq(64)
 #   >> y = x / 2
-# if fix_gmpy2=1 is set, a workaround will be used
+# if fix_gmpy2=1 is set, a workaround will be used for gmpy2 < 2.1.4
 @static(src="gmpy2.mpq gmpy.mpq fractions.Fraction", impl=dict(), fix_gmpy2=None)
 def Rational(src=None, verbose=None):
   """
@@ -4110,9 +4110,11 @@ def Rational(src=None, verbose=None):
       except (ImportError, KeyError):
         continue
       Rational.impl[s] = f
-      if '*' not in Rational.impl and src == Rational.src: Rational.impl['*'] = (s, f)
-      # gmpy2 is fixed in v2.1.5+
-      if s == 'gmpy2.mpq' and Rational.fix_gmpy2 is None: Rational.fix_gmpy2 = (not catch(require, "gmpy2.version", "2.1.4"))
+      if '*' not in Rational.impl and src == Rational.src:
+        Rational.impl['*'] = (s, f)
+      # gmpy2 is fixed in v2.1.4+
+      if s == 'gmpy2.mpq' and Rational.fix_gmpy2 is None:
+        Rational.fix_gmpy2 = (not catch(require, "gmpy2.version", "2.1.4"))
       break
   if verbose is None: verbose = ('v' in _PY_ENIGMA)
   if verbose: printf("[Rational: using {s}]", s=(s if f else f))
