@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan  9 15:00:16 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jan 11 10:39:44 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-06"
+__version__ = "2023-01-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -674,11 +674,14 @@ def ordered(*args, **kw):
   """
   return tuple(sorted(args, **kw))
 
-# I would prefer join() to be a method of sequences: s.join(sep='')
+# I would prefer join() to be a method of sequences: seq.join(sep='')
+# or a string constructor: str.from_seq(seq, sep='') or just str.join(seq, sep='')
 # but for now we define a utility function
 def join(seq, sep='', enc=''):
   """
-  join the items in sequence <seq> as strings, separated by separator <sep>.
+  construct a string by joining the items in sequence <seq> as
+  strings, separated by separator <sep>, and enclosed by the pair
+  <enc>.
 
   the default separator is the empty string so you can just use:
 
@@ -694,6 +697,7 @@ def join(seq, sep='', enc=''):
   '{a,b,cd}'
   >>> join([5, 700, 5])
   '57005'
+
   """
   r = str.join(sep, (str(x) for x in seq))
   if enc: r = enc[0] + r + enc[1]
@@ -4560,7 +4564,7 @@ def irange(a, b=None, step=1):
   0 and (n - 1) are used. (so irange(n) produces n integers from 0 to n - 1).
 
   if <b> is specified as inf (or -inf for negative steps) the iterator
-  generate will values indefinitely.
+  will generate values indefinitely.
 
   Python's standard range iterator is available as xrange() if you
   want to emphasise the exclusion of the final endpoint.
@@ -4950,8 +4954,8 @@ def tuples(seq, n=2, circular=0, fn=tuple):
       # return the tuple
       yield fn(t)
       # move the next value in to the tuple
-      t.pop(0)
       t.append(next(i))
+      t.pop(0)
   except StopIteration:
     return
 
