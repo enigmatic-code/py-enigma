@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jan 11 10:39:44 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jan 12 10:35:35 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-09"
+__version__ = "2023-01-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -315,19 +315,21 @@ def cached(f):
   """
   return a cached version of function <f>.
 
+  the cache can be accessed as attribute 'cache' on function <f>.
+
   cache() is also available which will use Python's own function
   (functools.cache), if available, otherwise cached().
 
   See also: functools.lru_cache() (Python 3.2+), functools.cache() (Python 3.9+).
   """
-  c = dict()
+  f.cache = cache = dict()
   @functools.wraps(f)
   def _inner(*k):
     try:
-      #if k in c: printf("[{f.__name__}: cache hit, {k}")
-      return c[k]
+      #if k in cache: printf("[{f.__name__}: cache hit, {k}")
+      return cache[k]
     except KeyError:
-      r = c[k] = f(*k)
+      r = cache[k] = f(*k)
       #printf("[{f.__name__}: {k} -> {r}]")
       return r
   return _inner
