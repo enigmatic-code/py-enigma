@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jan 20 08:40:28 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jan 20 17:53:01 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-18"
+__version__ = "2023-01-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4253,6 +4253,8 @@ def M(n, k):
   the number of unordered k-length selections from n elements where
   elements may be chosen multiple times.
 
+  M(n, k) = icount(subsets(irange(1, n), size=k, select='R'))
+
   >>> M(10, 3)
   220
   """
@@ -6595,6 +6597,7 @@ class Polynomial(list):
     return hash(tuple(self))
 
   def __add__(self, other):
+    if not isinstance(other, Polynomial): other = Polynomial([other])
     return self.__class__(poly_add(self, other))
 
   def __mul__(self, other):
@@ -6612,6 +6615,7 @@ class Polynomial(list):
     return self.__class__(poly_pow(self, n))
 
   def __sub__(self, other):
+    if not isinstance(other, Polynomial): other = Polynomial([other])
     return self.__class__(poly_sub(self, other))
 
   __call__ = poly_value
