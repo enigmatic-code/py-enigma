@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jan 12 10:35:35 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jan 20 08:40:28 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-10"
+__version__ = "2023-01-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1016,7 +1016,7 @@ def rotate(s, k=1):
   >>> rotate([1, 2, 3, 4], -1)
   [4, 1, 2, 3]
   """
-  return s[k:] + s[:k]
+  return (s if k == 0 else s[k:] + s[:k])
 
 # or you can use itertools.izip_longest(*[iter(l)]*n) for padded chunks
 def chunk(seq, n=2, pad=0, value=None, fn=tuple):
@@ -4560,15 +4560,18 @@ def catch(fn, *args, **kw):
 @static(inf=inf) # so b=irange.inf can be used
 def irange(a, b=None, step=1):
   """
+  irange(a, b) =
   a range iterator that includes both integer endpoints, <a> and <b>.
-
-  if only one value <n> is specified for the endpoints, then endpoints of
-  0 and (n - 1) are used. (so irange(n) produces n integers from 0 to n - 1).
 
   if <b> is specified as inf (or -inf for negative steps) the iterator
   will generate values indefinitely.
 
-  Python's standard range iterator is available as xrange() if you
+  irange(n) =
+  if only one value <n> is specified for the endpoints, then endpoints
+  of 0 and (n - 1) are used (these are swapped if <step> is
+  negative), so that irange(n) produces n integers from 0 to n - 1.
+
+  Note: Python's standard range iterator is available as xrange() if you
   want to emphasise the exclusion of the final endpoint.
 
   >>> list(irange(1, 9))
@@ -4581,6 +4584,7 @@ def irange(a, b=None, step=1):
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
   >>> list(irange(10, step=-1))
   [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+
   """
   if step == 0: raise ValueError("irange: step cannot be 0")
   if b == inf:
