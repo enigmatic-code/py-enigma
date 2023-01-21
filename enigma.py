@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jan 20 17:53:01 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jan 21 00:22:41 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-19"
+__version__ = "2023-01-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6365,7 +6365,7 @@ def poly_compose(p, q):
   return r
 
 # print a polynomial in a more friendly form
-def poly_print(p):
+def poly_print(p, var='x'):
   r = list()
   for (e, c) in enumerate(p):
     if c == 0: continue
@@ -6375,9 +6375,9 @@ def poly_print(p):
     if e == 0:
       pass
     elif e == 1:
-      s = s + 'x'
+      s = s + var
     else:
-      s = s + 'x^' + str(e)
+      s = s + var + '^' + str(e)
     r.append(s)
   return join(r[::-1], sep=" ") or "(0)"
 
@@ -6590,8 +6590,11 @@ def poly_cyclotomic(n, fs=None, div=rdiv, fn=prime_factor):
 
 class Polynomial(list):
 
-  def __repr__(self):
-    return self.__class__.__name__ + "[" + poly_print(self) + "]"
+  def __repr__(self, var='x'):
+    return self.__class__.__name__ + "[" + poly_print(self, var=var) + "]"
+
+  def print(self, var='x'):
+    return poly_print(self, var=var)
 
   def __hash__(self):
     return hash(tuple(self))
@@ -6599,6 +6602,9 @@ class Polynomial(list):
   def __add__(self, other):
     if not isinstance(other, Polynomial): other = Polynomial([other])
     return self.__class__(poly_add(self, other))
+
+  def __iadd__(self, other):
+    return self + other
 
   def __mul__(self, other):
     if isinstance(other, Polynomial):
@@ -6685,6 +6691,10 @@ class Polynomial(list):
   @classmethod
   def zero(cls):
     return cls(poly_zero)
+
+  @classmethod
+  def sum(cls, *ps):
+    return cls(poly_sum(*ps))
 
   @classmethod
   def multiply(cls, *ps):
