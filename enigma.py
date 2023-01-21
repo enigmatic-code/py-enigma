@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jan 21 00:22:41 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jan 21 09:38:38 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-20"
+__version__ = "2023-01-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6435,6 +6435,8 @@ def poly_rational_roots(p, domain="Q", include="+-0", F=None):
   """
   find rational roots for the polynomial p (with rational coefficients).
 
+  returns rational values x, such that: p(x) = 0
+
   the type of roots returned can be controlled with the 'domain' and
   'include' parameters:
 
@@ -6663,8 +6665,9 @@ class Polynomial(list):
   def integral(self, c=0, div=rdiv):
     return self.__class__(poly_integral(self, c=c, div=div))
 
-  def rational_roots(self, domain="Q", include="+-0", F=None):
-    return poly_rational_roots(self, domain=domain, include=include, F=F)
+  def rational_roots(self, v=0, domain="Q", include="+-0", F=None):
+    p = (self - v if v else self)
+    return poly_rational_roots(p, domain=domain, include=include, F=F)
 
   def divmod(self, q, div=rdiv):
     (d, r) = poly_divmod(self, q, div=div)
