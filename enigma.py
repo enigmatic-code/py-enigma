@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jan 21 09:38:38 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jan 22 11:49:39 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-21"
+__version__ = "2023-01-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6604,6 +6604,8 @@ class Polynomial(list):
   def __add__(self, other):
     if not isinstance(other, Polynomial): other = Polynomial([other])
     return self.__class__(poly_add(self, other))
+
+  __radd__ = __add__
 
   def __iadd__(self, other):
     return self + other
