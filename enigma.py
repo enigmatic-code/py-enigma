@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jan 22 11:49:39 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jan 22 11:59:04 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -6618,6 +6618,8 @@ class Polynomial(list):
       # multiply coefficients
       return self.__class__(other * c for c in self)
 
+  __rmul__ = __mul__
+
   def __neg__(self):
     return self.__class__(poly_neg(self))
 
@@ -6627,6 +6629,8 @@ class Polynomial(list):
   def __sub__(self, other):
     if not isinstance(other, Polynomial): other = Polynomial([other])
     return self.__class__(poly_sub(self, other))
+
+  __rsub__ = lambda self, other: -self + other
 
   __call__ = poly_value
 
