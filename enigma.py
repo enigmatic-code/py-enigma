@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jan 22 11:59:04 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jan 22 19:09:45 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-22"
+__version__ = "2023-01-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6304,7 +6304,7 @@ poly_zero = [0]
 poly_unit = [1]
 
 # multiply any number of polynomials
-def poly_multiply(*ps):
+def poly_multiply(ps):
   r = poly_unit
   for p in ps:
     r = poly_mul(r, p)
@@ -6325,7 +6325,7 @@ def poly_add(p, q):
   return poly_from_pairs(enumerate(p), list(q))
 
 # add any number of polynomials
-def poly_sum(*ps):
+def poly_sum(ps):
   r = poly_zero
   for p in ps:
     r = poly_add(r, p)
@@ -6360,8 +6360,11 @@ def poly_divmod(p, q, div=rdiv):
 # compose two polynomials: compose(p, q)(x) = p(q(x))
 def poly_compose(p, q):
   r = poly_zero
+  m = poly_unit
   for (i, a) in enumerate(p):
-    r = poly_sum(r, a * poly_pow(q, i))
+    if a:
+      r = poly_add(r, list(a * c for c in m))
+    m = poly_mul(m, q)
   return r
 
 # print a polynomial in a more friendly form
@@ -6605,6 +6608,7 @@ class Polynomial(list):
     if not isinstance(other, Polynomial): other = Polynomial([other])
     return self.__class__(poly_add(self, other))
 
+  # this allows: <non-poly> + <poly> (e.g. 3 + p)
   __radd__ = __add__
 
   def __iadd__(self, other):
@@ -6618,6 +6622,7 @@ class Polynomial(list):
       # multiply coefficients
       return self.__class__(other * c for c in self)
 
+  # this allows: <non-poly> * <poly> (e.g. 3 * p)
   __rmul__ = __mul__
 
   def __neg__(self):
@@ -6630,6 +6635,7 @@ class Polynomial(list):
     if not isinstance(other, Polynomial): other = Polynomial([other])
     return self.__class__(poly_sub(self, other))
 
+  # this allows: <non-poly> - <poly> (e.g. 3 - p)
   __rsub__ = lambda self, other: -self + other
 
   __call__ = poly_value
@@ -6701,13 +6707,14 @@ class Polynomial(list):
   def zero(cls):
     return cls(poly_zero)
 
+  # you can use sum() directly, or use this ...
   @classmethod
-  def sum(cls, *ps):
-    return cls(poly_sum(*ps))
+  def sum(cls, ps):
+    return cls(poly_sum(ps))
 
   @classmethod
-  def multiply(cls, *ps):
-    return cls(poly_multiply(*ps))
+  def multiply(cls, ps):
+    return cls(poly_multiply(ps))
 
   @classmethod
   def interpolate(cls, ps, F=None):
