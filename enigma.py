@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jan 22 19:09:45 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jan 25 22:15:30 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-23"
+__version__ = "2023-01-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3581,12 +3581,13 @@ def quadratic(a, b, c, domain="Q", F=None):
   >>> sorted(quadratic(1, 1, -6, domain="Z"))
   [-3, 2]
   """
-  assert domain in "CFQZ"
+  assert domain in "CFQZ", sprintf("quadratic: invalid domain '{domain}'")
 
   if a == 0:
     # linear equation
     assert b != 0
-    return _roots(domain, (-c, b))
+    if F is None: F = (Rational() if domain in 'QZ' else (complex if domain == 'C' else float))
+    return _roots(domain, F, (-c, b))
 
   # discriminant
   D = b * b - 4 * a * c
@@ -6303,7 +6304,7 @@ def poly_mul(p, q):
 poly_zero = [0]
 poly_unit = [1]
 
-# multiply any number of polynomials
+# multiply a sequence of polynomials
 def poly_multiply(ps):
   r = poly_unit
   for p in ps:
@@ -6324,7 +6325,7 @@ def poly_pow(p, n):
 def poly_add(p, q):
   return poly_from_pairs(enumerate(p), list(q))
 
-# add any number of polynomials
+# add a sequence of polynomials
 def poly_sum(ps):
   r = poly_zero
   for p in ps:
@@ -6707,7 +6708,8 @@ class Polynomial(list):
   def zero(cls):
     return cls(poly_zero)
 
-  # you can use sum() directly, or use this ...
+  # sum() is only documented for "numeric" values (although it works)
+  # but you can use this instead...
   @classmethod
   def sum(cls, ps):
     return cls(poly_sum(ps))
