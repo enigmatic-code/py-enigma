@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jan 26 12:42:06 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jan 26 16:25:31 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-25"
+__version__ = "2023-01-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -11603,7 +11603,8 @@ def _enigma_help():
   print('  <class> <args> = run run_command_line(<args>) method on class')
   print('  [-r[t] | --run[:timed]] <file> [<additional-args>] = run the solver and args specified in <file>')
   print('  -t[v] = run tests [v = verbose]')
-  print('  -u[cdr] = check for updates [c = only check, d = always download, r = rename after download]')
+  print('  -u[cdr[v]] = check for updates [c = only check, d = always download, r = rename after download, v = verbose]')
+  print('  -p[ru[v]] = use pip for updates [r = show requirements, u = install/update, v = verbose]')
   print('  -h = this help')
 
 
@@ -11685,7 +11686,8 @@ def __enigma_update(url, check=1, download=0, rename=0, verbose=1):
       else:
         printf("WARNING: checksum mismatch for \"{__file__}\"")
 
-@static(url='https://raw.githubusercontent.com/enigmatic-code/py-enigma/master/') # was: @static(url='http://www.magwag.plus.com/jim/')
+@static(url='https://raw.githubusercontent.com/enigmatic-code/py-enigma/master/')
+# was: @static(url='http://www.magwag.plus.com/jim/')
 def _enigma_update(url=None, check=1, download=0, rename=0, quiet=0, verbose=0):
   """
   check enigma.py version, and download the latest version if
@@ -11714,6 +11716,29 @@ def _enigma_update(url=None, check=1, download=0, rename=0, quiet=0, verbose=0):
     print(e)
     printf("ERROR: failed to download update from {_enigma_update.url}")
 
+# interaction with pip (if installed)
+@static(
+  req="enigma @ git+https://github.com/enigmatic-code/py-enigma",
+  ver='2.7.' + join(x for x in __version__ if x.isdigit()),
+)
+def _enigma_pip(requirements=0, update=0, verbose=0):
+  req = _enigma_pip.req
+
+  # output requirements for enigma.py
+  if requirements:
+    printf()
+    if verbose: printf("# install enigma.py from GitHub")
+    printf("{req}")
+    printf()
+    return
+
+  # update enigma.py using pip
+  if update:
+    import subprocess
+    cmd = [sys.executable, '-m', 'pip', 'install', '-U', req]
+    if verbose: printf(">>> {cmd}", cmd=join(cmd, sep=' '))
+    subprocess.call(cmd)
+    return
 
 __doc__ += """
 
@@ -11721,7 +11746,7 @@ COMMAND LINE USAGE:
 
 enigma.py has the following command-line usage:
 
-  python enigma.py
+  % python3 enigma.py
 
     The reports the current version of the enigma.py module, and the
     current python version:
@@ -11733,7 +11758,7 @@ enigma.py has the following command-line usage:
       [enigma.py version {version} (Python {python3})]
 
 
-  python enigma.py -t[v]
+  % python3 enigma.py -t[v]
 
     This will use the doctest module to run the example code given in
     the documentation strings.
@@ -11750,7 +11775,7 @@ enigma.py has the following command-line usage:
     of the tests will be provided.
 
 
-  python enigma.py -u[cdr]
+  % python3 enigma.py -u[cdr[v]]
 
     The enigma.py module can be used to check for updates. Running
     with the -u flag will check if there is a new version of the
@@ -11759,8 +11784,8 @@ enigma.py has the following command-line usage:
 
     If the module can be updated you will see something like this:
 
-      % python enigma.py -ur
-      [enigma.py version 2013-09-10 (Python {python})]
+      % python3 enigma.py -ur
+      [enigma.py version 2013-09-10 (Python {python3})]
       checking for updates...
       latest version is {version}
       downloading latest version to "{version}-enigma.py"
@@ -11777,8 +11802,8 @@ enigma.py has the following command-line usage:
     If you are running the latest version you will see something like
     this:
 
-      % python enigma.py -u
-      [enigma.py version {version} (Python {python})]
+      % python3 enigma.py -u
+      [enigma.py version {version} (Python {python3})]
       checking for updates...
       latest version is {version}
       enigma.py is up to date
@@ -11790,23 +11815,49 @@ enigma.py has the following command-line usage:
     downloaded.
 
 
-  python enigma.py -h
+  % python3 -m enigma -p[ru[v]]
+
+    This provides integration with Python's pip package manager, to
+    allow installing/updating enigma.py via pip directly from GitHub
+    (so you will also need git installed), and you will probably want
+    to use "-m enigma" on the command line (once it is installed)
+    rather than the path of the enigma.py file.
+
+    The -r command will output an entry suitable for incorporation
+    into a requirements.txt file:
+
+      % python3 -m enigma -pr
+      [enigma.py version {version} (Python {python3})]
+
+      enigma @ git+https://github.com/enigmatic-code/py-enigma
+
+    The -u flag will use pip to install/upgrade enigma.py:
+
+      % python3 -m enigma -pu
+      [enigma.py version {version} (Python {python3})]
+      Collecting enigma @ git+https://github.com/enigmatic-code/py-enigma
+      ...
+      Successfully installed enigma-{pip_version}
+
+
+  % python3 enigma.py -h
 
     Provides a quick summary of the command line usage:
 
-      % python enigma.py -h
-      [enigma.py version {version} (Python {python})]
+      % python3 enigma.py -h
+      [enigma.py version {version} (Python {python3})]
       command line arguments:
         <class> <args> = run run_command_line(<args>) method on class
         [-r | --run] <file> [<additional-args>] = run the solver and args specified in <file>
         -t[v] = run tests [v = verbose]
-        -u[cdr] = check for updates [c = only check, d = always download, r = rename]
+        -u[cdr[v]] = check for updates [c = only check, d = always download, r = rename, v = verbose]
+        -p[ru[v]] = use pip for updates [r = show requirements, u = install/update, v = verbose]
         -h = this help
 
   Solvers that support the run_command_line() class method can be invoked
   directly from the command line like this:
 
-  python enigma.py <class> <args> ...
+    python3 enigma.py <class> <args> ...
 
     Supported solvers are:
       SubstitutedSum
@@ -11816,14 +11867,14 @@ enigma.py has the following command-line usage:
 
     For example, Enigma 327 can be solved using:
 
-    % python enigma.py SubstitutedSum "KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE"
+    % python3 enigma.py SubstitutedSum "KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE"
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
 
     Enigma 440 can be solved using:
 
-    % python enigma.py SubstitutedDivision "????? / ?x = ??x" "??? - ?? = ?" "" "??? - ??x = 0"
+    % python3 enigma.py SubstitutedDivision "????? / ?x = ??x" "??? - ?? = ?" "" "??? - ??x = 0"
     ????? / ?x = ??x (rem 0) [??? - ?? = ?, None, ??? - ??x = 0]
     10176 / 96 = 106 (rem 0) [101 - 96 = 5, None, 576 - 576 = 0] / x=6
     [1 solution]
@@ -11831,7 +11882,7 @@ enigma.py has the following command-line usage:
 
     Enigma 1530 can be solved using:
 
-    % python enigma.py SubstitutedExpression "TOM * 13 = DALEY"
+    % python3 enigma.py SubstitutedExpression "TOM * 13 = DALEY"
     (TOM * 13 == DALEY)
     (796 * 13 == 10348) / A=0 D=1 E=4 L=3 M=6 O=9 T=7 Y=8
     [1 solution]
@@ -11840,11 +11891,14 @@ enigma.py has the following command-line usage:
     Alternatively the arguments to enigma.py can be placed in a text file
     and then executed with the --run / -r command, for example:
 
-    % python enigma.py --run enigma327.run
+    % python3 enigma.py --run enigma327.run
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
-""".format(version=__version__, python='2.7.18', python3='3.11.1')
+""".format(
+  version=__version__, python='2.7.18', python3='3.11.1',
+  pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
+)
 
 def _enigma_main(args=None):
   if args is None: args=argv()
@@ -11879,8 +11933,14 @@ def _enigma_main(args=None):
   # -ud => always download latest version
   # -u[d]r => replace enigma.py with downloaded file
   if 'u' in args:
-    kw = dict((w, w[0] in args['u']) for w in ('check', 'download', 'rename', 'quiet', 'verbose'))
+    kw = dict((w, w[0] in args['u']) for w in ['check', 'download', 'rename', 'quiet', 'verbose'])
     _enigma_update(**kw)
+
+  # -p = install enigma.py via pip
+  # -pr => output requirements.txt entry
+  if 'p' in args:
+    kw = dict((w, w[0] in args['p']) for w in ['requirements', 'update', 'verbose'])
+    _enigma_pip(**kw)
 
 def _namecheck(name, verbose=0):
   if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
