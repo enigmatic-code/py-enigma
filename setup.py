@@ -1,32 +1,41 @@
 # this file allows enigma.py to be installed directly from GitHub
 #
-# using pip:
+#
+# [install using pip and requirements.txt]
+# add the following line to a requirements.txt file:
 # --
-# pip3 install "enigma @ git+https://github.com/enigmatic-code/py-enigma"
+# enigma @ git+https://github.com/enigmatic-code/py-enigma
+# --
+# and then run the following command to install or upgrade:
+# --
+# % python3 -m pip install -U -r requirements.txt enigma
 # --
 #
-# using Poetry, add the following in pyproject.toml file:
+#
+# [install/upgrade directly using pip (with git)]
+# --
+# % python3 -m pip install -U "enigma @ git+https://github.com/enigmatic-code/py-enigma"
+# --
+#
+#
+# [install/upgrade directly using pip (without git)]
+# --
+# % python3 -m pip install -U "enigma @ https://github.com/enigmatic-code/py-enigma/tarball/master"
+# --
+#
+#
+# [using Poetry]
+# add the following in pyproject.toml file:
 # --
 # [tool.poetry.dependencies.enigma]
 # git = "https://github.com/enigmatic-code/py-enigma.git"
-# --
-#
-#
-# [[[
-# Formerly adding this to requirements.txt worked:
-# --
-# git+https://github.com/enigmatic-code/py-enigma.git#egg=enigma
-# --
-# but not any more.
-# ]]]
 
 from setuptools import setup
 
-# minimal setup config
 setup(
   name='enigma',
-  version='2.7.20230124',
-  description='Useful routines for solving Enigma (and other) puzzles',
+  version='2.7.20230125',
+  description='Useful routines for solving New Scientist Enigma (and other) puzzles',
   author='Jim Randell',
   author_email='jim.randell@gmail.com',
   url='http://www.magwag.plus.com/jim/enigma.html',
