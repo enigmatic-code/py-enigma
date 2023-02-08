@@ -6,21 +6,21 @@
 # --
 # enigma @ git+https://github.com/enigmatic-code/py-enigma
 # --
-# and then run the following command to install or upgrade:
+# and then run the following command to install/upgrade:
 # --
-# % python3 -m pip install -U -r requirements.txt enigma
+# % pip3 install -U -r requirements.txt
 # --
 #
 #
 # [install/upgrade directly using pip (with git)]
 # --
-# % python3 -m pip install -U "enigma @ git+https://github.com/enigmatic-code/py-enigma"
+# % pip3 install -U "enigma @ git+https://github.com/enigmatic-code/py-enigma"
 # --
 #
 #
 # [install/upgrade directly using pip (without git)]
 # --
-# % python3 -m pip install -U "enigma @ https://github.com/enigmatic-code/py-enigma/tarball/master"
+# % pip3 install -U "enigma @ https://github.com/enigmatic-code/py-enigma/tarball/master"
 # --
 #
 #
@@ -34,7 +34,7 @@ from setuptools import setup
 
 setup(
   name='enigma',
-  version='2.7.20230125',
+  version='2.7.20230202',
   description='Useful routines for solving New Scientist Enigma (and other) puzzles',
   author='Jim Randell',
   author_email='jim.randell@gmail.com',
