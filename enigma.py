@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jan 26 16:25:31 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Feb  8 15:17:13 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -214,7 +214,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-01-26"
+__version__ = "2023-02-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5096,6 +5096,7 @@ def express(t, ds, qs=None, min_q=0):
   4562
   """
   ds = list(ds)
+  assert ds and ds[0] > 0, sprintf("invalid denominations {ds}")
   if qs:
     return express_quantities(t, ds, qs)
   if min_q > 0:
@@ -5230,7 +5231,7 @@ class Denominations(object):
   def __init__(self, *denominations):
     # first sort the denominations
     ds = tuple(sorted(denominations))
-    assert ds[0] > 0 and seq_all_different(ds), sprintf("invalid denominations: {denominations}")
+    assert ds and ds[0] > 0 and seq_all_different(ds), sprintf("invalid denominations: {denominations}")
     self.denominations = ds
     # compute the extended residue table for the given denominations
     self.residues = _residues(ds)
@@ -11305,7 +11306,8 @@ def require(key, value, cmp=compare_versions):
     if callable(v): v = v()
   except (KeyError, AttributeError, ValueError):
     raise ValueError(sprintf("unable to extract \"{key}\""))
-  if cmp(v, value) < 0: raise ValueError(sprintf("version mismatch \"{key}\" = {v!r}; require >= {value!r}"))
+  if cmp(v, value) < 0:
+    raise ValueError(sprintf("version mismatch \"{key}\" = {v!r}; require >= {value!r}"))
   return v
 
 # this looks for a "STOP" file, and if present removes it and returns True
@@ -11829,13 +11831,13 @@ enigma.py has the following command-line usage:
       % python3 -m enigma -pr
       [enigma.py version {version} (Python {python3})]
 
-      enigma @ git+https://github.com/enigmatic-code/py-enigma
+      {pip_req}
 
     The -u flag will use pip to install/upgrade enigma.py:
 
       % python3 -m enigma -pu
       [enigma.py version {version} (Python {python3})]
-      Collecting enigma @ git+https://github.com/enigmatic-code/py-enigma
+      Collecting {pip_req}
       ...
       Successfully installed enigma-{pip_version}
 
@@ -11896,7 +11898,7 @@ enigma.py has the following command-line usage:
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.11.1',
+  version=__version__, python='2.7.18', python3='3.11.2',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
