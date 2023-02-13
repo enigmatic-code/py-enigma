@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Feb  8 15:17:13 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb 13 11:02:07 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -200,6 +200,7 @@ Denominations          - express amounts using specified denominations
 DominoGrid             - a class for solving domino grid puzzles
 Football               - a class for solving football league table puzzles
 MagicSquare            - a class for solving magic squares
+Matrix                 - a class for manipulation 2d matrices
 multiset               - a class for manipulating multisets
 Polynomial             - a class for manipulating polynomials
 Primes                 - a class for creating prime sieves
@@ -214,7 +215,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-02"
+__version__ = "2023-02-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -635,8 +636,8 @@ def zip_eq(*ss, **kw):
   """
   check sequences have the same elements.
 
-  the 'strict' argument is passsed to zip (which supported in some Python versions,
-  and throws an error if the inputs are not of equal length)
+  the 'strict' argument is passsed to zip (which supported in some Python
+  versions, and throws an error if the inputs are not of equal length)
 
   the 'first' parameter limits checks for the first <k> elements
 
@@ -5210,28 +5211,30 @@ class Denominations(object):
   Quantities returned by 'express()' are in the same order as the
   'denominations' attribute.
 
-  >>> sorted(Denominations(3, 5, 7).express(20))
+  >>> sorted(Denominations([3, 5, 7]).express(20))
   [(0, 4, 0), (1, 2, 1), (2, 0, 2), (5, 1, 0)]
 
-  >>> sorted(Denominations(3, 5, 7).express(20, min_q=1))
+  >>> sorted(Denominations([3, 5, 7]).express(20, min_q=1))
   [(1, 2, 1)]
 
   the number of ways to change 1 pound into smaller coins:
-  >>> Denominations(1, 2, 5, 10, 20, 50).count(100)
+  >>> Denominations([1, 2, 5, 10, 20, 50]).count(100)
   4562
 
   using at least 1 of each type of coin:
-  >>> Denominations(1, 2, 5, 10, 20, 50).count(100, min_q=1)
+  >>> Denominations([1, 2, 5, 10, 20, 50]).count(100, min_q=1)
   15
 
   the largest non-McNugget number:
-  >>> Denominations(6, 9, 20).frobenius()
+  >>> Denominations([6, 9, 20]).frobenius()
   43
   """
   def __init__(self, *denominations):
+    # allow a sequence to be passed
+    if len(denominations) == 1: denominations = denominations[0]
     # first sort the denominations
     ds = tuple(sorted(denominations))
-    assert ds and ds[0] > 0 and seq_all_different(ds), sprintf("invalid denominations: {denominations}")
+    assert len(ds) > 1 and ds[0] > 0 and seq_all_different(ds), sprintf("invalid denominations: {denominations}")
     self.denominations = ds
     # compute the extended residue table for the given denominations
     self.residues = _residues(ds)
@@ -6408,7 +6411,7 @@ def poly_integral(p, c=0, div=rdiv):
   return p
 
 # polynomial interpolation from a number of points
-def poly_interpolate(ps, F=None):
+def poly_interpolate(ps, field=None):
   ps = list(ps)
   k = len(ps)
   if k == 0: return None
@@ -6419,7 +6422,7 @@ def poly_interpolate(ps, F=None):
     A.append([1, x] + [x**i for i in irange(2, k)])
     B.append(y)
   try:
-    return poly_trim(matrix.linear(A, B, F=F))
+    return poly_trim(Matrix.linear(A, B, field=field))
   except ValueError:
     return
 
@@ -6515,7 +6518,7 @@ def poly_factor(p, F=None, div=None):
     for vs in cproduct(ds):
       if mgcd(*vs) != 1: continue
       # interpolate the polynomial factor
-      f = poly_interpolate(enumerate(vs), F=F)
+      f = poly_interpolate(enumerate(vs), field=F)
       if len(f) - 1 < k: continue
       (n, p) = poly_div(p, f, div=div)
       if n > 0:
@@ -6596,6 +6599,13 @@ def poly_cyclotomic(n, fs=None, div=rdiv, fn=prime_factor):
 # wrap the whole lot up in a class
 
 class Polynomial(list):
+  """
+  A class for manipulating polynomials in one variable.
+
+  Polynomials are represented by a list of their coefficents:
+
+    a + b.x + c.x^2 + d.x^3 + ... ->  [a, b, c, d, ...]
+  """
 
   def __repr__(self, var='x'):
     return self.__class__.__name__ + "[" + poly_print(self, var=var) + "]"
@@ -6643,43 +6653,58 @@ class Polynomial(list):
   __call__ = poly_value
 
   def copy(self):
+    "return a copy of the polynomial"
     return self.__class__(self)
 
-  # degree of polynomial
   def degree(self):
+    "return the degree of the polynomial"
     return len(self) - 1
 
-  # coefficient of x^k
   def coeff(self, k, default=0):
+    "return the coefficient of x^k in the polynomial"
     if 0 <= k < len(self):
       return self[k]
     else:
       return default
 
   def to_pairs(self):
+    "an iterator that returns (<exponent>, <coefficient>) pairs of the polynomial"
     for p in enumerate(self):
       if p[1] != 0:
         yield p
 
   def is_zero(self):
+    "check if this polynomial is zero: p(x) = 0"
     return self == poly_zero
 
   def is_unit(self):
+    "check if this polynomial is the unit polynomial: p(x) = 1"
     return self == poly_unit
 
   def map(self, fn):
+    """
+    return a polynomial that is the result of applying <fn> to the
+    coefficents in this polynomial
+    """
     return self.__class__(poly_map(self, fn))
 
   def scale(self):
+    """
+    return a polynomial with integer coefficients derived from this
+    polynomial by multiplying the coefficients by a scalar value
+    """
     return self.__class__(poly_scale(self))
 
   def derivative(self, k=1):
+    "return the derivative of the polynomial"
     return self.__class__(poly_derivative(self, k))
 
   def integral(self, c=0, div=rdiv):
+    "return the indefinite integral of the polynomial"
     return self.__class__(poly_integral(self, c=c, div=div))
 
   def rational_roots(self, v=0, domain="Q", include="+-0", F=None):
+    "find rational roots of the polynomial"
     p = (self - v if v else self)
     return poly_rational_roots(p, domain=domain, include=include, F=F)
 
@@ -6688,9 +6713,11 @@ class Polynomial(list):
     return (self.__class__(d), self.__class__(r))
 
   def compose(self, other):
+    "return a polynomial which is the result of the applying this polynomial to another"
     return self.__class__(poly_compose(self, other))
 
   def factor(self, F=None, div=None):
+    "generate factors of the polynomial"
     for (f, n) in poly_factor(self, F=F, div=div):
       yield (self.__class__(f), n)
 
@@ -6713,19 +6740,23 @@ class Polynomial(list):
   # but you can use this instead...
   @classmethod
   def sum(cls, ps):
+    "return the sum of a sequence of polynomials"
     return cls(poly_sum(ps))
 
   @classmethod
   def multiply(cls, ps):
+    "return the product of a sequence of polynomials"
     return cls(poly_multiply(ps))
 
   @classmethod
-  def interpolate(cls, ps, F=None):
-    r = poly_interpolate(ps, F=F)
+  def interpolate(cls, ps, field=None):
+    "return a polynomial that fits the (x, y) values in <ps>"
+    r = poly_interpolate(ps, field=field)
     return (None if r is None else cls(r))
 
   @classmethod
   def cyclotomic(cls, n, div=rdiv, fn=prime_factor):
+    "return the nth cyclotomic polynomial"
     p = poly_cyclotomic(n, div=div, fn=fn)
     return (None if p is None else cls(p))
 
@@ -6739,7 +6770,6 @@ _primes_chunk = lambda n: 2 * n
 _primes_array_optimise = 1  # turn this off to disable bitarray optimisations
 
 class _PrimeSieveE6(object):
-
   """
   A prime sieve.
 
@@ -11044,147 +11074,322 @@ grouping = make_namespace('grouping', __grouping())
 
 # matrix routines (see Enigma 287)
 
-def __matrix():
-  __doc__ = """
-  Solve a system of linear equations using matrices.
+# given two matrices A and B, returns (det(A), X) st A * X = B
+# A must be square, and the elements must support __truediv__
+def _matrix_gauss(A, B):
+  n = len(A)
+  p = len(B[0])
+  det = 1
 
-  Functions provides:
+  for i in xrange(0, n - 1):
+    k = i
+    for j in xrange(i + 1, n):
+      if abs(A[j][i]) > abs(A[k][i]):
+        k = j
 
-    matrix.linear() - solve a collection of linear equations
-    matrix.equation() - create a helper function for matrix.linear()
-    matrix.create() - create a matrix
-  """
+    if k != i:
+      (A[i], A[k]) = (A[k], A[i])
+      (B[i], B[k]) = (B[k], B[i])
+      det = -det
 
-  # given two matrices A and B, returns (det(A), X) st A * X = B
-  # A must be square, and the elements must support __truediv__
-  def _gauss(A, B):
+    for j in xrange(i + 1, n):
+      t = A[j][i] / A[i][i] # note use of /
+      for k in xrange(i + 1, n):
+        A[j][k] -= t * A[i][k]
+      for k in xrange(p):
+        B[j][k] -= t * B[i][k]
 
-    n = len(A)
-    p = len(B[0])
-    det = 1
+  for i in xrange(n - 1, -1, -1):
+    for j in xrange(i + 1, n):
+      t = A[i][j]
+      for k in xrange(p):
+        B[i][k] -= t * B[j][k]
 
-    for i in xrange(0, n - 1):
+    t = 1 / A[i][i] # note use of /
+    det *= A[i][i]
+    for j in xrange(p):
+      B[i][j] *= t
 
-      k = i
-      for j in xrange(i + 1, n):
-        if abs(A[j][i]) > abs(A[k][i]):
-          k = j
+  return (det, B)
 
-      if k != i:
-        (A[i], A[k]) = (A[k], A[i])
-        (B[i], B[k]) = (B[k], B[i])
-        det = -det
+# solve a system of linear equations
+def _matrix_linear(A, B, n, m, valid):
+  # for each column i
+  for i in itertools.count(0):
+    if not (i < m): break
+    if n < m: raise ValueError("incomplete")
 
-      for j in xrange(i + 1, n):
-        t = A[j][i] / A[i][i] # note use of /
-        for k in xrange(i + 1, n):
-          A[j][k] -= t * A[i][k]
-        for k in xrange(p):
-          B[j][k] -= t * B[i][k]
+    # choose the row with the largest value in the column i
+    j = max(xrange(i, n), key=(lambda j: abs(A[j][i])))
 
-    for i in xrange(n - 1, -1, -1):
-      for j in xrange(i + 1, n):
-        t = A[i][j]
-        for k in xrange(p):
-          B[i][k] -= t * B[j][k]
+    # if necessary bring it to row i
+    if j != i: (A[i], A[j], B[i], B[j]) = (A[j], A[i], B[j], B[i])
 
-      t = 1 / A[i][i] # note use of /
-      det *= A[i][i]
-      for j in xrange(p):
-        B[i][j] *= t
+    # scale equation i so the co-efficient in column i is 1
+    v = A[i][i]
+    if v == 0: raise ValueError("incomplete")
+    if v != 1:
+      for k in xrange(i, m):
+        A[i][k] /= v
+      B[i] /= v
 
-    return (det, B)
+    # eliminate co-efficients in column i
+    rs = list()
+    for j in xrange(0, n):
+      if j != i:
+        t = A[j][i]
+        if t != 0:
+          for k in xrange(i, m):
+            A[j][k] -= t * A[i][k]
+          B[j] -= t * B[i]
+          # if all coefficients in row j are 0
+          if all(A[j][k] == 0 for k in xrange(0, m)):
+            if B[j] == 0:
+              # mark the row for deletion
+              rs.insert(0, j)
+            else:
+              # the system is inconsistent
+              raise ValueError("inconsistent")
+    # delete any dependent rows
+    if rs:
+      for j in rs:
+        del A[j]
+        del B[j]
+      n -= len(rs)
 
+  assert len(B) == m
 
-  # map <fn> over all elements of (2d) matrix <M>
-  def map2d(fn, M):
-    if fn is None: fn = identity
-    return list(list(fn(x) for x in r) for r in M)
+  # apply solution validation?
+  if valid:
+    vs = list()
+    for v in B:
+      # valid can raise a ValueError, or return None
+      x = valid(v)
+      if x is None: raise ValueError("invalid value: " + repr(v))
+      vs.append(x)
+    return vs
 
-  # default B is the identity matrix corresponding to A in this case X is the inverse of A
-  def gauss(A, B=None, F=None):
-    if F is None: F = Rational()
+  # otherwise just return B
+  return B
 
-    # check A is square
-    n = len(A)
-    assert all(len(r) == n for r in A)
+# helper function for creating a matrix of linear equations
+def _matrix_equation(sym, n, coeffs, k, z):
+  row = [z] * n
+  # if coeffs is a dictionary
+  if isinstance(coeffs, dict):
+    for (c, v) in coeffs.items():
+      row[sym[c]] += v
+  else:
+    # if coeffs is a sequence of (symbol, value) pairs
+    try:
+      for (c, v) in coeffs:
+        row[sym[c]] += v
+    except ValueError:
+      # otherwise, just a sequence of symbols
+      for c in coeffs:
+        row[sym[c]] += 1
+  # return the (<coefficients>, <value>) pair
+  return (tuple(row), k)
+
+# the Matrix class replaces the functions in the matrix namespace
+class Matrix(list):
+  "A class for manipulating 2 dimensional matrices."
+
+  def __init__(self, rows, field=None):
+    """
+    create a matrix with rows from iterator <rows>.
+
+    each row should have the same number of elements.
+    """
+    ncols = None
+    for row in rows:
+      row = list(row)
+      if ncols is None:
+        ncols = len(row)
+      elif len(row) != ncols:
+        raise ValueError("Matrix: all rows should have the same length")
+      self.append(row)
+    self.field = field
+
+  def rows(self):
+    "an iterator that returns the rows of a matrix"
+    return self
+
+  def columns(self):
+    "an iterator that returns the columns of a matrix"
+    return zip(*self)
+
+  def nrows(self):
+    "return the number of rows in a matrix"
+    return len(self)
+
+  def ncols(self):
+    "return the number of columns in a matrix"
+    if self: return len(self[0])
+
+  def get_field(self):
+    if self.field is None: self.field = Rational()
+    return self.field
+
+  def map2d(self, f):
+    "map the function <f> over the matrix"
+    return Matrix((f(x) for x in row) for row in self)
+
+  def add(self, other):
+    "return a new matrix that is the result of adding a matrix to this one"
+    return Matrix(((a + b for (a, b) in zip(r1, r2)) for (r1, r2) in zip(self, other)))
+
+  def __add__(self, other):
+    if isinstance(other, Matrix):
+      # matrix addition
+      return self.add(other)
+    else:
+      # constant addition
+      return self.map2d(lambda x: x + other)
+
+  __radd__ = __add__
+
+  def __neg__(self):
+    return self.map2d(lambda x: -x)
+
+  def sub(self, other):
+    "return a new matrix that is the result of subtracting a matrix from this one"
+    return Matrix(((a - b for (a, b) in zip(r1, r2)) for (r1, r2) in zip(self, other)))
+
+  def __sub__(self, other):
+    if isinstance(other, Matrix):
+      return self.sub(other)
+    else:
+      return self.map2d(lambda x: x - other)
+
+  __rsub__ = lambda self, other: -self + other
+
+  def multiply(self, other):
+    "return a new matrix that is the result of multiplying this matrix by another"
+    tr_other = other.transpose()
+    return Matrix(((sum(a * b for (a, b) in zip(row, col)) for col in tr_other) for row in self))
+
+  def __mul__(self, other):
+    if isinstance(other, Matrix):
+      # matrix multiplication
+      return self.multiply(other)
+    else:
+      # constant multiplication
+      return self.map2d(lambda x: x * other)
+
+  __rmul__ = __mul__
+
+  def transpose(self):
+    "return the transposition of the matrix"
+    return Matrix(zip(*self))
+
+  def gauss(self, B=None):
+    """
+    return (det(A), X) where A * X = B.
+
+    if B is not specified a suitably sized identity matrix is used and
+    X is the inverse of A.
+    """
+    n = self.nrows()
+    m = self.ncols()
+    F = self.get_field()
+
+    # check matrix is square
+    assert n == m, "gauss: non-square matrix"
 
     # if B is None, use the identity matrix
-    if B is None:
-      B = list([0] * n for _ in xrange(0, n))
-      for i in xrange(0, n):
-        B[i][i] = 1
+    if B is None: B = Matrix.identity(n, m)
 
-    # convert A and B (so that the elements supports __truediv__)
-    A = map2d(F, A)
-    B = map2d(F, B)
+    # convert A and B (so that elements support __truediv__)
+    A = self.map2d(F)
+    B = Matrix(B).map2d(F)
 
     # solve it
     try:
-      return _gauss(A, B)
+      (d, X) = _matrix_gauss(A, B)
+      return (d, Matrix(X))
     except ZeroDivisionError:
       return (0, None)
 
-  # create a function that creates (row, const) pairs suitable for construction
-  # matrix A in a call to linear
-  # symbols = sequence of symbols used in the system of equations
-  # k = default constant (if none is specified)
-  def equation(symbols, k=0, z=0):
-    """
-    create a function that can be used to create (row, const) values,
-    suitable for constructing the matrix A used in matrix.linear().
+  def inverse(self):
+    "return the inverse of the matrix"
+    (d, X) = self.gauss()
+    return X
 
-    symbols = sequence of symbols used in the system of equations
-    k = default constant
+  def determinant(self):
+    "return the determinant of the matrix"
+    (d, X) = self.gauss()
+    return d
 
-    >>> eq = equation("abcd", 42)
-    >>> eq("acd")
-    ((1, 0, 1, 1), 42)
-    >>> eq(dict(a=1, b=2, c=3), 19)
-    ((1, 2, 3, 0), 19)
-
-    """
-    # map symbols to indices
-    sym = dict((s, i) for (i, s) in enumerate(symbols))
-    return (lambda cs, k=k, z=z: _equation(sym, len(sym.keys()), cs, k, z))
-
-  def _equation(sym, n, coeffs, k, z):
-    row = [z] * n
-    # if coeffs is a dictionary
-    if isinstance(coeffs, dict):
-      for (c, v) in coeffs.items():
-        row[sym[c]] += v
-    else:
-      # if coeffs is a sequence of (symbol, value) pairs
-      try:
-        for (c, v) in coeffs:
-          row[sym[c]] += v
-      except ValueError:
-        # otherwise, just a sequence of symbols
-        for c in coeffs:
-          row[sym[c]] += 1
-    # return the (<coefficients>, <value>) pair
-    return (tuple(row), k)
-
-  # solve a system of linear equations
-  def linear(A, B=None, F=None, valid=None):
+  def linear_solve(self, B=0, valid=None):
     """
     solve a system of linear equations.
 
       A x = B
 
-    A is the matrix of coefficients of the variables (n equations in m variables)
-    B is the the vector of constants (a sequence of a single value that will be replicated)
-    F is the field to operate over (which must support __truediv__)
+    <A> is the matrix of coefficients of the variables (n equations in m variables)
+    <B> is the the vector of constants (a single value will be replicated)
 
-    If F is not specified an implementation of the rational numbers
-    will be used, by calling Rational().
+    If the system is underspecified an "incomplete" error is raised.
+    If the system is inconsistent an "inconsistent" error is raised.
+
+    Otherwise a sequence of the solution values x is returned.
+    """
+    n = self.nrows()
+    m = self.ncols()
+    F = self.get_field()
+
+    # if B is a scalar value, make an appropriate length vector
+    if not isinstance(B, Sequence): B = [B] * n
+
+    # construct the matrices into the specified field
+    A = self.map2d(F)
+    B = list(map(F, B))
+
+    # run the solver
+    return _matrix_linear(A, B, n, m, valid)
+
+  @classmethod
+  def create(cls, nrows, ncols, k=0, field=None):
+    """
+    create a matrix with <nrows> rows and <ncols> columns.
+
+    initially filled out with value <k>, which may be a constant
+    or a function: k(r, c).
+    """
+    self = list()
+    if callable(k):
+      for r in xrange(nrows):
+        self.append(list(k(r, c) for c in xrange(ncols)))
+    else:
+      for r in xrange(nrows):
+        self.append([k] * ncols)
+    return cls(self, field=field)
+
+  @classmethod
+  def identity(cls, nrows, ncols, field=None):
+    return cls.create(nrows, ncols, (lambda r, c: int(r == c)), field=field)
+
+  # this works the same as matrix.linear used to ...
+  @classmethod
+  def linear(cls, A, B=None, field=None, valid=None, F=None):
+    """
+    solve a system of linear equations.
+
+      A x = B
+
+    <A> is the matrix of coefficients of the variables (n equations in m variables)
+    <B> is the the vector of constants (a sequence of a single value that will be replicated)
+    <field> is the field to operate over (which must support __truediv__)
+
+    If <field> is not specified an implementation of the rational numbers
+    will be used (by calling Rational()).
 
     If the system is underspecified an "incomplete" error is raised.
     If the system is inconsistent an "inconsistent" error is raised.
 
     Otherwise a sequence of the solution values x is returned (which will
-    be in the field F).
+    be in the specified field).
 
     The rows of the matrix of coeffecients and constants can be
     specified as:
@@ -11193,93 +11398,45 @@ def __matrix():
       A = (row, row, row, ...) B = const # if all consts are equal
       A = ((row, const), (row, const), ...)
     """
-    if F is None: F = Rational()
+    field = (field or F)
 
     # if B is not specified, then assume we've been supplied a list of
     # (row, constant) pairs, where A is made by collecting the rows,
     # and B the constants
     if B is None: (A, B) = zip(*A)
 
-    # verify A
-    n = len(A)
-    m = len(A[0])
-    assert all(len(x) == m for x in A)
+    # construct the matrix A
+    A = cls(A, field=field)
 
-    # make B into a viable matrix
-    # if B is a scalar value, replicate it n times
-    if not isinstance(B, Sequence): B = [B] * n
+    # and solve the set of equations
+    return A.linear_solve(B, valid=valid)
 
-    A = map2d(F, A)
-    B = list(map(F, B))
 
-    # for each column i
-    for i in itertools.count(0):
-      if not (i < m): break
-      if n < m: raise ValueError("incomplete")
+  # create a function that creates (row, const) pairs suitable for construction
+  # matrix A in a call to linear
+  # symbols = sequence of symbols used in the system of equations
+  # k = default constant (if none is specified)
+  @classmethod
+  def equation(cls, symbols, k=0, z=0):
+    """
+    create a function that can be used to create (row, const) values,
+    suitable for constructing the matrix A used in Matrix.linear().
 
-      # choose the row with the largest value in the column i
-      j = max(xrange(i, n), key=(lambda j: abs(A[j][i])))
+    symbols = sequence of symbols used in the system of equations
+    k = default constant
 
-      # if necessary bring it to row i
-      if j != i: (A[i], A[j], B[i], B[j]) = (A[j], A[i], B[j], B[i])
+    >>> eq = Matrix.equation("abcd", 42)
+    >>> eq("acd")
+    ((1, 0, 1, 1), 42)
+    >>> eq(dict(a=1, b=2, c=3), 19)
+    ((1, 2, 3, 0), 19)
+    """
+    # map symbols to indices
+    sym = dict((s, i) for (i, s) in enumerate(symbols))
+    return (lambda cs, k=k, z=z: _matrix_equation(sym, len(sym.keys()), cs, k, z))
 
-      # scale equation i so the co-efficient in column i is 1
-      v = A[i][i]
-      if v == 0: raise ValueError("incomplete")
-      if v != 1:
-        for k in xrange(i, m):
-          A[i][k] /= v
-        B[i] /= v
-
-      # eliminate co-efficients in column i
-      rs = list()
-      for j in xrange(0, n):
-        if j != i:
-          t = A[j][i]
-          if t != 0:
-            for k in xrange(i, m):
-              A[j][k] -= t * A[i][k]
-            B[j] -= t * B[i]
-            # if all coefficients in row j are 0
-            if all(A[j][k] == 0 for k in xrange(0, m)):
-              if B[j] == 0:
-                # mark the row for deletion
-                rs.insert(0, j)
-              else:
-                # the system is inconsistent
-                raise ValueError("inconsistent")
-      # delete any dependent rows
-      if rs:
-        for j in rs:
-          del A[j]
-          del B[j]
-        n -= len(rs)
-
-    assert len(B) == m
-
-    # apply solution validation?
-    if valid:
-      vs = list()
-      for v in B:
-        # valid can raise a ValueError, or return None
-        x = valid(v)
-        if x is None: raise ValueError("invalid value: " + repr(v))
-        vs.append(x)
-      return vs
-
-    return B
-
-  # create a matrix
-  # for the identity matrix: create(3, 3, (lambda r, c: int(r == c)))
-  # [ or: create(3, 3, fcompose(operator.eq, int)) ]
-  def create(rows, cols, k=0):
-    f = (k if callable(k) else (lambda r, c: k))
-    return [[f(r, c) for r in xrange(rows)] for c in xrange(cols)]
-
-  # return the namespace
-  return locals()
-
-matrix = make_namespace('matrix', __matrix())
+# for backward compatibility allow matrix.{linear, create, equation} to work
+matrix = Matrix
 
 ###############################################################################
 
