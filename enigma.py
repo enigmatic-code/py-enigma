@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb 13 11:02:07 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb 13 16:17:50 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -215,7 +215,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-07"
+__version__ = "2023-02-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5230,11 +5230,15 @@ class Denominations(object):
   43
   """
   def __init__(self, *denominations):
-    # allow a sequence to be passed
+    # preferred initialisation is to pass a sequence of denominations
     if len(denominations) == 1: denominations = denominations[0]
     # first sort the denominations
-    ds = tuple(sorted(denominations))
-    assert len(ds) > 1 and ds[0] > 0 and seq_all_different(ds), sprintf("invalid denominations: {denominations}")
+    try:
+      ds = tuple(sorted(denominations))
+    except TypeError:
+      ds = ()
+    if not (len(ds) > 1 and ds[0] > 0 and seq_all_different(ds)):
+      raise ValueError(sprintf("invalid denominations: {denominations}"))
     self.denominations = ds
     # compute the extended residue table for the given denominations
     self.residues = _residues(ds)
