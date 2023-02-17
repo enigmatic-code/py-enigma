@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Feb 17 08:14:22 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Feb 17 12:11:25 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -215,7 +215,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-17"
+__version__ = "2023-02-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -11357,6 +11357,10 @@ class Matrix(list):
 
     # run the solver
     return _matrix_linear(A, B, n, m, valid)
+
+  # alternative names
+  determinant = det
+  inverse = inv
 
   @classmethod
   def create(cls, nrows, ncols, k=0, field=None):
