@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Feb 17 07:55:32 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Feb 17 08:14:22 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -215,7 +215,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-16"
+__version__ = "2023-02-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -11233,6 +11233,10 @@ class Matrix(list):
     if self: return len(self[0])
 
   def get_field(self):
+    """
+    return the field of the elements, or if none was provided
+    use a rational implementation provided by Rational()
+    """
     if self.field is None: self.field = Rational()
     return self.field
 
@@ -11316,12 +11320,12 @@ class Matrix(list):
     except ZeroDivisionError:
       return (0, None)
 
-  def inverse(self):
+  def inv(self):
     "return the inverse of the matrix"
     (d, X) = self.gauss()
     return X
 
-  def determinant(self):
+  def det(self):
     "return the determinant of the matrix"
     (d, X) = self.gauss()
     return d
@@ -11373,6 +11377,7 @@ class Matrix(list):
 
   @classmethod
   def identity(cls, nrows, ncols, field=None):
+    "create an identity matrix"
     return cls.create(nrows, ncols, (lambda r, c: int(r == c)), field=field)
 
   # this works the same as matrix.linear used to ...
