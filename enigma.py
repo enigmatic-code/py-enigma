@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb 13 16:17:50 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Feb 17 07:55:32 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -215,7 +215,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-13"
+__version__ = "2023-02-16"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -11196,6 +11196,7 @@ def _matrix_equation(sym, n, coeffs, k, z):
   return (tuple(row), k)
 
 # the Matrix class replaces the functions in the matrix namespace
+# (for a more powerful Matrix class, see sympy)
 class Matrix(list):
   "A class for manipulating 2 dimensional matrices."
 
@@ -11219,7 +11220,7 @@ class Matrix(list):
     "an iterator that returns the rows of a matrix"
     return self
 
-  def columns(self):
+  def cols(self):
     "an iterator that returns the columns of a matrix"
     return zip(*self)
 
