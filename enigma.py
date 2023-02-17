@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Feb 17 12:11:25 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Feb 17 12:41:35 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -215,7 +215,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-18"
+__version__ = "2023-02-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -11242,11 +11242,11 @@ class Matrix(list):
 
   def map2d(self, f):
     "map the function <f> over the matrix"
-    return Matrix((f(x) for x in row) for row in self)
+    return Matrix(((f(x) for x in row) for row in self), field=self.field)
 
   def add(self, other):
     "return a new matrix that is the result of adding a matrix to this one"
-    return Matrix(((a + b for (a, b) in zip(r1, r2)) for (r1, r2) in zip(self, other)))
+    return Matrix((((a + b for (a, b) in zip(r1, r2)) for (r1, r2) in zip(self, other))), field=self.field)
 
   def __add__(self, other):
     if isinstance(other, Matrix):
@@ -11263,7 +11263,7 @@ class Matrix(list):
 
   def sub(self, other):
     "return a new matrix that is the result of subtracting a matrix from this one"
-    return Matrix(((a - b for (a, b) in zip(r1, r2)) for (r1, r2) in zip(self, other)))
+    return Matrix((((a - b for (a, b) in zip(r1, r2)) for (r1, r2) in zip(self, other))), field=self.field)
 
   def __sub__(self, other):
     if isinstance(other, Matrix):
@@ -11276,7 +11276,7 @@ class Matrix(list):
   def multiply(self, other):
     "return a new matrix that is the result of multiplying this matrix by another"
     tr_other = other.transpose()
-    return Matrix(((sum(a * b for (a, b) in zip(row, col)) for col in tr_other) for row in self))
+    return Matrix((((sum(a * b for (a, b) in zip(row, col)) for col in tr_other) for row in self)), field=self.field)
 
   def __mul__(self, other):
     if isinstance(other, Matrix):
@@ -11290,7 +11290,7 @@ class Matrix(list):
 
   def transpose(self):
     "return the transposition of the matrix"
-    return Matrix(zip(*self))
+    return Matrix(zip(*self), field=self.field)
 
   def gauss(self, B=None):
     """
@@ -11316,7 +11316,7 @@ class Matrix(list):
     # solve it
     try:
       (d, X) = _matrix_gauss(A, B)
-      return (d, Matrix(X))
+      return (d, Matrix(X, field=self.field))
     except ZeroDivisionError:
       return (0, None)
 
