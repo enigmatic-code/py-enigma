@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 18 10:03:02 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 18 10:41:54 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -588,13 +588,16 @@ def seq_all_same_r(seq, **kw):
   """
   i = iter(seq)
   n = 0
+  # is value specified?
   if 'value' in kw:
     v = kw['value']
   else:
+    # otherwise, use the first value
     try:
       v = next(i)
       n = 1
     except StopIteration:
+      # empty sequence
       return Record(same=True, empty=True, value=None)
   # check the rest of the sequence
   for x in i:
@@ -1851,11 +1854,11 @@ def filter_unique(seq, f=identity, g=identity, st=None):
   alias: partition_unique()
 
   "If I told you the first number you could deduce the second"
-  >>> filter_unique([(1, 1), (1, 3), (2, 1), (3, 1), (3, 2), (3, 3)], (lambda v: v[0])).unique
-  [(2, 1)]
+  >>> filter_unique([(1, 1), (1, 3), (2, 2), (3, 1), (3, 2), (3, 3)], (lambda v: v[0])).unique
+  [(2, 2)]
 
   "If I told you the first number you could not deduce if the second was odd or even"
-  >>> filter_unique([(1, 1), (1, 3), (2, 1), (3, 1), (3, 2), (3, 3)], (lambda v: v[0]), (lambda v: v[1] % 2)).non_unique
+  >>> filter_unique([(1, 1), (1, 3), (2, 2), (3, 1), (3, 2), (3, 3)], (lambda v: v[0]), (lambda v: v[1] % 2)).non_unique
   [(3, 1), (3, 2), (3, 3)]
 
   """
@@ -1872,7 +1875,6 @@ def filter_unique(seq, f=identity, g=identity, st=None):
     for (k, vs) in r.items():
       (unq if seq_all_same(map(g, vs)) else non).extend(vs)
   return FilterUnique(unq, non)
-
 
 # alias if you prefer the term partition (but don't confuse it with partitions())
 partition_unique = filter_unique
