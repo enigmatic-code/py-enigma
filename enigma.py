@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 18 09:55:09 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 18 10:03:02 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1932,10 +1932,11 @@ def group(seq, by=identity, st=None, f=identity, fn=None):
     if st is None or st(x):
       k = by(x)
       v = f(x)
-      if k in d:
-        d[k].append(v)
-      else:
+      vs = d.get(k)
+      if vs is None:
         d[k] = [v]
+      else:
+        vs.append(v)
   if fn:
     for (k, vs) in d.items():
       d[k] = fn(vs)
