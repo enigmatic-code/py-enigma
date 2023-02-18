@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Feb 17 21:08:19 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 18 09:55:09 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -215,7 +215,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-20"
+__version__ = "2023-02-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -895,7 +895,7 @@ def dsum(n, k=None, base=10):
   return sum(nsplitter(n, k=k, base=base))
 
 # population count, Hamming weight, bitsum(), bit_count()
-if _pythonv > (3, 9):
+if getattr(int, "bit_count", None):
   dsum2 = int.bit_count
 else:
   def dsum2(n): "fast alternative to dsum(n, base=2)"; return bin(abs(n)).count('1', 2)
@@ -1827,12 +1827,15 @@ def is_equal(x, y):
 
 FilterUnique = namedtuple('FilterUnique', 'unique non_unique')
 
-def filter_unique(s, f=identity, g=identity):
+def filter_unique(seq, f=identity, g=identity, st=None):
   """
-  for every object, x, in sequence, s, consider the map f(x) -> g(x)
-  and return a partition of s into those objects where f(x) implies a
-  unique value for g(x), and those objects where f(x) implies multiple
-  values for g(x).
+  for objects <x> in the sequence <seq> consider the map f(x) -> g(x)
+  and return a partition of <seq> into those objects where f(x)
+  implies a unique value for g(x), and those objects where f(x)
+  implies multiple values for g(x).
+
+  if the predicate <st> is specified, only objects from the sequence
+  that satisfy the predicate are considered.
 
   returns the partition of the original sequence as:
 
@@ -1854,17 +1857,22 @@ def filter_unique(s, f=identity, g=identity):
   "If I told you the first number you could not deduce if the second was odd or even"
   >>> filter_unique([(1, 1), (1, 3), (2, 1), (3, 1), (3, 2), (3, 3)], (lambda v: v[0]), (lambda v: v[1] % 2)).non_unique
   [(3, 1), (3, 2), (3, 3)]
+
   """
-  u = defaultdict(set)
-  r = defaultdict(list)
-  for x in s:
-    i = f(x)
-    u[i].add(g(x))
-    r[i].append(x)
-  (r1, r2) = ([], [])
-  for (k, v) in u.items():
-    (r1 if len(v) == 1 else r2).extend(r[k])
-  return FilterUnique(r1, r2)
+  # group values by f
+  r = group(seq, st=st, by=f)
+  # collect unique/non-unique items
+  (unq, non) = (list(), list())
+  if g is identity:
+    # special case if g is not specified
+    for (k, vs) in r.items():
+      (unq if seq_all_same(vs) else non).extend(vs)
+  else:
+    # general case
+    for (k, vs) in r.items():
+      (unq if seq_all_same(map(g, vs)) else non).extend(vs)
+  return FilterUnique(unq, non)
+
 
 # alias if you prefer the term partition (but don't confuse it with partitions())
 partition_unique = filter_unique
@@ -1893,9 +1901,9 @@ def collect(s, accept=None, reject=None, every=0, fn=list):
   except ValueError:
     return None
 
-def group(s, by=identity, st=None, f=identity, fn=None):
+def group(seq, by=identity, st=None, f=identity, fn=None):
   """
-  group the items of sequence <s> together using the <by> function.
+  group the items of sequence <seq> together using the <by> function.
 
   items in the same group return the same value when passed to <by>.
 
@@ -1920,7 +1928,7 @@ def group(s, by=identity, st=None, f=identity, fn=None):
   {0: [0, 2, 4, 6, 8], 1: [1, 3, 5, 7, 9]}
   """
   d = dict()
-  for x in s:
+  for x in seq:
     if st is None or st(x):
       k = by(x)
       v = f(x)
