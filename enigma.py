@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb 19 09:13:00 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb 19 10:02:18 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -65,6 +65,7 @@ divisor_pairs          - generate pairs of divisors of a number
 divisors               - the divisors of a number
 divisors_pairs         - generate pairs of divisors of a number
 divisors_tuples        - generate tuples of divisors of a number
+dot                    - vector dot product
 drop_factors           - reduce a number by removing factors
 dsum                   - digit sum of a number
 ediv                   - exact division (or raise an error)
@@ -215,7 +216,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-22"
+__version__ = "2023-02-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3872,16 +3873,25 @@ def multiply(seq, r=1, mod=None):
   return r
 
 # vector dot product
-def dot(vs):
+def dot(*vs, **kw):
   """
-  vector dot product
+  vector dot product.
 
-  >>> dot([(1, 3, -5), (4, -2, -1)])
+    dot((a1, a2, a3, ...), (b1, b2, b3, ...), ...)
+      = sum(a1 * b1 * ... + a2 * b2 * ... + ...)
+
+  if the 'strict' argument is present it will be passed to zip()
+  (which in supported Python versions will throw an error if the
+  inputs are not of equal length)
+
+  >>> dot((1, 3, -5), (4, -2, -1))
   3
-  >>> dot([(1, 3, -5)] * 2)
+  >>> call(dot, [(1, 3, -5)] * 2)
   35
+
   """
-  return sum(map(multiply, zip(*vs)))
+  z = (zip(*vs, strict=kw['strict']) if 'strict' in kw else zip(*vs))
+  return sum(map(multiply, z))
 
 # multiple argument versions of basic operations:
 # - add, mul, bit_or, bit_and, bit_xor
