@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 18 10:41:54 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb 19 09:13:00 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -215,7 +215,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-21"
+__version__ = "2023-02-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3844,12 +3844,12 @@ def is_npalindrome(n, base=10):
   return a == b
 
 # originally called product(), but renamed to avoid name confusion with itertools.product()
-def multiply(s, r=1, mod=None):
+def multiply(seq, r=1, mod=None):
   """
-  return the product of the numeric sequence <s>.
+  return the product of the numeric sequence <seq>.
 
   if <r> is specified this is used as the initial value of the product
-  (and is the value returned when <s> is empty).
+  (and is the value returned when <seq> is empty).
 
   if <mod> is specified, the result at each stage is calculate mod <mod>.
 
@@ -3863,13 +3863,25 @@ def multiply(s, r=1, mod=None):
   18
   """
   if mod is None:
-    for x in s:
+    for x in seq:
       r *= x
   else:
-    for x in s:
+    for x in seq:
       r *= x
       r %= mod
   return r
+
+# vector dot product
+def dot(vs):
+  """
+  vector dot product
+
+  >>> dot([(1, 3, -5), (4, -2, -1)])
+  3
+  >>> dot([(1, 3, -5)] * 2)
+  35
+  """
+  return sum(map(multiply, zip(*vs)))
 
 # multiple argument versions of basic operations:
 # - add, mul, bit_or, bit_and, bit_xor
