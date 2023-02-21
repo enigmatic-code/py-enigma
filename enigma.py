@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb 19 10:02:18 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Feb 21 08:01:21 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -122,11 +122,11 @@ is_power_of            - check if n = k^i for some integer i
 is_prime               - simple prime test
 is_prime_mr            - Miller-Rabin fast prime test for large numbers
 is_roman               - check a Roman Numeral is valid
-is_square              - check a number is a perfect square
+is_square, is_square_p - check a number is a perfect square
 is_square_free         - check a number is square free
 is_triangular          - check a number is a triangular number
 isqrt                  - intf(sqrt(x))
-join                   - concatenate strings
+join, joinf            - concatenate objects into a string
 lcm                    - lowest common multiple
 M                      - multichoose function (nMk)
 map2str                - format a map for output
@@ -216,7 +216,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-23"
+__version__ = "2023-02-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -684,7 +684,7 @@ def ordered(*args, **kw):
 # I would prefer join() to be a method of sequences: seq.join(sep='')
 # or a string constructor: str.from_seq(seq, sep='') or just str.join(seq, sep='')
 # but for now we define a utility function
-def join(seq, sep='', enc=''):
+def join(seq, sep='', enc='', fn=str):
   """
   construct a string by joining the items in sequence <seq> as
   strings, separated by separator <sep>, and enclosed by the pair
@@ -706,9 +706,13 @@ def join(seq, sep='', enc=''):
   '57005'
 
   """
-  r = str.join(sep, (str(x) for x in seq))
+  r = str.join(sep, (fn(x) for x in seq))
   if enc: r = enc[0] + r + enc[1]
   return r
+
+def joinf(sep='', enc='', fn=str):
+  "return a joining function"
+  return (lambda x: join(x, sep=sep, enc=enc, fn=fn))
 
 def concat(*args, **kw):
   """
@@ -2325,14 +2329,20 @@ def repeat(fn, v=0, k=inf):
   """
   generate repeated applications of function <fn> to value <v>.
 
+  the initial value is returned first, followed by the result of
+  repeatedly applying the specified function to the previous value.
+
+  if a limit <k> is specified then the function will be applied
+  the specified number of times, so (k + 1) values will be returned.
+
   >>> list(repeat((lambda x: x + 1), 0, 10))
-  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
   """
   i = 0
   while True:
     yield v
-    i += 1
     if i == k: break
+    i += 1
     v = fn(v)
 
 def uniq(seq, fn=None, verbose=0):
@@ -3872,26 +3882,38 @@ def multiply(seq, r=1, mod=None):
       r %= mod
   return r
 
-# vector dot product
+# vector dot product: dot(xs, ys, strict=0, fnp=multiply, fns=sum)
 def dot(*vs, **kw):
   """
-  vector dot product.
+  this function takes a sequence of vectors provided as arguments,
+  and calculates the product of the elements in the same position
+  in each vector, and then sums these products.
 
-    dot((a1, a2, a3, ...), (b1, b2, b3, ...), ...)
-      = sum(a1 * b1 * ... + a2 * b2 * ... + ...)
+  for two vectors this is the same as the vector dot product:
+
+    dot((a1, a2, a3, ...), (b1, b2, b3, ...))
+      = a1 * b1 + a2 * b2 + a3 * b3 + ...)
 
   if the 'strict' argument is present it will be passed to zip()
   (which in supported Python versions will throw an error if the
-  inputs are not of equal length)
+  inputs are not of equal length), otherwise the length of vectors
+  processed will be defined by the shortest input vector.
+
+  the functions used for the product and sum functions can be defined
+  with the parameters 'fnp' (default is: multiply) and 'fns' (default
+  is: sum).
 
   >>> dot((1, 3, -5), (4, -2, -1))
   3
   >>> call(dot, [(1, 3, -5)] * 2)
   35
-
+  >>> call(dot, [(1, 3, -5)] * 3)
+  -97
   """
   z = (zip(*vs, strict=kw['strict']) if 'strict' in kw else zip(*vs))
-  return sum(map(multiply, z))
+  fns = kw.get('fns', sum)
+  fnp = kw.get('fnp', multiply)
+  return fns(map(fnp, z))
 
 # multiple argument versions of basic operations:
 # - add, mul, bit_or, bit_and, bit_xor
@@ -11392,6 +11414,7 @@ class Matrix(list):
     return _matrix_linear(A, B, n, m, valid)
 
   # alternative names
+  columns = cols
   determinant = det
   inverse = inv
 
