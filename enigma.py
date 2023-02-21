@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Feb 21 08:01:21 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Feb 21 15:07:32 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -216,7 +216,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-24"
+__version__ = "2023-02-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -242,7 +242,6 @@ if _pythonv[0] == 2:
   reduce = reduce
   basestring = basestring
   raw_input = raw_input
-  call = apply
   Sequence = collections.Sequence
   Iterable = collections.Iterable
 elif _pythonv[0] > 2:
@@ -252,8 +251,6 @@ elif _pythonv[0] > 2:
   reduce = functools.reduce
   basestring = str
   raw_input = input
-  # call(<function>, <sequence of args>, [<dict of keywords>])
-  call = lambda fn, args=(), kw=dict(): fn(*args, **kw)
   if _pythonv > (3, 6):
     # Python 3.7 onwards
     # not: [[ Sequence = collections.abc.Sequence ]]
@@ -261,6 +258,9 @@ elif _pythonv[0] > 2:
   else:
     Sequence = collections.Sequence
     Iterable = collections.Iterable
+
+# call(<function>, <sequence of args>, [<dict of keywords>]) is an alternative to apply()
+call = lambda fn, args=(), kw=dict(): fn(*args, **kw)
 
 # re-exported functions from standard library (to save on imports)
 defaultdict = collections.defaultdict
@@ -2333,7 +2333,8 @@ def repeat(fn, v=0, k=inf):
   repeatedly applying the specified function to the previous value.
 
   if a limit <k> is specified then the function will be applied
-  the specified number of times, so (k + 1) values will be returned.
+  the specified number of times, so (k + 1) values will be returned
+  (corresponding to the application of the function 0 .. k times).
 
   >>> list(repeat((lambda x: x + 1), 0, 10))
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
