@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Feb 21 15:07:32 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 25 08:31:35 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -128,6 +128,9 @@ is_triangular          - check a number is a triangular number
 isqrt                  - intf(sqrt(x))
 join, joinf            - concatenate objects into a string
 lcm                    - lowest common multiple
+line_bisect            - find the perpendicular bisector of a line
+line_distance          - minimum distance from a point to a line
+line_intersect         - find the intersection of two lines
 M                      - multichoose function (nMk)
 map2str                - format a map for output
 match                  - match a value against a template
@@ -216,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-25"
+__version__ = "2023-02-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5741,6 +5744,20 @@ def line_bisect(p1, p2, div=fdiv):
   ((x1, y1), (x2, y2)) = (p1, p2)
   s = fdiv(x1 + x2 + y1 + y2, 2)
   return ((s - y1, s - x2), (s - y2, s - x1))
+
+# return the closest distance between a line that passes through p1 and p2
+# and the point p0
+def line_distance(p1, p2, p0=(0, 0)):
+  """
+  Return the minimum distance between the point p0 (= (x0, y0)
+  and a line that passes through points p1 (= (x1, y1))
+  and p2 (= (x2, y2)).
+
+  If p0 is not specified (0, 0) is used.
+  """
+  ((x1, y1), (x2, y2), (x0, y0)) = (p1, p2, p0)
+  (xd, yd) = (x2 - x1, y2 - y1)
+  return fdiv(abs(xd * (x0 - y1) + yd * (x1 - y0)), hypot(xd, yd))
 
 ###############################################################################
 
