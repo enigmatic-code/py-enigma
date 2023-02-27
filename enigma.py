@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 25 08:31:35 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb 27 19:39:11 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-26"
+__version__ = "2023-02-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -343,7 +343,7 @@ def cached(f):
 cache = getattr(functools, 'cache', cached)
 
 # wrap a function in another function, e.g. @wrap(uniq, verbose=1)
-def wrap(fn, *args, **kw):
+def wrap(_fn, *args, **kw):
   """
   a decorator that allows a function to be wrapped in another function.
 
@@ -359,9 +359,9 @@ def wrap(fn, *args, **kw):
   >>> list(sqmod(10, 10))
   [1, 4, 9, 6, 5, 0]
   """
-  def _inner(f):
-    @functools.wraps(f)
-    def __inner(*fargs, **fkw): return fn(f(*fargs, **fkw), *args, **kw)
+  def _inner(_f):
+    @functools.wraps(_f)
+    def __inner(*fargs, **fkw): return _fn(_f(*fargs, **fkw), *args, **kw)
     return __inner
   return _inner
 
@@ -3932,7 +3932,9 @@ def bit_xor(*vs):
   for v in vs: r ^= v
   return r
 def bit_and(r, *vs):
-  for v in vs: r &= v
+  for v in vs:
+    r &= v
+    if not r: break
   return r
 
 def _gcd(a, b):
