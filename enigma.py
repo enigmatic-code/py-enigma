@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Mar  3 22:09:35 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Mar  3 22:18:51 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-28"
+__version__ = "2023-03-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -523,7 +523,7 @@ def distinct_values(seq, n=None):
   if n is None: n = len(seq)
   return len(set(seq)) == n
 
-def seq_all_different(*seqs, fn=None):
+def seq_all_different(*seqs, **kw):
   """
   check all elements of <seq> are pairwise distinct
 
@@ -534,6 +534,7 @@ def seq_all_different(*seqs, fn=None):
   >>> seq_all_different(p % 100 for p in primes)
   False
   """
+  fn = kw.get('fn')
   seen = set()
   for seq in seqs:
     for x in seq:
