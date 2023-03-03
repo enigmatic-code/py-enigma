@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb 27 19:39:11 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Mar  3 22:09:35 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-02-27"
+__version__ = "2023-02-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -523,7 +523,7 @@ def distinct_values(seq, n=None):
   if n is None: n = len(seq)
   return len(set(seq)) == n
 
-def seq_all_different(seq, fn=None):
+def seq_all_different(*seqs, fn=None):
   """
   check all elements of <seq> are pairwise distinct
 
@@ -535,10 +535,11 @@ def seq_all_different(seq, fn=None):
   False
   """
   seen = set()
-  for x in seq:
-    if fn: x = fn(x)
-    if x in seen: return False
-    seen.add(x)
+  for seq in seqs:
+    for x in seq:
+      if fn: x = fn(x)
+      if x in seen: return False
+      seen.add(x)
   return True
 
 # same as distinct_values(args), or distinct_values(args, len(args))
@@ -745,6 +746,8 @@ def concat(*args, **kw):
   return join(args, sep=sep, enc=enc)
 
 # reverse a sequence or a map (maybe -> rev())
+# for a unicode string if will be considered as a sequence of codepoints
+# you might want to convert it to a sequence of graphemes instead
 def reverse(s, fn=None):
   """
   return the reverse of a sequence (str, tuple, list) or map (dict).
@@ -3814,8 +3817,9 @@ def is_duplicate(*s):
 
 duplicate = is_duplicate
 
-# iterative version of:
-# is_palindrome = lambda s: len(s) < 2 or (s[0] == s[-1] and is_palindrome(s[1:-1]))
+# this avoids creating a reversed copy of the sequence
+# Note: for unicode strings this will be checking the sequence of codepoints
+# you might want to convert the string to a sequence of graphemes first
 def is_palindrome(s):
   """
   check to see if sequence <s> is palindromic.
@@ -10308,8 +10312,8 @@ class Football(object):
     return (vs, ts)
 
   # shortcuts to extract table row and goals for/against
-  extract_table = lambda self, ms, t: self.table(*self.extract(ms, t))
-  extract_goals = lambda self, ss, t: self.goals(*self.extract(ss, t))
+  extract_table = lambda self, ms, t: call(self.table, self.extract(ms, t))
+  extract_goals = lambda self, ss, t: call(self.goals, self.extract(ss, t))
 
 
   # solver for a table with substituted values
