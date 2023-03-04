@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Mar  3 22:18:51 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar  4 13:00:37 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-03-01"
+__version__ = "2023-03-03"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -235,7 +235,7 @@ import copy
 import re
 
 # maybe use the "six" module for some of this stuff
-_pythonv = sys.version_info[0:2]  # Python version e.g. (2, 7) or (3, 10)
+_pythonv = sys.version_info[0:2]  # Python version e.g. (2, 7) or (3, 11)
 if _pythonv[0] == 2:
   # Python 2.x
   _python = 2
@@ -277,7 +277,7 @@ _pypy = getattr(sys, 'pypy_version_info', None)
 enigma = sys.modules[__name__]
 nl = "\n"
 pi = math.pi
-two_pi = pi * 2
+two_pi = 2 * pi
 inf = float('+inf')
 empty = frozenset()  # the empty set
 
@@ -526,6 +526,9 @@ def distinct_values(seq, n=None):
 def seq_all_different(*seqs, **kw):
   """
   check all elements of <seq> are pairwise distinct
+
+  if multiple sequences are provided elements must be
+  distinct across all sequences.
 
   >>> seq_all_different([0, 1, 2, 3])
   True
@@ -3847,9 +3850,9 @@ def is_npalindrome(n, base=10):
   """
   check if integer <n> is palindromic in base <base>.
 
-  >>> is_npalindrome(123321)
+  >>> is_npalindrome(1230321)
   True
-  >>> is_npalindrome(65535, base=16)
+  >>> is_npalindrome(57005, base=9)
   True
   """
   n = abs(n)
@@ -5877,7 +5880,8 @@ def base_digits(*args):
 
 def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None):
   """
-  convert an integer <i> to a string representation in the specified base <base>.
+  convert an integer <i> to a string representation in the specified
+  base <base>.
 
   if the <width> parameter is specified the number of digits will be
   padded to value of <width> using the <pad> character. if <width> is
@@ -5891,10 +5895,12 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   they start from the left.
 
   By default this routine only handles single digits up 36 in any
-  given base, but the <digits> parameter can be specified to give the
-  symbols for larger bases. And if the error=1 parameter is given then
-  invalid digits will be substituted with"<n>", where n is the digit
-  value in decimal.
+  given base, using standard digits 0-9 and then letters A-Z, but
+  the <digits> parameter can be specified to give the symbols for
+  larger bases. And if there are more digits in the specified base
+  then there are available symbols, then the returned string will
+  be of the form "{<n>:<n>:...}" where <n> is the digit value
+  expressed in decimal (using digits 0-9).
 
   >>> int2base(-42)
   '-42'
@@ -5917,7 +5923,14 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   if i < 0: (p, i) = ('-', -i)
   # if there aren't enough digits switch to {<digit>:<digit>:...} format
   if len(digits) < base:
-    r = join(nsplit(i, base=base), sep=':', enc="{}")
+    ds = nsplit(i, base=base, fn=list)
+    # pad left (or right for negative values) with zero digit
+    if width and width > 0:
+      while len(ds) < width: ds.insert(0, 0)
+    elif width and width < 0:
+      while len(ds) < -width: ds.append(0)
+    r = join(ds, sep=':', enc="{}")
+    width = group = None  # group is just ignored for now
   elif i == 0:
     r = digits[0]
   else:
@@ -5929,9 +5942,9 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   if width is not None:
     if pad is None: pad = digits[0]
     r = (r.rjust(width, pad) if width > 0 else r.ljust(-width, pad))
-  if group is not None:
-    (s, group) = ((-1, group) if group > 0 else (1, -group))
-    r = join((join(x) for x in chunk(r[::s], group)), sep=sep[::s])[::s]
+  if group:
+    if group < 0: r = join((join(x) for x in chunk(r, -group)), sep=sep)
+    if group > 0: r = rev(join((join(x) for x in chunk(rev(r), group)), sep=rev(sep)))
   return (p + r if p else r)
 
 def base2int(s, base=10, strip=0, digits=None):
