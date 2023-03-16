@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar  4 13:00:37 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Mar 16 16:46:46 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-03-03"
+__version__ = "2023-03-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3852,6 +3852,8 @@ def is_npalindrome(n, base=10):
 
   >>> is_npalindrome(1230321)
   True
+  >>> is_npalindrome(10**5000 + 1)
+  True
   >>> is_npalindrome(57005, base=9)
   True
   """
@@ -3864,7 +3866,7 @@ def is_npalindrome(n, base=10):
     b += r
     if a == b: return True
     a = d
-  return a == b
+  return (a == b)
 
 # originally called product(), but renamed to avoid name confusion with itertools.product()
 def multiply(seq, r=1, mod=None):
@@ -5702,6 +5704,8 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   r.fv += v
   return r
 
+# 2D geometry: a point is represented by (x, y)
+
 def line_intersect(p1, p2, p3, p4, internal=0, div=fdiv):
   """
   Find the intersection of 2 lines defined by points:
@@ -5914,8 +5918,8 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   'HELLO'
   >>> int(int2base(123456, base=14), base=14)
   123456
-  >>> int2base(84, base=2, width=9, group=3, sep="_")
-  '001_010_100'
+  >>> int2base(84, base=2, width=9, group=3, sep=" ")
+  '001 010 100'
   """
   assert base > 1, "invalid base {base}".format(base=base)
   if digits is None: digits = base_digits()
@@ -8631,6 +8635,15 @@ class SubstitutedExpression(object):
       yield s
       n += 1
       if first and first == n: break
+
+  # solve the puzzle, and just return the answers
+  def answers(self, **kw):
+    """
+    like solve(), but just return the answer for each solution
+    (assuming the 'answer' parameter has been specified).
+    """
+    assert self.answer, "'answer' parameter must be specified"
+    return map(item(1), self.solve(**kw))
 
   # output a solution as: "<template> / <solution>"
   # <template> = the given template with digits substituted for symbols
