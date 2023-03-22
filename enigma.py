@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Mar 16 16:46:46 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 22 09:14:09 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-03-15"
+__version__ = "2023-03-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -8643,7 +8643,8 @@ class SubstitutedExpression(object):
     (assuming the 'answer' parameter has been specified).
     """
     assert self.answer, "'answer' parameter must be specified"
-    return map(item(1), self.solve(**kw))
+    for (_, ans) in self.solve(**kw):
+      yield ans
 
   # output a solution as: "<template> / <solution>"
   # <template> = the given template with digits substituted for symbols
@@ -11097,7 +11098,7 @@ def __grouping():
       print(str.join(sep, g))
     print(end)
 
-  def solve(vs, fn, sep=", ", end=""):
+  def solve(vs, fn=true, sep=", ", end=""):
     """
     group the lists of elements in <vs> into groups (one element from each list)
     such that the values in the groups satisfy the selection function <fn>,
