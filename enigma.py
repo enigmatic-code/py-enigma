@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 22 09:14:09 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Mar 30 09:05:35 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.11)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-03-19"
+__version__ = "2023-03-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -261,6 +261,10 @@ elif _pythonv[0] > 2:
   else:
     Sequence = collections.Sequence
     Iterable = collections.Iterable
+
+_builtin_min = min
+_builtin_max = max
+_builtin_sum = sum
 
 # call(<function>, <sequence of args>, [<dict of keywords>]) is an alternative to apply()
 call = lambda fn, args=(), kw=dict(): fn(*args, **kw)
@@ -325,7 +329,7 @@ def cached(f):
   cache() is also available which will use Python's own function
   (functools.cache), if available, otherwise cached().
 
-  See also: functools.lru_cache() (Python 3.2+), functools.cache() (Python 3.9+).
+  see also: functools.lru_cache() (Python 3.2), functools.cache() (Python 3.9).
   """
   f.cache = cache = dict()
   @functools.wraps(f)
@@ -435,6 +439,18 @@ def as_int(x, include="", **kw):
   if include: msg += ' [include: ' + include + ']'
   raise ValueError(msg)
 
+# division that always produces a float
+def fdiv(a, b, fn=float):
+  """
+  float result of <a> divided by <b>.
+
+  >>> fdiv(3, 2)
+  1.5
+
+  >>> fdiv(9, 3)
+  3.0
+  """
+  return fn(a) / fn(b)
 
 # useful routines for solving Enigma puzzles
 
@@ -1453,7 +1469,7 @@ class multiset(dict):
 
     if n is specifed only the first n items are returned.
     """
-    s = sorted(self.items(), key=(lambda t: t[::-1]), reverse=1)
+    s = sorted(dict.items(self), key=(lambda t: t[::-1]), reverse=1)
     return (s if n is None else s[:n])
 
   # provide some useful operations on multisets
@@ -1580,7 +1596,7 @@ class multiset(dict):
     return a new mutliset derived from the original multiset by
     multiplying item counts by <n>.
     """
-    return multiset.from_pairs((k, n * v) for (k, v) in self.items())
+    return multiset.from_pairs((k, n * v) for (k, v) in dict.items(self))
 
   def subsets(self, size=None, min_size=0, max_size=None):
     """generate subsets of a multiset"""
@@ -1589,7 +1605,7 @@ class multiset(dict):
     elif max_size is None:
       max_size = len(self)
     # distinct elements
-    ks = list(self.keys())
+    ks = list(dict.keys(self))
     # choose the number of elements for each key
     for ns in cproduct(irange(0, self[k]) for k in ks):
       if min_size <= sum(ns) <= max_size:
@@ -1606,7 +1622,7 @@ class multiset(dict):
     equivalent to: min(self)
     """
     if (not self) and 'default' in kw: return kw['default']
-    return min(dict.keys(self))
+    return _builtin_min(dict.keys(self))
 
   def max(self, **kw):
     """
@@ -1615,15 +1631,21 @@ class multiset(dict):
     equivalent to: max(self)
     """
     if (not self) and 'default' in kw: return kw['default']
-    return max(dict.keys(self))
+    return _builtin_max(dict.keys(self))
 
-  def sum(self, fn=sum):
+  def sum(self, fn=_builtin_sum):
     """
     return the sum of items in a multiset.
 
     equivalent to: sum(self)
     """
     return fn(v * k for (k, v) in dict.items(self))
+
+  def avg(self, div=fdiv, fn=_builtin_sum):
+    """
+    return the average (arithmetic mean) of the items in a multiset.
+    """
+    return div(self.sum(fn=fn), self.size())
 
   def multinomial(self):
     """
@@ -1636,7 +1658,7 @@ class multiset(dict):
 
   # generate elements in order
   def sorted(self, key=None, reverse=False):
-    for k in sorted(self.keys(), key=key, reverse=reverse):
+    for k in sorted(dict.keys(self), key=key, reverse=reverse):
       for _ in xrange(self.get(k)):
         yield k
 
@@ -1646,7 +1668,7 @@ class multiset(dict):
 
   # generate item pairs
   def to_pairs(self):
-    return tuple(sorted(self.items()))
+    return tuple(sorted(dict.items(self)))
 
   def to_dict(self):
     return dict(self)
@@ -3218,7 +3240,7 @@ def isqrt(n):
   """
   calculate intf(sqrt(n)), for integers n.
 
-  See also: math.isqrt (Python 3.8+), gmpy2.isqrt().
+  See also: math.isqrt (Python 3.8), gmpy2.isqrt().
 
   >>> isqrt(9)
   3
@@ -3569,7 +3591,7 @@ def hypot(*vs, **kw):
   a keyword argument of 'root' may be specified to provide the
   function used to calculate the root of the sum of the squares.
 
-  See also: math.hypot() (Python 3.8+).
+  See also: math.hypot() (Python 3.8).
 
   >>> hypot(3, 4)
   5.0
@@ -3790,19 +3812,6 @@ def ediv(a, b):
   if r != 0: raise ValueError("inexact division")
   return d
 
-def fdiv(a, b, fn=float):
-  """
-  float result of <a> divided by <b>.
-
-  >>> fdiv(3, 2)
-  1.5
-
-  >>> fdiv(9, 3)
-  3.0
-  """
-  return fn(a) / fn(b)
-
-
 def is_duplicate(*s):
   """
   check to see if arguments (as strings) contain duplicate characters.
@@ -3878,7 +3887,7 @@ def multiply(seq, r=1, mod=None):
 
   if <mod> is specified, the result at each stage is calculate mod <mod>.
 
-  See also: math.prod() (Python 3.8+).
+  See also: math.prod() (Python 3.8).
 
   >>> multiply(irange(1, 7))
   5040
@@ -3895,6 +3904,23 @@ def multiply(seq, r=1, mod=None):
       r *= x
       r %= mod
   return r
+
+def avg(seq, div=fdiv):
+  """
+  calculate the arithmetic mean (average) of the values in <seq>.
+
+  for sequences this is equivalent to: sum(seq) / len(seq)
+
+  the function used for division can be provided with the 'div' parameter.
+
+  >>> avg(irange(1, 10))
+  5.5
+  """
+  t = k = 0
+  for x in seq:
+    t += x
+    k += 1
+  return div(t, k)
 
 # vector dot product: dot(xs, ys, strict=0, fnp=multiply, fns=sum)
 def dot(*vs, **kw):
@@ -3916,6 +3942,8 @@ def dot(*vs, **kw):
   the functions used for the product and sum functions can be defined
   with the parameters 'fnp' (default is: multiply) and 'fns' (default
   is: sum).
+
+  see also: math.sumprod() (Python 3.12)
 
   >>> dot((1, 3, -5), (4, -2, -1))
   3
@@ -4056,7 +4084,7 @@ def mgcd(a, *rest):
   """
   GCD of multiple (two or more) integers.
 
-  See also: math.gcd() (Python 3.9+)
+  See also: math.gcd() (Python 3.9)
 
   >>> mgcd(123, 456)
   3
@@ -4074,7 +4102,7 @@ def mlcm(a, *rest):
   """
   LCM of multiple (two or more) integers.
 
-  See also: math.lcm() (Python 3.9+)
+  See also: math.lcm() (Python 3.9)
 
   >>> mlcm(2, 3, 5, 9)
   90
@@ -4287,7 +4315,7 @@ def nPr(n, r):
   the number of ordered r-length selections from n elements
   (elements can only be used once).
 
-  See also: math.perm() (Python 3.8+).
+  See also: math.perm() (Python 3.8).
 
   >>> nPr(10, 3)
   720
@@ -4306,7 +4334,7 @@ def nCr(n, r):
   the number of unordered r-length selections from n elements
   (elements can only be used once).
 
-  See also: math.comb() (Python 3.8+).
+  See also: math.comb() (Python 3.8).
 
   >>> nCr(10, 3)
   120
@@ -4968,7 +4996,7 @@ def csum(seq, s=0, fn=operator.add, empty=0):
   if 'empty' is set to a true value then the initial value 's' will be
   initially returned.
 
-  See also: itertools.accumulate() (Python 3.2+).
+  See also: itertools.accumulate() (Python 3.2).
 
   >>> list(csum(irange(1, 10)))
   [1, 3, 6, 10, 15, 21, 28, 36, 45, 55]
@@ -5005,7 +5033,7 @@ def tuples(seq, n=2, circular=0, fn=tuple):
   if 'circular' is set to true, then values from the beginning of <seq>
   will be used to complete tuples when the end is reached.
 
-  See also: itertools.pairwise() (Python 3.10+).
+  See also: itertools.pairwise() (Python 3.10).
 
   >>> list(tuples('ABCDE'))
   [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'E')]
