@@ -6,8 +6,8 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Mar 30 09:05:35 2023 (Jim Randell) jim.randell@gmail.com
-# Language:     Python (Python 2.7, Python 3.6 - 3.11)
+# Modified:     Fri Mar 31 23:50:13 2023 (Jim Randell) jim.randell@gmail.com
+# Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
 # URI:          http://www.magwag.plus.com/jim/enigma.html
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-03-28"
+__version__ = "2023-03-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -11835,6 +11835,10 @@ def run(cmd, *args, **kw):
         path = os.path.abspath(cmd)
         if interp:
           cmd = interp.strip()
+          # if it is a run file...
+          if path.endswith(".run"):
+            args = ['--run', path] + args
+            path = enigma.__file__
         else:
           with open(path, 'r') as fh:
             s = next(fh)
