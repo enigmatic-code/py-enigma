@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Apr  3 09:02:03 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Apr  3 09:29:21 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-04-01"
+__version__ = "2023-04-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1541,9 +1541,13 @@ class multiset(dict):
   def issubset(self, m, strict=0):
     """test if the multiset is contained in multiset <m>"""
     if not isinstance(m, dict): m = multiset(m)
+    # check sizes
+    r = compare(self.size(), m.size())
+    if r == 1 or (strict and r == 0): return False
+    # check items
     for (item, count) in self.items():
       if count > m.get(item, 0): return False
-    return (not strict) or (self.size() < m.size())
+    return True
 
   # is this multiset m a superset of self?
   def issuperset(self, m, strict=0):
