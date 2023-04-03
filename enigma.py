@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Mar 31 23:50:13 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Apr  3 09:02:03 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-03-29"
+__version__ = "2023-04-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1537,6 +1537,20 @@ class multiset(dict):
       r = multiset.from_pairs((item, min(count, r.get(item, 0))) for (item, count) in m.items())
     return r
 
+  # is this multiset a subset of m?
+  def issubset(self, m, strict=0):
+    """test if the multiset is contained in multiset <m>"""
+    if not isinstance(m, dict): m = multiset(m)
+    for (item, count) in self.items():
+      if count > m.get(item, 0): return False
+    return (not strict) or (self.size() < m.size())
+
+  # is this multiset m a superset of self?
+  def issuperset(self, m, strict=0):
+    """test if the multiset contains multiset <m>"""
+    if not isinstance(m, dict): m = multiset(m)
+    return m.issubset(self, strict=strict)
+
   # differences between self and m
   # return (self - m, m - self)
   def differences(self, m):
@@ -1560,18 +1574,6 @@ class multiset(dict):
   def difference(self, m):
     """return (self - m)"""
     return self.differences(m)[0]
-
-  # is multiset m a subset of self?
-  def issuperset(self, m, strict=0):
-    """test if the multiset contains multiset <m>"""
-    (d1, d2) = self.differences(m)
-    return (not d2) and ((not strict) or bool(d1))
-
-  # is multiset m a superset of self?
-  def issubset(self, m, strict=0):
-    """test if the multiset is contained in multiset <m>"""
-    (d1, d2) = self.differences(m)
-    return (not d1) and ((not strict) or bool(d2))
 
   # absolute difference in item counts of the two multisets
   def symmetric_difference(self, m):
