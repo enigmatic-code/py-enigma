@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Apr  3 09:29:21 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Apr  7 10:01:13 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-04-02"
+__version__ = "2023-04-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -789,6 +789,8 @@ def reverse(s, fn=None):
   #if hasattr(s, 'rev'): return (s.rev() if fn is None else fn(s.rev()))
   # if it is a dict, return a reverse map
   if isinstance(s, dict): return type(s)((v, k) for (k, v) in s.items())
+  # if it is not already a sequence, turn it into one
+  if not isinstance(s, Sequence): s = list(s)
   # if it is a string, return a string
   if fn is None:
     if isinstance(s, basestring):
@@ -5939,6 +5941,8 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   then there are available symbols, then the returned string will
   be of the form "{<n>:<n>:...}" where <n> is the digit value
   expressed in decimal (using digits 0-9).
+
+  see also: gmpy2.digits()
 
   >>> int2base(-42)
   '-42'
