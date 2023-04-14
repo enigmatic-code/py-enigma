@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Apr  8 08:10:42 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Apr 14 12:17:58 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -5807,7 +5807,7 @@ def line_distance(p1, p2, p0=(0, 0)):
   """
   ((x1, y1), (x2, y2), (x0, y0)) = (p1, p2, p0)
   (xd, yd) = (x2 - x1, y2 - y1)
-  return fdiv(abs(xd * (x0 - y1) + yd * (x1 - y0)), hypot(xd, yd))
+  return fdiv(abs(xd * (y1 - y0) - yd * (x1 - x0)), hypot(xd, yd))
 
 ###############################################################################
 
