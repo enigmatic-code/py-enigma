@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Apr 14 12:18:41 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Apr 20 14:39:40 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-04-13"
+__version__ = "2023-04-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6843,7 +6843,7 @@ class Polynomial(list):
     return self.__class__(poly_integral(self, c=c, div=div))
 
   def rational_roots(self, v=0, domain="Q", include="+-0", F=None):
-    "find rational roots of the polynomial"
+    "find rational roots of the polynomial = v"
     p = (self - v if v else self)
     return poly_rational_roots(p, domain=domain, include=include, F=F)
 
@@ -7956,6 +7956,19 @@ def _fix_implicit_seq(seq, symbols):
   if seq is None: return None
   return list(_fix_implicit(x, symbols) for x in seq)
 
+def _expand_macros(s, macro, depth=20):
+  if not s: return s
+  while '@' in s:
+    if depth == 0: raise ValueError("macro depth exceeded")
+    try:
+      s = re.sub(r'\@(\w+)', (lambda x: macro[x.group(1)]), s)
+    except KeyError as e:
+      x = ValueError(sprintf("invalid macro: {k!r}", k=e.args[0]))
+      # [Python 3] raise ... from None
+      if hasattr(x, '__cause__'): x.__cause__ = None
+      raise x
+    depth -= 1
+  return s
 
 class SubstitutedExpression(object):
   """
@@ -7966,7 +7979,7 @@ class SubstitutedExpression(object):
   assignments which result in the expression having a True value.
 
   This allows for more general expressions to be evaluated than specialised
-  solvers, like SubstitutedSum(), alow.
+  solvers, like SubstitutedSum(), allow.
 
 
   Enigma 1530 <https://enigmaticcode.wordpress.com/2012/07/09/enigma-1530-tom-daley/>
@@ -7997,13 +8010,13 @@ class SubstitutedExpression(object):
     # other parameters
     exprs=None, symbols=None, digits=None, s2d=None, d2i=None, answer=None, accumulate=None,
     literal=None, template=None, solution=None, header=None,
-    check=None, env=None, code=None,
+    check=None, macro=None, env=None, code=None,
   )
 
   def __init__(self,
     exprs, base=None, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None,
     accumulate=None, literal=None, template=None, solution=None, header=None, distinct=None, check=None,
-    env=None, code=None, process=None, reorder=None, first=None, denest=None, sane=None, verbose=None
+    macro=None, env=None, code=None, process=None, reorder=None, first=None, denest=None, sane=None, verbose=None
   ):
     """
     create a substituted expression solver.
@@ -8031,6 +8044,7 @@ class SubstitutedExpression(object):
     check - a boolean function used to accept/reject solutions (default: None)
     env - additional environment for evaluation (default: None)
     code - additional lines of code evaluated before solving (default: None)
+    macro - macro expansions applied to expressions containing @macro (default: None)
     denest - work around CPython statically nested block limit
     sane - enable/disable sanity checks (default: 1)
     verbose - control informational output (default: 1)
@@ -8110,6 +8124,7 @@ class SubstitutedExpression(object):
     distinct = self.distinct
     literal = self.literal
     denest = self.denest
+    macro = self.macro
     process = self.process
     sane = self.sane
     verbose = self.verbose
@@ -8133,6 +8148,11 @@ class SubstitutedExpression(object):
       # allow expr to be a single string
       if isinstance(exprs, basestring): exprs = [exprs]
 
+      # replace any macros within expressions (and answer, template)
+      exprs = list(_expand_macros(s, macro) for s in exprs)
+      answer = _expand_macros(answer, macro)
+      template = _expand_macros(template, macro)
+
       # now process the list
       xs = list()
       for expr in exprs:
@@ -8147,10 +8167,11 @@ class SubstitutedExpression(object):
 
         # convert implicit (without braces) into explicit (with braces)
         if symbols:
-          if isinstance(v, basestring) and '{' not in v and '{' not in expr and all(x in symbols for x in v): v = '{' + v + '}'
-          expr = _fix_implicit(expr, symbols)
+          expr_ = expr
+          expr = _fix_implicit(expr_, symbols)
+          if isinstance(v, basestring) and expr != expr_: v = _fix_implicit(v, symbols)
 
-        # value is either an alphabetic or a numeric literal
+        # value is either an alphametic or a numeric literal
         if isinstance(v, basestring) and '{' not in v:
           v = base2int(v, base=base)
 
@@ -9205,6 +9226,11 @@ class SubstitutedExpression(object):
     elif k == 'C' or k == 'code':
       if 'code' not in opt: opt['code'] = []
       opt['code'].append(v)
+    elif k == '@' or k == 'macro':
+      (m, t) = re.split(r'\s*=\s*', v)
+      if m[0] == '@': m = m[1:]
+      if opt.get('macro', None) is None: opt['macro'] = dict()
+      opt['macro'][m] = t
     elif k == 'A' or k == 'answer':
       opt['answer'] = v
     elif k == 'M' or k == 'accumulate':
