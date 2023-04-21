@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Apr 20 14:39:40 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Apr 21 14:05:27 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -205,7 +205,7 @@ DominoGrid             - a class for solving domino grid puzzles
 Football               - a class for solving football league table puzzles
 MagicSquare            - a class for solving magic squares
 Matrix                 - a class for manipulation 2d matrices
-multiset               - a class for manipulating multisets
+multiset               - an implementation of multisets (bags)
 Polynomial             - a class for manipulating polynomials
 Primes                 - a class for creating prime sieves
 Rational               - select an implementation for rational numbers
@@ -3615,21 +3615,28 @@ def hypot(*vs, **kw):
 ihypot = lambda *vs: hypot(*vs, root=is_square)
 
 # return roots of the form n/d in the appropriate domain
-def _roots(domain, F, *nds):
+def _roots(domain, include, F, *nds):
+  (pos, neg, zero) = (x in include for x in '+-0')
   for (n, d) in nds:
+    # calculate the root
     if domain in "CF":
-      yield F(n / d)
-    elif domain in "QZ":
+      x = F(n / d)
+    elif domain == "Q":
       x = F(n, d)
-      if domain == "Q":
-        yield x
-      elif domain == "Z":
-        x = as_int(x, default=None)
-        if x is not None: yield x
+    elif domain == "Z":
+      x = as_int(F(n, d), default=None)
+      if x is None: continue
+    # return the root
+    if x > 0:
+      if pos: yield x
+    elif x < 0:
+      if neg: yield x
+    else:
+      if zero: yield x
 
 # find roots of a quadratic equation
 # domain = "Z" (integer), "Q" (rational), "F" (float), "C" (complex float)
-def quadratic(a, b, c, domain="Q", F=None):
+def quadratic(a, b, c, domain="Q", include="+-0", F=None):
   """
   find roots of the equation:
 
@@ -3651,20 +3658,20 @@ def quadratic(a, b, c, domain="Q", F=None):
     # linear equation
     assert b != 0
     if F is None: F = (Rational() if domain in 'QZ' else (complex if domain == 'C' else float))
-    return _roots(domain, F, (-c, b))
+    return _roots(domain, include, F, (-c, b))
 
   # discriminant
   D = b * b - 4 * a * c
-  if D < 0 and domain != "C": return _roots(domain, None)
+  if D < 0 and domain != "C": return _roots(domain, '', None)
 
   if domain in "CF":
     F = (complex if domain == 'C' else float)
     d = -2 * a
     if D == 0:
-      return _roots(domain, F, (b, d))
+      return _roots(domain, include, F, (b, d))
     else:
       r = D**0.5
-      return _roots(domain, F, (b + r, d), (b - r, d))
+      return _roots(domain, include, F, (b + r, d), (b - r, d))
 
   elif domain in "QZ":
     if F is None: F = Rational()
@@ -3672,11 +3679,11 @@ def quadratic(a, b, c, domain="Q", F=None):
     if r is not None:
       d = -2 * a
       if r == 0:
-        return _roots(domain, F, (b, d))
+        return _roots(domain, include, F, (b, d))
       else:
-        return _roots(domain, F, (b + r, d), (b - r, d))
+        return _roots(domain, include, F, (b + r, d), (b - r, d))
 
-  return _roots(domain, None)
+  return _roots(domain, '', None)
 
 
 def intf(x):
@@ -6842,6 +6849,11 @@ class Polynomial(list):
     "return the indefinite integral of the polynomial"
     return self.__class__(poly_integral(self, c=c, div=div))
 
+  def quadratic_roots(self, v=0, domain="Q", include="+-0", F=None):
+    p = (self - v if v else self)
+    assert not p.degree() > 2, "polynomial degree too large"
+    return quadratic(p[2], p[1], p[0], domain=domain, include=include, F=F)
+
   def rational_roots(self, v=0, domain="Q", include="+-0", F=None):
     "find rational roots of the polynomial = v"
     p = (self - v if v else self)
@@ -8411,7 +8423,7 @@ class SubstitutedExpression(object):
 
     if verbose & self.vI:
       # output solver information
-      printf("[base={base}, digits={digits}, symbols={symbols!r}, distinct={distinct!r}]", distinct=join(distinct, sep=','))
+      printf("[base={base}, digits={digits}, symbols={symbols!r}, distinct={distinct}]")
       printf("[s2d={s2d}, d2i={d2i}]")
       # output the solving strategy
       (ss, d) = (list(), set(s2d.keys()))
