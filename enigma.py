@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Apr 21 14:07:08 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Apr 23 15:51:26 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-04-20"
+__version__ = "2023-04-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -320,6 +320,7 @@ def static(**kw):
   return _inner
 
 # useful as a decorator for caching functions (@cached).
+# TODO: add a parameter for adding a 'key' function
 def cached(f):
   """
   return a cached version of function <f>.
@@ -9475,6 +9476,9 @@ class SubstitutedExpression(object):
           print("[ERROR: try again]")
         print()
 
+  @classmethod
+  def run_repl(cls, args):
+    cls.repl()
 
 
 def substituted_expression(*args, **kw):
