@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Apr 23 15:51:26 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr 25 14:53:17 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-04-21"
+__version__ = "2023-04-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4674,13 +4674,19 @@ def catch(fn, *args, **kw):
     return
 
 # inclusive range iterator
-# TODO: should irange(4) = (1, 2, 3, 4) or (0, 1, 2, 3) ?
-# it's currently the latter, but maybe should be the former
+# irange(a, b) -> [a, a + 1, ..., b]
+# irange(n) -> irange(0, n - 1) -> [0, ..., n - 1]
 @static(inf=inf) # so b=irange.inf can be used
 def irange(a, b=None, step=1):
   """
   irange(a, b) =
-  a range iterator that includes both integer endpoints, <a> and <b>.
+  an integer range iterator that includes both endpoints, <a> and <b>.
+
+  it will generate, in order, the integers: [a, a + k, a + 2k, ..., b]
+  where <k> is the step.
+
+  note that it is possible to choose endpoint/step combinations where
+  the sequence of integers generated is empty.
 
   if <b> is specified as inf (or -inf for negative steps) the iterator
   will generate values indefinitely.
@@ -4705,7 +4711,7 @@ def irange(a, b=None, step=1):
   [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
 
   """
-  if step == 0: raise ValueError("irange: step cannot be 0")
+  if not step: raise ValueError("irange: step cannot be zero")
   if b == inf:
     if step < 0: return xrange(0)
   elif b == -inf:
@@ -6462,6 +6468,10 @@ def poly_multiply(ps):
     r = poly_mul(r, p)
   return r
 
+# make a polynomial with the given roots
+def poly_from_roots(rs):
+  return poly_multiply([-r, 1] for r in rs)
+
 # raise a polynomial to a (non-negative) integer power
 def poly_pow(p, n):
   n = as_int(n, include='0+')
@@ -6616,8 +6626,8 @@ def poly_rational_roots(p, domain="Q", include="+-0", F=None):
   fs = product(divisors(abs(p[0])), divisors(abs(p[-1])))
   for x in uniq(map(unpack(F), fs)):
     if domain == "Z":
-      if x.denominator != 1: continue
-      x = x.numerator
+      x = as_int(x, default=None)
+      if x is None: continue
     if pos and poly_value(p, x) == 0:
       yield x
     if neg and poly_value(p, -x) == 0:
@@ -6879,6 +6889,10 @@ class Polynomial(list):
   @classmethod
   def from_pairs(cls, ps):
     return cls(poly_from_pairs(ps))
+
+  @classmethod
+  def from_roots(cls, rs):
+    return cls(poly_from_roots(rs))
 
   @classmethod
   def unit(cls):
@@ -9796,7 +9810,7 @@ class SubstitutedDivision(SubstitutedExpression):
     assert len(c) == len(subs), "result/intermediate mismatch"
 
     # no leading zeros (or singleton zeros, except for remainder)
-    for s in flatten([(a, b, c)] + subs):
+    for s in chain([a, b, c], *subs):
       if s is None: continue
       slots.slot_setprops(s[0], (_NE, 0))
 
