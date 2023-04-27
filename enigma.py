@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr 25 14:53:17 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Apr 27 16:15:21 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-04-23"
+__version__ = "2023-04-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -9003,6 +9003,7 @@ class SubstitutedExpression(object):
           # otherwise, use the whole result
           (rs, rs_) = (result, None)
         # allocate a carry out
+        assert carries, "ran out of carry symbols"
         carry = (carries.pop(0) if rs_ else '')
         if carry: cs.append(carry)
         exprs.append(join(map(enc, ts), sep=" + ") + " = " + enc(carry + rs))
