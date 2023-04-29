@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Apr 27 16:15:21 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Apr 29 16:17:15 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-04-25"
+__version__ = "2023-04-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -508,7 +508,7 @@ sign = lambda x: (0 < x) - (x < 0)  # = compare(x, 0)
 # logical implication: p -> q
 def implies(p, q):
   """
-  logical implication: (p -> q) = (not(p) or q)
+  logical implication: (p -> q) = ((not p) or q)
 
   >>> list(p for p in irange(1, 100) if not implies(is_prime(p), p % 6 in (1, 5)))
   [2, 3]
@@ -8103,33 +8103,48 @@ class SubstitutedExpression(object):
 
   # verbose flags:
   # generate output
-  vH = 4 # output header template
-  vT = 8 # output solutions (from template)
-  #vS = 512 # output solution symbol -> digit mapping
-  vA = 16 # output answer counts / accumulated measures
+  vH = 4  # output header template
+  vT = 8  # output solutions (from template)
+  #vS = 512  # output solution symbol -> digit mapping
+  vA = 16  # output answer counts / accumulated measures
   # information / debugging
-  vE = 32 # output elapsed time
-  vP = 64 # output solver parameters
-  vI = 128 # output solver info
-  vC = 256 # output code (before compilation)
+  vE = 32  # output elapsed time
+  vP = 64  # output solver parameters
+  vI = 128  # output solver info
+  vC = 256  # output code (before compilation)
   # standard debug levels
-  v1 = vH | vT | vA # 1 = header + solutions + count
-  v2 = v1 | vI # 2 = 1 + solver info
-  v3 = v2 | vE | vC # 3 = 2 + timing + code
-  v9 = vH | vT | vA | vE | vP | vI | vC # 9 = everything
+  v0 = 0
+  v1 = vH | vT | vA  # 1 = header + solutions + count
+  v2 = v1 | vI  # 2 = 1 + solver info
+  v3 = v2 | vE | vC  # 3 = 2 + timing + code
+  v9 = vH | vT | vA | vE | vP | vI | vC  # 9 = everything
 
   def _verbose(self, n):
     if not n: return 0
     # if it is a string, parse it into a number
     if isinstance(n, basestring):
+      # sort out "new style" flags, e.g. "1+E" "1-T" "1-T+E" "9" "HTAEPIC"
+      d = dict((k, getattr(self, 'v' + k)) for k in 'HTAEPIC01239')
+      v = 0
+      try:
+        op = '+'
+        for k in n:
+          if k in '+-':
+            op = k
+            continue
+          x = d.get(k, 0)
+          if op == '+':
+            v |= x
+          elif op == '-':
+            v &= ~x
+            op = '+'
+        return v
+      except Exception:
+        pass
+
       # sort out "old-style" numeric arguments
       if re.match(r'[\d\-\|\+\,]+', n):
         n = sum(_digits(n))
-
-      else:
-        # sort out "new style" flags
-        # "1+E" "1-T" "1-T+E" "9" "HTAEPIC"
-        assert False
 
     # old style verbose flags (1, 2, 3)
     if n < 4:
@@ -9190,17 +9205,17 @@ class SubstitutedExpression(object):
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
       "  --denest=<n> (or -X<n>) = workaround statically nested block limit (0 = off, 1 = on, 2+ = depth)",
       "  --sane=<n> (or -Y<n>) = enable/disable sanity checks (0 = off, 1 = on)",
-      "  --verbose[=<s>] (or -v[<s>]) = verbosity (0 = off, 1 = on, HTSAitC = more)",
+      "  --verbose[=<s>] (or -v[<s>]) = verbosity (0 = off, 1 = on, HTAEPIC239 = more)",
       "  --help (or -h) = show command-line usage",
       "",
       "verbosity levels:",
-      "    4 = output header (1,2,3)",
-      "    8 = output solutions (1,2,3)",
-      "   16 = output solution count (1,2,3)",
-      "   32 = output timing info (3)",
-      "   64 = output parameters",
-      "  128 = output solver info (2,3)",
-      "  256 = output Python code (3)",
+      "  H = output header template [1,2,3,9]",
+      "  T = output solutions (from template) [1,2,3,9]",
+      "  A = output answer count / accumulated measures [1,2,3,9]",
+      "  E = output elapsed timing info [3,9]",
+      "  P = output solver parameters [9]",
+      "  I = output solver info [2,3,9]",
+      "  C = output generated Python code [3,9]",
       "",
     )
 
