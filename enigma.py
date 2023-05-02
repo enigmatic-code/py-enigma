@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Apr 29 16:17:15 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue May  2 09:00:38 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-04-26"
+__version__ = "2023-04-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -281,7 +281,7 @@ _pypy = getattr(sys, 'pypy_version_info', None)
 enigma = sys.modules[__name__]
 nl = "\n"
 pi = math.pi
-two_pi = 2 * pi
+two_pi = pi + pi
 inf = float('+inf')
 empty = frozenset()  # the empty set
 
@@ -3019,7 +3019,7 @@ def coprime_pairs(n=None, order=0):
   while ps:
     (b, a) = _pop(ps)
     yield (a, b)
-    for p in ((2 * b - a, b), (2 * a + b, a), (2 * b + a, b)):
+    for p in ((b + b - a, b), (a + a + b, a), (b + b + a, b)):
       if fn(p): _push(ps, p)
 
 # Pythagorean Triples:
@@ -3795,9 +3795,9 @@ def divr(a, b):
   if b < 0: (a, b) = (-a, -b)
   if a < 0:
     a = -a
-    return -int((a + a + b) // (2 * b))
+    return -int((a + a + b) // (b + b))
   else:
-    return int((a + a + b) // (2 * b))
+    return int((a + a + b) // (b + b))
 
 def ceil(x, m=1):
   """
@@ -4645,7 +4645,8 @@ def printf(fmt='', **kw):
   print format string <fmt> with interpolated local variables and
   keyword arguments.
 
-  the final newline can be suppressed by ending the string with '\\'.
+  the final newline can be suppressed by ending the string with '\\'
+  (which you may need to escape).
 
   >>> (a, b, c) = (1, 2, 3)
   >>> printf("a={a} b={b} c={c}")
@@ -8121,18 +8122,19 @@ class SubstitutedExpression(object):
 
   def _verbose(self, n):
     if not n: return 0
+
     # if it is a string, parse it into a number
     if isinstance(n, basestring):
       # sort out "new style" flags, e.g. "1+E" "1-T" "1-T+E" "9" "HTAEPIC"
       d = dict((k, getattr(self, 'v' + k)) for k in 'HTAEPIC01239')
-      v = 0
+      v = d['0']
       try:
         op = '+'
         for k in n:
           if k in '+-':
             op = k
             continue
-          x = d.get(k, 0)
+          x = d[k]
           if op == '+':
             v |= x
           elif op == '-':
