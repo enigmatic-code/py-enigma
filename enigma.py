@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue May  2 09:00:38 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed May  3 15:30:49 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-04-29"
+__version__ = "2023-05-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2445,7 +2445,7 @@ def cbrt(x):
 # cb = lambda x: x**3
 def cb(x): "cb(x) = x**3"; return x**3
 
-# for large numbers try Primes.prime_factor(n, mr=100), or sympy.ntheory.factorint(n)
+# for large numbers with large prime factors use prime_factor_h() or sympy.ntheory.factorint()
 # basis = [2, 3, 5]
 _prime_factor_ds = (1, 2, 2, 4, 2, 4, 2, 4, 6, 2, 6)  # deltas
 _prime_factor_js = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3)  # next index
@@ -2457,7 +2457,8 @@ def prime_factor(n):
   no pairs are returned for 1 (or for non-positive integers).
 
   for numbers with large prime factors it will take a long time to
-  find them.
+  find them. in this case you probably want to use prime_factor_h()
+  instead.
 
   >>> list(prime_factor(60))
   [(2, 2), (3, 1), (5, 1)]
@@ -2623,20 +2624,28 @@ def multiples(ps, k=1):
   return s
 
 
-def divisors(n, k=1, fn=prime_factor):
+def divisors(n, k=1, fn=prime_factor, validate=0):
   """
   return the divisors of positive integer pow(<n>, <k>) as a sorted list.
+
+  the function used to find prime factors can be specified as <fn>. if you
+  are factorising large numbers with large prime factors, then you will
+  probably want to provide a function based on prime_factor_h().
 
   >>> divisors(36)
   [1, 2, 3, 4, 6, 9, 12, 18, 36]
   >>> divisors(101)
   [1, 101]
+  >>> ds = divisors(factorial(23) - 1, fn=(lambda n: prime_factor_h(n, mr=1)))
+  >>> print(seq2str(ds))
+  (1, 51871, 498390560021687969, 25852016738884976639999)
   """
+  if validate: n = as_int(n, include="0+")
   if n == 0 and k > 0: return [0]
   return multiples(fn(n), k=k)
 
 
-def divisors_pairs(n, k=1, fn=prime_factor, every=0):
+def divisors_pairs(n, k=1, fn=prime_factor, every=0, validate=0):
   """
   generate divisors pairs (a, b) with a <= b, such that a * b = pow(n, k).
 
@@ -2646,6 +2655,7 @@ def divisors_pairs(n, k=1, fn=prime_factor, every=0):
 
   if the 'every' parameter is set, then pairs with a > b are also generated.
   """
+  if validate: n = as_int(n, "0+")
   if n == 0 and k > 0:
     yield (0, 0)
     return
@@ -2670,12 +2680,14 @@ def divisors_tuples(n, k, s=()):
       if not (s and a < s[-1]):
         for z in divisors_tuples(b, k - 1, s + (a,)): yield z
 
-def is_prime(n):
+def is_prime(n, validate=0):
   # type: (int) -> bool
   """
-  return True if the positive integer <n> is prime.
+  return True if the non-negative integer <n> is prime.
 
-  Note: for numbers up to 2**64 is_prime_mr() is a fast, accurate prime
+  if <validate> the argument will be validated as a non-negative integer.
+
+  note: for numbers up to 2**64 is_prime_mr() is a fast, accurate prime
   test. (And for larger numbers it is probabilistically accurate).
 
   >>> is_prime(101)
@@ -2683,6 +2695,7 @@ def is_prime(n):
   >>> is_prime(1001)
   False
   """
+  if validate: n = as_int(n, include="0+")
   if n < 2: return False # 0, 1 -> F
   if n < 4: return True # 2, 3 -> T
   r = n % 6
@@ -2789,7 +2802,6 @@ def is_prime_mr(n, r=0):
 
 # find prime factors using Pollard's Rho method
 # [see: https://programmingpraxis.files.wordpress.com/2012/09/primenumbers.pdf ]
-
 def _rho_factor(n, mrr=0):
   if n % 2 == 0: return 2
   c = 1
@@ -4925,6 +4937,8 @@ def append(s, *vs):
   """
   make a new container, the same as <s> but with additional values <vs> added.
 
+  if the container has a sense or order, items are added at the end.
+
   >>> append((1, 2, 3), 4)
   (1, 2, 3, 4)
   >>> append([1, 2, 3], 4)
@@ -4935,22 +4949,58 @@ def append(s, *vs):
   '1234'
   """
   if isinstance(s, list):
-    s = type(s)(s)
-    s.extend(vs)
-    return s
+    r = type(s)(s)
+    r.extend(vs)
+    return r
   if isinstance(s, tuple):
     return s + vs
   if isinstance(s, basestring):
     return s + str.join('', vs)
   if isinstance(s, set):
-    s = s.copy()
-    s.update(vs)
-    return s
+    r = s.copy()
+    r.update(vs)
+    return r
   if isinstance(s, frozenset):
     return s.union(vs)
   if isinstance(s, multiset):
     return s.copy().update_from_seq(vs)
   raise ValueError(sprintf("append() can't handle container of type {x}", x=type(s)))
+
+# this unifies removing an element (or elements) from a container:
+def remove(s, *vs):
+  """
+  make a new container, the same as <s> but with values in <vs> removed.
+
+  items appearing in <vs> that are not in <s> are ignored.
+
+  if the container has a sense of order, the earliest items are removed
+
+  >>> remove((1, 2, 3), 2)
+  (1, 3)
+  >>> remove([1, 2, 3, 2], 2)
+  [1, 3, 2]
+  >>> remove({1, 2, 3}, 2) == {1, 3}
+  True
+  >>> remove('1232', '2')
+  '132'
+  """
+  if isinstance(s, list):
+    r = type(s)(s)
+    for v in vs:
+      try:
+        r.remove(v)
+      except ValueError:
+        continue
+    return r
+  if isinstance(s, tuple):
+    return type(s)(remove(list(s), *vs))
+  if isinstance(s, basestring):
+    for v in vs:
+      s = s.replace(v, '', 1)
+    return s
+  if isinstance(s, (set, frozenset, multiset)):
+    return s.difference(vs)
+  raise ValueError(sprintf("remove() can't handle container of type {x}", x=type(s)))
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
@@ -6175,10 +6225,27 @@ def int2bcd(n, base=10, bits_per_digit=4):
     k += bits_per_digit
   return s * r
 
+# convert a sequence to a string: "(a, b, c)"
+def seq2str(s, sort=0, rev=0, enc="()", sep=", "):
+  """
+  convert a sequence to a string suitable for output.
+
+  >>> seq2str([2, 1, 3])
+  '(2, 1, 3)'
+  >>> seq2str([2, 1, 3], sort=1)
+  '(1, 2, 3)'
+  >>> seq2str(first(primes, 10))
+  '(2, 3, 5, 7, 11, 13, 17, 19, 23, 29)'
+  >>> seq2str(prime_factor(factorial(15) - 1))
+  '((17, 1), (31, 2), (53, 1), (1510259, 1))'
+  """
+  if sort: s = sorted(s, reverse=rev)
+  return join(s, sep=sep, enc=enc)
+
 # convert a map to a string: "(a=1, b=2, c=3)"
 def map2str(m, sort=1, enc="()", sep=", ", arr="="):
   """
-  convert a map into a string (usually for output).
+  convert a map to a string suitable for output.
 
   the map may be a dict() type object or a collection of (key, value)
   pairs.
@@ -6193,11 +6260,10 @@ def map2str(m, sort=1, enc="()", sep=", ", arr="="):
   fn = (sorted if sort else identity)
   if isinstance(m, dict):
     # dict
-    s = join((concat(k, arr, m[k]) for k in fn(m.keys())), sep=sep)
+    return join((concat(k, arr, m[k]) for k in fn(m.keys())), sep=sep, enc=enc)
   else:
     # (k, v) pairs
-    s = join((concat(k, arr, v) for (k, v) in fn(m)), sep=sep)
-  return (enc[0] + s + enc[1] if enc else s)
+    return join((concat(k, arr, v) for (k, v) in fn(m)), sep=sep, enc=enc)
 
 ###############################################################################
 
