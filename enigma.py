@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu May  4 09:45:28 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon May  8 08:34:45 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-05-02"
+__version__ = "2023-05-04"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -284,6 +284,11 @@ pi = math.pi
 two_pi = pi + pi
 inf = float('+inf')
 empty = frozenset()  # the empty set
+
+str_upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  # upper case letters
+str_lower = "abcdefghijklmnopqrstuvwxyz"  # lower case letters
+str_digit = "0123456789"  # decimal digits
+str_nl = nl
 
 _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
@@ -5961,11 +5966,8 @@ def is_roman(x):
     return False
   return int2roman(i) == x
 
-
-# (default) digits for use in converting bases
-_DIGITS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-@static(digits=_DIGITS)
+# digits = (default) digits for use in converting bases
+@static(digits=str_digit + str_upper)
 def base_digits(*args):
   """
   get or set the default string of digits used to represent numbers.
@@ -7959,8 +7961,6 @@ class SubstitutedSum(object):
 # TODO: spotting expressions for independent groups and solving
 # each group separately [Teaser 2990]
 
-_SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
 # find words in string <s>
 def _find_words(s, r=1):
   words = set(re.findall(r'{(\w+?)}', s))
@@ -8246,7 +8246,7 @@ class SubstitutedExpression(object):
       printf("WARNING: sanity checks disabled - good luck!")
 
     # the symbols to replace (for implicit expressions)
-    if symbols is None: symbols = _SYMBOLS
+    if symbols is None: symbols = str_upper
 
     # process expr to be a list of (<expr>, <value>) pairs, where:
     # <value> is:
@@ -8988,8 +8988,8 @@ class SubstitutedExpression(object):
     """
     # defaults
     if base is None: base = cls.defaults.get('base', 10)
-    if symbols is None: symbols = _SYMBOLS  # default is upper case
-    if carries is None: carries = 'abcdefghijklmnopqrstuvwxyzZYXWVUTSRQPONMLKJIHGFEDCBA'
+    if symbols is None: symbols = str_upper  # default is upper case
+    if carries is None: carries = str_lower + rev(str_upper)
     if extra is None: extra = ()
     if s2d is None: s2d = cls.defaults.get('s2d', None)
     if d2i is None: d2i = cls.defaults.get('d2i', None)
@@ -9598,11 +9598,9 @@ def substituted_expression(*args, **kw):
 # (IS, x) = slot has input symbol x
 (_UN, _EQ, _NE, _IS) = ('UN', 'EQ', 'NE', 'IS')
 
-_SYMBOLS_UL = _SYMBOLS + _SYMBOLS.lower()
-
 class Slots(object):
 
-  def __init__(self, wildcard='?', symbols=_SYMBOLS_UL):
+  def __init__(self, wildcard='?', symbols=str_upper + str_lower):
 
     # wildcard character in input strings
     self.wildcard = wildcard
@@ -9665,7 +9663,7 @@ class Slots(object):
       # wildcard character, allocate a new slot
       return self.slot_new()
 
-    if s in '0123456789':
+    if s in str_digit:
       # integer literal, use the same slot for the same literal
       return self.slot_find(_EQ, int(s))
 
