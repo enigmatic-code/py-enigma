@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon May  8 08:34:45 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue May  9 10:43:46 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-05-04"
+__version__ = "2023-05-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -883,7 +883,7 @@ def nconcat(*digits, **kw):
 # split n into digits, starting with the least significant
 def nsplitter(n, k=None, base=10):
   n = abs(as_int(n))
-  assert base > 1, sprintf("invalid base: {base}")
+  assert base > 1, sprintf("invalid base: {base!r}")
   if k is None:
     # the "natural" number of digits in n
     while True:
@@ -2454,12 +2454,15 @@ def cb(x): "cb(x) = x**3"; return x**3
 # basis = [2, 3, 5]
 _prime_factor_ds = (1, 2, 2, 4, 2, 4, 2, 4, 6, 2, 6)  # deltas
 _prime_factor_js = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3)  # next index
-def prime_factor(n):
+def prime_factor(n, limit=inf):
   """
   generate (<prime>, <exponent>) pairs in the prime factorisation of
   positive integer <n>.
 
   no pairs are returned for 1 (or for non-positive integers).
+
+  if 'limit' is specified no prime factors greater than this will
+  be returned.
 
   for numbers with large prime factors it will take a long time to
   find them. in this case you probably want to use prime_factor_h()
@@ -2469,6 +2472,8 @@ def prime_factor(n):
   [(2, 2), (3, 1), (5, 1)]
   >>> list(prime_factor(factorial(12)))
   [(2, 10), (3, 5), (5, 2), (7, 1), (11, 1)]
+  >>> list(prime_factor(factorial(12) + 1))
+  [(13, 2), (2834329, 1)]
   """
   if n > 1:
     ds = _prime_factor_ds
@@ -2476,6 +2481,7 @@ def prime_factor(n):
     x = 2
     j = 0
     while True:
+      if x > limit: return
       e = 0
       while True:
         (d, r) = divmod(n, x)
@@ -2487,6 +2493,7 @@ def prime_factor(n):
       x += ds[j]
       if x * x > n: break
       j = js[j]
+    if n > limit: return
     # anything left is prime
     if n > 1: yield (n, 1)
 
@@ -2872,7 +2879,7 @@ def prime_factor_h(n, ps=None, end=None, nf=0, mr=0, mrr=0):
   [(19, 1), (23, 1), (29, 1), (61, 1), (67, 1), (123610951, 1)]
 
   """
-  assert not (ps is None and mr == 0) # otherwise we won't find anything
+  assert not (ps is None and mr == 0), "no heuristics specified" # otherwise we won't find anything
   f = 0  # number of failed primes for n
   psi = (None if ps is None else ps.generate(end=end))
   pmax = 0
@@ -3142,7 +3149,7 @@ def pythagorean_triples(n=None, primitive=0, order=0):
     return _pythagorean_primitive(n, order)
   else:
     # include non-primitive
-    assert n is not None
+    assert n is not None, "max hypotenuse not specified"
     return _pythagorean_all(n, order)
 
 
@@ -3601,7 +3608,7 @@ def repdigit(n, d=1, base=10):
   >>> repdigit(6, 7, base=16) == 0x777777
   True
   """
-  assert 0 <= d < base
+  assert 0 <= d < base, sprintf("invalid digit: {d!r}")
   return d * ((base**n) - 1) // (base - 1)
 
 # Python 3.6: ...(*vs, root=math.sqrt)
@@ -3670,11 +3677,11 @@ def quadratic(a, b, c, domain="Q", include="+-0", F=None):
   >>> sorted(quadratic(1, 1, -6, domain="Z"))
   [-3, 2]
   """
-  assert domain in "CFQZ", sprintf("quadratic: invalid domain '{domain}'")
+  assert domain in "CFQZ", sprintf("quadratic: invalid domain {domain!r}")
 
   if a == 0:
     # linear equation
-    assert b != 0
+    assert b != 0, "invalid linear equation"
     if F is None: F = (Rational() if domain in 'QZ' else (complex if domain == 'C' else float))
     return _roots(domain, include, F, (-c, b))
 
@@ -5120,7 +5127,7 @@ def tuples(seq, n=2, circular=0, fn=tuple):
   >>> list(tuples(irange(1, 5), 3, circular=1))
   [(1, 2, 3), (2, 3, 4), (3, 4, 5), (4, 5, 1), (5, 1, 2)]
   """
-  assert n > 0
+  assert n > 0, sprintf("invalid tuple length: {n!r}")
   i = iter(seq)
   if circular and n > 1:
     # we need extract the first (n - 1) items and add them to the end
@@ -5274,7 +5281,7 @@ def express(t, ds, qs=None, min_q=0):
   4562
   """
   ds = list(ds)
-  assert ds and ds[0] > 0, sprintf("invalid denominations {ds}")
+  assert ds and ds[0] > 0, sprintf("invalid denominations {ds!r}")
   if qs:
     return express_quantities(t, ds, qs)
   if min_q > 0:
@@ -5981,7 +5988,7 @@ def base_digits(*args):
   NOTE: this is a global setting and will affect all subsequent
   base conversions.
   """
-  assert len(args) < 2
+  assert len(args) < 2, sprintf("invalid base digits: {args!r}")
   if args: base_digits.digits = (args[0] or _DIGITS)
   return base_digits.digits
 
@@ -6026,7 +6033,7 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   >>> int2base(84, base=2, width=9, group=3, sep=" ")
   '001 010 100'
   """
-  assert base > 1, "invalid base {base}".format(base=base)
+  assert base > 1, sprintf("invalid base {base!r}")
   if digits is None: digits = base_digits()
   (p, r) = ('', None)
   if i < 0: (p, i) = ('-', -i)
@@ -6067,7 +6074,7 @@ def base2int(s, base=10, strip=0, digits=None):
   >>> base2int('HELLO', base=36)
   29234652
   """
-  assert base > 1, "invalid base {base}".format(base=base)
+  assert base > 1, sprintf("invalid base {base!r}")
   if digits is None: digits = base_digits()
   if len(digits) > base:
     digits = digits[:base]
@@ -6681,7 +6688,7 @@ def poly_rational_roots(p, domain="Q", include="+-0", F=None):
     include='0' - include zero
     include='-' - include negative roots
   """
-  assert domain in "QZ"
+  assert domain in "QZ", sprintf("invalid domain: {domain!r}")
   if not p: return
   (pos, neg, zero) = (x in include for x in '+-0')
   if F is None: F = Rational()
@@ -9696,7 +9703,7 @@ class Slots(object):
 
   # unify two sequence of slots <s> and <t>
   def unify(self, s, t):
-    assert len(s) == len(t)
+    assert len(s) == len(t), "unification length mismatch"
     for (i, j) in zip(s, t):
       self._unify(i, j)
 
