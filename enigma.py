@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue May  9 10:43:46 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat May 13 16:44:03 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-05-07"
+__version__ = "2023-05-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -8876,6 +8876,7 @@ class SubstitutedExpression(object):
         (acc, acc_t) = (eval(acc, self._globals), acc)
 
     # measure internal time
+    t = None
     if verbose & self.vE:
       t = Timer(name="internal")
       t.start()
@@ -8885,7 +8886,7 @@ class SubstitutedExpression(object):
       n += 1
       if answer: ans.add(s[1])
 
-    if verbose & self.vE: t.stop()
+    if t: t.stop()
 
     # output solutions
     s = ('' if n == 1 else 's')
@@ -8916,7 +8917,7 @@ class SubstitutedExpression(object):
       # report solution count
       printf("[{n} solution{s}]")
 
-    if verbose & self.vE: t.report()
+    if t: t.report()
 
     return Record(n=n, answer=ans, accumulate=acc)
 
@@ -8937,7 +8938,7 @@ class SubstitutedExpression(object):
     terms, result=None, k=1, carries=None, extra=None,
     base=None, symbols=None, s2d=None, d2i=None, distinct=None, literal=None,
     answer=None, accumulate=None, env=None, code=None,
-    template=None, verbose=None
+    template=None, sane=None, verbose=None
   ):
     """
     split the alphametic sum represented by [[ sum(<terms>) = <result> ]]
@@ -8967,6 +8968,7 @@ class SubstitutedExpression(object):
       env - additional environment for evaluation
       code - additional lines of code evaluated before solving
       template - solution template
+      sane - enable/disable sanity checks
       verbose - control informational output
 
     if <result> is None, then <terms> can contain the sum respresented
@@ -9006,6 +9008,7 @@ class SubstitutedExpression(object):
     if accumulate is None: accumulate = cls.defaults.get('accumulate', None)
     if env is None: env = cls.defaults.get('env', None)
     if code is None: code = cls.defaults.get('code', None)
+    if sane is None: sane = cls.defaults.get('sane', 1)
     if verbose is None: verbose = cls.defaults.get('verbose', None)
 
     # process the sums
@@ -9071,17 +9074,25 @@ class SubstitutedExpression(object):
     if k == 0: k = len(result)
 
     # construct the sub-expressions for each chunk
-    (exprs, cs) = (list(), list())
+    (exprs, cs, warn) = (list(), list(), 0)
     for (terms, result) in sums:
       (carry, maxc) = (None, 0)
       while terms:
         if len(terms) > 1:
           # chop k characters off the end of each term
           ts = list(t[-k:] for t in terms)
-          ts_ = list(t for t in (t[:-k] for t in terms) if t)
+          ts_ = list(filter(None, (t[:-k] for t in terms)))
           # upper bound for carry out
           maxc_ = (sum((base**len(t)) - 1 for t in ts) + maxc) // (base**k)
-          assert maxc_ < base, "multi-digit carries unimplemented"
+          # number of symbols required
+          maxc_ds = nsplit(maxc_, base=base)
+          ck = len(maxc_ds)
+          if ck > k:
+            if sane:
+              assert False, "carry width > k" # try increasing k; or set sane=0 to ignore carry overflows
+            elif verbose > 0 and not (warn & 1):
+              printf("WARNING: overflow in carries may cause invalid results")
+              warn |= 1
         else:
           # use the remaining term
           (ts, ts_) = (terms, None)
@@ -9093,14 +9104,18 @@ class SubstitutedExpression(object):
           # otherwise, use the whole result
           (rs, rs_) = (result, None)
         # allocate a carry out
-        assert carries, "ran out of carry symbols"
-        carry = (carries.pop(0) if rs_ else '')
-        if carry: cs.append(carry)
+        if rs_:
+          carry = join(carries[:ck])
+          assert len(carry) == ck, "ran out of carry symbols"
+          carries = carries[ck:]
+          cs.append(carry)
+        else:
+          carry = ''
         exprs.append(join(map(enc, ts), sep=" + ") + " = " + enc(carry + rs))
         # determine d2i values
         if carry:
           #printf("maxc {carry} = {maxc_}")
-          d2i.update((d, carry) for d in irange(maxc_ + 1, base - 1))
+          d2i.update((d, carry[0]) for d in irange(maxc_ds[0] + 1, base - 1))
         if not rs_: break
         (terms, result, maxc) = (ts_, rs_, maxc_)
 
@@ -9119,7 +9134,7 @@ class SubstitutedExpression(object):
       exprs,
       base=base, distinct=distinct, literal=literal, env=env, code=code,
       s2d=s2d, d2i=d2i, template=template, solution=symbols,
-      answer=answer, accumulate=accumulate, verbose=verbose,
+      answer=answer, accumulate=accumulate, sane=sane, verbose=verbose,
     )
     return Record(
       exprs=exprs,
