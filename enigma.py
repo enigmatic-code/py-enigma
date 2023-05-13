@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat May 13 19:20:06 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat May 13 20:49:44 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-05-13"
+__version__ = "2023-05-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -8254,6 +8254,10 @@ class SubstitutedExpression(object):
 
     # the symbols to replace (for implicit expressions)
     if symbols is None: symbols = str_upper
+    symbols = set(symbols)
+    if s2d: symbols.update(s2d.keys())
+    if literal: symbols.update(literal)
+    symbols = join(sorted(symbols))
 
     # process expr to be a list of (<expr>, <value>) pairs, where:
     # <value> is:
@@ -8997,7 +9001,6 @@ class SubstitutedExpression(object):
     """
     # defaults
     if base is None: base = cls.defaults.get('base', 10)
-    if symbols is None: symbols = str_upper  # default is upper case
     if carries is None: carries = str_lower + rev(str_upper)
     if extra is None: extra = ()
     if s2d is None: s2d = cls.defaults.get('s2d', None)
@@ -9010,6 +9013,13 @@ class SubstitutedExpression(object):
     if code is None: code = cls.defaults.get('code', None)
     if sane is None: sane = cls.defaults.get('sane', 1)
     if verbose is None: verbose = cls.defaults.get('verbose', None)
+
+    # the symbols to replace (for implicit expressions)
+    if symbols is None: symbols = str_upper
+    symbols = set(symbols)
+    if s2d: symbols.update(s2d.keys())
+    if literal: symbols.update(literal)
+    symbols = join(sorted(symbols))
 
     # process the sums
     sums = list()
