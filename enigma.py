@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat May 13 16:44:03 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat May 13 19:16:30 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -9074,29 +9074,23 @@ class SubstitutedExpression(object):
     if k == 0: k = len(result)
 
     # construct the sub-expressions for each chunk
-    (exprs, cs, warn) = (list(), list(), 0)
+    (exprs, cs) = (list(), list())
     for (terms, result) in sums:
-      (carry, maxc) = (None, 0)
+      maxc = 0
       while terms:
+        (carry, ck) = ('', 0)
         if len(terms) > 1:
           # chop k characters off the end of each term
           ts = list(t[-k:] for t in terms)
           ts_ = list(filter(None, (t[:-k] for t in terms)))
           # upper bound for carry out
           maxc_ = (sum((base**len(t)) - 1 for t in ts) + maxc) // (base**k)
-          # number of symbols required
+          # number of carry symbols required
           maxc_ds = nsplit(maxc_, base=base)
           ck = len(maxc_ds)
-          if ck > k:
-            if sane:
-              assert False, "carry width > k" # try increasing k; or set sane=0 to ignore carry overflows
-            elif verbose > 0 and not (warn & 1):
-              printf("WARNING: overflow in carries may cause invalid results")
-              warn |= 1
         else:
           # use the remaining term
           (ts, ts_) = (terms, None)
-        if carry: ts.append(carry)
         if ts_:
           # chop k characters off the end of the result
           (rs, rs_) = (result[-k:], result[:-k])
@@ -9109,12 +9103,13 @@ class SubstitutedExpression(object):
           assert len(carry) == ck, "ran out of carry symbols"
           carries = carries[ck:]
           cs.append(carry)
-        else:
-          carry = ''
+        # add an expression for this set of columns
         exprs.append(join(map(enc, ts), sep=" + ") + " = " + enc(carry + rs))
-        # determine d2i values
         if carry:
+          # add the carry to the remaining terms
+          ts_.append(carry)
           #printf("maxc {carry} = {maxc_}")
+          # determine d2i values
           d2i.update((d, carry[0]) for d in irange(maxc_ds[0] + 1, base - 1))
         if not rs_: break
         (terms, result, maxc) = (ts_, rs_, maxc_)
