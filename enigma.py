@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat May 13 20:49:44 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May 14 11:19:26 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-05-14"
+__version__ = "2023-05-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7579,6 +7579,8 @@ class MagicSquare(object):
 
 # Substituted Sum Solver
 
+# NOTE: SubstitutedExpression.split_sum() can do all this, and more, faster.
+
 # originally written for Enigma 63, but applicable to lots of Enigma puzzles
 
 # a substituted sum solver
@@ -7676,6 +7678,8 @@ def substituted_sum(terms, result, digits=None, l2d=None, d2i=None, base=10):
 # object interface to the substituted sum solver
 class SubstitutedSum(object):
   """
+  Note: See SubstitutedExpression.split_sum() for a more powerful solver.
+
   A solver for addition sums with letters substituted for digits.
 
   A substituted sum object has the following useful attributes:
@@ -8010,8 +8014,7 @@ def gensym(x):
 
 # file.writelines does NOT include newline characters
 def writelines(fh, lines, sep=None, flush=1):
-  if sep is None:
-    sep = os.linesep
+  if sep is None: sep = os.linesep
   for line in lines:
     fh.write(line)
     fh.write(sep)
@@ -9086,7 +9089,6 @@ class SubstitutedExpression(object):
     # construct the sub-expressions for each chunk
     (exprs, cs) = (list(), list())
     for (terms, result) in sums:
-      maxc = 0
       while terms:
         (carry, ck) = ('', 0)
         if len(terms) > 1:
@@ -9094,9 +9096,9 @@ class SubstitutedExpression(object):
           ts = list(t[-k:] for t in terms)
           ts_ = list(filter(None, (t[:-k] for t in terms)))
           # upper bound for carry out
-          maxc_ = (sum((base**len(t)) - 1 for t in ts) + maxc) // (base**k)
+          maxc = (sum((base**len(t)) - 1 for t in ts)) // (base**k)
           # number of carry symbols required
-          maxc_ds = nsplit(maxc_, base=base)
+          maxc_ds = nsplit(maxc, base=base)
           ck = len(maxc_ds)
         else:
           # use the remaining term
@@ -9118,11 +9120,10 @@ class SubstitutedExpression(object):
         if carry:
           # add the carry to the remaining terms
           ts_.append(carry)
-          #printf("maxc {carry} = {maxc_}")
           # determine d2i values
           d2i.update((d, carry[0]) for d in irange(maxc_ds[0] + 1, base - 1))
         if not rs_: break
-        (terms, result, maxc) = (ts_, rs_, maxc_)
+        (terms, result) = (ts_, rs_)
 
     carries = join(cs)
 
@@ -9158,6 +9159,7 @@ class SubstitutedExpression(object):
       verbose=verbose,
       solver=(lambda: solver.value),
       solve=(lambda *args, **kw: solver.value.solve(*args, **kw)),
+      answers=(lambda *args, **kw: solver.value.answers(*args, **kw)),
       run=(lambda *args, **kw: solver.value.run(*args, **kw)),
     )
 
