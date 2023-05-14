@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 14 11:19:26 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May 14 16:14:09 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -8978,7 +8978,7 @@ class SubstitutedExpression(object):
       sane - enable/disable sanity checks
       verbose - control informational output
 
-    if <result> is None, then <terms> can contain the sum respresented
+    if <result> is None, then <terms> can contain the sum represented
     as a string (e.g. "ABC + DEF = GHI" or "{ABC} + {DEF} = {GHI}"),
     or a sequence of sums, each represented as a string or as a
     (<terms>, <result>) pair.
@@ -9086,8 +9086,23 @@ class SubstitutedExpression(object):
     # k=0 disables splitting
     if k == 0: k = len(result)
 
+    # calculate max possible sum for terms <ts>
+    def max_sum(ts, maxv, d2i, base):
+      r = 0
+      for t in ts:
+        # just look at the leading symbol
+        k = t[0]
+        v = maxv.get(k)
+        if v is None:
+          # find the largest symbol not in d2i
+          v = maxv[k] = peek(x for x in irange(base - 1, 0, step=-1) if (x, k) not in d2i)
+        # assume all the other symbols have value (base - 1)
+        n = len(t)
+        r += (v if n == 1 else (v + 1) * base**(n - 1) - 1)
+      return r
+
     # construct the sub-expressions for each chunk
-    (exprs, cs) = (list(), list())
+    (exprs, cs, maxv) = (list(), list(), dict())
     for (terms, result) in sums:
       while terms:
         (carry, ck) = ('', 0)
@@ -9096,7 +9111,7 @@ class SubstitutedExpression(object):
           ts = list(t[-k:] for t in terms)
           ts_ = list(filter(None, (t[:-k] for t in terms)))
           # upper bound for carry out
-          maxc = (sum((base**len(t)) - 1 for t in ts)) // (base**k)
+          maxc = max_sum(ts, maxv, d2i, base) // (base**k)
           # number of carry symbols required
           maxc_ds = nsplit(maxc, base=base)
           ck = len(maxc_ds)
@@ -9122,6 +9137,7 @@ class SubstitutedExpression(object):
           ts_.append(carry)
           # determine d2i values
           d2i.update((d, carry[0]) for d in irange(maxc_ds[0] + 1, base - 1))
+          maxv[carry[0]] = maxc_ds[0]
         if not rs_: break
         (terms, result) = (ts_, rs_)
 
