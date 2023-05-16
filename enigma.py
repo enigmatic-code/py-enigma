@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 14 16:14:09 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue May 16 09:44:57 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-05-15"
+__version__ = "2023-05-16"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -234,7 +234,7 @@ import collections
 import copy
 import re
 
-# maybe use the "six" module for some of this stuff
+# (see also the "six" module)
 _pythonv = sys.version_info[0:2]  # Python version e.g. (2, 7) or (3, 11)
 if _pythonv[0] == 2:
   # Python 2.x
@@ -545,9 +545,10 @@ def distinct_values(seq, n=None):
   if n is None: n = len(seq)
   return len(set(seq)) == n
 
+# this is the same as: seq_multiplicity(seq, n=1)
 def seq_all_different(*seqs, **kw):
   """
-  check all elements of <seq> are pairwise distinct
+  check all elements of <seq> are pairwise distinct.
 
   if multiple sequences are provided elements must be
   distinct across all sequences.
@@ -559,7 +560,8 @@ def seq_all_different(*seqs, **kw):
   >>> seq_all_different(p % 100 for p in primes)
   False
   """
-  fn = kw.get('fn')
+  fn = kw.pop('fn', None)
+  assert not kw, sprintf("seq_all_different: unknown arguments {kw}", kw=seq2str(kw.keys()))
   seen = set()
   for seq in seqs:
     for x in seq:
@@ -567,6 +569,30 @@ def seq_all_different(*seqs, **kw):
       if x in seen: return False
       seen.add(x)
   return True
+
+# generalised version of seq_all_different()
+def seq_multiplicity(*seqs, **kw):
+  """
+  check all elements of <seq> have multiplicity <n>.
+
+  if multiple sequences are provided then the total
+  multiplicity across all sequences is considered.
+
+  >>> seq_multiplicity([0, 1, 2, 3], n=1)
+  True
+  >>> seq_multiplicity([2, 1, 2, 3], [0, 1, 0, 3], n=2)
+  True
+  """
+  n = kw.pop('n', 1)
+  fn = kw.pop('fn', None)
+  assert not kw, sprintf("seq_multiplicity: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  seen = multiset()
+  for seq in seqs:
+    for x in seq:
+      if fn: x = fn(x)
+      if seen.get(x, 0) == n: return False
+      seen.add(x)
+  return seen.all_same(n)
 
 # same as distinct_values(args), or distinct_values(args, len(args))
 def is_pairwise_distinct(*args, **kw):
@@ -588,7 +614,7 @@ def is_pairwise_distinct(*args, **kw):
   #for i in xrange(len(args) - 1):
   #  if args[i] in args[i + 1:]: return False
   #return True
-  return seq_all_different(args, fn=kw.get('fn', identity))
+  return seq_all_different(args, **kw)
 
 pairwise_distinct = is_pairwise_distinct
 all_different = is_pairwise_distinct
@@ -688,9 +714,12 @@ def zip_eq(*ss, **kw):
   >>> zip_eq((0, 2, 4, 8), [1, 2, 4, 8], reverse=1, first=2)
   True
   """
-  if kw.get('reverse', 0): ss = (reversed(s) for s in ss)
-  z = (zip(*ss, strict=kw['strict']) if 'strict' in kw else zip(*ss))
-  k = kw.get('first')
+  reverse = kw.pop('reverse', 0)
+  strict = kw.pop('strict', None)
+  k = kw.pop('first', None)
+  assert not kw, sprintf("zip_eq: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if reverse: ss = (reversed(s) for s in ss)
+  z = (zip(*ss, strict=kw['strict']) if strict is not None else zip(*ss))
   if k is not None: z = first(z, count=k, fn=iter)
   for vs in z:
     if not seq_all_same(vs): return False
@@ -711,8 +740,8 @@ def ordered(*args, **kw):
   """
   return tuple(sorted(args, **kw))
 
-# I would prefer join() to be a method of sequences: seq.join(sep='')
-# or a string constructor: str.from_seq(seq, sep='') or just str.join(seq, sep='')
+# I would prefer join() to be a string constructor:
+#   str.from_seq(seq, sep=''), or just: str.join(seq, sep='')
 # but for now we define a utility function
 def join(seq, sep='', enc='', fn=str):
   """
@@ -737,7 +766,7 @@ def join(seq, sep='', enc='', fn=str):
 
   """
   r = str.join(sep, (fn(x) for x in seq))
-  if enc: r = enc[0] + r + enc[1]
+  if enc: r = str.join('', (enc[0], r, enc[1]))
   return r
 
 def joinf(sep='', enc='', fn=str):
@@ -760,8 +789,9 @@ def concat(*args, **kw):
   >>> concat(1, 2, 3, 4, 5, sep=',')
   '1,2,3,4,5'
   """
-  sep = kw.get('sep', '')
-  enc = kw.get('enc', '')
+  sep = kw.pop('sep', '')
+  enc = kw.pop('enc', '')
+  assert not kw, sprintf("concat: unknown arguments {kw}", kw=seq2str(kw.keys()))
   if len(args) == 1:
     try:
       return join(args[0], sep=sep, enc=enc)
@@ -867,7 +897,8 @@ def nconcat(*digits, **kw):
   2130706433
   """
   # in Python3 [[ def nconcat(*digits, base=10): ]] is allowed instead
-  base = kw.get('base', 10)
+  base = kw.pop('base', 10)
+  assert not kw, sprintf("nconcat: unknown arguments {kw}", kw=seq2str(kw.keys()))
   # allow a sequence to passed as a single argument
   if len(digits) == 1 and isinstance(digits[0], (Sequence, Iterable)):
     digits = digits[0]
@@ -1199,13 +1230,17 @@ def peek(s, k=0, **kw):
 # functions to create a selector for elements/attributes from an object
 # passing multi=1 forces a multivalued return, even if only one element is specified
 def item(*ks, **kw):
+  multi = kw.pop('multi', 0)
+  assert not kw, sprintf("item: unknown arguments {kw}", kw=seq2str(kw.keys()))
   f = operator.itemgetter(*ks)
-  if len(ks) == 1 and kw.get('multi'): return (lambda x: (f(x),))
+  if len(ks) == 1 and multi: return (lambda x: (f(x),))
   return f
 
 def attr(*ks, **kw):
+  multi = kw.pop('multi', 0)
+  assert not kw, sprintf("attr: unknown arguments {kw}", kw=seq2str(kw.keys()))
   f = operator.attrgetter(*ks)
-  if len(ks) == 1 and kw.get('multi'): return (lambda x: (f(x),))
+  if len(ks) == 1 and multi: return (lambda x: (f(x),))
   return f
 
 items = lambda n: map(item, xrange(n)) # (x, y, z) = items(3)
@@ -1226,7 +1261,8 @@ def diff(a, b, *rest, **kw):
   >>> join(diff('newhampshire', 'wham'))
   'nepsire'
   """
-  fn = kw.get('fn', tuple)
+  fn = kw.pop('fn', tuple)
+  assert not kw, sprintf("diff: unknown arguments {kw}", kw=seq2str(kw.keys()))
   if rest: b = set(b).union(*rest)
   return fn(x for x in a if x not in b)
 
@@ -1353,7 +1389,8 @@ class multiset(dict):
     A keyword argument of 'count' specifies the multiplicity of each
     element of the sequence inserted into the multiset.
     """
-    count = kw.get('count', 1)
+    count = kw.pop('count', 1)
+    assert not kw, sprintf("multiset.from_seq: unknown arguments {kw}", kw=seq2str(kw.keys()))
     m = multiset()
     for v in vs:
       m.update_from_seq(v, count=count)
@@ -3180,7 +3217,8 @@ def fib(*s, **kw):
   >>> first(fib(1, fn=unpack(lambda x: x + x)), 10)
   [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
   """
-  fn = kw.get('fn', sum)
+  fn = kw.pop('fn', sum)
+  assert not kw, sprintf("fib: unknown arguments {kw}", kw=seq2str(kw.keys()))
   s = list(s)
   while True:
     s.append(fn(s))
@@ -3633,7 +3671,8 @@ def hypot(*vs, **kw):
   >>> hypot(3, 4, root=is_square)
   5
   """
-  root = kw.get('root', math.sqrt)
+  root = kw.pop('root', math.sqrt)
+  assert not kw, sprintf("hypot: unknown arguments {kw}", kw=seq2str(kw.keys()))
   return root(sum(v * v for v in vs))
 
 # alias for: hypot(..., root=is_square)
@@ -3652,7 +3691,9 @@ def _roots(domain, include, F, *nds):
       x = as_int(F(n, d), default=None)
       if x is None: continue
     # return the root
-    if x > 0:
+    if domain == "C":
+      yield x
+    elif x > 0:
       if pos: yield x
     elif x < 0:
       if neg: yield x
@@ -3992,9 +4033,11 @@ def dot(*vs, **kw):
   >>> call(dot, [(1, 3, -5)] * 3)
   -97
   """
-  z = (zip(*vs, strict=kw['strict']) if 'strict' in kw else zip(*vs))
-  fns = kw.get('fns', sum)
-  fnp = kw.get('fnp', multiply)
+  strict = kw.pop('strict', None)
+  fns = kw.pop('fns', sum)
+  fnp = kw.pop('fnp', multiply)
+  assert not kw, sprintf("dot: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  z = (zip(*vs, strict=strict) if strict is not None else zip(*vs))
   return fns(map(fnp, z))
 
 # multiple argument versions of basic operations:
@@ -4464,9 +4507,10 @@ def format_recurring(*args, **kw):
   >>> format_recurring(recurring(5, 17, base=16))
   '0.(4B)...'
   """
-  dp = kw.get('dp', '.')
-  enc = kw.get('enc', '()')
-  dots = kw.get('dots', '...')
+  dp = kw.pop('dp', '.')
+  enc = kw.pop('enc', '()')
+  dots = kw.pop('dots', '...')
+  assert not kw, sprintf("format_recurring: unknown arguments {kw}", kw=seq2str(kw.keys()))
   if len(args) == 1: args = args[0]
   (i, nr, rr) = args
   rr = (enc[0] + rr + enc[1] + dots if rr else '')
@@ -4789,7 +4833,8 @@ def chain(*ss, **kw):
   >>> chain("abc", (1, 2, 3), None, [4, 5, 6], fn=tuple)
   ('a', 'b', 'c', 1, 2, 3, 4, 5, 6)
   """
-  fn = kw.get("fn", iter)
+  fn = kw.pop("fn", iter)
+  assert not kw, sprintf("chain: unknown arguments {kw}", kw=seq2str(kw.keys()))
   return flatten(ss, fn=fn)
 
 # interleave values from a bunch of iterators
@@ -6248,7 +6293,8 @@ def seq2str(s, sort=0, rev=0, enc="()", sep=", "):
   >>> seq2str(map(seq2str, prime_factor(factorial(15) - 1)))
   '((17, 1), (31, 2), (53, 1), (1510259, 1))'
   """
-  if sort: s = sorted(s, reverse=rev)
+  if sort: s = sorted(s)
+  if rev: s = reversed(s)
   return join(s, sep=sep, enc=enc)
 
 # convert a map to a string: "(a=1, b=2, c=3)"
