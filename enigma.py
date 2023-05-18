@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue May 16 09:44:57 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu May 18 14:55:30 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-05-16"
+__version__ = "2023-05-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1673,7 +1673,10 @@ class multiset(dict):
     equivalent to: min(self)
     """
     if (not self) and 'default' in kw: return kw['default']
-    return _builtin_min(dict.keys(self))
+    if 'key' in kw:
+      return _builtin_min(dict.keys(self), key=kw['key'])
+    else:
+      return _builtin_min(dict.keys(self))
 
   def max(self, **kw):
     """
@@ -1682,7 +1685,10 @@ class multiset(dict):
     equivalent to: max(self)
     """
     if (not self) and 'default' in kw: return kw['default']
-    return _builtin_max(dict.keys(self))
+    if 'key' in kw:
+      return _builtin_max(dict.keys(self), key=kw['key'])
+    else:
+      return _builtin_max(dict.keys(self))
 
   def sum(self, fn=_builtin_sum):
     """
@@ -3234,7 +3240,7 @@ def fib(*s, **kw):
 # NOTE: that this will return 0 if n = 0 and None if n is not a perfect k-th power,
 # so [[ power(n, k) ]] will evaluate to True only for positive n
 # if you want to allow n to be 0 you should check: [[ power(n, k) is not None ]]
-
+#
 def iroot(n, k):
   """
   compute the largest integer x such that pow(x, k) <= n.
@@ -5777,7 +5783,7 @@ def gss_minimiser(f, a, b, t=1e-9, m=None):
 find_min = gss_minimiser
 find_min.__name__ = 'find_min'
 find_min.__doc__ = """
-  find the minimum value of a (well behaved) function over an interval.
+  find a minimum value of a (well behaved) function over an interval.
 
   f = function to minimise (should take a single float argument)
   a, b = the interval to minimise over (a < b)
@@ -5798,7 +5804,7 @@ find_min.__doc__ = """
 # see: http://bugs.python.org/issue12790
 def find_max(f, a, b, t=1e-9):
   """
-  find the maximum value of a (well behaved) function over an interval.
+  find a maximum value of a (well behaved) function over an interval.
 
   f = function to maximise (should take a single float argument)
   a, b = the interval to search (a < b)
@@ -5817,7 +5823,7 @@ def find_max(f, a, b, t=1e-9):
 
 def find_zero(f, a, b, t=1e-9, ft=1e-6):
   """
-  find the zero of a (well behaved) function over an interval.
+  find a zero of a (well behaved) function over an interval.
 
   f = function to find the zero of (should take a single float argument)
   a, b = the interval to search (a < b)
@@ -5834,16 +5840,16 @@ def find_zero(f, a, b, t=1e-9, ft=1e-6):
   >>> r = find_zero(lambda x: sq(x) + 4, 0.0, 10.0) # doctest: +IGNORE_EXCEPTION_DETAIL
   Traceback (most recent call last):
     ...
-  ValueError: Value not found
+  ValueError: value not found
   """
   r = find_min(f, a, b, t, m=abs)
-  if ft < abs(r.fv): raise ValueError("Value not found")
+  if ft < abs(r.fv): raise ValueError("value not found") # try a smaller t, or a larger ft
   r.ft = ft
   return r
 
 def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   """
-  find the value of a (well behaved) function over an interval.
+  find a value of a (well behaved) function over an interval.
 
   f = function to find the value of (should take a single float argument)
   a, b = the interval to search (a < b)
