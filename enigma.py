@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu May 18 14:55:30 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat May 20 10:45:28 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-05-17"
+__version__ = "2023-05-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -509,6 +509,9 @@ def compare(a, b, vs=None):
 
 # sign of a number (-1, 0, +1)
 sign = lambda x: (0 < x) - (x < 0)  # = compare(x, 0)
+
+# negation
+neg = lambda x: -x
 
 # logical implication: p -> q
 def implies(p, q):
@@ -5767,7 +5770,9 @@ def gss_minimiser(f, a, b, t=1e-9, m=None):
   C = 1.0 - R
   (x1, x2) = (R * a + C * b, C * a + R * b)
   (f1, f2) = (fn(x1), fn(x2))
+  i = 0  # count iterations
   while b - a > t:
+    i += 1
     if f1 > f2:
       (a, x1, f1) = (x1, x2, f2)
       x2 = C * a + R * b
@@ -5776,8 +5781,8 @@ def gss_minimiser(f, a, b, t=1e-9, m=None):
       (b, x2, f2) = (x2, x1, f1)
       x1 = R * a + C * b
       f1 = fn(x1)
-  v = (x1 if f1 < f2 else x2)
-  return Record(v=v, fv=f(v), t=t)
+  (v, fv) = ((x1, f1) if f1 < f2 else (x2, f2))
+  return Record(v=v, fv=fv, t=t, i=i)
 
 
 find_min = gss_minimiser
@@ -5819,8 +5824,11 @@ def find_max(f, a, b, t=1e-9):
   >>> round(r.v, 6)
   2.0
   """
-  return gss_minimiser(f, a, b, t=t, m=(lambda x: -x))
+  return gss_minimiser(f, a, b, t=t, m=neg)
 
+# we can also use the minimiser to find roots
+# there are more rapidly converging root finding algorithms,
+# but unless f() is very expensive to call this will suffice
 def find_zero(f, a, b, t=1e-9, ft=1e-6):
   """
   find a zero of a (well behaved) function over an interval.
@@ -5842,7 +5850,9 @@ def find_zero(f, a, b, t=1e-9, ft=1e-6):
     ...
   ValueError: value not found
   """
+  # find a minimum of the absolute value
   r = find_min(f, a, b, t, m=abs)
+  # and check the function value is close enough to 0
   if ft < abs(r.fv): raise ValueError("value not found") # try a smaller t, or a larger ft
   r.ft = ft
   return r
