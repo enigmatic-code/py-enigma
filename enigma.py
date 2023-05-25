@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat May 20 10:45:28 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu May 25 13:38:48 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,7 +219,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-05-18"
+__version__ = "2023-05-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -9066,7 +9066,7 @@ class SubstitutedExpression(object):
     """
     # defaults
     if base is None: base = cls.defaults.get('base', 10)
-    if carries is None: carries = str_lower + rev(str_upper)
+    if carries is None: carries = str_lower + rev(str_upper) + str_digit
     if extra is None: extra = ()
     if s2d is None: s2d = cls.defaults.get('s2d', None)
     if d2i is None: d2i = cls.defaults.get('d2i', None)
@@ -9400,6 +9400,7 @@ class SubstitutedExpression(object):
   #   Exception = error
   @classmethod
   def _getopt(cls, k, v, opt, allow=()):
+    # used single character options: abcdhikrsvACDEHLMSTXY1@
 
     if k == 'h' or k == 'help':
       # --help (or -h)
@@ -9468,6 +9469,8 @@ class SubstitutedExpression(object):
       opt['extra'].append(v)
     elif 'split' in allow and (k == 'k' or k == 'split'):
       opt['split'] = (int(v) if v else 1)
+    elif 'carries' in allow and (k == 'c' or k == 'carries'):
+      opt['carries'] = v
 
     # unrecognised option
     else:
@@ -9573,7 +9576,7 @@ class SubstitutedExpression(object):
   def run_split_sum(cls, args):
     if args:
       # parse the args, and sort out the supported ones
-      opt = cls._opt_from_args(args, allow={'split', 'extra'})
+      opt = cls._opt_from_args(args, allow={'split', 'carries', 'extra'})
       if opt is not None:
 
         # "--" can be used to separate sums to split from extra expressions
@@ -9588,6 +9591,7 @@ class SubstitutedExpression(object):
           extra = list()
 
         cols = opt.pop('split', 1)
+        carries = opt.pop('carries', None)
         kw = dict()
         if opt.get('extra') is not None: extra = opt['extra'] + extra
         kw['extra'] = extra
@@ -9601,7 +9605,7 @@ class SubstitutedExpression(object):
           if k in opt:
             kw[k] = opt.pop(k)
         #if opt: printf("SubstitutedExpression.run_split_sum: ignoring args: {opt}")
-        self = cls.split_sum(sums, result=None, k=cols, **kw)
+        self = cls.split_sum(sums, result=None, k=cols, carries=carries, **kw)
         if self.run():
           return 0
 
@@ -9609,6 +9613,8 @@ class SubstitutedExpression(object):
     print(join(cls._usage(), sep=nl))
     printf("SubstitutedExpression.split_sum also accepts the following option:")
     printf("  --split=<n> (or -k<n>) = split the sum into groups of <n> columns")
+    printf("  --carries=<str> (or -c<str>) = symbols available for carries")
+    printf("  --extra=<str> (or -E<str>) = additional (non-sum) expressions")
     printf()
     return -1
 
