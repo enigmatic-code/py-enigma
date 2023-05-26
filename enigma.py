@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu May 25 13:38:48 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri May 26 08:24:31 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -154,7 +154,8 @@ prime_factor           - generate terms in the prime factorisation of a number
 prime_factor_rho       - generate prime factors of large numbers
 printf                 - print with interpolated variables
 pythagorean_triples    - generate Pythagorean triples
-quadratic              - determine roots of a quadratic equation
+quadratic              - find roots of a quadratic equation
+ratio, ratio_q         - find lowest terms integer ratio
 rational               - represet a rational number
 rcompose               - reverse functional composition
 reciprocals            - generate reciprocals that sum to a given fraction
@@ -219,7 +220,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-05-23"
+__version__ = "2023-05-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4257,6 +4258,17 @@ def ratio(*ns):
   g = mgcd(*ns)
   return (ns if g == 1 else tuple(v // g for v in ns))
 
+def ratio_q(*qs):
+  """
+  return ratio of fractions in <qs> as integers in lowest terms.
+
+  >>> ratio_q(rational(2, 3), rational(10, 3))
+  (1, 5)
+  """
+  # turn the fractions into integers
+  m = call(mlcm, (q.denominator for q in qs))
+  return call(ratio, (int(m * q) for q in qs))
+
 # import a value from a qualified spec, e.g.:
 #   Q = import_fn('fractions.Fraction')
 #   Q = import_fn('gmpy2.mpq')
@@ -4611,7 +4623,10 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
 # fetch command line arguments from sys
 @static(argv=None)
 def get_argv(force=0, args=None):
-  if force or get_argv.argv is None: get_argv.argv = (args if args is not None else sys.argv[1:])
+  if force or get_argv.argv is None:
+    # TODO: decode command line args to unicode
+    if args is None: args = sys.argv[1:]
+    get_argv.argv = args
   return get_argv.argv
 
 # alias
@@ -6726,7 +6741,7 @@ def poly_scale(p, F=None):
   if not p: return p
   if F is None: F = Rational()
   p = list(map(F, p))
-  m = mlcm(*(f.denominator for f in p))
+  m = call(mlcm, (f.denominator for f in p))
   p = list(int(m * f) for f in p)
   g = mgcd(*p)
   if g > 1: p = list(x // g for x in p)
@@ -8036,7 +8051,7 @@ class SubstitutedSum(object):
 
 # find words in string <s>
 def _find_words(s, r=1):
-  words = set(re.findall(r'{(\w+?)}', s))
+  words = set(re.findall(r'{(\w+?)}', s)) # re.UNICODE
   if r:
     # return the words
     return words
@@ -8050,8 +8065,11 @@ def _replace_words(s, fn):
   _fn = lambda m: fn(m.group(1))
   return re.sub(r'{(\w+?)}', _fn, s)
 
-# local variable used to represent symbol x
+# local variable used to represent symbol x:
+# default is just _x
 _sym = lambda x: '_' + x
+# this will use ascii variables 'v_<hex-code-of-symbol>'
+#_sym = cached(lambda x: 'v_' + join((int2base(ord(c), base=16) for c in x), sep="_"))
 
 # return an expression that evaluates word <w> in base <base>
 def _word(w, base):
@@ -9363,19 +9381,19 @@ class SubstitutedExpression(object):
     return (
       "usage: SubstitutedExpression [<opts>] <expression> [<expression> ...]",
       "options:",
-      "  --symbols=<string> (or -s<string>) = symbols to replace with digits",
+      "  --symbols=<str> (or -s<s>) = symbols to replace with digits",
       "  --base=<n> (or -b<n>) = set base to <n>",
       "  --assign=<symbol>,<decimal> (or -a<s>,<d>) = assign decimal value to symbol",
       "  --digits=<digit>,... or --digits=<digit>-<digit> (or -d...) = available digits",
       "  --invalid=<digits>,<symbols> (or -i<ds>,<ss>) = invalid digit to symbol assignments",
       "  --answer=<expr> (or -A<expr>) = count answers according to <expr>",
       "  --accumulate=<expr> (or -M<expr>) = accumulate answers according to <expr>",
-      "  --template=<string> (or -T<s>) = solution template",
-      "  --solution=<string> (or -S<s>) = solution symbols",
-      "  --header=<string> (or -H<s>) = solution header",
-      "  --distinct=<string> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
-      "  --literal=<strong> (or -L<s>) = symbols that stand for themselves",
-      "  --code=<string> (or -C<s>) = initialisation code (can be used multiple times)",
+      "  --template=<str> (or -T<s>) = solution template",
+      "  --solution=<str> (or -S<s>) = solution symbols",
+      "  --header=<str> (or -H<s>) = solution header",
+      "  --distinct=<str> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
+      "  --literal=<str> (or -L<s>) = symbols that stand for themselves",
+      "  --code=<str> (or -C<s>) = initialisation code (can be used multiple times)",
       "  --first (or -1) = stop after the first solution",
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
       "  --denest=<n> (or -X<n>) = workaround statically nested block limit (0 = off, 1 = on, 2+ = depth)",
@@ -9406,7 +9424,7 @@ class SubstitutedExpression(object):
       # --help (or -h)
       return None
     elif k == 's' or k == 'symbols':
-      # --symbols=<string> (or -s<string>)
+      # --symbols=<str> (or -s<str>)
       opt['symbols'] = v
     elif k == 'T' or k == 'template':
       opt['template'] = v
@@ -9613,8 +9631,8 @@ class SubstitutedExpression(object):
     print(join(cls._usage(), sep=nl))
     printf("SubstitutedExpression.split_sum also accepts the following option:")
     printf("  --split=<n> (or -k<n>) = split the sum into groups of <n> columns")
-    printf("  --carries=<str> (or -c<str>) = symbols available for carries")
-    printf("  --extra=<str> (or -E<str>) = additional (non-sum) expressions")
+    printf("  --carries=<str> (or -c<s>) = symbols available for carries")
+    printf("  --extra=<str> (or -E<s>) = additional (non-sum) expressions")
     printf()
     return -1
 
@@ -12147,6 +12165,8 @@ def run(cmd, *args, **kw):
         if timed: timed.report()
       except Exception as e:
         printf("run: FAILURE in {cmd} ...\n\nException details:\n{e}\n")
+        import traceback
+        traceback.print_exc(e)
         _run_exit = -1
         if timed: timed.report()
       finally:
@@ -12475,7 +12495,7 @@ enigma.py has the following command-line usage:
 )
 
 def _enigma_main(args=None):
-  if args is None: args=argv()
+  if args is None: args=get_argv()
 
   # allow solvers to run from the command line:
   #   % python enigma.py <class> <args> ...
