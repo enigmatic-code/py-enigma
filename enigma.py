@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri May 26 08:24:31 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun  2 09:17:59 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -220,7 +220,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-05-25"
+__version__ = "2023-05-31"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1013,13 +1013,13 @@ def nreverse(n, k=None, base=10):
 nrev = nreverse
 
 
-from fnmatch import fnmatch
+from fnmatch import fnmatchcase
 
 # match a value (as a string) to a template
 # NOTE: match is a soft keyword in Python 3.10+
 def match(v, t):
   """
-  match a value (as a string) to a template (see fnmatch.fnmatch).
+  match a value (as a string) to a template (see fnmatch.fnmatchcase).
 
   to make matching numbers easier if the template starts with a minus
   sign ('-') then so must the value. if the template starts with a
@@ -1050,7 +1050,7 @@ def match(v, t):
       return False
     else:
       t = t[1:]
-  return fnmatch(v, t)
+  return fnmatchcase(v, t)
 
 @static(special={'inf': inf, '+inf': inf, '-inf': -inf})
 def number(s, base=10):
@@ -2429,7 +2429,7 @@ def repeat(fn, v=0, k=inf):
   the specified number of times, so (k + 1) values will be returned
   (corresponding to the application of the function 0 .. k times).
 
-  >>> list(repeat((lambda x: x + 1), 0, 10))
+  >>> list(repeat(inc(1), 0, 10))
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
   """
   i = 0
@@ -3359,7 +3359,7 @@ sqrtc = lambda x: (isqrt(x) if x < 1 else 1 + isqrt(x - 1))
 # if you're using PyPy the class based version is just as fast (if not slightly faster)
 # experimentally mod = 80, 48, 72, 32 are good values (24, 16 also work OK)
 @static(mod=720, residues=None, cache_enabled=0, cache=dict())
-def is_square(n):
+def is_square(n, validate=0):
   # type: (int) -> int | NoneType
   """
   check integer <n> is a perfect square.
@@ -3376,6 +3376,7 @@ def is_square(n):
   >>> is_square(0)
   0
   """
+  if validate: n = as_int(n, include="0+")
   if n < 0: return None
   if n < 2: return n
   # early rejection: check <square> mod <some value> against a precomputed cache
@@ -3492,7 +3493,7 @@ is_square_p = (lambda x: is_square(x) is not None) # = fcompose(is_square, is_no
 
 # 819 rejects 95% (other good values: 63 (86%), 117 (87%), 189 (89%), 351 (90%), 504 (91%), 819 (95%))
 @static(mod=819, residues=None, cache_enabled=0, cache=dict())
-def is_cube(n):
+def is_cube(n, validate=0):
   """
   check positive integer <n> is a perfect cube.
 
@@ -3507,6 +3508,7 @@ def is_cube(n):
   >>> is_cube(0)
   0
   """
+  if validate: n = as_int(n, include="0+")
   if n < 0: return None
   if n < 2: return n
   if not is_cube.residues: is_cube.residues = set((i * i * i) % is_cube.mod for i in xrange(is_cube.mod))
@@ -3519,7 +3521,7 @@ def is_cube(n):
 
 is_cube_p = (lambda x: is_cube(x) is not None) # = fcompose(is_cube, is_not_none)
 
-def is_cube_z(n):
+def is_cube_z(n, validate=0):
   """
   check integer <n> is a perfect cube.
 
@@ -3531,10 +3533,10 @@ def is_cube_z(n):
   0
   """
   if n < 0:
-    r = is_cube(-n)
-    return (r if r is None else -r)
+    r = is_cube(-n, validate=validate)
+    return (None if r is None else -r)
   else:
-    return is_cube(n)
+    return is_cube(n, validate=validate)
 
 # keep the old names as aliases
 power = is_power
@@ -6382,12 +6384,12 @@ class Delay(object):
 
       x = Delay(expensive, 1)
       x.evaluated --> False
-      x.value --> returns expensive(1)
+      x.value (or x()) --> returns expensive(1)
       x.evaluated --> True
-      x.value --> returns expensive(1) again, without re-evaluating it
+      x.value (or x()) --> returns expensive(1) again, without re-evaluating it
       x.reset()
       x.evaluated --> False
-      x.value --> returns expensive(1), but re-evaluates it
+      x.value (or x()) --> returns expensive(1), but re-evaluates it
     """
     self.fn = fn
     self.args = args
@@ -6399,8 +6401,12 @@ class Delay(object):
     return self.__class__.__name__ + '(value=' + (repr(self.value) if self.evaluated else '<delayed>') + ')'
 
   def evaluate(self):
-    self.value = self.fn(*(self.args), **(self.kw))
+    self.value = call(self.fn, self.args, self.kw)
     self.evaluated = True
+    return self.value
+
+  def __call__(self):
+    if not self.evaluated: self.evaluate()
     return self.value
 
   def reset(self):
