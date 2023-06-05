@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun  2 09:17:59 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun  5 11:33:19 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -220,7 +220,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-05-31"
+__version__ = "2023-06-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6447,7 +6447,7 @@ class Accumulator(object):
   >>> for x in (6, 5, 4, 7, 3, 1): a.accumulate(x)
   >>> a.value
   7
-  >>> a = Accumulator()
+  >>> a = Accumulator(fn=add)
   >>> for x in irange(1, 9): a.accumulate(x)
   >>> a.value
   45
@@ -6483,7 +6483,8 @@ class Accumulator(object):
     function which is called as fn(<current-value>, v).
     """
     self.count += 1
-    self.value = (self.fn1(v) if self.value is None else self.fn(self.value, v))
+    v0 = self.value
+    self.value = (self.fn1(v) if v0 is None else self.fn(v0, v))
 
   def accumulate_data(self, v, data, target=None):
     """
@@ -6529,9 +6530,8 @@ class Accumulator(object):
     <value>, <data> can be an index into elements from <s>
     or a function to extract the appropriate value from an element.
     """
-    fn = lambda i: (lambda x: x[i])
-    if not callable(value): value = fn(value)
-    if not callable(data): data = fn(data)
+    if not callable(value): value = item(value)
+    if not callable(data): data = item(data)
     for x in s:
       self.accumulate_data(value(x), data(x))
     return self
