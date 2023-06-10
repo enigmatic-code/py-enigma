@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun  5 11:33:19 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jun 10 10:14:56 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -2379,13 +2379,13 @@ def first(s, count=1, skip=0, fn=list):
   <skip> returns a true value when it is passed each item.
 
   this would be a way to find the first 10 primes:
-  >>> first((n for n in irange(1, inf) if is_prime(n)), count=10)
+  >>> first(primes, count=10)
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
   >>> first(p for p in primes if p % 17 == 1)
   [103]
 
   this finds squares less than 200
-  >>> first((sq(x) for x in irange(0, inf)), count=(lambda x: x < 200))
+  >>> first(powers(0, inf, 2), count=lt(200))
   [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196]
   """
   if callable(count):
@@ -4220,7 +4220,7 @@ def mdivmod(x, *vs):
   return rs
 
 # for those times when Rational() is overkill
-def fraction(a, b, *rest):
+def fraction(*args):
   """
   return the numerator and denominator of the fraction a/b in lowest terms
 
@@ -4236,12 +4236,15 @@ def fraction(a, b, *rest):
   >>> fraction(1, 2,  3, 4,  5, 6)  # 1/2 + 3/4 + 5/6 = 25/12
   (25, 12)
   """
-  if rest:
-    for (c, d) in chunk(rest, 2):
-      (a, b) = (a * d + b * c, b * d)
+  if not args: return (0, 1)  # 0
+  # go through the fractions in pairs
+  ps = chunk(args, 2)
+  (a, b) = next(ps)
+  for (c, d) in ps:
+    (a, b) = (a * d + b * c, b * d)
   if b < 0: (a, b) = (-a, -b)
   g = gcd(a, b)
-  return (a // g, b // g)
+  return ((a, b) if g == 1 else (a // g, b // g))
 
 def format_fraction(n, d, base=10):
   s = int2base(n, base=base)
@@ -12496,7 +12499,7 @@ enigma.py has the following command-line usage:
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.11.3',
+  version=__version__, python='2.7.18', python3='3.11.4',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
