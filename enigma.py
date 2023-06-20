@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jun 10 18:01:31 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 18 13:46:03 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -15,7 +15,7 @@
 # (c) Copyright 2009-2023, Jim Randell, all rights reserved.
 #
 ###############################################################################
-# -*- mode: Python; python-indent-offset: 2; -*-
+# -*- mode: Python; python-indent-offset: 2; coding: ascii -*-
 
 """
 A collection of useful code for solving New Scientist Enigma (and similar) puzzles.
@@ -220,7 +220,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-06-08"
+__version__ = "2023-06-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -915,10 +915,11 @@ def nconcat(*digits, **kw):
   # or: (slower, and only works with digits < base)
   #return int(concat(*digits), base=base)
 
-# split n into digits, starting with the least significant
-def nsplitter(n, k=None, base=10):
-  n = abs(as_int(n))
+# split integer <n> into digits, starting with the least significant
+def nsplitter(n, k=None, base=10, validate=0):
   assert base > 1, sprintf("invalid base: {base!r}")
+  if validate: n = as_int(n)
+  n = abs(n)
   if k is None:
     # the "natural" number of digits in n
     while True:
@@ -931,7 +932,7 @@ def nsplitter(n, k=None, base=10):
       (n, r) = divmod(n, base)
       yield r
 
-def nsplit(n, k=None, base=10, fn=tuple):
+def nsplit(n, k=None, base=10, fn=tuple, validate=0):
   """
   split an integer into digits (using base <base> representation)
 
@@ -955,9 +956,9 @@ def nsplit(n, k=None, base=10, fn=tuple):
   >>> nsplit(111**2, 3)
   (3, 2, 1)
   """
-  return fn(reversed(tuple(nsplitter(n, k=k, base=base))))
+  return fn(reversed(list(nsplitter(n, k=k, base=base, validate=validate))))
 
-def dsum(n, k=None, base=10):
+def dsum(n, k=None, base=10, validate=0):
   """
   calculate the digit sum of an integer (when represented in the
   specified base).
@@ -969,7 +970,7 @@ def dsum(n, k=None, base=10):
   >>> dsum(123456789, base=2)
   16
   """
-  return sum(nsplitter(n, k=k, base=base))
+  return sum(nsplitter(n, k=k, base=base, validate=validate))
 
 # population count, Hamming weight, bitsum(), bit_count()
 if getattr(int, "bit_count", None):
@@ -979,18 +980,18 @@ else:
 
 # equivalent to: len(nsplit(n))
 # (we could use logarithms for "smallish" numbers)
-def ndigits(n, base=10):
+def ndigits(n, base=10, validate=0):
   """
   return the number of digits in a number, when represented in the specified base.
 
   >>> ndigits(factorial(70))
   101
   """
-  #return sum(1 for _ in nsplitter(n, base=base))
-  return icount(nsplitter(n, base=base))
+  #return sum(1 for _ in nsplitter(n, base=base, validate=validate))
+  return icount(nsplitter(n, base=base, validate=validate))
 
 # maybe -> nrev()
-def nreverse(n, k=None, base=10):
+def nreverse(n, k=None, base=10, validate=0):
   """
   reverse an integer (as a <k> digit number using base <base> representation)
 
@@ -1006,9 +1007,9 @@ def nreverse(n, k=None, base=10):
   100
   """
   if n < 0:
-    return -nreverse(-n, base=base)
+    return -nreverse(-n, base=base, validate=validate)
   else:
-    return nconcat(nsplitter(n, k=k, base=base), base=base)
+    return nconcat(nsplitter(n, k=k, base=base, validate=validate), base=base)
 
 nrev = nreverse
 
@@ -1972,6 +1973,7 @@ def filter_unique(seq, f=identity, g=identity, st=None):
     # general case
     for (k, vs) in r.items():
       (unq if seq_all_same(map(g, vs)) else non).extend(vs)
+  #printf("unq = {unq}\nnon = {non}")
   return FilterUnique(unq, non)
 
 # alias if you prefer the term partition (but don't confuse it with partitions())
@@ -2739,6 +2741,7 @@ def divisors_tuples(n, k, s=()):
       if not (s and a < s[-1]):
         for z in divisors_tuples(b, k - 1, s + (a,)): yield z
 
+# see also: is_prime_mr(), Primes.is_prime(), gmpy2.is_prime()
 def is_prime(n, validate=0):
   # type: (int) -> bool
   """
@@ -6313,7 +6316,7 @@ def int2bcd(n, base=10, bits_per_digit=4):
     r += (x << k)
     if n == 0: break
     k += bits_per_digit
-  return s * r
+  return (r if s == 1 else -r)
 
 # convert a sequence to a string: "(a, b, c)"
 def seq2str(s, sort=0, rev=0, enc="()", sep=", "):
@@ -7237,6 +7240,17 @@ class _PrimeSieveE6(object):
   def irange(self, a, b):
     if not (b is None or b == inf): b += 1
     return self.generate(a, b)
+
+  # generate tuples of primes from the sieve (in the interval [a, b])
+  def tuples(self, k, a=0, b=inf):
+    # consider increasing values for the largest prime
+    for p in self.irange(a, b):
+      if k == 1:
+        yield (p,)
+      elif k > 1:
+        # generate the smaller primes
+        for ps in self.tuples(k - 1, a=a, b=p - 1):
+          yield ps + (p,)
 
   # prime test (may throw IndexError if n is too large)
   def is_prime(self, n):
@@ -9545,10 +9559,10 @@ class SubstitutedExpression(object):
 
     # parse the args
     opt = cls._opt_from_args(args)
-    if opt:
-      # create the object
-      argv = opt.pop('_argv')
-      return cls(argv, **opt)
+    if opt is None: return
+    # create the object
+    argv = opt.pop('_argv')
+    return cls(argv, **opt)
 
   # class method to call from the command line
   @classmethod
@@ -9652,10 +9666,10 @@ class SubstitutedExpression(object):
     if run.alias.get(cmd, cmd) != cls.__name__:
       printf("WARNING: loading '{cmd}' into '{cls.__name__}'")
     opt = cls._opt_from_args(argv)
-    if opt:
-      argv = opt.pop('_argv')
-      if env: opt['env'] = env
-      return cls(argv, **opt)
+    if opt is None: return
+    argv = opt.pop('_argv')
+    if env: opt['env'] = env
+    return cls(argv, **opt)
 
   # parse a string as a run-file
   @classmethod
@@ -9665,10 +9679,10 @@ class SubstitutedExpression(object):
       if run.alias.get(cmd, cmd) != cls.__name__:
         printf("WARNING: loading '{cmd}' into '{cls.__name__}'")
       opt = cls._opt_from_args(argv)
-      if opt:
-        argv = opt.pop('_argv')
-        if env: opt['env'] = env
-        return cls(argv, **opt)
+      if opt is None: return
+      argv = opt.pop('_argv')
+      if env: opt['env'] = env
+      return cls(argv, **opt)
 
   # class method to provide a read/eval/print loop
   @classmethod
@@ -10213,6 +10227,7 @@ class SubstitutedDivision(SubstitutedExpression):
   @classmethod
   def _opt_from_args(cls, args, **kw):
     opt = super(SubstitutedDivision, cls)._opt_from_args(args, **kw)
+    if opt is None: return
     # "--" can be used to separate division sum from extra expressions
     argv = opt['_argv']
     i = find(argv, '--')
