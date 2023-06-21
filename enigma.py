@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jun 20 12:23:25 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 21 10:05:09 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -220,7 +220,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-06-18"
+__version__ = "2023-06-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -12159,7 +12159,7 @@ def run(cmd, *args, **kw):
           _PY_ENIGMA = join(sorted(uniq(_PY_ENIGMA + flags)))
         _run_exit = -1
         try:
-          if verbose: printf("run: calling {cmd}")
+          if verbose: printf("run: calling command {cmd}")
           # use elapsed time for subprocesses, rather than process time
           if timed: timed = Timer(name=timed, timer="E")
           _run_exit = subprocess.call(cmd)
@@ -12184,13 +12184,14 @@ def run(cmd, *args, **kw):
         saved = [_PY_ENIGMA]
         _PY_ENIGMA = join(sorted(uniq(_PY_ENIGMA + flags)))
       try:
+        if verbose: printf("run: calling function {fn.__name__} ...")
         if timed: timed = Timer(name=timed)
         _run_exit = (fn(list(args)) or 0)
         if timed: timed.report()
       except Exception as e:
         printf("run: FAILURE in {cmd} ...\n\nException details:\n{e}\n")
         import traceback
-        traceback.print_exc(e)
+        traceback.print_exc(limit=0)
         _run_exit = -1
         if timed: timed.report()
       finally:
