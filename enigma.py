@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 21 10:05:09 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 21 10:29:38 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -8213,7 +8213,7 @@ class SubstitutedExpression(object):
   # but you still need to document them in __init__
   defaults = dict(
     # parameters that have a default value
-    base=10, distinct=1, process=1, reorder=1, first=0, denest=0, sane=1, verbose=1,
+    base=10, distinct=1, process=1, reorder=1, first=0, denest=0, sane=1, warn=0, verbose=1,
     # other parameters
     exprs=None, symbols=None, digits=None, s2d=None, d2i=None, answer=None, accumulate=None,
     literal=None, template=None, solution=None, header=None,
@@ -8223,7 +8223,7 @@ class SubstitutedExpression(object):
   def __init__(self,
     exprs, base=None, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None,
     accumulate=None, literal=None, template=None, solution=None, header=None, distinct=None, check=None,
-    macro=None, env=None, code=None, process=None, reorder=None, first=None, denest=None, sane=None, verbose=None
+    macro=None, env=None, code=None, process=None, reorder=None, first=None, denest=None, sane=None, warn=None, verbose=None
   ):
     """
     create a substituted expression solver.
@@ -8350,6 +8350,7 @@ class SubstitutedExpression(object):
     macro = self.macro
     process = self.process
     sane = self.sane
+    warn = self.warn
     verbose = self.verbose
 
     # sort out verbose argument
@@ -8548,6 +8549,7 @@ class SubstitutedExpression(object):
     reorder = self.reorder
     denest = self.denest
     sane = self.sane
+    warn = self.warn
     verbose = self.verbose
 
     words = self._words
@@ -8758,8 +8760,14 @@ class SubstitutedExpression(object):
         prog.append(sprintf("{_}  {vx} = int({x})"))
         prog.append(sprintf("{_}except NameError:")) # catch undefined functions
         prog.append(sprintf("{_}  raise"))
-        prog.append(sprintf("{_}except Exception:")) # maybe "except (ArithmeticError, ValueError)"
-        prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'return')))
+        if warn:
+          prog.append(sprintf("{_}except Exception as e:"))
+          msg = 'printf("[WARNING: [{x}] {e}]", x=type(e).__name__)'
+          prog.append(sprintf("{_}  {msg}"))
+          prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'return')))
+        else:
+          prog.append(sprintf("{_}except Exception:")) # maybe "except (ArithmeticError, ValueError)"
+          prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'return')))
 
       # check the value
       if k == 3:
@@ -9048,7 +9056,7 @@ class SubstitutedExpression(object):
     terms, result=None, k=1, carries=None, extra=None,
     base=None, symbols=None, s2d=None, d2i=None, distinct=None, literal=None,
     answer=None, accumulate=None, env=None, code=None,
-    template=None, sane=None, verbose=None
+    template=None, sane=None, warn=None, verbose=None
   ):
     """
     split the alphametic sum represented by [[ sum(<terms>) = <result> ]]
@@ -9079,6 +9087,7 @@ class SubstitutedExpression(object):
       code - additional lines of code evaluated before solving
       template - solution template
       sane - enable/disable sanity checks
+      warn - enable/disable exception warnings
       verbose - control informational output
 
     if <result> is None, then <terms> can contain the sum represented
@@ -9118,6 +9127,7 @@ class SubstitutedExpression(object):
     if env is None: env = cls.defaults.get('env', None)
     if code is None: code = cls.defaults.get('code', None)
     if sane is None: sane = cls.defaults.get('sane', 1)
+    if warn is None: sane = cls.defaults.get('warn', 0)
     if verbose is None: verbose = cls.defaults.get('verbose', None)
 
     # the symbols to replace (for implicit expressions)
@@ -9259,7 +9269,7 @@ class SubstitutedExpression(object):
       exprs,
       base=base, distinct=distinct, literal=literal, env=env, code=code,
       s2d=s2d, d2i=d2i, template=template, solution=symbols,
-      answer=answer, accumulate=accumulate, sane=sane, verbose=verbose,
+      answer=answer, accumulate=accumulate, sane=sane, warn=warn, verbose=verbose,
     )
     return Record(
       exprs=exprs,
@@ -9362,6 +9372,9 @@ class SubstitutedExpression(object):
     if self.sane is not None:
       args.append(sprintf("--sane={self.sane}"))
 
+    if self.warn is not None:
+      args.append(sprintf("--warn={self.warn}"))
+
     if self.verbose is not None:
       args.append(sprintf("--verbose={self.verbose}"))
 
@@ -9421,6 +9434,7 @@ class SubstitutedExpression(object):
       "  --reorder=<n> (or -r<n>) = allow reordering of expressions (0 = off, 1 = on)",
       "  --denest=<n> (or -X<n>) = workaround statically nested block limit (0 = off, 1 = on, 2+ = depth)",
       "  --sane=<n> (or -Y<n>) = enable/disable sanity checks (0 = off, 1 = on)",
+      "  --warn=<n> (or -W<n>) = enable/disable exception warnings (0 = off, 1 = on)",
       "  --verbose[=<s>] (or -v[<s>]) = verbosity (0 = off, 1 = on, HTAEPIC239 = more)",
       "  --help (or -h) = show command-line usage",
       "",
@@ -9505,6 +9519,8 @@ class SubstitutedExpression(object):
       opt['denest'] = (int(v) if v else 1)
     elif k == 'Y' or k == 'sane':
       opt['sane'] = (int(v) if v else 0)
+    elif k == 'W' or k == 'warn':
+      opt['warn'] = (int(v) if v else 1)
     elif 'extra' in allow and (k == 'E' or k == 'extra'):
       if opt.get('extra', None) is None: opt['extra'] = list()
       opt['extra'].append(v)
@@ -9526,7 +9542,7 @@ class SubstitutedExpression(object):
     #if not args: return
 
     # process options
-    opt = dict(_argv=list(), s2d=dict(), d2i=None, verbose=1, first=0, reorder=1, denest=0, sane=1)
+    opt = dict(_argv=list(), s2d=dict(), d2i=None, verbose=1, first=0, reorder=1, denest=0, sane=1, warn=0)
     for arg in args:
       # deal with option args
       try:
@@ -10149,7 +10165,7 @@ class SubstitutedDivision(SubstitutedExpression):
     opt['d2i'] = d2i
 
     # verbatim options
-    for v in ('base', 'digits', 'answer', 'accumulate', 'env', 'code', 'verbose', 'denest', 'sane'):
+    for v in ('base', 'digits', 'answer', 'accumulate', 'env', 'code', 'verbose', 'denest', 'sane', 'warn'):
       if v in kw:
         opt[v] = kw[v]
 
