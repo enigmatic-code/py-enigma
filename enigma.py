@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 21 10:34:04 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun 23 11:32:30 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -220,7 +220,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-06-20"
+__version__ = "2023-06-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4245,6 +4245,7 @@ def fraction(*args):
   (a, b) = next(ps)
   for (c, d) in ps:
     (a, b) = (a * d + b * c, b * d)
+  if b == 0: raise ZeroDivisionError("fraction can't have zero denominator")
   if b < 0: (a, b) = (-a, -b)
   g = gcd(a, b)
   return ((a, b) if g == 1 else (a // g, b // g))
@@ -8094,6 +8095,8 @@ _sym = lambda x: '_' + x
 # this will use ascii variables 'v_<hex-code-of-symbol>'
 #_sym = cached(lambda x: 'v_' + join((int2base(ord(c), base=16) for c in x), sep="_"))
 
+_set = lambda x: join(x, sep=", ", enc="{}")
+
 # return an expression that evaluates word <w> in base <base>
 def _word(w, base):
   (m, d) = (1, dict())
@@ -8213,7 +8216,7 @@ class SubstitutedExpression(object):
   # but you still need to document them in __init__
   defaults = dict(
     # parameters that have a default value
-    base=10, distinct=1, process=1, reorder=1, first=0, denest=0, sane=1, warn=0, verbose=1,
+    base=10, distinct=1, process=1, reorder=1, first=0, denest=0, sane=1, warn=0, opt='', verbose=1,
     # other parameters
     exprs=None, symbols=None, digits=None, s2d=None, d2i=None, answer=None, accumulate=None,
     literal=None, template=None, solution=None, header=None,
@@ -8223,7 +8226,7 @@ class SubstitutedExpression(object):
   def __init__(self,
     exprs, base=None, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None,
     accumulate=None, literal=None, template=None, solution=None, header=None, distinct=None, check=None,
-    macro=None, env=None, code=None, process=None, reorder=None, first=None, denest=None, sane=None, warn=None, verbose=None
+    macro=None, env=None, code=None, process=None, reorder=None, first=None, denest=None, sane=None, warn=None, opt=None, verbose=None
   ):
     """
     create a substituted expression solver.
@@ -8292,20 +8295,20 @@ class SubstitutedExpression(object):
   vP = 64  # output solver parameters
   vI = 128  # output solver info
   vC = 256  # output code (before compilation)
+  vW = 1024  # output warnings
   # standard debug levels
-  v0 = 0
-  v1 = vH | vT | vA  # 1 = header + solutions + count
+  v0 = 0  # 0 = no output
+  v1 = vH | vT | vA | vW  # 1 = header + solutions + count
   v2 = v1 | vI  # 2 = 1 + solver info
   v3 = v2 | vE | vC  # 3 = 2 + timing + code
-  v9 = vH | vT | vA | vE | vP | vI | vC  # 9 = everything
+  v9 = vH | vT | vA | vE | vP | vI | vC | vW # 9 = everything
 
   def _verbose(self, n):
     if not n: return 0
-
     # if it is a string, parse it into a number
     if isinstance(n, basestring):
       # sort out "new style" flags, e.g. "1+E" "1-T" "1-T+E" "9" "HTAEPIC"
-      d = dict((k, getattr(self, 'v' + k)) for k in 'HTAEPIC01239')
+      d = dict((k, getattr(self, 'v' + k)) for k in 'HTAEPICW01239')
       v = d['0']
       try:
         op = '+'
@@ -8351,13 +8354,19 @@ class SubstitutedExpression(object):
     process = self.process
     sane = self.sane
     warn = self.warn
+    opt = self.opt
     verbose = self.verbose
 
     # sort out verbose argument
     verbose = self._verbose(verbose)
 
-    if sane == 0 and verbose > 0:
-      printf("WARNING: sanity checks disabled - good luck!")
+    if verbose & self.vW:
+      if opt:
+        xs = list(v for (k, v) in {'i': 'iterators', 's': 'sets'}.items() if k in opt)
+        if xs:
+          printf("WARNING: enabling experimental options: {xs}", xs=join(xs, sep=", "))
+      if sane == 0 :
+        printf("WARNING: sanity checks disabled - good luck!")
 
     # the symbols to replace (for implicit expressions)
     if symbols is None: symbols = str_upper
@@ -8397,7 +8406,7 @@ class SubstitutedExpression(object):
         if symbols:
           expr_ = expr
           expr = _fix_implicit(expr_, symbols)
-          if isinstance(v, basestring) and expr != expr_: v = _fix_implicit(v, symbols)
+          if isinstance(v, basestring) and (expr != expr_ or ('i' in opt)): v = _fix_implicit(v, symbols)
 
         # value is either an alphametic or a numeric literal
         if isinstance(v, basestring) and '{' not in v:
@@ -8450,7 +8459,7 @@ class SubstitutedExpression(object):
       digits = set(digits)
       if sane > 0:
         ds = set(xrange(base))
-        if verbose > 0:
+        if verbose & self.vW:
           # check for invalid digits
           for d in digits:
             if d not in ds:
@@ -8471,7 +8480,7 @@ class SubstitutedExpression(object):
     if d2i is not None:
       # it should provide a sequence of (<digit>, <symbol[s]>) pairs
       for (d, ss) in (d2i.items() if hasattr(d2i, 'items') else d2i):
-        if sane > 0 and verbose > 0 and d not in digits and d not in idigits:
+        if sane > 0 and verbose & self.vW and d not in digits and d not in idigits:
           printf("WARNING: SubstitutedExpression: non-valid invalid digit {d} specified", d=repr(d))
         invalid.update((s, d) for s in ss)
     else:
@@ -8550,6 +8559,7 @@ class SubstitutedExpression(object):
     denest = self.denest
     sane = self.sane
     warn = self.warn
+    opt = self.opt
     verbose = self.verbose
 
     words = self._words
@@ -8653,7 +8663,7 @@ class SubstitutedExpression(object):
     if not isinstance(distinct, dict):
       d = dict()
       for ss in distinct:
-        if sane > 0 and verbose > 0 and len(set(ss).difference(s2d.keys())) > len(digits):
+        if sane > 0 and verbose & self.vW and len(set(ss).difference(s2d.keys())) > len(digits):
           printf("[SubstitutedExpression: WARNING: distinct=\"{ss}\" has more symbols than available digits]")
         for s in ss:
           if s not in d: d[s] = set()
@@ -8701,7 +8711,7 @@ class SubstitutedExpression(object):
         prog.append(sprintf("{_}{w} = {x}", w=_sym(w), x=_word(w, base)))
 
     in_loop = False
-    # use_sets = 1 # using sets is slower
+    use_sets = ('s' in opt)  # use sets in code generation? [currently disabled by default]
 
     # deal with each <expr>,<value> pair
     for ((expr, val, k), xsyms, vsyms) in zip(exprs, xs, vs):
@@ -8717,7 +8727,7 @@ class SubstitutedExpression(object):
         in_loop = False
 
       # EXPERIMENTAL: do something about: "<iterator>: = <word>
-      if k == 3 and expr.endswith(':'):
+      if ('i' in opt) and k == 3 and expr.endswith(':'):
         prog.append(sprintf("{_}for {vx} in {expr}")) # expr already has a colon
         _ += indent
         #prog.append(sprintf("{_}{w} = {vx}", w=_sym(val)))
@@ -8732,22 +8742,26 @@ class SubstitutedExpression(object):
           # allowable digits for s
           ds = valid[s]
           in_loop = True
-          prog.append(sprintf("{_}for {s} in {ds}:", s=_sym(s)))
-          _ += indent
+
+          check = None
           if done and s in distinct:
             # TODO: we should exclude initial values (that are excluded from ds) here
             check = list(_sym(x) for x in done if x in distinct[s])
+
+          if use_sets:
+            check = (sprintf(".difference({check})", check=_set(check)) if check else '')
+            prog.append(sprintf("{_}for {s} in {ds}{check}:", s=_sym(s), ds=_set(ds)))
+            _ += indent
+          else:
+            prog.append(sprintf("{_}for {s} in {ds}:", s=_sym(s)))
+            _ += indent
             if check:
-              #if use_sets:
-              #  if len(check) == 1:
-              #    check = _sym(s) + " != " + check[0]
-              #  else:
-              #    check = _sym(s) + " not in " + join(check, sep=", ", enc="{}")
-              #else:
               check = join(((_sym(s) + ' != ' + x) for x in check), sep=' and ')
               prog.append(sprintf("{_}if {check}:"))
               _ += indent
+
           done.add(s)
+
           # look for words which can now be made
           for w in words:
             if s in w and all(x in done for x in w):
@@ -8760,7 +8774,7 @@ class SubstitutedExpression(object):
         prog.append(sprintf("{_}  {vx} = int({x})"))
         prog.append(sprintf("{_}except NameError:")) # catch undefined functions
         prog.append(sprintf("{_}  raise"))
-        if warn:
+        if warn and verbose & self.vW:
           prog.append(sprintf("{_}except Exception as e:"))
           msg = 'printf("[WARNING: [{x}] {e}]", x=type(e).__name__)'
           prog.append(sprintf("{_}  {msg}"))
@@ -8798,13 +8812,13 @@ class SubstitutedExpression(object):
             for v in idigits.union(v for (s, v) in invalid if y == s):
               check.append(str(v))
             if check:
-              #if use_sets:
-              #  if len(check) == 1:
-              #    check = _sym(y) + " != " + check[0]
-              #  else:
-              #    check = _sym(y) + " not in " + join(check, sep=", ", enc="{}")
-              #else:
-              check = join((_sym(y) + " != " + x for x in check), sep=" and ")
+              if use_sets:
+                if len(check) == 1:
+                  check = _sym(y) + " != " + check[0]
+                else:
+                  check = _sym(y) + " not in " + _set(check)
+              else:
+                check = join((_sym(y) + " != " + x for x in check), sep=" and ")
               prog.append(sprintf("{_}if {check}:"))
               _ += indent
             prog.append(sprintf("{_}{vx} //= {base}"))
@@ -9455,7 +9469,7 @@ class SubstitutedExpression(object):
   #   Exception = error
   @classmethod
   def _getopt(cls, k, v, opt, allow=()):
-    # used single character options: abcdhikrsvACDEHLMSTXY1@
+    # used single character options: abcdhikrsvACDEHLMSTWXY1@
 
     if k == 'h' or k == 'help':
       # --help (or -h)
@@ -9521,6 +9535,8 @@ class SubstitutedExpression(object):
       opt['sane'] = (int(v) if v else 0)
     elif k == 'W' or k == 'warn':
       opt['warn'] = (int(v) if v else 1)
+    elif k == 'O' or k == 'opt':
+      opt['opt'] = v
     elif 'extra' in allow and (k == 'E' or k == 'extra'):
       if opt.get('extra', None) is None: opt['extra'] = list()
       opt['extra'].append(v)
