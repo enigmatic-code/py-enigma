@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun 23 11:32:30 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun 26 16:34:31 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -220,7 +220,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-06-22"
+__version__ = "2023-06-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -932,9 +932,8 @@ def nsplitter(n, k=None, base=10, validate=0):
       (n, r) = divmod(n, base)
       yield r
 
-def nsplit(n, k=None, base=10, fn=tuple, validate=0):
-  """
-  split an integer into digits (using base <base> representation)
+def nsplit(n, k=None, base=10, fn=tuple, reverse=0, validate=0):
+  """split an integer into digits (using base <base> representation)
 
   if <k> is specified it gives the number of digits to return, if the
   number has too few digits the the result is zero padded at the beginning,
@@ -942,6 +941,9 @@ def nsplit(n, k=None, base=10, fn=tuple, validate=0):
   rightmost digits.
 
   the sign of the integer is ignored.
+
+  if <reverse> is set to a true value then the digits are presented in
+  reverse order.
 
   >>> nsplit(12345)
   (1, 2, 3, 4, 5)
@@ -955,8 +957,11 @@ def nsplit(n, k=None, base=10, fn=tuple, validate=0):
   (0, 0, 7)
   >>> nsplit(111**2, 3)
   (3, 2, 1)
+
   """
-  return fn(reversed(list(nsplitter(n, k=k, base=base, validate=validate))))
+  ds = nsplitter(n, k=k, base=base, validate=validate)
+  if reverse: return fn(ds)
+  return fn(list(ds)[::-1])
 
 def dsum(n, k=None, base=10, validate=0):
   """
