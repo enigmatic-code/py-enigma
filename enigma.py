@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul  1 15:30:10 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul  1 18:36:09 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -220,7 +220,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-06-26"
+__version__ = "2023-06-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -743,6 +743,21 @@ def ordered(*args, **kw):
   (42,)
   """
   return tuple(sorted(args, **kw))
+
+def encl(s, b="{}", fn=str):
+  """
+  enclose string <s> by bracketing it with the elements of <b>.
+
+  <s> is initially processed by <fn>.
+
+  >>> encl('xyz')
+  '{xyz}'
+  >>> encl(42, b='[]')
+  '[42]'
+  >>> encl('xyz', '|')
+  '|xyz|'
+  """
+  return b[0] + fn(s) + b[-1]
 
 # I would prefer join() to be a string constructor:
 #   str.from_seq(seq, sep=''), or just: str.join(seq, sep='')
@@ -8139,7 +8154,7 @@ def _split(s, sep=_split_sep, maxsplit=0):
   d = sep[0]
   if len(sep) > 1:
     # map all other separators to d
-    s = re.sub(r'[' + re.escape(sep[1:]) + r']', d, s)
+    s = re.sub(encl(re.escape(sep[1:]), '[]'), d, s)
   if maxsplit == 0:
     return s.split(d)
   elif maxsplit > 0:
@@ -8161,13 +8176,15 @@ def _digits(s):
   # "<d>"
   return tuple(int(d) for d in _split(s, _split_sep))
 
+# check for explicit "{WORD}" parameters
+_is_explicit = lambda s: re.search(r'{\w+}', s)  # was: [[ ('{' in s) ]]
+
 # fix up implicit parameters
 # if <s> contains no {word} parameters, then enclose words from <symbols>
-_is_explicit = lambda s: re.search(r'{\w+}', s)  # was: [[ ('{' in s) ]]
 def _fix_implicit(s, symbols):
   if s is None: return None
   if _is_explicit(s): return s
-  return re.sub('[' + symbols + ']+', (lambda m: '{' + m.group(0) + '}'), s)
+  return re.sub(encl(symbols, '[]') + '+', (lambda m: encl(m.group(0))), s)
 
 def _fix_implicit_seq(seq, symbols):
   if seq is None: return None
@@ -8447,7 +8464,7 @@ class SubstitutedExpression(object):
     if answer:
       ts.append(answer)
       xs.append((answer, None, 0))
-    _template = join(('(' + t + ')' for t in ts), sep=' ')
+    _template = join(ts, fn=(lambda t: encl(t, '()')), sep=' ')
     exprs = xs
 
     # initial mapping of symbols to digits
@@ -8708,7 +8725,7 @@ class SubstitutedExpression(object):
       # keep track of nested functions
       blocks = [ gensym('_substituted_expression_block') ]
       block = None
-      block_args = join(map(_sym, chain(symbols, words)), sep=", ")
+      block_args = join(chain(symbols, words), fn=_sym, sep=", ")
       indent_reset = indent
 
     # look for words which can be made
@@ -8775,7 +8792,7 @@ class SubstitutedExpression(object):
 
       # calculate the expression
       if k != 0 and (not expr.endswith(':')): # (but not for the answer expression)
-        x = _replace_words(expr, (lambda w: '(' + _sym(w) + ')'))
+        x = _replace_words(expr, (lambda w: encl(_sym(w), '()')))
         prog.append(sprintf("{_}try:"))
         prog.append(sprintf("{_}  {vx} = int({x})"))
         prog.append(sprintf("{_}except NameError:")) # catch undefined functions
@@ -8875,10 +8892,10 @@ class SubstitutedExpression(object):
       _ += indent
 
     # yield solutions as dictionaries
-    d = join((("'" + s + "': " + _sym(s)) for s in sorted(done)), sep=', ')
+    d = join(((encl(s, "'") + ": " + _sym(s)) for s in sorted(done)), sep=', ')
     if answer:
       # compute the answer
-      r = _replace_words(answer, (lambda w: '(' + _sym(w) + ')'))
+      r = _replace_words(answer, (lambda w: encl(_sym(w), '()')))
       prog.append(sprintf("{_}{vr} = {r}"))
       prog.append(sprintf("{_}yield ({{ {d} }}, {vr})"))
     else:
@@ -9210,10 +9227,9 @@ class SubstitutedExpression(object):
       d2i = set((d, s) for (d, ss) in d2i.items() for s in ss)
 
     # prepare return values
-    enc = lambda s, b="{}": b[0] + s + b[1]
     template_ = list()
     for (terms, result) in sums:
-      template_.append(enc(join(map(enc, terms), sep=' + ') + " = " + enc(result), b="()"))
+      template_.append(encl(join(terms, fn=encl, sep=' + ') + " = " + encl(result), b="()"))
     template_ = join(template_, sep=' ')
 
     # k=0 disables splitting
@@ -9264,7 +9280,7 @@ class SubstitutedExpression(object):
           carries = carries[ck:]
           cs.append(carry)
         # add an expression for this set of columns
-        exprs.append(join(map(enc, ts), sep=" + ") + " = " + enc(carry + rs))
+        exprs.append(join(ts, fn=encl, sep=" + ") + " = " + encl(carry + rs))
         if carry:
           # add the carry to the remaining terms
           ts_.append(carry)
@@ -9370,7 +9386,7 @@ class SubstitutedExpression(object):
       args.append(sprintf("--header={q}{self.header}{q}"))
 
     if self.env is not None:
-      raise ValueError("can't generate arg for \"env\" parameter (maybe use \"code\" instead)")
+      printf("WARNING: can't generate arg for \"env\" parameter (maybe use \"code\" instead)")
 
     code = self.code
     if code:
@@ -10048,7 +10064,7 @@ class SubstitutedDivision(SubstitutedExpression):
       subs = list(((re.split(r'[\s\-\=]+', x) if isinstance(x, basestring) else x) if x else None) for x in subs)
 
     def fmt(v, brace=0, none="0"):
-      return (none if v is None else ('{' + v + '}' if brace else v))
+      return (none if v is None else (encl(v) if brace else v))
 
     def fmt_subs(subs, brace=0, sep=", "):
       s = list()
