@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun 26 16:34:31 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul  1 15:30:10 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -220,7 +220,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-06-24"
+__version__ = "2023-06-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -903,9 +903,8 @@ def nconcat(*digits, **kw):
   # in Python3 [[ def nconcat(*digits, base=10): ]] is allowed instead
   base = kw.pop('base', 10)
   assert not kw, sprintf("nconcat: unknown arguments {kw}", kw=seq2str(kw.keys()))
-  # allow a sequence to passed as a single argument
-  if len(digits) == 1 and isinstance(digits[0], (Sequence, Iterable)):
-    digits = digits[0]
+  # allow a sequence to be passed as a single argument
+  if len(digits) == 1 and isinstance(digits[0], (Sequence, Iterable)): digits = digits[0]
   # this is faster than using: reduce(lambda a, b: a * base + b, digits, 0)
   n = 0
   for d in digits:
@@ -6123,7 +6122,7 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   >>> int2base(84, base=2, width=9, group=3, sep=" ")
   '001 010 100'
   """
-  assert base > 1, sprintf("invalid base {base!r}")
+  if base < 2: raise ValueError("invalid base {base!r}".format(base=base))
   if digits is None: digits = base_digits()
   (p, r) = ('', None)
   if i < 0: (p, i) = ('-', -i)
@@ -6157,6 +6156,8 @@ def base2int(s, base=10, strip=0, digits=None):
   """
   convert a string representation of an integer in the specified base to an integer.
 
+  if <strip> is set, then invalid characters in the conversion are ignored.
+
   >>> base2int('-42')
   -42
   >>> base2int('xyzzy', base=3, digits='zyx')
@@ -6164,27 +6165,27 @@ def base2int(s, base=10, strip=0, digits=None):
   >>> base2int('HELLO', base=36)
   29234652
   """
-  assert base > 1, sprintf("invalid base {base!r}")
+  if base < 2: raise ValueError("invalid base {base!r}".format(base=base))
   if digits is None: digits = base_digits()
-  if len(digits) > base:
-    digits = digits[:base]
+  if len(digits) > base: digits = digits[:base]
   s = str(s)
-  if s == digits[0]:
-    return 0
-  elif s.startswith('-'):
-    return -base2int(s[1:], base=base, strip=strip, digits=digits)
-  i = 0
-  for d in s:
+  if s == digits[0]: return 0
+  i = neg = 0
+  if s.startswith('-'):
+    neg ^= 1
+    i += 1
+  n = 0
+  for k in range(i, len(s)):
+    d = s[k]
     try:
       v = digits.index(d)
     except ValueError as e:
       if strip: continue
-      e.args = ("invalid digit for base {base}: {s}".format(base=base, s=s),)
+      e.args = ("invalid digit {d!r} for base {base} in {s!r}".format(base=base, s=s, d=d),)
       raise
-
-    i *= base
-    i += v
-  return i
+    n *= base
+    n += v
+  return (-n if neg else n)
 
 def digit_map(a=0, b=9, digits=None):
   """
@@ -8162,10 +8163,11 @@ def _digits(s):
 
 # fix up implicit parameters
 # if <s> contains no {word} parameters, then enclose words from <symbols>
+_is_explicit = lambda s: re.search(r'{\w+}', s)  # was: [[ ('{' in s) ]]
 def _fix_implicit(s, symbols):
   if s is None: return None
-  if re.search(r'{\w+}', s): return s # was: [[ if '{' in s: return s ]]
-  return re.sub(r'[' + symbols + r']+', (lambda m: '{' + m.group(0) + '}'), s)
+  if _is_explicit(s): return s
+  return re.sub('[' + symbols + ']+', (lambda m: '{' + m.group(0) + '}'), s)
 
 def _fix_implicit_seq(seq, symbols):
   if seq is None: return None
@@ -8408,13 +8410,12 @@ class SubstitutedExpression(object):
           (expr, v) = expr
 
         # convert implicit (without braces) into explicit (with braces)
-        if symbols:
-          expr_ = expr
-          expr = _fix_implicit(expr_, symbols)
-          if isinstance(v, basestring) and (expr != expr_ or ('i' in opt)): v = _fix_implicit(v, symbols)
+        if symbols and not (_is_explicit(expr) or (isinstance(v, basestring) and _is_explicit(v))):
+          expr = _fix_implicit(expr, symbols)
+          if isinstance(v, basestring): v = _fix_implicit(v, symbols)
 
         # value is either an alphametic or a numeric literal
-        if isinstance(v, basestring) and '{' not in v:
+        if isinstance(v, basestring) and not (v[0] == '{' and v[-1] == '}'):
           v = base2int(v, base=base)
 
         xs.append((expr, v))
