@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul  1 18:36:09 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jul  3 12:01:53 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -220,7 +220,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-06-27"
+__version__ = "2023-06-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -232,7 +232,6 @@ import math
 import functools
 import itertools
 import collections
-import copy
 import re
 
 # (see also the "six" module)
@@ -294,6 +293,40 @@ str_nl = nl
 _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
 version = lambda: __version__
+
+# import a value from a qualified spec, e.g.:
+#   Q = import_fn('fractions.Fraction')
+#   Q = import_fn('gmpy2.mpq')
+#   Q = import_fn('mpmath.rational.mpq')
+#   urlopen = import_fn('urllib2.urlopen')  # Python 2
+#   urlopen = import_fn('urllib.request.urlopen')  # Python 3
+def import_fn(spec):
+  # we could use importlib.import_module() here
+  importer = lambda x: __import__(x, fromlist=[''])
+  if '.' not in spec: return importer(spec)
+  (mod, fn) = spec.rsplit('.', 1)
+  return getattr(importer(mod), fn)
+
+# lazy importer
+# will import on call _and_ attempt to replace <name> in <space> with the imported function
+def lazy_import(spec, **kw):
+  name = (kw['name'] if 'name' in kw else str.rsplit(spec, '.', 1)[-1])
+  space = (kw['space'] if 'space' in kw else sys._getframe(1).f_globals) # replace in the defining space
+  def _f(*args, **kw):
+    fn = _f.fn
+    if not fn:
+      # cache the function
+      fn = _f.fn = import_fn(spec)
+      if name and space:
+        # attempt to replace the name in appropriate namespace
+        try:
+          space[name] = fn
+        except Exception:
+          pass
+    # call the function
+    return fn(*args, **kw)
+  _f.fn = None
+  return _f
 
 # add attributes to a function (to use as static variables)
 # (but for better performance use global variables, or mutable default parameters)
@@ -2556,8 +2589,7 @@ def prime_factor(n, limit=inf):
         if r > 0: break
         e += 1
         n = d
-      if e > 0:
-        yield (x, e)
+      if e > 0: yield (x, e)
       x += ds[j]
       if x * x > n: break
       j = js[j]
@@ -2791,16 +2823,14 @@ prime = is_prime
 
 # Miller-Rabin primality test (originally suggested by Brian Gladman)
 
-import random
+randrange = lazy_import('random.randrange')
 
 def _is_composite(a, d, n, s):
   if a == 0: return 0
   x = pow(a, d, n)
-  if x == 1:
-    return 0
+  if x == 1: return 0
   for _ in xrange(s):
-    if x == n - 1:
-      return 0
+    if x == n - 1: return 0
     x = (x * x) % n
   # definitely composite
   return 1
@@ -2873,7 +2903,7 @@ def is_prime_mr(n, r=0):
     return 2
 
   # for larger numbers run further prime tests as specified
-  if r > 0 and any(_is_composite(random.randrange(2, n - 1), d, n, s) for _ in range(r)):
+  if r > 0 and any(_is_composite(randrange(2, n - 1), d, n, s) for _ in range(r)):
     # definitely composite
     return 0
 
@@ -3019,7 +3049,7 @@ def tau(n, fn=prime_factor):
   """
   count the number of divisors of a positive integer <n>.
 
-  tau(n) = len(divisors(n)) [but faster]
+  tau(n) = len(divisors(n))  # (but faster)
 
   >>> tau(factorial(12))
   792
@@ -4296,19 +4326,6 @@ def ratio_q(*qs):
   # turn the fractions into integers
   m = call(mlcm, (q.denominator for q in qs))
   return call(ratio, (int(m * q) for q in qs))
-
-# import a value from a qualified spec, e.g.:
-#   Q = import_fn('fractions.Fraction')
-#   Q = import_fn('gmpy2.mpq')
-#   Q = import_fn('mpmath.rational.mpq')
-#   urlopen = import_fn('urllib2.urlopen')  # Python 2
-#   urlopen = import_fn('urllib.request.urlopen')  # Python 3
-def import_fn(spec):
-  # we could use importlib.import_module() here
-  importer = lambda x: __import__(x, fromlist=[''])
-  if '.' not in spec: return importer(spec)
-  (mod, fn) = spec.rsplit('.', 1)
-  return getattr(importer(mod), fn)
 
 # find an appropriate rational class
 # (could also try "sympy.Rational", but not for speed)
@@ -7554,6 +7571,8 @@ primes = Primes(1, expandable=1, array=_primes_array, fn=(lambda n: _primes_size
 
 # Magic Square Solver:
 
+_deepcopy = lazy_import('copy.deepcopy', name='_deepcopy')
+
 # this is probably a bit of overkill but it works and I already had the code written
 
 class Impossible(Exception): pass
@@ -7664,7 +7683,7 @@ class MagicSquare(object):
 
   def clone(self):
     """return a copy of this object"""
-    return copy.deepcopy(self)
+    return _deepcopy(self)
 
   def become(self, other):
     """set the attributes of this object from the other object"""
@@ -12172,7 +12191,7 @@ def run(cmd, *args, **kw):
     else:
       if (not interp) and any(cmd.endswith(x) for x in (".py", ".py2", ".py3")):
         # use runpy for *.py
-        import runpy
+        run_path = import_fn('runpy.run_path')
         get_argv(force=1, args=args)
         sys.argv = [cmd] + list(args)
         if flags:
@@ -12180,7 +12199,7 @@ def run(cmd, *args, **kw):
           _PY_ENIGMA = join(sorted(uniq(_PY_ENIGMA + flags)))
         try:
           if timed: timed = Timer(name=timed)
-          r = runpy.run_path(cmd, run_name=kw.get('run_name', '__main__'))
+          r = run_path(cmd, run_name=kw.get('run_name', '__main__'))
           if timed: timed.report()
         finally:
           if saved: [_PY_ENIGMA] = saved
