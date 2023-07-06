@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jul  3 12:01:53 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jul  6 15:36:19 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -220,7 +220,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-06-28"
+__version__ = "2023-07-04"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -598,7 +598,7 @@ def seq_all_different(*seqs, **kw):
   False
   """
   fn = kw.pop('fn', None)
-  assert not kw, sprintf("seq_all_different: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("seq_all_different: unknown arguments {kw}", kw=seq2str(kw.keys())))
   seen = set()
   for seq in seqs:
     for x in seq:
@@ -622,7 +622,7 @@ def seq_multiplicity(*seqs, **kw):
   """
   n = kw.pop('n', 1)
   fn = kw.pop('fn', None)
-  assert not kw, sprintf("seq_multiplicity: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("seq_multiplicity: unknown arguments {kw}", kw=seq2str(kw.keys())))
   seen = multiset()
   for seq in seqs:
     for x in seq:
@@ -754,7 +754,7 @@ def zip_eq(*ss, **kw):
   reverse = kw.pop('reverse', 0)
   strict = kw.pop('strict', None)
   k = kw.pop('first', None)
-  assert not kw, sprintf("zip_eq: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("zip_eq: unknown arguments {kw}", kw=seq2str(kw.keys())))
   if reverse: ss = (reversed(s) for s in ss)
   z = (zip(*ss, strict=kw['strict']) if strict is not None else zip(*ss))
   if k is not None: z = first(z, count=k, fn=iter)
@@ -793,7 +793,7 @@ def encl(s, b="{}", fn=str):
   return b[0] + fn(s) + b[-1]
 
 # I would prefer join() to be a string constructor:
-#   str.from_seq(seq, sep=''), or just: str.join(seq, sep='')
+#   str.from_seq(seq, sep='', enc=''), or just: str.join(seq, sep='', enc='')
 # but for now we define a utility function
 def join(seq, sep='', enc='', fn=str):
   """
@@ -843,7 +843,7 @@ def concat(*args, **kw):
   """
   sep = kw.pop('sep', '')
   enc = kw.pop('enc', '')
-  assert not kw, sprintf("concat: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("concat: unknown arguments {kw}", kw=seq2str(kw.keys())))
   if len(args) == 1:
     try:
       return join(args[0], sep=sep, enc=enc)
@@ -950,7 +950,7 @@ def nconcat(*digits, **kw):
   """
   # in Python3 [[ def nconcat(*digits, base=10): ]] is allowed instead
   base = kw.pop('base', 10)
-  assert not kw, sprintf("nconcat: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("nconcat: unknown arguments {kw}", kw=seq2str(kw.keys())))
   # allow a sequence to be passed as a single argument
   if len(digits) == 1 and isinstance(digits[0], (Sequence, Iterable)): digits = digits[0]
   # this is faster than using: reduce(lambda a, b: a * base + b, digits, 0)
@@ -964,8 +964,8 @@ def nconcat(*digits, **kw):
 
 # split integer <n> into digits, starting with the least significant
 def nsplitter(n, k=None, base=10, validate=0):
-  assert base > 1, sprintf("invalid base: {base!r}")
-  if validate: n = as_int(n)
+  if base < 2: raise ValueError(str.format("invalid base: {base!r}", base=base))
+  if validate: (n, base) = (as_int(n), as_int(base))
   n = abs(n)
   if k is None:
     # the "natural" number of digits in n
@@ -1282,20 +1282,20 @@ def peek(s, k=0, **kw):
     return kw['default']
   except KeyError:
     pass
-  raise ValueError(sprintf("invalid index {k}"))
+  raise ValueError(str.format("invalid index {k}", k=k))
 
 # functions to create a selector for elements/attributes from an object
 # passing multi=1 forces a multivalued return, even if only one element is specified
 def item(*ks, **kw):
   multi = kw.pop('multi', 0)
-  assert not kw, sprintf("item: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("item: unknown arguments {kw}", kw=seq2str(kw.keys())))
   f = operator.itemgetter(*ks)
   if len(ks) == 1 and multi: return (lambda x: (f(x),))
   return f
 
 def attr(*ks, **kw):
   multi = kw.pop('multi', 0)
-  assert not kw, sprintf("attr: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("attr: unknown arguments {kw}", kw=seq2str(kw.keys())))
   f = operator.attrgetter(*ks)
   if len(ks) == 1 and multi: return (lambda x: (f(x),))
   return f
@@ -1319,7 +1319,7 @@ def diff(a, b, *rest, **kw):
   'nepsire'
   """
   fn = kw.pop('fn', tuple)
-  assert not kw, sprintf("diff: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("diff: unknown arguments {kw}", kw=seq2str(kw.keys())))
   if rest: b = set(b).union(*rest)
   return fn(x for x in a if x not in b)
 
@@ -1447,7 +1447,7 @@ class multiset(dict):
     element of the sequence inserted into the multiset.
     """
     count = kw.pop('count', 1)
-    assert not kw, sprintf("multiset.from_seq: unknown arguments {kw}", kw=seq2str(kw.keys()))
+    if kw: raise TypeError(str.format("multiset.from_seq: unknown arguments {kw}", kw=seq2str(kw.keys())))
     m = multiset()
     for v in vs:
       m.update_from_seq(v, count=count)
@@ -1555,7 +1555,7 @@ class multiset(dict):
         return self
     except KeyError:
       pass
-    if count < 0: raise ValueError(sprintf("negative count: {item} -> {count}"))
+    if count < 0: raise ValueError(str.format("negative count: {item} -> {count}", item=item, count=count))
     if count > 0: self[item] = count
     return self
 
@@ -2037,7 +2037,7 @@ def _collect(s, accept, reject, every):
     if (accept is None or accept(x)) and (reject is None or not reject(x)):
       yield x
     elif every:
-      raise ValueError(sprintf("collect: failed to collect item: {x}"))
+      raise ValueError(str.format("collect: failed to collect item: {x}", x=x))
 
 def collect(s, accept=None, reject=None, every=0, fn=list):
   """
@@ -2177,12 +2177,12 @@ def ulambda(args, expr=None):
 
   if _python == 2:
     # in Python 2 it is straightforward lambda
-    expr = sprintf("lambda {args}: {expr}")
+    expr = str.format("lambda {args}: {expr}", args=args, expr=expr)
   else:
     # in Python 3 any of the following achieve the same
     #expr = sprintf("lambda *_x_: [{expr} for [{args}] in [_x_]][0]")
     #expr = sprintf("lambda *_x_: peek({expr} for [{args}] in [_x_])")
-    expr = sprintf("lambda *_x_: next({expr} for [{args}] in [_x_])")
+    expr = str.format("lambda *_x_: next({expr} for [{args}] in [_x_])", expr=expr, args=args)
   return eval(expr)
 
 # count the number of occurrences of a predicate in an iterator
@@ -2978,7 +2978,7 @@ def prime_factor_h(n, ps=None, end=None, nf=0, mr=0, mrr=0):
   [(19, 1), (23, 1), (29, 1), (61, 1), (67, 1), (123610951, 1)]
 
   """
-  assert not (ps is None and mr == 0), "no heuristics specified" # otherwise we won't find anything
+  if ps is None and mr == 0: raise ValueError("no heuristics specified")  # otherwise we won't find anything
   f = 0  # number of failed primes for n
   psi = (None if ps is None else ps.generate(end=end))
   pmax = 0
@@ -3248,7 +3248,7 @@ def pythagorean_triples(n=None, primitive=0, order=0):
     return _pythagorean_primitive(n, order)
   else:
     # include non-primitive
-    assert n is not None, "max hypotenuse not specified"
+    if n is None: raise ValueError("max hypotenuse not specified")
     return _pythagorean_all(n, order)
 
 
@@ -3280,7 +3280,7 @@ def fib(*s, **kw):
   [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
   """
   fn = kw.pop('fn', sum)
-  assert not kw, sprintf("fib: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("fib: unknown arguments {kw}", kw=seq2str(kw.keys())))
   s = list(s)
   while True:
     s.append(fn(s))
@@ -3710,7 +3710,7 @@ def repdigit(n, d=1, base=10):
   >>> repdigit(6, 7, base=16) == 0x777777
   True
   """
-  assert 0 <= d < base, sprintf("invalid digit: {d!r}")
+  if not (0 <= d < base): raise ValueError(str.format("repdigit: invalid digit: {d!r}", d=d))
   return d * ((base**n) - 1) // (base - 1)
 
 # Python 3.6: ...(*vs, root=math.sqrt)
@@ -3736,7 +3736,7 @@ def hypot(*vs, **kw):
   5
   """
   root = kw.pop('root', math.sqrt)
-  assert not kw, sprintf("hypot: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("hypot: unknown arguments {kw}", kw=seq2str(kw.keys())))
   return root(sum(v * v for v in vs))
 
 # alias for: hypot(..., root=is_square)
@@ -3782,11 +3782,11 @@ def quadratic(a, b, c, domain="Q", include="+-0", F=None):
   >>> sorted(quadratic(1, 1, -6, domain="Z"))
   [-3, 2]
   """
-  assert domain in "CFQZ", sprintf("quadratic: invalid domain {domain!r}")
+  if domain not in "CFQZ": raise ValueError(str.format("quadratic: invalid domain {domain!r}", domain=domain))
 
   if a == 0:
     # linear equation
-    assert b != 0, "invalid linear equation"
+    if b == 0: raise ValueError("quadratic: invalid linear equation")
     if F is None: F = (Rational() if domain in 'QZ' else (complex if domain == 'C' else float))
     return _roots(domain, include, F, (-c, b))
 
@@ -4100,7 +4100,7 @@ def dot(*vs, **kw):
   strict = kw.pop('strict', None)
   fns = kw.pop('fns', sum)
   fnp = kw.pop('fnp', multiply)
-  assert not kw, sprintf("dot: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("dot: unknown arguments {kw}", kw=seq2str(kw.keys())))
   z = (zip(*vs, strict=strict) if strict is not None else zip(*vs))
   return fns(map(fnp, z))
 
@@ -4576,7 +4576,7 @@ def format_recurring(*args, **kw):
   dp = kw.pop('dp', '.')
   enc = kw.pop('enc', '()')
   dots = kw.pop('dots', '...')
-  assert not kw, sprintf("format_recurring: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("format_recurring: unknown arguments {kw}", kw=seq2str(kw.keys())))
   if len(args) == 1: args = args[0]
   (i, nr, rr) = args
   rr = (enc[0] + rr + enc[1] + dots if rr else '')
@@ -4722,11 +4722,11 @@ def args(vs, n, fn=identity, prompt=None, argv=None):
 
 # this works in all version of Python
 def __sprintf(fmt, vs):
-  return fmt.format(**vs)
+  return str.format(fmt, **vs)
 
 # Python 3 has str.format_map(vs)
 def __sprintf3(fmt, vs):
-  return fmt.format_map(vs)
+  return str.format_map(fmt, vs)
 
 # in Python v3.6.x we are getting f"..." strings which can do this job
 #
@@ -4747,14 +4747,15 @@ def __sprintf36(fmt, vs):
 
 @static(fn=None)
 def _sprintf(fmt, vs, frame):
-  # first try using the locals of the frame
-  d = frame.f_locals
-  if vs: d = update(d, vs)
-  try:
-    return _sprintf.fn(fmt, d)
-  except (NameError, KeyError):
-    pass
-  # if that fails, try adding in the globals too
+  if 0:
+    # first try using just the locals of the frame
+    d = frame.f_locals
+    if vs: d = update(d, vs)
+    try:
+      return _sprintf.fn(fmt, d)
+    except (NameError, KeyError):
+      pass
+    # if that fails, try adding in the globals too
   d = update(frame.f_globals, frame.f_locals)
   if vs: d = update(d, vs)
   return _sprintf.fn(fmt, d)
@@ -4808,7 +4809,7 @@ def catch(fn, *args, **kw):
   try:
     return fn(*args, **kw)
   except Exception:
-    #print("catch: caught exception!")
+    #print("catch: caught exception!"); print(sys.exc_info())
     return
 
 # inclusive range iterator
@@ -4903,7 +4904,7 @@ def chain(*ss, **kw):
   ('a', 'b', 'c', 1, 2, 3, 4, 5, 6)
   """
   fn = kw.pop("fn", iter)
-  assert not kw, sprintf("chain: unknown arguments {kw}", kw=seq2str(kw.keys()))
+  if kw: raise TypeError(str.format("chain: unknown arguments {kw}", kw=seq2str(kw.keys())))
   return flatten(ss, fn=fn)
 
 # interleave values from a bunch of iterators
@@ -5090,7 +5091,7 @@ def append(s, *vs):
     return s.union(vs)
   if isinstance(s, multiset):
     return s.copy().update_from_seq(vs)
-  raise ValueError(sprintf("append() can't handle container of type {x}", x=type(s)))
+  raise ValueError(str.format("append() can't handle container of type {x}", x=type(s)))
 
 # this unifies removing an element (or elements) from a container:
 def remove(s, *vs):
@@ -5126,7 +5127,7 @@ def remove(s, *vs):
     return s
   if isinstance(s, (set, frozenset, multiset)):
     return s.difference(vs)
-  raise ValueError(sprintf("remove() can't handle container of type {x}", x=type(s)))
+  raise ValueError(str.format("remove() can't handle container of type {x}", x=type(s)))
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
@@ -5241,7 +5242,7 @@ def tuples(seq, n=2, circular=0, fn=tuple):
   >>> list(tuples(irange(1, 5), 3, circular=1))
   [(1, 2, 3), (2, 3, 4), (3, 4, 5), (4, 5, 1), (5, 1, 2)]
   """
-  assert n > 0, sprintf("invalid tuple length: {n!r}")
+  if n < 1: raise ValueError(str.format("invalid tuple length: {n!r}", n=n))
   i = iter(seq)
   if circular and n > 1:
     # we need extract the first (n - 1) items and add them to the end
@@ -5395,7 +5396,7 @@ def express(t, ds, qs=None, min_q=0):
   4562
   """
   ds = list(ds)
-  assert ds and ds[0] > 0, sprintf("invalid denominations {ds!r}")
+  if not (ds and ds[0] > 0): raise ValueError(str.format("invalid denominations {ds!r}", ds=ds))
   if qs:
     return express_quantities(t, ds, qs)
   if min_q > 0:
@@ -5536,7 +5537,7 @@ class Denominations(object):
     except TypeError:
       ds = ()
     if not (len(ds) > 1 and ds[0] > 0 and seq_all_different(ds)):
-      raise ValueError(sprintf("invalid denominations: {denominations}"))
+      raise ValueError(str.format("invalid denominations: {denominations}", denominations=denominations))
     self.denominations = ds
     # compute the extended residue table for the given denominations
     self.residues = _residues(ds)
@@ -6109,7 +6110,7 @@ def base_digits(*args):
   NOTE: this is a global setting and will affect all subsequent
   base conversions.
   """
-  assert len(args) < 2, sprintf("invalid base digits: {args!r}")
+  if len(args) > 1: raise TypeError(str.format("invalid base digits: {args!r}", args=args))
   if args: base_digits.digits = (args[0] or _DIGITS)
   return base_digits.digits
 
@@ -6270,7 +6271,7 @@ def _int2words(n, scale='short', sep='', hyphen=' '):
   try:
     return __int2words(n, scale, sep, hyphen)
   except IndexError:
-    raise ValueError(sprintf('Number too large (scale: {scale})'))
+    raise ValueError(str.format('Number too large (scale: {scale})', scale=scale))
 
 # from http://en.wikipedia.org/wiki/Names_of_large_numbers
 _illions = [
@@ -6331,7 +6332,7 @@ def int2words(n, scale='short', sep='', hyphen=' ', lang='en'):
   >>> sorted(irange(1, 10), key=int2words)
   [8, 5, 4, 9, 1, 7, 6, 10, 3, 2]
   """
-  if lang != 'en': raise ValueError(sprintf("int2words: lang='{lang}' not implemented"))
+  if lang != 'en': raise ValueError(str.format("int2words: lang='{lang}' not implemented", lang=lang))
   return _int2words(int(n), scale, sep, hyphen)
 
 # convert an integer to BCD (binary coded decimal)
@@ -6816,7 +6817,7 @@ def poly_rational_roots(p, domain="Q", include="+-0", F=None):
     include='0' - include zero
     include='-' - include negative roots
   """
-  assert domain in "QZ", sprintf("invalid domain: {domain!r}")
+  if domain not in "QZ": raise ValueError(str.format("invalid domain: {domain!r}", domain=domain))
   if not p: return
   (pos, neg, zero) = (x in include for x in '+-0')
   if F is None: F = Rational()
@@ -7066,7 +7067,7 @@ class Polynomial(list):
 
   def quadratic_roots(self, v=0, domain="Q", include="+-0", F=None):
     p = (self - v if v else self)
-    assert not p.degree() > 2, "polynomial degree too large"
+    if p.degree() > 2: raise ValueError("polynomial degree too large")
     return quadratic(p[2], p[1], p[0], domain=domain, include=include, F=F)
 
   def rational_roots(self, v=0, domain="Q", include="+-0", F=None):
@@ -8216,7 +8217,7 @@ def _expand_macros(s, macro, depth=20):
     try:
       s = re.sub(r'\@(\w+)', (lambda x: macro[x.group(1)]), s)
     except KeyError as e:
-      x = ValueError(sprintf("invalid macro: {k!r}", k=e.args[0]))
+      x = ValueError(str.format("invalid macro: {k!r}", k=e.args[0]))
       # [Python 3] raise ... from None
       if hasattr(x, '__cause__'): x.__cause__ = None
       raise x
@@ -9618,7 +9619,7 @@ class SubstitutedExpression(object):
           return None
 
       except Exception:
-        raise ValueError(sprintf("[{cls.__name__}] invalid option: {arg}")) # from None
+        raise ValueError(str.format("[{name}] invalid option: {arg}", name=cls.__name__, arg=arg)) # from None
 
     return opt
 
@@ -9899,7 +9900,7 @@ class Slots(object):
       return self.slot_find(_IS, s)
 
     # unrecognised input symbol
-    raise ValueError(sprintf("_allocate: invalid input symbol <{s}>"))
+    raise ValueError(str.format("_allocate: invalid input symbol <{s}>", s=s))
 
   # allocate a collection of slots for the input terms <ts>
   def allocate(self, ts):
@@ -11269,7 +11270,7 @@ class Timer(object):
     if self._report and (not force): return self._report
     if self._t1 is None: self.stop()
     e = self.elapsed()
-    self._report = sprintf("[{n}] total time: {e:.7f}s ({f})", n=self._name, f=self.format(e))
+    self._report = str.format("[{n}] total time: {e:.7f}s ({f})", n=self._name, e=e, f=self.format(e))
     print(self._report, file=self._file)
     return self._report
 
@@ -11988,9 +11989,9 @@ def require(key, value, cmp=compare_versions):
     v = getattr(sys.modules[mod], k)
     if callable(v): v = v()
   except (KeyError, AttributeError, ValueError):
-    raise ValueError(sprintf("unable to extract \"{key}\""))
+    raise ValueError(str.format("unable to extract {key!r}", key=key))
   if cmp(v, value) < 0:
-    raise ValueError(sprintf("version mismatch \"{key}\" = {v!r}; require >= {value!r}"))
+    raise ValueError(str.format("version mismatch {key!r} = {v!r}; require >= {value!r}", key=key, v=v, value=value))
   return v
 
 # this looks for a "STOP" file, and if present removes it and returns True
@@ -12410,7 +12411,7 @@ def _enigma_update(url=None, check=1, download=0, rename=0, quiet=0, verbose=0):
 
 # interaction with pip (if installed)
 @static(
-  req="enigma @ git+https://github.com/enigmatic-code/py-enigma",
+  req="enigma@https://github.com/enigmatic-code/py-enigma/tarball/master",
   ver='2.7.' + join(x for x in __version__ if x.isdigit()),
 )
 def _enigma_pip(requirements=0, update=0, verbose=0):
