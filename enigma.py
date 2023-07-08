@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul  8 13:51:19 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul  8 22:54:51 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -220,7 +220,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-07-05"
+__version__ = "2023-07-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5128,6 +5128,25 @@ def remove(s, *vs):
   if isinstance(s, (set, frozenset, multiset)):
     return s.difference(vs)
   raise ValueError(str.format("remove() can't handle container of type {x}", x=type(s)))
+
+# restriction of a container <s> that only includes items at keys <ks>
+def restrict(s, ks, strict=0):
+  if isinstance(s, dict):
+    r = type(s)()
+    for k in ks:
+      try:
+        r[k] = s[k]
+      except KeyError:
+        if strict: raise
+    return r
+  if isinstance(s, (list, tuple, basestring)):
+    r = list()
+    for k in ks:
+      try:
+        r.append(s[k])
+      except IndexError:
+        if strict: raise
+    return (join(r) if isinstance(s, basestring) else type(s)(r))
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
