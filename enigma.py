@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul  8 22:54:51 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul  9 09:31:53 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -163,6 +163,7 @@ recurring              - decimal representation of fractions
 recurring2fraction     - find the fraction corrresponding to a decimal expansion
 repdigit               - number consisting of repeated digits
 repeat                 - repeatedly apply a function to a value
+restrict               - the restriction of a container to certain keys
 reverse                - reverse a sequence
 roman2int              - convert a Roman Numeral to an integer
 rotate                 - rotate a sequence
@@ -220,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-07-07"
+__version__ = "2023-07-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5131,6 +5132,19 @@ def remove(s, *vs):
 
 # restriction of a container <s> that only includes items at keys <ks>
 def restrict(s, ks, strict=0):
+  """
+  create the restriction of container <s> that only includes keys in <ks>
+
+  keys that do not occur in the original container are ignored, unless
+  the <strict> flag is set, in which case an exception is raised.
+
+  >>> map2str(restrict(dict(a=1, b=2, c=3, d=4), {'a', 'b', 'x'}))
+  '(a=1, b=2)'
+  >>> restrict(['zero', 'one', 'two', 'three'], [1, 3])
+  ['one', 'three']
+  >>> restrict("abracadabra", [0, 3, 5, 7, 10])
+  'aaaaa'
+  """
   if isinstance(s, dict):
     r = type(s)()
     for k in ks:
