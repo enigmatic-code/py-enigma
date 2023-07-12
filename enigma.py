@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul  9 09:31:53 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 12 22:19:16 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-07-08"
+__version__ = "2023-07-11"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1489,12 +1489,12 @@ class multiset(dict):
   def peek(self, k=0, **kw):
     return peek(self, k=k, **kw)
 
-  # does this multiset contain elements with multiplicity greater than n?
   def is_duplicate(self, n=1):
+    "does this multiset contain elements with multiplicity greater than <n>?"
     return any(v > n for v in dict.values(self))
 
-  # does this multiset contain only values with the same multiplicity (n if specified)
   def all_same(self, n=None):
+    "does this multiset contain only values with the same multiplicity (<n> if specified)"
     if n is None:
       return seq_all_same(dict.values(self))
     else:
@@ -12004,26 +12004,23 @@ matrix = Matrix
 
 # compare version numbers (numeric components separated by non-numeric components)
 def compare_versions(x, y):
-  args = list()
-  for s in (x, y):
-    s = s.split(None, 1)[0]
-    args.append(tuple(map(int, re.split(r'[^\d]+', s))))
-  return compare(*args)
+  fn = lambda s: tuple(map(int, re.split(r'[^\d]+', s.split(None, 1)[0])))
+  return compare(fn(x), fn(y))
 
 # require version to be at least specified value
 # e.g.:
 #   require("enigma.version", "2022-12-05")
 #
 # this works for versions with numeric components separated by non-numeric components
-# so: require("sys.version", "3.10") will work on Python 3.9
-def require(key, value, cmp=compare_versions):
+# so: require("sys.version", "3.10") will raise an exception on Python 3.9
+def require(key, value=None, cmp=compare_versions):
   (mod, k) = key.split('.')
   try:
     v = getattr(sys.modules[mod], k)
     if callable(v): v = v()
   except (KeyError, AttributeError, ValueError):
     raise ValueError(str.format("unable to extract {key!r}", key=key))
-  if cmp(v, value) < 0:
+  if value is not None and cmp(v, value) < 0:
     raise ValueError(str.format("version mismatch {key!r} = {v!r}; require >= {value!r}", key=key, v=v, value=value))
   return v
 
