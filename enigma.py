@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 12 22:19:16 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 16 10:51:07 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-07-11"
+__version__ = "2023-07-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1776,6 +1776,10 @@ class multiset(dict):
     for k in sorted(dict.keys(self), key=key, reverse=reverse):
       for _ in xrange(self.get(k)):
         yield k
+
+  # restriction of a multiset to a specific set of keys
+  def restrict(self, ks, strict=0):
+    return restrict(self, ks, strict=strict)
 
   def map2str(self, sort=1, enc='()', sep=', ', arr='='):
     """call map2str() on the multiset"""
@@ -4826,7 +4830,7 @@ def irange(a, b=None, step=1):
   where <k> is the step.
 
   note that it is possible to choose endpoint/step combinations where
-  the sequence of integers generated is empty.
+  the sequence of integers generated does not include b, or is empty.
 
   if <b> is specified as inf (or -inf for negative steps) the iterator
   will generate values indefinitely.
