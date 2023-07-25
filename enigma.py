@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 16 10:51:07 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jul 25 09:46:42 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-07-15"
+__version__ = "2023-07-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -316,6 +316,7 @@ def lazy_import(spec, **kw):
   def _f(*args, **kw):
     fn = _f.fn
     if not fn:
+      #printf("lazy_import: importing {spec}")
       # cache the function
       fn = _f.fn = import_fn(spec)
       if name and space:
@@ -819,7 +820,7 @@ def join(seq, sep='', enc='', fn=str):
 
   """
   r = str.join(sep, (fn(x) for x in seq))
-  if enc: r = str.join('', (enc[0], r, enc[1]))
+  if enc: r = str.join('', (enc[0], r, enc[-1]))
   return r
 
 def joinf(sep='', enc='', fn=str):
@@ -1067,7 +1068,7 @@ def nreverse(n, k=None, base=10, validate=0):
 nrev = nreverse
 
 
-from fnmatch import fnmatchcase
+fnmatch = lazy_import("fnmatch.fnmatchcase", name='fnmatch')
 
 # match a value (as a string) to a template
 # NOTE: match is a soft keyword in Python 3.10+
@@ -1104,7 +1105,7 @@ def match(v, t):
       return False
     else:
       t = t[1:]
-  return fnmatchcase(v, t)
+  return fnmatch(v, t)
 
 @static(special={'inf': inf, '+inf': inf, '-inf': -inf})
 def number(s, base=10):
@@ -1943,9 +1944,7 @@ subseqs = subsets
 # like filter() but also returns the elements that don't satisfy the predicate
 # see also partition() recipe from itertools documentation
 # (but note that itertools.partition() returns (false, true) lists)
-
-Filter2 = namedtuple('Filter2', 'true false')
-
+@static(rtype=None)
 def filter2(p, i, fn=list):
   """
   use a predicate to partition an iterable into those elements that
@@ -1966,7 +1965,8 @@ def filter2(p, i, fn=list):
   ([2, 4, 6, 8, 10], [1, 3, 5, 7, 9])
   """
   t = list((x, p(x)) for x in i)
-  return Filter2(fn(x for (x, v) in t if v), fn(x for (x, v) in t if not v))
+  if filter2.rtype is None: filter2.rtype = namedtuple('Filter2', 'true false')
+  return filter2.rtype(fn(x for (x, v) in t if v), fn(x for (x, v) in t if not v))
 
 # alias if you prefer the term partition (but don't confuse it with partitions())
 partition = filter2
@@ -1984,8 +1984,7 @@ def is_equal(x, y):
   """
   return (x == y)
 
-FilterUnique = namedtuple('FilterUnique', 'unique non_unique')
-
+@static(rtype=None)
 def filter_unique(seq, f=identity, g=identity, st=None):
   """
   for objects <x> in the sequence <seq> consider the map f(x) -> g(x)
@@ -2031,7 +2030,8 @@ def filter_unique(seq, f=identity, g=identity, st=None):
     for (k, vs) in r.items():
       (unq if seq_all_same(map(g, vs)) else non).extend(vs)
   #printf("unq = {unq}\nnon = {non}")
-  return FilterUnique(unq, non)
+  if filter_unique.rtype is None: filter_unique.rtype = namedtuple('FilterUnique', 'unique non_unique')
+  return filter_unique.rtype(unq, non)
 
 # alias if you prefer the term partition (but don't confuse it with partitions())
 partition_unique = filter_unique
@@ -2814,10 +2814,10 @@ def is_prime(n, validate=0):
   False
   """
   if validate: n = as_int(n, include="0+")
-  if n < 2: return False # 0, 1 -> F
-  if n < 4: return True # 2, 3 -> T
+  if n < 2: return False  # 0, 1 -> F
+  if n < 4: return True   # 2, 3 -> T
   r = n % 6
-  if r != 1 and r != 5: return False # (n % 6) != (1, 5) -> F
+  if r != 1 and r != 5: return False  # (n % 6) != (1, 5) -> F
 
   for (p, e) in prime_factor(n):
     return p == n
@@ -4277,7 +4277,8 @@ def mdivmod(x, *vs):
   return rs
 
 # for those times when Rational() is overkill
-def fraction(*args):
+@static(Fraction=None)
+def fraction(*args, **kw):
   """
   return the numerator and denominator of the fraction a/b in lowest terms
 
@@ -4302,7 +4303,18 @@ def fraction(*args):
   if b == 0: raise ZeroDivisionError("fraction can't have zero denominator")
   if b < 0: (a, b) = (-a, -b)
   g = gcd(a, b)
-  return ((a, b) if g == 1 else (a // g, b // g))
+  if g > 1: (a, b) = (a // g, b // g)
+  return (a, b)
+
+@static(rtype=None)
+def Fraction(*args):
+  """
+  same as fraction(), but returns an object where the numerator and denominator
+  can be referred to as obj.num and obj.den.
+  """
+  (a, b) = fraction(*args)
+  if Fraction.rtype is None: Fraction.rtype = namedtuple('Fraction', 'num den')
+  return Fraction.rtype(a, b)
 
 def format_fraction(n, d, base=10):
   s = int2base(n, base=base)
@@ -4516,8 +4528,7 @@ def M(n, k):
   return C(n + k - 1, k)
 
 
-Recurring = namedtuple('Recurring', 'i nr rr')
-
+@static(rtype=None)
 def recurring(a, b, recur=0, base=10, digits=None):
   """
   find recurring representation of the fraction <a> / <b> in the specified base.
@@ -4553,7 +4564,8 @@ def recurring(a, b, recur=0, base=10, digits=None):
       # have we had this dividend before?
       (i, nr, rr) = (int2base(i, base, digits=digits), s[:j], s[j:])
       if neg and (nr or rr or i != '0'): i = '-' + i
-      return Recurring(i, nr, rr)
+      if recurring.rtype is None: recurring.rtype = namedtuple('Recurring', 'i nr rr')
+      return recurring.rtype(i, nr, rr)
     else:
       # no, we haven't
       r[a] = n
@@ -4584,7 +4596,7 @@ def format_recurring(*args, **kw):
   if kw: raise TypeError(str.format("format_recurring: unknown arguments {kw}", kw=seq2str(kw.keys())))
   if len(args) == 1: args = args[0]
   (i, nr, rr) = args
-  rr = (enc[0] + rr + enc[1] + dots if rr else '')
+  rr = (enc[0] + rr + enc[-1] + dots if rr else '')
   return (i + dp + nr + rr if nr or rr else i)
 
 # recurring -> fraction
@@ -7609,7 +7621,7 @@ primes = Primes(1, expandable=1, array=_primes_array, fn=(lambda n: _primes_size
 
 # Magic Square Solver:
 
-_deepcopy = lazy_import('copy.deepcopy', name='_deepcopy')
+deepcopy = lazy_import('copy.deepcopy')
 
 # this is probably a bit of overkill but it works and I already had the code written
 
@@ -7721,7 +7733,7 @@ class MagicSquare(object):
 
   def clone(self):
     """return a copy of this object"""
-    return _deepcopy(self)
+    return deepcopy(self)
 
   def become(self, other):
     """set the attributes of this object from the other object"""
@@ -8301,13 +8313,14 @@ class SubstitutedExpression(object):
     # other parameters
     exprs=None, symbols=None, digits=None, s2d=None, d2i=None, answer=None, accumulate=None,
     literal=None, template=None, solution=None, header=None,
-    check=None, macro=None, env=None, code=None,
+    check=None, macro=None, env=None, code=None, decl=None
   )
 
   def __init__(self,
     exprs, base=None, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None,
-    accumulate=None, literal=None, template=None, solution=None, header=None, distinct=None, check=None,
-    macro=None, env=None, code=None, process=None, reorder=None, first=None, denest=None, sane=None, warn=None, opt=None, verbose=None
+    accumulate=None, literal=None, template=None, solution=None, header=None, distinct=None,
+    check=None, macro=None, env=None, code=None, process=None, reorder=None, first=None,
+    denest=None, decl=None, sane=None, warn=None, opt=None, verbose=None
   ):
     """
     create a substituted expression solver.
@@ -8337,6 +8350,7 @@ class SubstitutedExpression(object):
     code - additional lines of code evaluated before solving (default: None)
     macro - macro expansions applied to expressions containing @macro (default: None)
     denest - work around CPython statically nested block limit
+    decl - additional declarations used in functions generated when denest is enabled
     sane - enable/disable sanity checks (default: 1)
     verbose - control informational output (default: 1)
 
@@ -8431,6 +8445,7 @@ class SubstitutedExpression(object):
     distinct = self.distinct
     literal = self.literal
     denest = self.denest
+    decl = self.decl
     macro = self.macro
     process = self.process
     sane = self.sane
@@ -8612,6 +8627,7 @@ class SubstitutedExpression(object):
     self.distinct = distinct
     self.literal = literal
     self.denest = denest
+    self.decl = decl
     self.verbose = verbose
     self._words = words
     self._invalid = invalid
@@ -8637,6 +8653,7 @@ class SubstitutedExpression(object):
     code = self.code
     reorder = self.reorder
     denest = self.denest
+    decl = self.decl
     sane = self.sane
     warn = self.warn
     opt = self.opt
@@ -8804,6 +8821,7 @@ class SubstitutedExpression(object):
         # In Python3 we can use [[ nonlocal ]] instead of passing the symbols around
         prog.append(sprintf("{_}def {block}({block_args}):"))
         _ += indent
+        if decl: prog.append(sprintf("{_}{decl}"))
         in_loop = False
 
       # EXPERIMENTAL: do something about: "<iterator>: = <word>
@@ -8940,6 +8958,7 @@ class SubstitutedExpression(object):
         _ = indent_reset
         prog.append(sprintf("{_}def {block}({block_args}):"))
         _ += indent
+        if decl: prog.append(sprintf("{_}{decl}"))
       # close final function block
       prog.append(sprintf("{_}yield [{block_args}]"))
       _ = indent_reset
@@ -9462,6 +9481,9 @@ class SubstitutedExpression(object):
     if self.denest is not None:
       args.append(sprintf("--denest={self.denest}"))
 
+    if self.decl is not None:
+      args.append(sprintf("--decl={q}{self.decl}{q}"))
+
     if self.sane is not None:
       args.append(sprintf("--sane={self.sane}"))
 
@@ -9610,6 +9632,8 @@ class SubstitutedExpression(object):
       opt['reorder'] = (int(v) if v else 0)
     elif k == 'X' or k == 'denest':
       opt['denest'] = (int(v) if v else 1)
+    elif k == 'G' or k == 'decl':
+      opt['decl'] = v
     elif k == 'Y' or k == 'sane':
       opt['sane'] = (int(v) if v else 0)
     elif k == 'W' or k == 'warn':
@@ -9995,7 +10019,7 @@ class Slots(object):
 
 # a named tuple for the results (now includes "subs" field)
 # (s is the solution from SubstituteExpression, with eliminated symbols reinstated)
-SubstitutedDivisionSolution = namedtuple('SubstitutedDivisionSolution', 'a b c r subs d s')
+# SubstitutedDivisionSolution = namedtuple('SubstitutedDivisionSolution', 'a b c r subs d s')
 
 # the new solver
 
@@ -10038,6 +10062,8 @@ class SubstitutedDivision(SubstitutedExpression):
 
   See SubstitutedDivision.run_command_line() for more examples.
   """
+
+  rtype = None
 
   def __init__(self, *args, **kw):
     """
@@ -10303,7 +10329,8 @@ class SubstitutedDivision(SubstitutedExpression):
       for (k, v) in self.input_symbols.items():
         if k not in s: s[k] = s[v]
       # made a solution object
-      ss = SubstitutedDivisionSolution(a, b, c, r, subs, d, s)
+      if SubstitutedDivision.rtype is None: SubstitutedDivision.rtype = namedtuple('SubstitutedDivisionSolution', 'a b c r subs d s')
+      ss = SubstitutedDivision.rtype(a, b, c, r, subs, d, s)
       if check and (not check(ss)): continue
       # output the solution
       if verbose & self.vT: self.output_solution(ss)
