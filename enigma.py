@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jul 25 09:46:42 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jul 28 16:22:11 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -90,7 +90,7 @@ flatten                - flatten a list of lists
 flattened              - fully flatten a nested structure
 floor                  - generalised floor function
 format_recurring       - output the result from recurring()
-fraction               - convert numerator / denominator to lowest terms
+fraction, Fraction     - convert numerator / denominator to lowest terms
 gcd                    - greatest common divisor
 grid_adjacency         - adjacency matrix for an n x m grid
 group                  - collect values of a sequences into groups
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-07-23"
+__version__ = "2023-07-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -778,6 +778,14 @@ def ordered(*args, **kw):
   (42,)
   """
   return tuple(sorted(args, **kw))
+
+# is sequence <seq> sorted?
+def is_sorted(seq, strict=0, fn=operator.lt):
+  f = (fn if strict else lambda x, y: x == y or fn(x, y))
+  return all(f(x, y) for (x, y) in tuples(seq, 2))
+
+is_increasing = lambda seq, strict=0: is_sorted(seq, strict=strict, fn=operator.lt)
+is_decreasing = lambda seq, strict=0: is_sorted(seq, strict=strict, fn=operator.gt)
 
 def encl(s, b="{}", fn=str):
   """
