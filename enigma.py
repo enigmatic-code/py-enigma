@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jul 28 16:22:11 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Aug  6 10:47:09 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-07-27"
+__version__ = "2023-08-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -11168,17 +11168,15 @@ import time
 class Timer(object):
 
   """
-  This module provides elapsed timing measures.
+  This class provides elapsed timing measures.
 
-  There is a default timing object called "timer" created. So you can
+  There is a default timing object called 'timer' created. So you can
   determine the elapsed runtime of code fragments using:
 
     from enigma import timer
 
     timer.start()
-
     some_code()
-
     timer.stop()
 
   and when the program exits it will report the elapsed time thus:
@@ -11372,6 +11370,34 @@ def timed(f):
 
 # create a default timer
 timer = Timer(auto_start=0)
+
+
+_profiler = lazy_import('cProfile.Profile', name='_profiler')
+
+class Profiler(object):
+  """
+  This class provides an interface to the Python cProfile module.
+
+  There is a default profiler object called 'profiler' created, so you
+  can profile code fragments using:
+
+    from enigma import profiler
+
+    profiler.start()
+    some_code()
+    profiler.stop()
+  """
+
+  def start(self):
+    self.profiler = _profiler()
+    self.profiler.enable()
+
+  def stop(self):
+    self.profiler.disable()
+    self.profiler.print_stats(sort=0)
+
+# create a default profiler
+profiler = Profiler()
 
 ###############################################################################
 
