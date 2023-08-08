@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Aug  6 10:47:09 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Aug  8 16:34:00 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-08-05"
+__version__ = "2023-08-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -758,7 +758,7 @@ def zip_eq(*ss, **kw):
   k = kw.pop('first', None)
   if kw: raise TypeError(str.format("zip_eq: unknown arguments {kw}", kw=seq2str(kw.keys())))
   if reverse: ss = (reversed(s) for s in ss)
-  z = (zip(*ss, strict=kw['strict']) if strict is not None else zip(*ss))
+  z = (zip(*ss, strict=strict) if strict is not None else zip(*ss))
   if k is not None: z = first(z, count=k, fn=iter)
   for vs in z:
     if not seq_all_same(vs): return False
@@ -11387,7 +11387,6 @@ class Profiler(object):
     some_code()
     profiler.stop()
   """
-
   def start(self):
     self.profiler = _profiler()
     self.profiler.enable()
