@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Aug  8 16:34:00 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Aug 13 12:33:06 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-08-07"
+__version__ = "2023-08-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3692,6 +3692,8 @@ def is_triangular(n):
   if n % 9 not in {0, 1, 3, 6}: return
   x = is_square(8 * n + 1)
   return (None if x is None else x // 2)
+
+is_triangular_p = (lambda x: is_triangular(x) is not None)
 
 def digrt(n, base=10):
   """
