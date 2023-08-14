@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Aug 13 12:33:06 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Aug 14 16:12:32 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-08-12"
+__version__ = "2023-08-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -503,6 +503,10 @@ def gt(t): return (lambda x: x > t)
 def ge(t): return (lambda x: x >= t)
 def between(a, b): return (lambda x: a < x < b)  # exclusive between
 def betweene(a, b): return (lambda x: a <= x <= b)  # inclusive between
+
+# membership/non-membership of a collection
+def isin(s): return (lambda x: x in s)
+def isnotin(s): return (lambda x: x not in s)
 
 # return a function that increments by a fixed amount
 def inc(i=1): return (lambda x, i=i: x + i)
