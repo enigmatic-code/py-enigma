@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Aug 14 16:12:32 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Aug 19 16:12:52 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-08-13"
+__version__ = "2023-08-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3445,8 +3445,8 @@ def is_square(n, validate=0):
   >>> is_square(0)
   0
   """
-  if validate: n = as_int(n, include="0+")
-  if n < 0: return None
+  if validate: n = as_int(n, include="0+")   # if validate check for non-negative integer
+  if n is None or n < 0: return None
   if n < 2: return n
   # early rejection: check <square> mod <some value> against a precomputed cache
   # e.g. <square> mod 80 = 0, 1, 4, 9, 16, 20, 25, 36, 41, 49, 64, 65 (rejects 88% of numbers)
@@ -3463,6 +3463,7 @@ def is_square(n, validate=0):
 
 # is <n> the square of a rational number?
 def is_square_q(n, F=None):
+  if n is None: return None
   if F is None: F = Rational()
   n = F(n)
   p = is_square(n.numerator)
