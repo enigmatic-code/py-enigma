@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug 19 16:12:52 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Aug 24 12:44:13 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-08-18"
+__version__ = "2023-08-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3429,12 +3429,16 @@ sqrtc = lambda x: (isqrt(x) if x < 1 else 1 + isqrt(x - 1))
 # experimentally mod = 80, 48, 72, 32 are good values (24, 16 also work OK)
 @static(mod=720, residues=None, cache_enabled=0, cache=dict())
 def is_square(n, validate=0):
-  # type: (int) -> int | NoneType
+  # type: (int | NoneType, bool) -> int | NoneType
   """
   check integer <n> is a perfect square.
 
   if <n> is a perfect square, returns the integer square root.
   if <n> is not a perfect square, returns None.
+
+  if <validate> is set, then the input value will be validated as
+  a non-negative integer (and an ValueError thrown if it isn't),
+  otherwise the input is assumed to be an integer value, or None.
 
   results can be cached by setting: is_square.cache_enabled = 1
 
@@ -7862,15 +7866,15 @@ def substituted_sum(terms, result, digits=None, l2d=None, d2i=None, base=10):
   d2i - invalid allocations (default: leading digits cannot be 0)
   base - base we're working in (default: 10)
   """
+  # check there aren't too many letters (we could issue a warning)
+  words = list(terms)
+  words.append(result)
+  if len(union(words)) > base: return
   # fill out the parameters
-  if l2d is None:
-    l2d = dict()
-  if digits is None:
-    digits = xrange(base)
+  if l2d is None: l2d = dict()
+  if digits is None: digits = xrange(base)
   digits = set(digits).difference(l2d.values())
-  if d2i is None:
-    d2i = dict()
-    d2i[0] = set(x[0] for x in itertools.chain(terms, [result]) if len(x) > 1)
+  if d2i is None: d2i = { 0: set(w[0] for w in words if len(w) > 1) }
   # number of columns in sum
   n = len(result)
   # make sure the terms are the same length as the result
@@ -8648,6 +8652,7 @@ class SubstitutedExpression(object):
     self._invalid = invalid
     self._idigits = idigits
     self._exprs = (exprs, xs, vs, ts, syms)
+    self._fail = 0
     self._processed = 1
 
   # create and compile the code
@@ -8775,8 +8780,11 @@ class SubstitutedExpression(object):
     if not isinstance(distinct, dict):
       d = dict()
       for ss in distinct:
-        if sane > 0 and verbose & self.vW and len(set(ss).difference(s2d.keys())) > len(digits):
-          printf("[SubstitutedExpression: WARNING: distinct=\"{ss}\" has more symbols than available digits]")
+        if sane > 0:
+          if len(set(ss).difference(s2d.keys())) > len(digits):
+            if verbose & self.vW:
+              printf("[SubstitutedExpression: WARNING: distinct=\"{ss}\" has more symbols than available digits]")
+            self._fail = 1
         for s in ss:
           if s not in d: d[s] = set()
           d[s].update(x for x in ss if x != s)
@@ -9039,6 +9047,7 @@ class SubstitutedExpression(object):
     """
 
     if not self._prepared: self._prepare()
+    if self._fail: return
 
     solver = self._solver
     answer = self.answer
