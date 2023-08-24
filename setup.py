@@ -56,7 +56,7 @@ from setuptools import setup
 
 setup(
   name='enigma',
-  version='2.7.20230818',
+  version='2.7.20230819',
   description='Useful routines for solving New Scientist Enigma (and other) puzzles',
   author='Jim Randell',
   author_email='jim.randell@gmail.com',
