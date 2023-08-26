@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Aug 24 12:44:13 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Aug 26 07:26:51 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-08-19"
+__version__ = "2023-08-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2553,9 +2553,11 @@ def uniq1(seq, fn=None):
 # we use math.pow rather than **/pow() to avoid generating complex numbers
 root = lambda x, n: (x if not x else math.pow(x, 1.0 / n))
 
-def cbrt(x):
+def _cbrt(x):
   """
   return the cube root of a number (as a float).
+
+  see also: math.cbrt() (Python 3.11)
 
   >>> cbrt(27.0)
   3.0
@@ -2564,6 +2566,9 @@ def cbrt(x):
   """
   r = root(abs(x), 3.0)
   return (-r if x < 0 else r)
+
+# use math.cbrt() [available from 3.11]
+cbrt = getattr(math, 'cbrt', _cbrt)
 
 # cb = lambda x: x**3
 def cb(x): "cb(x) = x**3"; return x**3
@@ -4128,19 +4133,21 @@ def dot(*vs, **kw):
   z = (zip(*vs, strict=strict) if strict is not None else zip(*vs))
   return fns(map(fnp, z))
 
-# multiple argument versions of basic operations:
-# - add, mul, bit_or, bit_and, bit_xor
-add = lambda *vs: sum(vs)
-mul = lambda *vs: multiply(vs)
+# multiple argument versions of basic operations
+def add(*vs): "add(a, b, c, ...) = a + b + c + ..."; return sum(vs)
+def mul(*vs): "mul(a, b, c, ...) = a * b * c * ..."; return multiply(vs)
 def bit_or(*vs):
+  "bit_or(a, b, c, ...) = a | b | c | ..."
   r = 0
   for v in vs: r |= v
   return r
 def bit_xor(*vs):
+  "bit_xor(a, b, c, ...) = a ^ b ^ c ^ ..."
   r = 0
   for v in vs: r ^= v
   return r
 def bit_and(r, *vs):
+  "bit_and(a, b, c, ...) = a & b & c & ..."
   for v in vs:
     r &= v
     if not r: break
@@ -4255,7 +4262,7 @@ def mgcd(a, *rest):
   """
   GCD of multiple (two or more) integers.
 
-  See also: math.gcd() (Python 3.9)
+  see also: math.gcd() (Python 3.9)
 
   >>> mgcd(123, 456)
   3
@@ -4273,7 +4280,7 @@ def mlcm(a, *rest):
   """
   LCM of multiple (two or more) integers.
 
-  See also: math.lcm() (Python 3.9)
+  see also: math.lcm() (Python 3.9)
 
   >>> mlcm(2, 3, 5, 9)
   90
@@ -4500,7 +4507,7 @@ def nPr(n, r):
   the number of ordered r-length selections from n elements
   (elements can only be used once).
 
-  See also: math.perm() (Python 3.8).
+  see also: math.perm() (Python 3.8).
 
   >>> nPr(10, 3)
   720
@@ -4519,7 +4526,7 @@ def nCr(n, r):
   the number of unordered r-length selections from n elements
   (elements can only be used once).
 
-  See also: math.comb() (Python 3.8).
+  see also: math.comb() (Python 3.8).
 
   >>> nCr(10, 3)
   120
@@ -5264,7 +5271,7 @@ def csum(seq, s=0, fn=operator.add, empty=0):
   if 'empty' is set to a true value then the initial value 's' will be
   initially returned.
 
-  See also: itertools.accumulate() (Python 3.2).
+  see also: itertools.accumulate() (Python 3.2).
 
   >>> list(csum(irange(1, 10)))
   [1, 3, 6, 10, 15, 21, 28, 36, 45, 55]
@@ -5301,7 +5308,7 @@ def tuples(seq, n=2, circular=0, fn=tuple):
   if 'circular' is set to true, then values from the beginning of <seq>
   will be used to complete tuples when the end is reached.
 
-  See also: itertools.pairwise() (Python 3.10).
+  see also: itertools.pairwise() (Python 3.10).
 
   >>> list(tuples('ABCDE'))
   [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'E')]
@@ -12699,7 +12706,7 @@ enigma.py has the following command-line usage:
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.11.4',
+  version=__version__, python='2.7.18', python3='3.11.5',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
