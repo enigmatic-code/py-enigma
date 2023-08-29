@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Aug 29 12:06:45 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Aug 29 12:23:34 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-08-27"
+__version__ = "2023-08-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1726,7 +1726,7 @@ class multiset(dict):
       min_size = max_size = size
     elif max_size is None:
       max_size = len(self)
-    es = list(self.sorted())
+    es = list(self.elements())
     for k in irange(min_size, max_size):
       for ss in uC(es, k):
         yield multiset.from_seq(ss)
