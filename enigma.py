@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug 26 07:26:51 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Aug 29 12:06:45 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-08-23"
+__version__ = "2023-08-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1726,12 +1726,10 @@ class multiset(dict):
       min_size = max_size = size
     elif max_size is None:
       max_size = len(self)
-    # distinct elements
-    ks = list(dict.keys(self))
-    # choose the number of elements for each key
-    for ns in cproduct(irange(0, self[k]) for k in ks):
-      if min_size <= sum(ns) <= max_size:
-        yield multiset.from_pairs(zip(ks, ns))
+    es = list(self.sorted())
+    for k in irange(min_size, max_size):
+      for ss in uC(es, k):
+        yield multiset.from_seq(ss)
 
   def copy(self):
     """return a copy of the multiset"""
@@ -4775,37 +4773,33 @@ def __sprintf3(fmt, vs):
 #
 # NOTE: you lose the ability to do this:
 #
-# printf("... {d[x]} ...", d={ 'x': 42 })  ->  "... 42 ..."
+#   printf("... {d[x]} ...", d={ 'x': 42 })  ->  "... 42 ..."
 #
 # instead you have to do this:
 #
-# printf("... {d['x']} ...", d={ 'x': 42 })  ->  "... 42 ..."
+#   printf("... {d['x']} ...", d={ 'x': 42 })  ->  "... 42 ..."
 #
 # but you gain the ability to use arbitrary expressions:
 #
-# printf("... {a} + {b} = {a + b} ...", a=2, b=3)  ->  "... 2 + 3 = 5 ..."
-
+#   printf("... {a} + {b} = {a + b} ...", a=2, b=3)  ->  "... 2 + 3 = 5 ..."
+#
 def __sprintf36(fmt, vs):
   return eval('f' + repr(fmt), vs)
 
 @static(fn=None)
 def _sprintf(fmt, vs, frame):
-  if 0:
-    # first try using just the locals of the frame
-    d = frame.f_locals
-    if vs: d = update(d, vs)
-    try:
-      return _sprintf.fn(fmt, d)
-    except (NameError, KeyError):
-      pass
-    # if that fails, try adding in the globals too
-  d = update(frame.f_globals, frame.f_locals)
-  if vs: d = update(d, vs)
+  # we can't use collections.ChainMap() here as eval() in __sprintf36() barfs
+  d = dict(frame.f_globals)
+  d.update(frame.f_locals)
+  d.update(vs)
   return _sprintf.fn(fmt, d)
 
-_sprintf.fn = __sprintf
-if _python > 2: _sprintf.fn = __sprintf3
-if _pythonv > (3, 5): _sprintf.fn = __sprintf36
+if _pythonv > (3, 5):
+  _sprintf.fn = __sprintf36
+elif _python > 2:
+  _sprintf.fn = __sprintf3
+else:
+  _sprintf.fn = __sprintf
 
 # print with variables interpolated into the format string
 def sprintf(fmt='', **kw):
