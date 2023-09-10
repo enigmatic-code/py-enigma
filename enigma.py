@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Aug 29 12:23:34 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep  5 14:33:06 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-08-28"
+__version__ = "2023-09-03"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3973,7 +3973,7 @@ def div(a, b):
   >>> div(42, 0) is None
   True
   """
-  if b == 0: return None
+  if b == 0 or a is None: return None
   (d, r) = divmod(a, b)
   if r != 0: return None
   return d
@@ -9852,7 +9852,7 @@ class SubstitutedExpression(object):
 
     Use the following command to invoke it:
 
-      % python enigma.py Alphametic.repl
+      % python enigma.py SubstitutedExpression.repl
 
     timed=1 will time the evaluation.
 
