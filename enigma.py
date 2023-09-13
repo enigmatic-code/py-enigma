@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep 13 14:25:30 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep 13 14:49:12 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-09-09"
+__version__ = "2023-09-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3773,10 +3773,12 @@ ihypot = lambda *vs: hypot(*vs, root=is_square)
 # for positive value the square of the value is added
 # for negative vales the square of the value is subtracted
 # and the square root of the total (or None) is returned
-# hypot(*vs) = call(rcs, (abs(v) for v in vs))
+# for example (for positive x, y, z)
+# hypot(x, y) = rcs(x, y)
+# if x^2 + y^2 = z^2, we have: y = rcs(z, -x)
 def rcs(*vs, **kw):
   root = kw.pop('root', math.sqrt)
-  if kw: raise TypeError(str.format("rcs: unknown arguments {kw}", kw=se12str(kw.keys())))
+  if kw: raise TypeError(str.format("rcs: unknown arguments {kw}", kw=seq2str(kw.keys())))
   t = 0
   for v in vs:
     if v < 0:
@@ -3784,6 +3786,8 @@ def rcs(*vs, **kw):
     else:
       t += v * v
   return (None if t < 0 else root(t))
+
+ircs = lambda *vs: rcs(*vs, root=is_square)
 
 # return roots of the form n/d in the appropriate domain
 def _roots(domain, include, F, *nds):
