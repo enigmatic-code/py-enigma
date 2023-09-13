@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Sep  5 14:33:06 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep 13 14:25:30 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-09-03"
+__version__ = "2023-09-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -976,8 +976,8 @@ def nconcat(*digits, **kw):
   # or: (slower, and only works with digits < base)
   #return int(concat(*digits), base=base)
 
-# split integer <n> into digits, starting with the least significant
 def nsplitter(n, k=None, base=10, validate=0):
+  """split integer <n> into digits, starting with the least significant digit"""
   if base < 2: raise ValueError(str.format("invalid base: {base!r}", base=base))
   if validate: (n, base) = (as_int(n), as_int(base))
   n = abs(n)
@@ -3769,6 +3769,22 @@ def hypot(*vs, **kw):
 # alias for: hypot(..., root=is_square)
 ihypot = lambda *vs: hypot(*vs, root=is_square)
 
+# root of combined squares:
+# for positive value the square of the value is added
+# for negative vales the square of the value is subtracted
+# and the square root of the total (or None) is returned
+# hypot(*vs) = call(rcs, (abs(v) for v in vs))
+def rcs(*vs, **kw):
+  root = kw.pop('root', math.sqrt)
+  if kw: raise TypeError(str.format("rcs: unknown arguments {kw}", kw=se12str(kw.keys())))
+  t = 0
+  for v in vs:
+    if v < 0:
+      t -= v * v
+    else:
+      t += v * v
+  return (None if t < 0 else root(t))
+
 # return roots of the form n/d in the appropriate domain
 def _roots(domain, include, F, *nds):
   (pos, neg, zero) = (x in include for x in '+-0')
@@ -5422,7 +5438,7 @@ def bit_from_positions(ps):
   >>> bit_from_positions({1, 3, 7, 11})
   2186
   """
-  return bit_or(*(1 << p for p in ps))
+  return call(bit_or, (1 << p for p in ps))
 
 def bit_positions(x):
   """
