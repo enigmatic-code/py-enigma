@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep 13 14:49:12 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Sep 24 08:34:13 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-09-10"
+__version__ = "2023-09-11"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3775,7 +3775,7 @@ ihypot = lambda *vs: hypot(*vs, root=is_square)
 # and the square root of the total (or None) is returned
 # for example (for positive x, y, z)
 # hypot(x, y) = rcs(x, y)
-# if x^2 + y^2 = z^2, we have: y = rcs(z, -x)
+# if x^2 + y^2 = z^2, we have: y = rcs(z, -x); x = rcs(z, -y); z = rcs(x, y)
 def rcs(*vs, **kw):
   root = kw.pop('root', math.sqrt)
   if kw: raise TypeError(str.format("rcs: unknown arguments {kw}", kw=seq2str(kw.keys())))
