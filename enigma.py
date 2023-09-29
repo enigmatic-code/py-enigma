@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Sep 24 08:34:13 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Sep 29 10:27:24 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -221,7 +221,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-09-11"
+__version__ = "2023-09-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3770,13 +3770,25 @@ def hypot(*vs, **kw):
 ihypot = lambda *vs: hypot(*vs, root=is_square)
 
 # root of combined squares:
-# for positive value the square of the value is added
-# for negative vales the square of the value is subtracted
-# and the square root of the total (or None) is returned
 # for example (for positive x, y, z)
 # hypot(x, y) = rcs(x, y)
 # if x^2 + y^2 = z^2, we have: y = rcs(z, -x); x = rcs(z, -y); z = rcs(x, y)
 def rcs(*vs, **kw):
+  """
+  calculate the "root of combined squares" of values <vs>.
+
+  for a positive value the square of the value is added,
+  for a negative value the square of the value is subtracted,
+  finally the square root of the total (or None) is returned
+
+  the function used to determine the square root can be specified via
+  the <root> parameter.
+
+  >>> rcs(3, 4)
+  5.0
+  >>> rcs(5, -3)
+  4.0
+  """
   root = kw.pop('root', math.sqrt)
   if kw: raise TypeError(str.format("rcs: unknown arguments {kw}", kw=seq2str(kw.keys())))
   t = 0
@@ -3785,7 +3797,7 @@ def rcs(*vs, **kw):
       t -= v * v
     else:
       t += v * v
-  return (None if t < 0 else root(t))
+  return catch(root, t)
 
 ircs = lambda *vs: rcs(*vs, root=is_square)
 
