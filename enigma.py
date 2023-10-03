@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Sep 29 10:27:24 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Sep 29 16:16:46 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -158,6 +158,7 @@ quadratic              - find roots of a quadratic equation
 ratio, ratio_q         - find lowest terms integer ratio
 rational               - represet a rational number
 rcompose               - reverse functional composition
+rcs, ircs              - root of combined squares
 reciprocals            - generate reciprocals that sum to a given fraction
 recurring              - decimal representation of fractions
 recurring2fraction     - find the fraction corrresponding to a decimal expansion
@@ -221,7 +222,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-09-27"
+__version__ = "2023-09-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -493,8 +494,6 @@ def fdiv(a, b, fn=float):
   3.0
   """
   return fn(a) / fn(b)
-
-# useful routines for solving Enigma puzzles
 
 # less than/greater than (or equal) to a target; useful for filter() etc.
 def lt(t): return (lambda x: x < t)
@@ -3799,6 +3798,7 @@ def rcs(*vs, **kw):
       t += v * v
   return catch(root, t)
 
+# like rcs() but only return integer square roots
 ircs = lambda *vs: rcs(*vs, root=is_square)
 
 # return roots of the form n/d in the appropriate domain
