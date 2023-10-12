@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Oct  3 10:31:20 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct 12 10:56:50 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -222,7 +222,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-10-01"
+__version__ = "2023-10-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4976,6 +4976,10 @@ def chain(*ss, **kw):
   if kw: raise TypeError(str.format("chain: unknown arguments {kw}", kw=seq2str(kw.keys())))
   return flatten(ss, fn=fn)
 
+# generate permutations of the items of a sequence
+def permute(ss, select='P', fn=iter):
+  return flatten((subsets(s, size=len, select=select) for s in ss), fn=fn)
+
 # interleave values from a bunch of iterators
 # flatten(zip(*ss), fn=iter) works if arguments are the same length
 def interleave(*ss, **kw):
@@ -8173,6 +8177,87 @@ class SubstitutedSum(object):
     # call the solver
     cls.chain_go(sums, **opt)
     return 0
+
+  # solve the alphametic puzzle <ts[0]> + ... + <ts[-2]> = <ts[-1]>
+  # where one of the symbols given is incorrect
+  # <ss> is a list of the indices of suspect terms
+  # (see: Puzzle 56 [ https://enigmaticcode.wordpress.com/2018/01/24/puzzle-56-addition/ ])
+  @classmethod
+  def bungled_sum(cls, ts, ss=None, base=10):
+
+    # sort out the arguments
+    n = len(ts)
+    if ss is None:
+      ss = list(range(n))
+    else:
+      assert all(s < n for s in ss), "invalid suspect index"
+
+    # all letters in all terms
+    letters = union(ts)
+    if len(letters) < base: letters.add('?')
+
+    # check the suspect terms
+    for i in set(ss):
+      t = ts[i]
+      for (j, x) in enumerate(t):
+        # choose a replacement letter
+        for y in letters:
+          if x == y: continue
+          # create a puzzle for the modified sum
+          terms = update(ts, [(i, update(t, [(j, y)]))])
+          if y == '?' and x not in union(terms): continue
+          p = cls(terms[:-1], terms[-1], base=base)
+          # solve the puzzle
+          for (k, s) in enumerate(p.solve(verbose=0)):
+            if k == 0:
+              # indicate the incorrect symbol
+              h = ' ' * (sum(len(t) + 3 for t in terms[:i]) + j) + x
+              printf("\n{h}\n{p.text} / @[{i},{j}] {x} -> {y}")
+            # output solutions
+            p.output_solution(s)
+
+  @classmethod
+  def run_bungled_sum(cls, args):
+    ts = ss = None
+    opt = dict()
+    fail = 0
+    for arg in args:
+      k = v = None
+      try:
+        if arg.startswith('--'):
+          (k, _, v) = arg.lstrip('-').partition('=')
+        elif arg.startswith('-'):
+          (k, v) = (arg[1], arg[2:])
+
+        if k is None:
+          # plain arguments
+          if ts is None:
+            # the sum
+            ts = re.split(r'[\s+\=]+', arg)
+          else:
+            # an index
+            if ss is None: ss = list()
+            ss.append(int(arg))
+        else:
+          # options
+          if k == 'b' or k == 'base':
+            opt['base'] = int(v)
+          else:
+            fail = 1
+
+      except Exception as e:
+        print(e)
+        fail = 1
+        break
+
+    if fail:
+      printf("usage: {cls.__name__}.bungled_sum [--base=<n>] \"<term> + <term> + ... = <term>\" [<suspect-term-index> ...]")
+      return -1
+
+    cls.bungled_sum(ts, ss, **opt)
+    return 0
+
+bungled_sum = SubstitutedSum.bungled_sum
 
 ###############################################################################
 
