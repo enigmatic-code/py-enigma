@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct 12 10:56:50 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Oct 18 07:08:34 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -222,7 +222,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-10-10"
+__version__ = "2023-10-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1780,6 +1780,14 @@ class multiset(dict):
     60
     """
     return multinomial(self.values())
+
+  # express value <v> using a subset of this multiset
+  # if <k> is specified, only find subsets of size <k>
+  # returns subsets of the original multiset, optionally processed by <fn>
+  def express(self, v, k=None, fn=identity):
+    vs = sorted(dict.items(self))
+    for rs in express_pairs(v, vs, self.sum(), k=k):
+      yield fn(multiset.from_pairs(rs))
 
   # generate elements in order
   def sorted(self, key=None, reverse=False):
@@ -5552,6 +5560,37 @@ def express_quantities(t, ds, qs, ss=[]):
       if d * q > t: break
       for r in express_quantities(t - d * q, ds[1:], qs, ss + [q]): yield r
 
+# express total <t> using (<denomination>, <quantity>) pairs <vs>
+# vs = ordered list of (<denomination>, <quantity>) pairs
+# tv = total sum of values in <vs>
+# k = express using <k> values (not <k> _different_ denominations)
+# note that quantities and <tv> can be inf.
+# returns an ordered list of (<denomination>, <quantity>) pairs
+def express_pairs(t, vs, tv, k=None, xs=[]):
+  # are we done?
+  if t == 0:
+    if not k:
+      yield xs
+  elif t > tv or not vs:
+    return
+  elif len(vs) == 1:
+    (x, q) = vs[0]
+    if k is None:
+      n = div(t, x)
+      if not (n is None or n > q):
+        yield xs + [(x, n)]
+    else:
+      if (not k > q) and t == k * x:
+        yield xs + [(x, k)]
+  elif k is None or k > 0:
+    # choose the next value
+    for (i, (x, q)) in enumerate(vs):
+      if x > t: break
+      max_n = min(q, t // x)
+      if k is not None and k < max_n: max_n = k
+      for n in irange(1, max_n):
+        nx = n * x
+        for r in express_pairs(t - nx, vs[i + 1:], tv - nx, (None if k is None else k - n), xs + [(x, n)]): yield r
 
 # An implementation of the Boecker-Liptak Money Changing algorithm from:
 #
