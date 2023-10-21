@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Oct 18 07:08:34 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Oct 21 09:24:36 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -131,6 +131,7 @@ lcm                    - lowest common multiple
 line_bisect            - find the perpendicular bisector of a line
 line_distance          - minimum distance from a point to a line
 line_intersect         - find the intersection of two lines
+line_slope_intercept   - return (slope, intercept) for a line
 M                      - multichoose function (nMk)
 map2str                - format a map for output
 match                  - match a value against a template
@@ -222,7 +223,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-10-15"
+__version__ = "2023-10-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6084,6 +6085,21 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   return r
 
 # 2D geometry: a point is represented by (x, y)
+
+def line_slope_intercept(p1, p2, div=fdiv):
+  """
+  find the slope and intercept of a line defined by points p1 (= (x1, y1))
+  and p2 (= (x2, y2)).
+
+  for non-vertical lines a pair (<slope>, <intercept>) is returned.
+
+  if the line is vertical (i.e. x1 = x2), then (inf, x) is returned.
+  """
+  ((x1, y1), (x2, y2)) = (p1, p2)
+  if x1 == x2: return (inf, x1)
+  m = fdiv(y2 - y1, x2 - x1)
+  c = y1 - m * x1
+  return (m, c)
 
 def line_intersect(p1, p2, p3, p4, internal=0, div=fdiv):
   """
