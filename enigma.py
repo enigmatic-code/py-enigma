@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Oct 21 10:58:26 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Oct 29 07:03:34 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -223,7 +223,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-10-21"
+__version__ = "2023-10-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6093,7 +6093,13 @@ def line_slope_intercept(p1, p2, div=fdiv):
 
   for non-vertical lines a pair (<slope>, <intercept>) is returned.
 
-  if the line is vertical (i.e. x1 = x2), then (inf, x) is returned.
+  for vertical lines (i.e. x = c), then (inf, c) is returned.
+
+  >>> line_slope_intercept((0, 1), (2, 2))
+  (0.5, 1.0)
+
+  >>> line_slope_intercept((1, 1), (1, 3))
+  (inf, 1)
   """
   ((x1, y1), (x2, y2)) = (p1, p2)
   if x1 == x2: return (inf, x1)
