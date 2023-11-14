@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Oct 29 07:03:34 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Nov 14 12:19:51 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -223,7 +223,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-10-23"
+__version__ = "2023-11-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1867,12 +1867,20 @@ def mpermutations(s, k=None):
   return mP(s, k)
 
 # a simple implementation of derangements
+# as in itertools elements are permuted by index, not value
 def derangements(s, k=None):
   s = list(s)
   if k is None: k = len(s)
-  for p in itertools.permutations(s, k):
-    if not any(x == s[i] for (i, x) in enumerate(p)):
-      yield p
+  for p in itertools.permutations(range(len(s)), k):
+    if not any(i == x for (i, x) in enumerate(p)):
+      yield tuple(s[x] for x in p)
+
+# derangements where no value is equal to the value in the corresponding position of the original sequence
+def uD(s, k=None):
+  s = list(s)
+  for p in mpermutations(s, k):
+    if not any(s[i] == x for (i, x) in enumerate(p)):
+        yield p
 
 # can be cached() if necessary
 def subfactorial(n):
@@ -1897,6 +1905,7 @@ def subsets(s, size=None, min_size=0, max_size=None, select='C', prepare=None, f
      'R' = combinations with replacement
      'M' = product
      'uC' = unique combinations
+     'uD' = unique derangements
      'mC' = multiset combinations
      'mP' = multiset permutations
   or you can provide your own function.
@@ -1930,7 +1939,14 @@ def subsets(s, size=None, min_size=0, max_size=None, select='C', prepare=None, f
     if callable(min_size): min_size = min_size(s)
     if callable(max_size): max_size = max_size(s)
   # choose an appropriate select function
-  if not callable(select): select = subsets.select_fn[select]
+  if not callable(select):
+    try:
+      select = subsets.select_fn[select]
+    except KeyError:
+      # [Python 3] raise ValueError(...) from None
+      x = ValueError(str.format("invalid parameter: select={select!r}", select=select))
+      if hasattr(x, '__cause__'): x.__cause__ = None
+      raise x
   # generate the subsets
   for k in irange(min_size, max_size):
     for x in select(s, k): yield fn(x)
@@ -1947,6 +1963,7 @@ def _subsets_init():
       ('uC', uC, None),
       ('mC', uC, (lambda s: sorted(multiset(s)))),
       ('mP', mP, multiset),
+      ('uD', uD, None),
     ):
     if v:
       subsets.select_fn[k] = v
@@ -5963,6 +5980,11 @@ class Record(object):
   def map(self):
     return self.__dict__
 
+  # create a record from a dict
+  @classmethod
+  def from_dict(cls, d):
+    return cls(**d)
+
 
 # a golden section search minimiser
 # f - function to minimise
@@ -6437,7 +6459,8 @@ def _int2words(n, scale='short', sep='', hyphen=' '):
   try:
     return __int2words(n, scale, sep, hyphen)
   except IndexError:
-    raise ValueError(str.format('Number too large (scale: {scale})', scale=scale))
+    pass
+  raise ValueError(str.format('Number too large (scale={scale!r})', scale=scale))
 
 # from http://en.wikipedia.org/wiki/Names_of_large_numbers
 _illions = [
@@ -8464,8 +8487,8 @@ def _expand_macros(s, macro, depth=20):
     try:
       s = re.sub(r'\@(\w+)', (lambda x: macro[x.group(1)]), s)
     except KeyError as e:
+      # [Python 3] raise ValueError(...) from None
       x = ValueError(str.format("invalid macro: {k!r}", k=e.args[0]))
-      # [Python 3] raise ... from None
       if hasattr(x, '__cause__'): x.__cause__ = None
       raise x
     depth -= 1
