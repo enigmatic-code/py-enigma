@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Nov 14 12:19:51 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Nov 18 08:31:25 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -223,7 +223,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-11-12"
+__version__ = "2023-11-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6107,6 +6107,17 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   return r
 
 # 2D geometry: a point is represented by (x, y)
+
+def point_dist(p1, p2):
+  """
+  calculate the straight line distance between points p1 (= (x1, y1))
+  and p2 (= (x2, y2))
+
+  >>> point_dist((0, 0), (3, 4))
+  5.0
+  """
+  ((x1, y1), (x2, y2)) = (p1, p2)
+  return hypot(x1 - x2, y1 - y2)
 
 def line_slope_intercept(p1, p2, div=fdiv):
   """
