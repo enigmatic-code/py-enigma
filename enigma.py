@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Nov 18 08:31:25 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Nov 27 12:01:24 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -223,7 +223,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-11-17"
+__version__ = "2023-11-24"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -8939,7 +8939,7 @@ class SubstitutedExpression(object):
 
           if word and expr:
             if re.search(r'\{[' + symbols + r']+\}', xpr) is None:
-              if verbose > 0: printf("[SubstitutedExpression: replacing ({t}) -> ({xpr} = {word})]", t=ts[i])
+              if verbose & self.vW: printf("[SubstitutedExpression: replacing ({t}) -> ({xpr} = {word})]", t=ts[i])
               exprs[i] = (xpr, word, 3)
               (xs[i], vs[i]) = (vs[i], xs[i])
 
@@ -8949,7 +8949,7 @@ class SubstitutedExpression(object):
           if expr[0] == '{' and expr[-1] == '}':
             word = expr[1:-1]
             if all(x in symbols for x in word):
-              if verbose > 0: printf("[SubstitutedExpression: replacing ({t}) -> ({val} = {{{word}}})]", t=ts[i])
+              if verbose & self.vW: printf("[SubstitutedExpression: replacing ({t}) -> ({val} = {{{word}}})]", t=ts[i])
               exprs[i] = (int2base(val, base=10), word, 3)
               (xs[i], vs[i]) = (vs[i], xs[i])
 
@@ -9406,7 +9406,7 @@ class SubstitutedExpression(object):
     terms, result=None, k=1, carries=None, extra=None,
     base=None, symbols=None, s2d=None, d2i=None, distinct=None, literal=None,
     answer=None, accumulate=None, env=None, code=None,
-    template=None, sane=None, warn=None, verbose=None
+    template=None, solution=None, sane=None, warn=None, verbose=None
   ):
     """
     split the alphametic sum represented by [[ sum(<terms>) = <result> ]]
@@ -9435,7 +9435,7 @@ class SubstitutedExpression(object):
       accumulate - accumulate answers using specified object
       env - additional environment for evaluation
       code - additional lines of code evaluated before solving
-      template - solution template
+      template - output template
       sane - enable/disable sanity checks
       warn - enable/disable exception warnings
       verbose - control informational output
