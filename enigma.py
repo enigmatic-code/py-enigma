@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Nov 27 12:01:24 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Dec  2 07:36:57 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -223,7 +223,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-11-24"
+__version__ = "2023-12-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3646,12 +3646,15 @@ cube = is_cube
 square = is_square
 
 
-def drop_factors(n, k):
+def drop_factors(n, k, validate=0):
   """
   remove factors of <k> from <n>.
 
-  return (i, m) where n = (m)(k^i) such that m is not divisible by k
+  return (i, m) where n = (m)(k^i) such that m is not divisible by k.
+
+  both <n> and <k> should be non-negative integers.
   """
+  if validate: (n, k) = (as_int(n), as_int(k))
   i = 0
   while n > 1:
     (d, r) = divmod(n, k)
@@ -3660,11 +3663,13 @@ def drop_factors(n, k):
     n = d
   return (i, n)
 
-def is_power_of(n, k):
+def is_power_of(n, k, validate=0):
   """
   check <n> is a power of <k>.
 
   returns <m> such that pow(k, m) = n or None.
+
+  both <n> and <k> should be non-negative integers.
 
   >>> is_power_of(128, 2)
   7
@@ -3675,12 +3680,15 @@ def is_power_of(n, k):
   >>> is_power_of(0, 0)
   1
   """
+  if validate: (n, k) = (as_int(n), as_int(k))
   if n == 0: return (1 if k == 0 else None)
   if n == 1: return 0
-  if k < 2: return None
+  if n < 0 or k < 2: return None
   (i, m) = drop_factors(n, k)
   return (i if m == 1 else None)
 
+# alias
+ilog = is_power_of
 
 def tri(n):
   """
