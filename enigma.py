@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Dec  5 09:48:17 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Dec  8 08:16:47 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -223,7 +223,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-12-04"
+__version__ = "2023-12-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1138,6 +1138,56 @@ def number(s, base=10):
   if v: return v
   return base2int(s, base=base, strip=1)
 
+# return numbers that are in the specified clauses
+def numbers(s, base=10, csep=',', crange='-', cneg='!'):
+  """
+  generate numbers according to the clauses specified in <s>.
+
+  clauses may be:
+    "<n>,...,<n>" = a sequence of numbers
+    "<n>-<n>" = a range of numbers
+    "<n>" = a single number
+    "!<clause>" = a clause to exclude
+
+  clause separator is any character in <csep>.
+
+  range and negation indicators are specified by <crange> and <cneg>
+  (which can be empty to disable operation)
+
+  >>> list(numbers("1-9"))
+  [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  >>> list(numbers("1-3,7-9"))
+  [1, 2, 3, 7, 8, 9]
+  >>> list(numbers("1-9,!4,!5,!6"))
+  [1, 2, 3, 7, 8, 9]
+  >>> list(numbers("1-9,!4-6"))
+  [1, 2, 3, 7, 8, 9]
+  """
+  # split into terms, separated by any character in <csep>
+  d = csep[0]
+  if len(csep) > 1:
+    # map all other separators to d
+    s = re.sub(encl(re.escape(csep[1:]), '[]'), d, s)
+
+  # collect positive and negative terms
+  (tpos, tneg) = (list(), list())
+  for t in s.split(d):
+    # <cneg> indicates a negative term
+    if cneg and t[0] == cneg:
+      ts = tneg
+      t = t[1:]
+    else:
+      ts = tpos
+    # <crange> indicates a range
+    if crange and crange in t:
+      (a, _, b) = t.partition(crange)
+      ts.extend(irange(base2int(a, base=base, strip=1), base2int(b, base=base, strip=1)))
+      continue
+    # otherwise, a numeric literal
+    ts.append(base2int(t, base=base, strip=1))
+
+  # generate the numbers [[ Python 3: yield from diff(tpos, tneg) ]]
+  for n in diff(tpos, tneg): yield n
 
 def split(x, fn=None):
   """
@@ -8257,12 +8307,12 @@ class SubstitutedSum(object):
           opt['l2d'][l] = int(d)
         elif k == 'd' or k == 'digits':
           # --digits=<digit>,... or <digit>-<digit> (or -d)
-          opt['digits'] = _digits(v)
+          opt['digits'] = numbers(v)
         elif k == 'i' or k == 'invalid':
           # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
           if opt['d2i'] is None: opt['d2i'] = dict()
           (ds, s) = _split(v, maxsplit=-1)
-          for i in _digits(ds):
+          for i in numbers(ds, csep=_split_sep):
             opt['d2i'][i] = opt['d2i'].get(i, set()).union(s)
         else:
           raise ValueError()
@@ -8472,20 +8522,6 @@ def _split(s, sep=_split_sep, maxsplit=0):
   else:
     return s.rsplit(d, -maxsplit)
 
-# a sequence of digit values may be specified (in decimal) as:
-#   "<d>-<d>" = a range of digits
-#   "<d>,...,<d>" "<d>|...|<d>" "<d>+...+<d>"
-#   "<d>" = a single digit
-# returns a sequence of integers
-def _digits(s):
-  # "<d>-<d>"
-  if '-' in s:
-    (a, _, b) = s.partition('-')
-    return irange(int(a), int(b))
-  # "<d>,...,<d>" "<d>|...|<d>" "<d>+...+<d>"
-  # "<d>"
-  return tuple(int(d) for d in _split(s, _split_sep))
-
 # check for explicit "{WORD}" parameters
 _is_explicit = lambda s: re.search(r'{\w+}', s)  # was: [[ ('{' in s) ]]
 
@@ -8664,7 +8700,7 @@ class SubstitutedExpression(object):
 
       # sort out "old-style" numeric arguments
       if re.match(r'[\d\-\|\+\,]+', n):
-        n = sum(_digits(n))
+        n = sum(numbers(n, csep='|+,'))
 
     # old style verbose flags (1, 2, 3)
     if n < 4:
@@ -9841,14 +9877,14 @@ class SubstitutedExpression(object):
     elif k == 'd' or k == 'digits':
       # --digits=<digit>,... or <digit>-<digit> (or -d)
       # NOTE: <digits> are specified in decimal (not --base)
-      opt['digits'] = _digits(v)
+      opt['digits'] = numbers(v)
     elif k == 'i' or k == 'invalid':
       # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
       # NOTE: <digits> are specified in decimal (not --base)
       if opt['d2i'] is None: opt['d2i'] = dict()
       if v == '': return True # empty value will allow leading zeros
       (ds, s) = _split(v, maxsplit=-1)
-      for i in _digits(ds):
+      for i in numbers(ds, csep=_split_sep):
         opt['d2i'][i] = opt['d2i'].get(i, set()).union(s)
     elif k == 'D' or k == 'distinct':
       if v == '0' or v == '1':
@@ -12921,7 +12957,7 @@ enigma.py has the following command-line usage:
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.11.6',
+  version=__version__, python='2.7.18', python3='3.12.1',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
