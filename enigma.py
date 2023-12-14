@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Dec  8 08:16:47 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Dec 14 10:07:10 2023 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -223,7 +223,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-12-05"
+__version__ = "2023-12-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -980,7 +980,7 @@ def nconcat(*digits, **kw):
 def nsplitter(n, k=None, base=10, validate=0):
   """split integer <n> into digits, starting with the least significant digit"""
   if base < 2: raise ValueError(str.format("invalid base: {base!r}", base=base))
-  if validate: (n, base) = (as_int(n), as_int(base))
+  if validate: (n, base) = (as_int(n), as_int(base, include='+'))
   n = abs(n)
   if k is None:
     # the "natural" number of digits in n
@@ -1933,10 +1933,16 @@ def uD(s, k=None):
     if not any(s[i] == x for (i, x) in enumerate(p)):
         yield p
 
-# can be cached() if necessary
-def subfactorial(n):
-  if n == 0: return 1
-  return n * subfactorial(n - 1) + (-1 if n % 2 else 1)
+# cache is enabled by default
+@static(cache_enabled=1, cache={0: 1})
+def subfactorial(n, validate=0):
+  """subfactorial(n) is the number of derangements of n distinct elements"""
+  if validate: n = as_int(n, include="0+")
+  r = subfactorial.cache.get(n)
+  if r is None:
+    r = n * subfactorial(n - 1) + (-1 if n % 2 else 1)
+    if subfactorial.cache_enabled: subfactorial.cache[n] = r
+  return r
 
 # subsets (or subseqs) wraps various methods (which can save an import)
 @static(select_fn=dict(), prepare_fn=dict())
@@ -2863,7 +2869,7 @@ def divisors_pairs(n, k=1, fn=prime_factor, every=0, validate=0):
 
   if the 'every' parameter is set, then pairs with a > b are also generated.
   """
-  if validate: n = as_int(n, "0+")
+  if validate: n = as_int(n, include="0+")
   if n == 0 and k > 0:
     yield (0, 0)
     return
@@ -2890,7 +2896,7 @@ def divisors_tuples(n, k, s=()):
 
 # see also: is_prime_mr(), Primes.is_prime(), gmpy2.is_prime()
 def is_prime(n, validate=0):
-  # type: (int) -> bool
+  # type: (int, int) -> bool
   """
   return True if the non-negative integer <n> is prime.
 
@@ -3508,7 +3514,7 @@ sqrtc = lambda x: (isqrt(x) if x < 1 else 1 + isqrt(x - 1))
 # experimentally mod = 80, 48, 72, 32 are good values (24, 16 also work OK)
 @static(mod=720, residues=None, cache_enabled=0, cache=dict())
 def is_square(n, validate=0):
-  # type: (int | NoneType, bool) -> int | NoneType
+  # type: (int | NoneType, int) -> int | NoneType
   """
   check integer <n> is a perfect square.
 
@@ -3731,7 +3737,7 @@ def is_power_of(n, k, validate=0):
   >>> is_power_of(0, 0)
   1
   """
-  if validate: (n, k) = (as_int(n), as_int(k))
+  if validate: (n, k) = (as_int(n, include="0+"), as_int(k, include="0+"))
   if n == 0: return (1 if k == 0 else None)
   if n == 1: return 0
   if n < 0 or k < 2: return None
@@ -7194,7 +7200,8 @@ def poly_cyclotomic(n, fs=None, div=rdiv, fn=prime_factor):
     elif fs[0] == (2, 1):
       # 2n, invert the odd positions in cyclotomic[n]
       r = list(poly_cyclotomic(n // 2, fs=fs[1:], div=div, fn=fn))
-      for i in range(1, len(r), 2): r[i] = -r[i]
+      for i in range(1, len(r), 2):
+        r[i] = -r[i]
     else:
       # C[n] = multiply((x^d - 1) ^ mobius(n // d) for d in divisors(n))
       # we can specialise multiplication and division by (x^d - 1)
