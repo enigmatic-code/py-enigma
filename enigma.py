@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Dec 14 10:07:10 2023 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jan 20 07:35:04 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -223,7 +223,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2023-12-12"
+__version__ = "2024-01-19"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3155,6 +3155,8 @@ def tau(n, fn=prime_factor):
 
   >>> tau(factorial(12))
   792
+  >>> tau(factorial(23) - 1, fn=(lambda n: prime_factor_h(n, mr=1)))
+  4
   """
   return multiply(e + 1 for (_, e) in fn(n))
 
@@ -3416,8 +3418,10 @@ def iroot(n, k):
   #assert (a**k <= n and b**k > n)
   # if this assertion fails we need:
   #while not (b**k > n): (a, b) = (b, b << 1)
-  while b - a > 1:
-    r = (a + b) // 2
+  while True:
+    d = b - a
+    if d < 2: break
+    r = a + (d // 2)
     x = r**k
     if x < n:
       a = r
@@ -3608,6 +3612,41 @@ def powers(a, b, k=2, step=1, fn=None):
   for n in irange(a, b, step=step):
     x = n**k
     yield (x if fn is None else fn(x))
+
+# generate integers <n> that are perfect powers (n = pow(x, y), x >= 0, y >= 2)
+# in numerical order
+def ipowers(primes=None):
+  """
+  generate, in increasing order, without repeats, non-negative integers <n>
+  that are perfect powers (i.e. n = pow(x, y), x >= 0, y >= 2).
+
+  >>> first(ipowers(), 14)
+  [0, 1, 4, 8, 9, 16, 25, 27, 32, 36, 49, 64, 81, 100]
+  """
+  # powers less than 4
+  yield 0
+  yield 1
+  # powers from 4 upwards
+  base = { 2: 2 }
+  power = { 2: 4 }
+  maxp = 2
+  if primes is None: primes = getattr(enigma, 'primes')
+  primes = primes.generate(maxp + 1)
+  while True:
+    # find the next power
+    n = min(power.values())
+    yield n
+    # what powers are involved
+    ps = list(p for (p, v) in power.items() if v == n)
+    # increase the powers
+    for p in ps:
+      base[p] += 1
+      power[p] = pow(base[p], p)
+    # do we need to add in a new power?
+    if maxp in ps:
+      maxp = next(primes)
+      base[maxp] = 2
+      power[maxp] = pow(2, maxp)
 
 # compose functions in order (forward functional composition, "and then")
 # so: fcompose(f, g, h)(x) == h(g(f(x)))
