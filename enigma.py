@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jan 20 07:35:04 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jan 21 08:42:13 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -223,7 +223,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-01-19"
+__version__ = "2024-01-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1040,7 +1040,7 @@ def dsum(n, k=None, base=10, validate=0):
   return sum(nsplitter(n, k=k, base=base, validate=validate))
 
 # population count, Hamming weight, bitsum(), bit_count()
-if getattr(int, "bit_count", None):
+if getattr(int, 'bit_count', None):
   dsum2 = int.bit_count
 else:
   def dsum2(n): "fast alternative to dsum(n, base=2)"; return bin(abs(n)).count('1', 2)
@@ -3614,7 +3614,6 @@ def powers(a, b, k=2, step=1, fn=None):
     yield (x if fn is None else fn(x))
 
 # generate integers <n> that are perfect powers (n = pow(x, y), x >= 0, y >= 2)
-# in numerical order
 def ipowers(primes=None):
   """
   generate, in increasing order, without repeats, non-negative integers <n>
@@ -3630,7 +3629,7 @@ def ipowers(primes=None):
   base = { 2: 2 }
   power = { 2: 4 }
   maxp = 2
-  if primes is None: primes = getattr(enigma, 'primes')
+  if primes is None: primes = enigma.primes
   primes = primes.generate(maxp + 1)
   while True:
     # find the next power
