@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan 22 10:44:29 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jan 22 12:14:00 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -224,7 +224,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-01-21"
+__version__ = "2024-01-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3622,8 +3622,8 @@ def ipowers(primes=None):
 
   >>> first(ipowers(), 14)
   [0, 1, 4, 8, 9, 16, 25, 27, 32, 36, 49, 64, 81, 100]
-  >>> sum(first(ipowers(), 10000))
-  298557336560
+  >>> sum(first(ipowers(), 1000))
+  260908296
   """
   # powers less than 4
   yield 0
