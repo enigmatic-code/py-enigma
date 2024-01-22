@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jan 21 08:42:13 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jan 22 10:44:29 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.12)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -108,6 +108,7 @@ intf                   - floor conversion of float to int
 intr                   - round a value to the nearest integer
 invmod                 - multiplicative inverse of n modulo m
 ipartitions            - partition a sequence with repeated values by index
+ipowers                - generate perfect powers
 irange                 - inclusive range iterator
 irangef                - inclusive range iterator with fractional steps
 iroot                  - integer kth root function
@@ -223,7 +224,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-01-20"
+__version__ = "2024-01-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3621,31 +3622,32 @@ def ipowers(primes=None):
 
   >>> first(ipowers(), 14)
   [0, 1, 4, 8, 9, 16, 25, 27, 32, 36, 49, 64, 81, 100]
+  >>> sum(first(ipowers(), 10000))
+  298557336560
   """
   # powers less than 4
   yield 0
   yield 1
+
   # powers from 4 upwards
-  base = { 2: 2 }
-  power = { 2: 4 }
+  from heapq import (heapify, heappush, heappop)
+  hi = 1
   maxp = 2
+  pows = [(4, 2, 2)]
+  heapify(pows)
   if primes is None: primes = enigma.primes
   primes = primes.generate(maxp + 1)
   while True:
     # find the next power
-    n = min(power.values())
-    yield n
-    # what powers are involved
-    ps = list(p for (p, v) in power.items() if v == n)
-    # increase the powers
-    for p in ps:
-      base[p] += 1
-      power[p] = pow(base[p], p)
-    # do we need to add in a new power?
-    if maxp in ps:
+    (p, b, e) = heappop(pows)
+    if p > hi:
+      yield p
+      hi = p
+    heappush(pows, ((b + 1) ** e, b + 1, e))
+    # do we need to add in a new exponent?
+    if b == 2:
       maxp = next(primes)
-      base[maxp] = 2
-      power[maxp] = pow(2, maxp)
+      heappush(pows, (2 ** maxp, 2, maxp))
 
 # compose functions in order (forward functional composition, "and then")
 # so: fcompose(f, g, h)(x) == h(g(f(x)))
