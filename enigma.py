@@ -6,8 +6,8 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan 22 12:14:00 2024 (Jim Randell) jim.randell@gmail.com
-# Language:     Python (Python 2.7, Python 3.6 - 3.12)
+# Modified:     Tue Jan 23 11:33:53 2024 (Jim Randell) jim.randell@gmail.com
+# Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
 # URI:          http://www.magwag.plus.com/jim/enigma.html
@@ -224,7 +224,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-01-22"
+__version__ = "2024-01-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3615,13 +3615,17 @@ def powers(a, b, k=2, step=1, fn=None):
     yield (x if fn is None else fn(x))
 
 # generate integers <n> that are perfect powers (n = pow(x, y), x >= 0, y >= 2)
-def ipowers(primes=None):
+def ipowers(exps=None):
   """
   generate, in increasing order, without repeats, non-negative integers <n>
   that are perfect powers (i.e. n = pow(x, y), x >= 0, y >= 2).
 
+  <exps> is generator used for exponents (starting from 3).
+
   >>> first(ipowers(), 14)
   [0, 1, 4, 8, 9, 16, 25, 27, 32, 36, 49, 64, 81, 100]
+  >>> first(ipowers(), skip=lt(10), count=lt(100))  # 2-digit powers
+  [16, 25, 27, 32, 36, 49, 64, 81]
   >>> sum(first(ipowers(), 1000))
   260908296
   """
@@ -3632,11 +3636,11 @@ def ipowers(primes=None):
   # powers from 4 upwards
   from heapq import (heapify, heappush, heappop)
   hi = 1
-  maxp = 2
+  maxe = 2
   pows = [(4, 2, 2)]
   heapify(pows)
-  if primes is None: primes = enigma.primes
-  primes = primes.generate(maxp + 1)
+  # default is to use primes > 2, but irange(3, inf) also works
+  if exps is None: exps = enigma.primes.generate(3)
   while True:
     # find the next power
     (p, b, e) = heappop(pows)
@@ -3646,8 +3650,8 @@ def ipowers(primes=None):
     heappush(pows, ((b + 1) ** e, b + 1, e))
     # do we need to add in a new exponent?
     if b == 2:
-      maxp = next(primes)
-      heappush(pows, (2 ** maxp, 2, maxp))
+      maxe = next(exps)
+      heappush(pows, (2 ** maxe, 2, maxe))
 
 # compose functions in order (forward functional composition, "and then")
 # so: fcompose(f, g, h)(x) == h(g(f(x)))
