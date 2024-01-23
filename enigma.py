@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jan 23 11:33:53 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jan 23 13:46:33 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -3639,7 +3639,7 @@ def ipowers(exps=None):
   maxe = 2
   pows = [(4, 2, 2)]
   heapify(pows)
-  # default is to use primes > 2, but irange(3, inf) also works
+  # default is to use primes > 2, but irange(3, inf, step=2) also works
   if exps is None: exps = enigma.primes.generate(3)
   while True:
     # find the next power
