@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jan 24 15:34:53 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jan 24 16:05:10 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-01-25"
+__version__ = "2024-01-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -13043,7 +13043,12 @@ def _enigma_main(args=None):
 
   # identify the version number
   #print('[python version ' + sys.version.replace("\n", " ") + ']')
-  printf('[enigma.py version {__version__} (Python {v})]', v=sys.version.split(None, 1)[0])
+  v = sys.version.split(None, 1)[0]
+  if _pypy:
+    v_ = join([_pypy.major, _pypy.minor, _pypy.micro], sep=".")
+    if _pypy.releaselevel != 'final': v_ += join([_pypy.releaselevel[0], _pypy.serial])
+    v += sprintf(" = PyPy{x} {v_}", x=('' if _python == 2 else _python))
+  printf('[enigma.py version {__version__} (Python {v})]')
 
   # parse arguments into a dict
   args = dict((arg[1], arg[2:]) for arg in args if len(arg) > 1 and arg[0] == '-')
