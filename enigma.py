@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jan 24 07:34:07 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jan 24 15:34:53 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -116,6 +116,7 @@ is_coprime             - check two numbers are coprime
 is_cube, is_cube_z     - check a number is a perfect cube
 is_distinct            - check a value is distinct from other values
 is_duplicate           - check to see if value (as a string) contains duplicate characters
+is_ipower              - check a number is a perfect power
 is_pairwise_distinct   - check all arguments are distinct
 is_palindrome          - check a sequence is palindromic
 is_power               - check if n = i^k for some integer i
@@ -224,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-01-24"
+__version__ = "2024-01-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3652,6 +3653,20 @@ def ipowers(exps=None):
     if b == 2:
       maxe = next(exps)
       heappush(pows, (2 ** maxe, 2, maxe))
+
+def is_ipower(n, validate=0):
+  """
+  check non-negative integer <n> is a (non-trivial) perfect power.
+
+  >>> is_ipower(64)
+  True
+  >>> is_ipower(63)
+  False
+  """
+  if validate: n = as_int(n, include="0+")
+  if n is None or n < 0: return None
+  if n < 2: return True
+  return call(mgcd, (e for (_, e) in prime_factor(n))) > 1
 
 # compose functions in order (forward functional composition, "and then")
 # so: fcompose(f, g, h)(x) == h(g(f(x)))
