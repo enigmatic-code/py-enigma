@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jan 24 16:05:10 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jan 26 07:59:44 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-01-26"
+__version__ = "2024-01-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6530,7 +6530,7 @@ def base2int(s, base=10, strip=0, digits=None):
   if s.startswith('-'):
     neg ^= 1
     i += 1
-  n = 0
+  n = f = 0
   for k in range(i, len(s)):
     d = s[k]
     try:
@@ -6541,6 +6541,8 @@ def base2int(s, base=10, strip=0, digits=None):
       raise
     n *= base
     n += v
+    f = 1
+  if f == 0: return None  # if no characters processed
   return (-n if neg else n)
 
 def digit_map(a=0, b=9, digits=None):
