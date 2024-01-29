@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jan 26 07:59:44 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jan 28 12:05:36 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-01-27"
+__version__ = "2024-01-28"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7395,7 +7395,7 @@ class Polynomial(list):
   def quadratic_roots(self, v=0, domain="Q", include="+-0", F=None):
     p = (self - v if v else self)
     if p.degree() > 2: raise ValueError("polynomial degree too large")
-    return quadratic(p[2], p[1], p[0], domain=domain, include=include, F=F)
+    return quadratic(p.coeff(2), p.coeff(1), p.coeff(0), domain=domain, include=include, F=F)
 
   def rational_roots(self, v=0, domain="Q", include="+-0", F=None):
     "find rational roots of the polynomial = v"
@@ -7417,6 +7417,17 @@ class Polynomial(list):
 
   def drop_factor(self, *qs):
     return self.__class__(poly_drop_factor(self, *qs))
+
+  # best effort find roots of a polynomial
+  def find_roots(self, v=0, domain='Q', F=None, div=None, warn=1):
+    p = (self - v if v else self)
+    for (f, n) in p.factor(F=F, div=div):
+      # currently we can only deal with factors up to quadratic
+      if f.degree() > 2:
+        if warn: printf("WARNING: Polynomial.find_roots: ignoring poly factor {f}")
+        continue
+      for x in f.quadratic_roots(domain=domain, F=F):
+        yield x
 
   @classmethod
   def from_pairs(cls, ps):
