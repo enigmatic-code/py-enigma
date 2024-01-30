@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jan 28 12:05:36 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jan 30 16:25:17 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -766,9 +766,7 @@ def zip_eq(*ss, **kw):
   if reverse: ss = (reversed(s) for s in ss)
   z = (zip(*ss, strict=strict) if strict is not None else zip(*ss))
   if k is not None: z = first(z, count=k, fn=iter)
-  for vs in z:
-    if not seq_all_same(vs): return False
-  return True
+  return all(seq_all_same(vs) for vs in z)
 
 def ordered(*args, **kw):
   """
@@ -1075,10 +1073,8 @@ def nreverse(n, k=None, base=10, validate=0):
   >>> nreverse(1, 3)
   100
   """
-  if n < 0:
-    return -nreverse(-n, base=base, validate=validate)
-  else:
-    return nconcat(nsplitter(n, k=k, base=base, validate=validate), base=base)
+  if n < 0: return -nreverse(-n, base=base, validate=validate)
+  return nconcat(nsplitter(n, k=k, base=base, validate=validate), base=base)
 
 nrev = nreverse
 
@@ -1561,10 +1557,8 @@ class multiset(dict):
 
   def all_same(self, n=None):
     "does this multiset contain only values with the same multiplicity (<n> if specified)"
-    if n is None:
-      return seq_all_same(dict.values(self))
-    else:
-      return all(v == n for v in dict.values(self))
+    if n is None: return seq_all_same(dict.values(self))
+    return all(v == n for v in dict.values(self))
 
   # all elements of the multiset
   # (for unique elements use: [[ s.keys() ]])
@@ -1714,9 +1708,7 @@ class multiset(dict):
     r = compare(self.size(), m.size())
     if r == 1 or (strict and r == 0): return False
     # check items
-    for (item, count) in self.items():
-      if count > m.get(item, 0): return False
-    return True
+    return all(count <= m.get(item, 0) for (item, count) in self.items())
 
   # is this multiset m a superset of self?
   def issuperset(self, m, strict=0):
@@ -1795,10 +1787,8 @@ class multiset(dict):
     equivalent to: min(self)
     """
     if (not self) and 'default' in kw: return kw['default']
-    if 'key' in kw:
-      return _builtin_min(dict.keys(self), key=kw['key'])
-    else:
-      return _builtin_min(dict.keys(self))
+    if 'key' in kw: return _builtin_min(dict.keys(self), key=kw['key'])
+    return _builtin_min(dict.keys(self))
 
   def max(self, **kw):
     """
@@ -1807,10 +1797,8 @@ class multiset(dict):
     equivalent to: max(self)
     """
     if (not self) and 'default' in kw: return kw['default']
-    if 'key' in kw:
-      return _builtin_max(dict.keys(self), key=kw['key'])
-    else:
-      return _builtin_max(dict.keys(self))
+    if 'key' in kw: return _builtin_max(dict.keys(self), key=kw['key'])
+    return _builtin_max(dict.keys(self))
 
   def sum(self, fn=_builtin_sum):
     """
@@ -3349,13 +3337,11 @@ def pythagorean_triples(n=None, primitive=0, order=0):
   >>> icount(pythagorean_triples(10000, primitive=0))
   12471
   """
-  if primitive:
-    # primitive only triples
-    return _pythagorean_primitive(n, order)
-  else:
-    # include non-primitive
-    if n is None: raise ValueError("max hypotenuse not specified")
-    return _pythagorean_all(n, order)
+  # primitive only triples?
+  if primitive: return _pythagorean_primitive(n, order)
+  # include non-primitive
+  if n is None: raise ValueError("max hypotenuse not specified")
+  return _pythagorean_all(n, order)
 
 
 def fib(*s, **kw):
@@ -3753,8 +3739,7 @@ def is_cube_z(n, validate=0):
   if n < 0:
     r = is_cube(-n, validate=validate)
     return (None if r is None else -r)
-  else:
-    return is_cube(n, validate=validate)
+  return is_cube(n, validate=validate)
 
 # keep the old names as aliases
 power = is_power
@@ -4071,8 +4056,7 @@ def intr(x):
   if x < 0:
     x = -x
     return -int((x + x + 1) // 2)
-  else:
-    return int((x + x + 1) // 2)
+  return int((x + x + 1) // 2)
 
 def divf(a, b):
   """
@@ -4134,8 +4118,7 @@ def divr(a, b):
   if a < 0:
     a = -a
     return -int((a + a + b) // (b + b))
-  else:
-    return int((a + a + b) // (b + b))
+  return int((a + a + b) // (b + b))
 
 def ceil(x, m=1):
   """
@@ -4692,10 +4675,8 @@ def nPr(n, r):
   >>> nPr(10, 3)
   720
   """
-  if r > n:
-    return 0
-  else:
-    return math.factorial(n) // math.factorial(n - r)
+  if r > n: return 0
+  return math.factorial(n) // math.factorial(n - r)
 
 P = nPr
 
@@ -4711,10 +4692,8 @@ def nCr(n, r):
   >>> nCr(10, 3)
   120
   """
-  if r > n:
-    return 0
-  else:
-    return math.factorial(n) // math.factorial(r) // math.factorial(n - r)
+  if r > n: return 0
+  return math.factorial(n) // math.factorial(r) // math.factorial(n - r)
 
 C = nCr
 
@@ -4944,12 +4923,10 @@ def args(vs, n, fn=identity, prompt=None, argv=None):
 # (see also the "say" module)
 
 # this works in all version of Python
-def __sprintf(fmt, vs):
-  return str.format(fmt, **vs)
+def __sprintf(fmt, vs): return str.format(fmt, **vs)
 
 # Python 3 has str.format_map(vs)
-def __sprintf3(fmt, vs):
-  return str.format_map(fmt, vs)
+def __sprintf3(fmt, vs): return str.format_map(fmt, vs)
 
 # in Python v3.6.x we are getting f"..." strings which can do this job
 #
@@ -4965,8 +4942,7 @@ def __sprintf3(fmt, vs):
 #
 #   printf("... {a} + {b} = {a + b} ...", a=2, b=3)  ->  "... 2 + 3 = 5 ..."
 #
-def __sprintf36(fmt, vs):
-  return eval('f' + repr(fmt), vs)
+def __sprintf36(fmt, vs): return eval('f' + repr(fmt), vs)
 
 @static(fn=None)
 def _sprintf(fmt, vs, frame):
@@ -5188,10 +5164,8 @@ def flattened(s, depth=None, test=_flatten_test, fn=None):
   """
   if test is None: test = fn
   z = (test(s) if depth is None or depth > 0 else None)
-  if z is None:
-    return s
-  else:
-    return _flattened(z, depth, test)
+  if z is None: return s
+  return _flattened(z, depth, test)
 
 # in Python 3 we could use functools.singledispatch
 # or in Python 3.10+ we could use structural pattern matching
@@ -5652,12 +5626,9 @@ def express(t, ds, qs=None, min_q=0):
   """
   ds = list(ds)
   if not (ds and ds[0] > 0): raise ValueError(str.format("invalid denominations {ds!r}", ds=ds))
-  if qs:
-    return express_quantities(t, ds, qs)
-  if min_q > 0:
-    return express_denominations_min(t, ds, min_q)
-  else:
-    return express_denominations(t, ds)
+  if qs: return express_quantities(t, ds, qs)
+  if min_q > 0: return express_denominations_min(t, ds, min_q)
+  return express_denominations(t, ds)
 
 # express total <t> using denominations <ds>
 def express_denominations(t, ds, ss=[]):
@@ -6295,10 +6266,7 @@ def line_intersect(p1, p2, p3, p4, internal=0, div=fdiv):
   # calculate intersection point
   (x, y) = (x1 + q1 * dx21, y1 + q1 * dy21)
   # calculate parameter for line 2 = (x3 + q2(x4 - x3), y3 + q2(y4 - x3))
-  if abs(dx43) > abs(dy43):
-    q2 = div(x - x3, dx43)
-  else:
-    q2 = div(y - y3, dy43)
+  q2 = (div(x - x3, dx43) if abs(dx43) > abs(dy43) else div(y - y3, dy43))
   if internal & 2 and (q2 < 0 or q2 > 1): raise ValueError("external intersection on line 2")
   # return intersection point (pt) (also: x, y, q1, q2)
   return Record(pt=(x, y), x=x, y=y, q1=q1, q2=q2)
@@ -6390,10 +6358,10 @@ def roman2int(x):
   x = str(x).upper()
   p = r = 0
   for (n, i, m) in _romans:
-    (l, c) = (len(n), 0)
-    while x[p:p + l] == n and c < m:
+    (k, c) = (len(n), 0)
+    while x[p:p + k] == n and c < m:
       r += i
-      p += l
+      p += k
       c += 1
   if p < len(x): raise ValueError("invalid Roman numeral: {x}".format(x=x))
   return r
@@ -6434,7 +6402,7 @@ def base_digits(*args):
   base conversions.
   """
   if len(args) > 1: raise TypeError(str.format("invalid base digits: {args!r}", args=args))
-  if args: base_digits.digits = (args[0] or _DIGITS)
+  if args: base_digits.digits = (args[0] or (str_digit + str_upper))
   return base_digits.digits
 
 def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None):
@@ -6718,12 +6686,11 @@ def map2str(m, sort=1, enc="()", sep=", ", arr="="):
   '(a=1, b=2, c=3)'
   """
   fn = (sorted if sort else identity)
+  # is it a dict?
   if isinstance(m, dict):
-    # dict
     return join((concat(k, arr, m[k]) for k in fn(m.keys())), sep=sep, enc=enc)
-  else:
-    # (k, v) pairs
-    return join((concat(k, arr, v) for (k, v) in fn(m)), sep=sep, enc=enc)
+  # (k, v) pairs
+  return join((concat(k, arr, v) for (k, v) in fn(m)), sep=sep, enc=enc)
 
 ###############################################################################
 
@@ -6786,10 +6753,8 @@ class Delay(object):
     self.evaluated = False
 
   def __getattr__(self, key):
-    if key == 'value':
-      return self.evaluate()
-    else:
-      raise AttributeError()
+    if key == 'value': return self.evaluate()
+    raise AttributeError()
 
   @classmethod
   def iter(self, *args):
@@ -7893,10 +7858,8 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=
   # if n is None then make it expandable by default
   if n is None: (n, expandable) = (_primes_size, True)
   # return an appropriate object
-  if expandable:
-    return _PrimeSieveE6X(n, array=array, fn=fn, verbose=verbose)
-  else:
-    return _PrimeSieveE6(n, array=array, verbose=verbose)
+  if expandable: return _PrimeSieveE6X(n, array=array, fn=fn, verbose=verbose)
+  return _PrimeSieveE6(n, array=array, verbose=verbose)
 
 # backwards compatibility
 def PrimesGenerator(n=None, array=_primes_array, fn=_primes_chunk):
@@ -8723,10 +8686,7 @@ class SubstitutedExpression(object):
     # s2d - use l2d if s2d is not specified (for backward compatability)
     scope = locals()
     for k in self.__class__.defaults.keys():
-      if k == 's2d':
-        v = get_default(k, s2d, l2d)
-      else:
-        v = get_default(k, scope[k])
+      v = (get_default(k, s2d, l2d) if k == 's2d' else get_default(k, scope[k]))
       setattr(self, k, v)
 
     self._processed = 0 # set by process
@@ -9966,10 +9926,7 @@ class SubstitutedExpression(object):
       for i in numbers(ds, csep=_split_sep):
         opt['d2i'][i] = opt['d2i'].get(i, set()).union(s)
     elif k == 'D' or k == 'distinct':
-      if v == '0' or v == '1':
-        v = int(v)
-      else:
-        v = _split(v)
+      v = (int(v) if v == '0' or v == '1' else _split(v))
       opt['distinct'] = v
     elif k == 'L' or k == 'literal':
       opt['literal'] = v
