@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jan 30 16:57:59 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Feb  6 15:14:54 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-01-29"
+__version__ = "2024-02-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -785,12 +785,19 @@ def ordered(*args, **kw):
 
 # is sequence <seq> sorted?
 def is_sorted(seq, strict=0, fn=operator.lt):
+  """
+  check if <seq> is sorted.
+
+  adjacent values must satisfy <fn> (default is: <)
+
+  if <strict> is not set, then adjacent values may also be equal
+  """
   f = (fn if strict else lambda x, y: x == y or fn(x, y))
   return all(f(x, y) for (x, y) in tuples(seq, 2))
 
-is_increasing = lambda seq, strict=0: is_sorted(seq, strict=strict, fn=operator.lt)
-is_decreasing = lambda seq, strict=0: is_sorted(seq, strict=strict, fn=operator.gt)
-is_consecutive = lambda seq, gap=1: is_sorted(seq, fn=(lambda x, y: x + gap == y))
+def is_increasing(seq, strict=0): "check if <seq> is increasing"; return is_sorted(seq, strict=strict, fn=operator.lt)
+def is_decreasing(seq, strict=0): "check if <seq> is decreasing"; return is_sorted(seq, strict=strict, fn=operator.gt)
+def is_consecutive(seq, gap=1): "check is <seq> consist of consecutive values"; return is_sorted(seq, fn=(lambda x, y: x + gap == y))
 
 def encl(s, b="{}", fn=str):
   """
@@ -1170,6 +1177,7 @@ def numbers(s, base=10, csep=',', crange='-', cneg='!'):
   # collect positive and negative terms
   (tpos, tneg) = (list(), list())
   for t in s.split(d):
+    if not t: raise ValueError("numbers: empty term")
     # <cneg> indicates a negative term
     if cneg and t[0] == cneg:
       ts = tneg
@@ -3937,6 +3945,7 @@ def rcs(*vs, **kw):
 ircs = lambda *vs: rcs(*vs, root=is_square)
 
 # return roots of the form n/d in the appropriate domain
+# with domain = 'C', include = '+' (or '-') means "non-zero"
 def _roots(domain, include, F, *nds):
   (pos, neg, zero) = (x in include for x in '+-0')
   for (n, d) in nds:
@@ -3950,7 +3959,7 @@ def _roots(domain, include, F, *nds):
       if x is None: continue
     # return the root
     if domain == "C":
-      yield x
+      if x != 0 or zero: yield x
     elif x > 0:
       if pos: yield x
     elif x < 0:
@@ -3962,7 +3971,7 @@ def _roots(domain, include, F, *nds):
 # domain = "Z" (integer), "Q" (rational), "F" (float), "C" (complex float)
 def quadratic(a, b, c, domain="Q", include="+-0", F=None):
   """
-  find roots of the equation:
+  find roots of the quadratic equation:
 
      a.x^2 + b.x + c = 0
 
@@ -3976,12 +3985,16 @@ def quadratic(a, b, c, domain="Q", include="+-0", F=None):
   >>> sorted(quadratic(1, 1, -6, domain="Z"))
   [-3, 2]
   """
-  if domain not in "CFQZ": raise ValueError(str.format("quadratic: invalid domain {domain!r}", domain=domain))
+  if domain in "CF":
+    if F is None: F = (complex if domain == 'C' else float)
+  elif domain in "QZ":
+    if F is None: F = Rational()
+  else:
+    raise ValueError(str.format("quadratic: invalid domain {domain!r}", domain=domain))
 
+  # linear equation?
   if a == 0:
-    # linear equation
     if b == 0: raise ValueError("quadratic: invalid linear equation")
-    if F is None: F = (Rational() if domain in 'QZ' else (complex if domain == 'C' else float))
     return _roots(domain, include, F, (-c, b))
 
   # discriminant
@@ -3989,26 +4002,96 @@ def quadratic(a, b, c, domain="Q", include="+-0", F=None):
   if D < 0 and domain != "C": return _roots(domain, '', None)
 
   if domain in "CF":
-    F = (complex if domain == 'C' else float)
     d = -2 * a
-    if D == 0:
-      return _roots(domain, include, F, (b, d))
-    else:
-      r = D**0.5
-      return _roots(domain, include, F, (b + r, d), (b - r, d))
+    if D == 0: return _roots(domain, include, F, (b, d))
+    r = D**0.5
+    return _roots(domain, include, F, (b + r, d), (b - r, d))
 
   elif domain in "QZ":
-    if F is None: F = Rational()
     r = is_square_q(D, F=F)
     if r is not None:
       d = -2 * a
-      if r == 0:
-        return _roots(domain, include, F, (b, d))
-      else:
-        return _roots(domain, include, F, (b + r, d), (b - r, d))
+      if D == 0: return _roots(domain, include, F, (b, d))
+      return _roots(domain, include, F, (b + r, d), (b - r, d))
 
   return _roots(domain, '', None)
 
+# find roots of a cubic equation
+def cubic(a, b, c, d, domain='Q', include="+-0", F=None):
+  """
+  find roots of the cubic equation:
+
+     a.x^3 + b.x^2 + c.x + d = 0
+
+  in the specified domain:
+
+    "Z" finds integer solutions
+    "Q" finds rational solutions
+    "F" finds float solutions
+    "C" finds complex solutions
+
+  >>> sorted(round(x, 6) for x in cubic(1, -6, 11, -6, domain="F"))
+  [1.0, 2.0, 3.0]
+  """
+
+  if domain in "CF":
+    if F is None: F = (complex if domain == 'C' else float)
+  elif domain in "QZ":
+    if F is None: F = Rational()
+  else:
+    raise ValueError(str.format("cubic: invalid domain {domain!r}", domain=domain))
+
+  # is quadratic?
+  if a == 0:
+    return quadratic(b, c, d, domain=domain, include=include, F=F)
+
+  # calculate the determinant
+  D = 18 * a * b * c * d - 4 * b * b * b * d + b * b * c * c - 4 * a * c * c * c - 27 * a * a * d * d
+
+  if D == 0:
+    # repeated real roots
+    p = b * b - 3 * a * c
+    if p == 0:
+      # triple real root
+      return _roots(domain, include, F, (-b, 3 * a))
+    else:
+      # single real root, double real root
+      return _roots(domain, include, F,
+        (9 * a * d - b * c, 2 * p), # double root
+        (4 * a * b * c - 9 * a * a * d - b * b * b, a * p), # single root
+      )
+
+  # are we looking for exact rational roots?
+  if domain in "QZ":
+    return poly_rational_roots([d, c, b, a], domain=domain, include=include, F=F)
+
+  # proceed with float/complex approximations to real/complex roots
+  (a2, b2) = (a * a, b * b)
+  p = fdiv(b2 - 3 * a * c, 3 * a2)  # often this is -p
+  q = fdiv(2 * b2 * b - 9 * a * b * c + 27 * a2 * d, 27 * a2 * a)
+
+  if D > 0:
+    # 3 distinct real roots
+    r = sqrt(p, 3)
+    t = fdiv(math.acos(fdiv(-3 * q, 2 * p * r)), 3)
+    z = fdiv(two_pi, 3)
+    rs = ((6 * a * r * math.cos(x) - b, 3 * a) for x in (t, t + z, t - z))
+    return _roots(domain, include, F, *rs)
+
+  if D < 0:
+    # 1 real root, 2 complex conjugate roots
+    # find the real root
+    qx = q * -0.5
+    r = sqrt(q * q * 0.25 - fdiv(p * p * p, 27))
+    (t1, t2, tx) = (cbrt(qx + r), cbrt(qx - r), fdiv(b, 3 * a))
+    ts = [t1 + t2]
+    if domain == 'C':
+      # also return the complex roots
+      r34j = sqrt(3, 4) * 1j
+      (e1, e2) = (-0.5 + r34j, -0.5 - r34j)  # complex cube roots of 1
+      ts.extend((e1 * t1 + e2 * t2, e2 * t1 + e1 * t2))
+    rs = ((t - tx, 1) for t in ts)
+    return _roots(domain, include, F, *rs)
 
 def intf(x):
   """
@@ -7114,14 +7197,14 @@ def poly_rational_roots(p, domain="Q", include="+-0", F=None):
   if F is None: F = Rational()
   # first deal with a root at x=0
   if p[0] == 0:
-    if zero: yield (0 if domain == "Z" else F(0, 1))
+    if zero: yield (0 if domain == 'Z' else F(0, 1))
     while p and p[0] == 0: p = p[1:]
   if not p: return
   # make an equivalent polynomial with integer coefficients
   p = poly_scale(p, F=F)
   fs = product(divisors(abs(p[0])), divisors(abs(p[-1])))
   for x in uniq(map(unpack(F), fs)):
-    if domain == "Z":
+    if domain == 'Z':
       x = as_int(x, default=None)
       if x is None: continue
     if pos and poly_value(p, x) == 0:
@@ -7357,12 +7440,17 @@ class Polynomial(list):
     "return the indefinite integral of the polynomial"
     return self.__class__(poly_integral(self, c=c, div=div))
 
-  def quadratic_roots(self, v=0, domain="Q", include="+-0", F=None):
+  def quadratic_roots(self, v=0, domain='Q', include="+-0", F=None):
     p = (self - v if v else self)
-    if p.degree() > 2: raise ValueError("polynomial degree too large")
+    if p.degree() > 2: raise ValueError("Polynomial.quadratic_roots: degree too large")
     return quadratic(p.coeff(2), p.coeff(1), p.coeff(0), domain=domain, include=include, F=F)
 
-  def rational_roots(self, v=0, domain="Q", include="+-0", F=None):
+  def cubic_roots(self, v=0, domain='Q', include="+-0", F=None):
+    p = (self - v if v else self)
+    if p.degree() > 3: raise ValueError("Polynomial.cubic_roots: degree too large")
+    return cubic(p.coeff(3), p.coeff(2), p.coeff(1), p.coeff(0), domain=domain, include=include, F=F)
+
+  def rational_roots(self, v=0, domain='Q', include="+-0", F=None):
     "find rational roots of the polynomial = v"
     p = (self - v if v else self)
     return poly_rational_roots(p, domain=domain, include=include, F=F)
@@ -7387,11 +7475,11 @@ class Polynomial(list):
   def find_roots(self, v=0, domain='Q', F=None, div=None, warn=1):
     p = (self - v if v else self)
     for (f, n) in p.factor(F=F, div=div):
-      # currently we can only deal with factors up to quadratic
-      if f.degree() > 2:
-        if warn: printf("WARNING: Polynomial.find_roots: ignoring poly factor {f}")
+      # currently we can only deal non-rational roots in (up to) cubic factors
+      if f.degree() > 3:
+        if domain in 'FC' and warn: printf("WARNING: Polynomial.find_roots: ignoring poly factor {f}")
         continue
-      for x in f.quadratic_roots(domain=domain, F=F):
+      for x in f.cubic_roots(domain=domain, F=F):
         yield x
 
   @classmethod
@@ -9882,6 +9970,7 @@ class SubstitutedExpression(object):
       "  P = output solver parameters [9]",
       "  I = output solver info [2,3,9]",
       "  C = output generated Python code [3,9]",
+      "  W = output warnings [1,2,3,9]",
       "",
     )
 
@@ -9916,7 +10005,7 @@ class SubstitutedExpression(object):
     elif k == 'd' or k == 'digits':
       # --digits=<digit>,... or <digit>-<digit> (or -d)
       # NOTE: <digits> are specified in decimal (not --base)
-      opt['digits'] = numbers(v)
+      opt['digits'] = set(numbers(v))
     elif k == 'i' or k == 'invalid':
       # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
       # NOTE: <digits> are specified in decimal (not --base)
