@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Feb  6 15:14:54 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Feb  9 11:14:48 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-02-01"
+__version__ = "2024-02-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -8583,6 +8583,9 @@ bungled_sum = SubstitutedSum.bungled_sum
 #
 # TODO: spotting expressions for independent groups and solving
 # each group separately [Teaser 2990]
+#
+# TODO: consider having an inverse "--invalid", so X is odd:
+# --valid="1|3|5|7|9,X" [instead of: --invalid="0|2|4|6|8,X"]
 
 # find words in string <s>
 def _find_words(s, r=1):
@@ -9738,14 +9741,14 @@ class SubstitutedExpression(object):
     # construct the sub-expressions for each chunk
     (exprs, cs, maxv) = (list(), list(), dict())
     for (terms, result) in sums:
-      while terms:
+      while terms and result:
         (carry, ck) = ('', 0)
         if len(terms) > 1:
           # chop k characters off the end of each term
           ts = list(t[-k:] for t in terms)
           ts_ = list(filter(None, (t[:-k] for t in terms)))
           # upper bound for carry out
-          maxc = max_sum(ts, maxv, d2i, base) // (base**k)
+          maxc = min(max_sum(ts, maxv, d2i, base), max_sum([result], maxv, d2i, base)) // (base**k)
           # number of carry symbols required
           maxc_ds = nsplit(maxc, base=base)
           ck = len(maxc_ds)
@@ -9772,7 +9775,6 @@ class SubstitutedExpression(object):
           # determine d2i values
           d2i.update((d, carry[0]) for d in irange(maxc_ds[0] + 1, base - 1))
           maxv[carry[0]] = maxc_ds[0]
-        if not rs_: break
         (terms, result) = (ts_, rs_)
 
     carries = join(cs)
