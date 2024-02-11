@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Feb  9 11:14:48 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb 11 13:48:46 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-02-07"
+__version__ = "2024-02-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1144,7 +1144,7 @@ def number(s, base=10):
   return base2int(s, base=base, strip=1)
 
 # return numbers that are in the specified clauses
-def numbers(s, base=10, csep=',', crange='-', cneg='!'):
+def numbers(s, base=10, csep=',', crange='-', cneg='!', fn=list):
   """
   generate numbers according to the clauses specified in <s>.
 
@@ -1159,13 +1159,13 @@ def numbers(s, base=10, csep=',', crange='-', cneg='!'):
   range and negation indicators are specified by <crange> and <cneg>
   (which can be empty to disable operation)
 
-  >>> list(numbers("1-9"))
+  >>> numbers("1-9")
   [1, 2, 3, 4, 5, 6, 7, 8, 9]
-  >>> list(numbers("1-3,7-9"))
+  >>> numbers("1-3,7-9")
   [1, 2, 3, 7, 8, 9]
-  >>> list(numbers("1-9,!4,!5,!6"))
+  >>> numbers("1-9,!4,!5,!6")
   [1, 2, 3, 7, 8, 9]
-  >>> list(numbers("1-9,!4-6"))
+  >>> numbers("1-9,!4-6")
   [1, 2, 3, 7, 8, 9]
   """
   # split into terms, separated by any character in <csep>
@@ -1193,7 +1193,7 @@ def numbers(s, base=10, csep=',', crange='-', cneg='!'):
     ts.append(base2int(t, base=base, strip=1))
 
   # generate the numbers [[ Python 3: yield from diff(tpos, tneg) ]]
-  for n in diff(tpos, tneg): yield n
+  return diff(tpos, tneg, fn=fn)
 
 def split(x, fn=None):
   """
@@ -9130,7 +9130,7 @@ class SubstitutedExpression(object):
 
     # reorder the expressions into a more appropriate evaluation order
     if reorder:
-      # at each stage chose the expression with the fewest remaining possibilities
+      # at each stage choose the expression with the fewest remaining possibilities
       d = set(s2d.keys())
       (s, r) = (list(), list(i for (i, _) in enumerate(syms)))
       # formerly we used:
@@ -9147,6 +9147,10 @@ class SubstitutedExpression(object):
         s.append(i)
         d.update(xs[i], vs[i])
         r.remove(i)
+      # if reorder is a list, do the specified indices (1-indexed) first
+      if isinstance(reorder, list):
+        js = tuple(j - 1 for j in reorder)
+        s = js + diff(s, js)
       # update the lists
       exprs = list(exprs[i] for i in s)
       xs = list(xs[i] for i in s)
@@ -10007,7 +10011,7 @@ class SubstitutedExpression(object):
     elif k == 'd' or k == 'digits':
       # --digits=<digit>,... or <digit>-<digit> (or -d)
       # NOTE: <digits> are specified in decimal (not --base)
-      opt['digits'] = set(numbers(v))
+      opt['digits'] = numbers(v, fn=set)
     elif k == 'i' or k == 'invalid':
       # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
       # NOTE: <digits> are specified in decimal (not --base)
@@ -10038,7 +10042,12 @@ class SubstitutedExpression(object):
     elif k == 'v' or k == 'verbose':
       opt['verbose'] = (v if v else 1)
     elif k == 'r' or k == 'reorder':
-      opt['reorder'] = (int(v) if v else 0)
+      if v:
+        v = numbers(v)
+        if len(v) == 1: v = v[0]
+      else:
+        v = 0
+      opt['reorder'] = v
     elif k == 'X' or k == 'denest':
       opt['denest'] = (int(v) if v else 1)
     elif k == 'G' or k == 'decl':
@@ -10281,6 +10290,11 @@ def substituted_expression(*args, **kw):
   if 'verbose' not in kw: kw['verbose'] = 0
   for r in SubstitutedExpression(*args, **kw).solve():
     yield r
+
+# useful in square root extractions (see: sphinx5.run, sphinx10.run, sphinx12.run)
+def sqrx(p, c, x, fn=(lambda p, x: x * (20 * p + x))):
+  (y, y1) = (fn(p, x), fn(p, x + 1))
+  if y <= c < y1: return y
 
 ###############################################################################
 
@@ -13084,7 +13098,7 @@ enigma.py has the following command-line usage:
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.12.1',
+  version=__version__, python='2.7.18', python3='3.12.2',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
