@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb 11 13:48:46 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Feb 14 08:32:41 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-02-09"
+__version__ = "2024-02-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6381,6 +6381,11 @@ def line_distance(p1, p2, p0=(0, 0)):
   ((x1, y1), (x2, y2), (x0, y0)) = (p1, p2, p0)
   (xd, yd) = (x2 - x1, y2 - y1)
   return fdiv(abs(xd * (y1 - y0) - yd * (x1 - x0)), hypot(xd, yd))
+
+# calculate the (signed) area of a simple (non-intersecting) polygon
+# from a sequence of (x, y) points specifying the vertices
+def polygon_area(ps, m=0.5, sum=math.fsum):
+  return m * sum(x1 * y2 - x2 * y1 for ((x1, y1), (x2, y2)) in tuples(ps, 2, circular=1))
 
 ###############################################################################
 
