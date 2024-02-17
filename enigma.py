@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Feb 14 08:32:41 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 17 11:13:40 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-02-13"
+__version__ = "2024-02-15"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2637,9 +2637,9 @@ def _cbrt(x):
 
   see also: math.cbrt() (Python 3.11)
 
-  >>> cbrt(27.0)
+  >>> round(cbrt(27.0), 6)
   3.0
-  >>> cbrt(-27.0)
+  >>> round(cbrt(-27.0), 6)
   -3.0
   """
   r = root(abs(x), 3.0)
@@ -6286,6 +6286,9 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
 
 # 2D geometry: a point is represented by (x, y)
 
+# 2D cartesian point, has 'x' and 'y' components, is also tuple (x, y)
+P2 = namedtuple('P2', 'x y')
+
 def point_dist(p1, p2):
   """
   calculate the straight line distance between points p1 (= (x1, y1))
@@ -6382,9 +6385,14 @@ def line_distance(p1, p2, p0=(0, 0)):
   (xd, yd) = (x2 - x1, y2 - y1)
   return fdiv(abs(xd * (y1 - y0) - yd * (x1 - x0)), hypot(xd, yd))
 
-# calculate the (signed) area of a simple (non-intersecting) polygon
-# from a sequence of (x, y) points specifying the vertices
 def polygon_area(ps, m=0.5, sum=math.fsum):
+  """
+  calculate the (signed) area of a simple (non-intersecting) polygon
+  from a sequence of (x, y) points specifying the vertices
+
+  >>> polygon_area([(0, 0), (1, 0), (1, 1), (0, 1)])
+  1.0
+  """
   return m * sum(x1 * y2 - x2 * y1 for ((x1, y1), (x2, y2)) in tuples(ps, 2, circular=1))
 
 ###############################################################################
