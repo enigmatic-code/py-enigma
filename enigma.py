@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 17 11:13:40 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Feb 23 15:26:34 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-02-15"
+__version__ = "2024-02-22"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -7488,8 +7488,10 @@ class Polynomial(list):
   def find_roots(self, v=0, domain='Q', F=None, div=None, warn=1):
     p = (self - v if v else self)
     for (f, n) in p.factor(F=F, div=div):
+      d = f.degree()
+      if d < 1: continue
       # currently we can only deal non-rational roots in (up to) cubic factors
-      if f.degree() > 3:
+      if d > 3:
         if domain in 'FC' and warn: printf("WARNING: Polynomial.find_roots: ignoring poly factor {f}")
         continue
       for x in f.cubic_roots(domain=domain, F=F):
