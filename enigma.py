@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Feb 23 15:26:34 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Feb 28 13:25:43 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-02-22"
+__version__ = "2024-02-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4575,7 +4575,7 @@ def fraction(*args, **kw):
   if b == 0: raise ZeroDivisionError("fraction can't have zero denominator")
   if b < 0: (a, b) = (-a, -b)
   g = gcd(a, b)
-  if g > 1: (a, b) = (a // g, b // g)
+  if g != 1: (a, b) = (a // g, b // g)
   return (a, b)
 
 @static(rtype=None)
@@ -10307,7 +10307,20 @@ def substituted_expression(*args, **kw):
     yield r
 
 # useful in square root extractions (see: sphinx5.run, sphinx10.run, sphinx12.run)
-def sqrx(p, c, x, fn=(lambda p, x: x * (20 * p + x))):
+# [ https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Decimal_(base_10) ]
+@static(base=10)
+def sqrx(p, c, x):
+  """
+  perform a step in the extraction of a square root
+
+  p = digits of the square root extracted so far
+  c = current value in the extraction
+  x = next digit in the extraction
+  return = next y value (to be subtracted from c)
+
+  None is returned if x is not the next digit in the extraction.
+  """
+  fn = lambda p, x, b=sqrx.base: x * (2 * b * p + x)
   (y, y1) = (fn(p, x), fn(p, x + 1))
   if y <= c < y1: return y
 
