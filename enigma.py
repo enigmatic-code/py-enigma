@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Feb 28 13:25:43 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Mar  3 10:17:27 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-02-23"
+__version__ = "2024-03-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1144,7 +1144,7 @@ def number(s, base=10):
   return base2int(s, base=base, strip=1)
 
 # return numbers that are in the specified clauses
-def numbers(s, base=10, csep=',', crange='-', cneg='!', fn=list):
+def numbers(s, base=10, csep=',', crange='-', cneg='!', strip=1, enc='', fn=list):
   """
   generate numbers according to the clauses specified in <s>.
 
@@ -1159,6 +1159,10 @@ def numbers(s, base=10, csep=',', crange='-', cneg='!', fn=list):
   range and negation indicators are specified by <crange> and <cneg>
   (which can be empty to disable operation)
 
+  if strip=1 is specified non-digit characters are removed when parsing numbers.
+
+  if enc is specified the specification should be enclosed.
+
   >>> numbers("1-9")
   [1, 2, 3, 4, 5, 6, 7, 8, 9]
   >>> numbers("1-3,7-9")
@@ -1167,7 +1171,14 @@ def numbers(s, base=10, csep=',', crange='-', cneg='!', fn=list):
   [1, 2, 3, 7, 8, 9]
   >>> numbers("1-9,!4-6")
   [1, 2, 3, 7, 8, 9]
+  >>> numbers("[1-9,!4-6]", enc="[]")
+  [1, 2, 3, 7, 8, 9]
   """
+  s = s.strip()
+  if enc:
+    if not (s[0] == enc[0] and s[-1] == enc[-1]): raise ValueError("numbers: unenclosed spec " + repr(s))
+    s = s[1:-1]
+
   # split into terms, separated by any character in <csep>
   d = csep[0]
   if len(csep) > 1:
@@ -1187,10 +1198,10 @@ def numbers(s, base=10, csep=',', crange='-', cneg='!', fn=list):
     # <crange> indicates a range
     if crange and crange in t:
       (a, _, b) = t.partition(crange)
-      ts.extend(irange(base2int(a, base=base, strip=1), base2int(b, base=base, strip=1)))
+      ts.extend(irange(base2int(a, base=base, strip=1), base2int(b, base=base, strip=strip)))
       continue
     # otherwise, a numeric literal
-    ts.append(base2int(t, base=base, strip=1))
+    ts.append(base2int(t, base=base, strip=strip))
 
   # generate the numbers [[ Python 3: yield from diff(tpos, tneg) ]]
   return diff(tpos, tneg, fn=fn)
@@ -9164,6 +9175,7 @@ class SubstitutedExpression(object):
         r.remove(i)
       # if reorder is a list, do the specified indices (1-indexed) first
       if isinstance(reorder, list):
+        assert min(reorder) > 0 and not max(reorder) > len(exprs), "invalid reorder spec: " + repr(reorder)
         js = tuple(j - 1 for j in reorder)
         s = js + diff(s, js)
       # update the lists
@@ -9903,6 +9915,7 @@ class SubstitutedExpression(object):
         args.append(sprintf("--code={q}{x}{q}"))
 
     if self.reorder is not None:
+      print([self.reorder])
       args.append(sprintf("--reorder={self.reorder}"))
 
     if self.first is not None:
@@ -10057,12 +10070,7 @@ class SubstitutedExpression(object):
     elif k == 'v' or k == 'verbose':
       opt['verbose'] = (v if v else 1)
     elif k == 'r' or k == 'reorder':
-      if v:
-        v = numbers(v)
-        if len(v) == 1: v = v[0]
-      else:
-        v = 0
-      opt['reorder'] = v
+      opt['reorder'] = ((numbers(v, enc="[]") if v[0] == '[' else int(v)) if v else 0)
     elif k == 'X' or k == 'denest':
       opt['denest'] = (int(v) if v else 1)
     elif k == 'G' or k == 'decl':
