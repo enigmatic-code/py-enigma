@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Mar  3 10:17:27 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Mar  4 10:32:10 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-03-02"
+__version__ = "2024-03-03"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -9817,12 +9817,15 @@ class SubstitutedExpression(object):
       template_ += " (" + answer + ")"
     if distinct == 1: distinct = symbols
     if template is None: template = template_
+
+    if solution is None: solution = symbols
+
     # a solver with "standard" arguments
     solver = Delay(
       SubstitutedExpression,
       exprs,
       base=base, distinct=distinct, literal=literal, env=env, code=code,
-      s2d=s2d, d2i=d2i, template=template, solution=symbols,
+      s2d=s2d, d2i=d2i, template=template, solution=solution,
       answer=answer, accumulate=accumulate, sane=sane, warn=warn, verbose=verbose,
     )
     return Record(
@@ -10218,7 +10221,7 @@ class SubstitutedExpression(object):
           assert len(opt['distinct']) == 1, "split_sum: doesn't handle multiple 'distinct' values"
           opt['distinct'] = opt['distinct'][0]
         # copy accepted arguments
-        for k in ['base', 'symbols', 's2d', 'd2i', 'answer', 'accumulate', 'env', 'code', 'template', 'distinct', 'literal', 'verbose']:
+        for k in ['base', 'symbols', 's2d', 'd2i', 'answer', 'accumulate', 'env', 'code', 'template', 'solution', 'distinct', 'literal', 'verbose']:
           if k in opt:
             kw[k] = opt.pop(k)
         #if opt: printf("SubstitutedExpression.run_split_sum: ignoring args: {opt}")
