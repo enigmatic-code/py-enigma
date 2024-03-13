@@ -6,13 +6,13 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Mar  4 10:32:10 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 13 16:23:29 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
 # URI:          http://www.magwag.plus.com/jim/enigma.html
 #
-# (c) Copyright 2009-2023, Jim Randell, all rights reserved.
+# (c) Copyright 2009-2024, Jim Randell, all rights reserved.
 #
 ###############################################################################
 # -*- mode: Python; python-indent-offset: 2; coding: ascii -*-
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-03-03"
+__version__ = "2024-03-06"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -563,7 +563,7 @@ def implies(p, q):
   >>> list(p for p in irange(1, 100) if not implies(is_prime(p), p % 6 in (1, 5)))
   [2, 3]
   """
-  return (not p) or q
+  return q or (not p)
 
 # it's probably quicker (and shorter) to just use:
 #   X not in args
@@ -1063,6 +1063,8 @@ def ndigits(n, base=10, validate=0):
   """
   #return sum(1 for _ in nsplitter(n, base=base, validate=validate))
   return icount(nsplitter(n, base=base, validate=validate))
+
+# TODO: maybe: ndigit(n, i, j, k, ...) -> extract digits i, j, k from n
 
 # maybe -> nrev()
 def nreverse(n, k=None, base=10, validate=0):
