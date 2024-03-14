@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 13 16:23:29 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Mar 14 09:13:10 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-03-06"
+__version__ = "2024-03-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6828,7 +6828,7 @@ class Delay(object):
 
       Delay(fn, expr1, expr2, opt1=expr3, opt2=expr4)
 
-    example:
+    for example:
 
       x = Delay(expensive, 1)
       x.evaluated --> False
@@ -12528,12 +12528,16 @@ def compare_versions(x, y):
   return compare(fn(x), fn(y))
 
 # require version to be at least specified value
-# e.g.:
-#   require("enigma.version", "2022-12-05")
-#
-# this works for versions with numeric components separated by non-numeric components
-# so: require("sys.version", "3.10") will raise an exception on Python 3.9
 def require(key, value=None, cmp=compare_versions):
+  """
+  check the value of a "<module>.<attr>" key against a specified minimum value.
+
+  usually to ensure a module is new enough that a certain feature is available.
+
+  for example:
+    require("enigma.version", "2022-12-05")
+    require("sys.version", "3.10")
+  """
   (mod, k) = key.split('.')
   try:
     v = getattr(sys.modules[mod], k)
