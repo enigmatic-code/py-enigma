@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Mar 14 09:13:10 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Mar 24 15:54:21 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-03-13"
+__version__ = "2024-03-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -9131,6 +9131,7 @@ class SubstitutedExpression(object):
         # ("<word> == <expr>", None, 1)  -->  ("<expr>", "<word>", 3)
         if k == 1:
           word = xpr = None
+          assert symbols, "expr has no alphametic symbols ???"
           m = re.match(r'\s*\{([' + symbols + r']+)\}\s*==\s*(.+)\s*$', expr)
           if m:
             (word, xpr) = m.groups()
@@ -9476,6 +9477,9 @@ class SubstitutedExpression(object):
     if check is None: check = self.check
     if first is None: first = self.first
     verbose = (self.verbose if verbose is None else self._verbose(verbose))
+
+    if self.sane > 0 and verbose & self.vW and self.template and self.base > len(base_digits()):
+      printf("WARNING: base {self.base} specified, exceeds base_digits()")
 
     if verbose & self.vH and header: printf("{header}")
 
