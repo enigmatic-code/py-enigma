@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Mar 24 15:54:21 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Mar 28 12:45:28 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-03-23"
+__version__ = "2024-03-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -8133,6 +8133,62 @@ class MagicSquare(object):
     for line in self.lines:
       if sum(self.square[i] for i in line) != self.s: return False
     return True
+
+###############################################################################
+
+# output sums
+
+def output_mul(a, b, base=10, pre='', start=None, end=None):
+  """output <a> * <b> as a long multiplication sum"""
+  (a, b) = (as_int(x, include='0+') for x in (a, b))
+  c = a * b
+  #printf("{a} * {b} = {c}")
+  (ka, kb, kc) = (ndigits(x, base=base) for x in (a, b, c))
+  k = max(ka, kb, kc)
+  # format a number
+  fmt = lambda n, base=base, pad=' ', width=k: int2base(n, base=base, pad=pad, width=width)
+  # output the multiplication
+  if start is not None: printf("{start}")
+  printf("{pre}{a}", a=fmt(a))
+  printf("{pre}{b} *", b=fmt(b))
+  printf("{pre}{x}", x='-' * k) # if b != 0: ...
+  for (i, d) in enumerate(nsplit(b, base=base, reverse=1)):
+    p = a * d
+    #if p == 0: continue
+    #printf("{pre}{x}{p}{y} = {d} * {a}", x=' ' * (k - i - ndigits(p)), y=' ' * i)
+    printf("{pre}{p}", p=fmt(p, width=k - i))
+  printf("{pre}{x}", x='-' * k)
+  printf("{pre}{c}", c=fmt(c))
+  printf("{pre}{x}", x='=' * k)
+  if end is not None: printf("{end}")
+
+def output_div(a, b, base=10, pre='', start=None, end=None):
+  """output <a> / <b> as a long division sum"""
+  (c, r) = divmod(a, b)
+  #printf("{a} / {b} = {c} (remainder {r})")
+  (ka, kb, kc) = (ndigits(x, base=base) for x in (a, b, c))
+  # format a number
+  fmt = lambda n, base=base, pad=' ', width=ka + kb + 3: int2base(n, base=base, pad=pad, width=width)
+  # output the division
+  if start is not None: printf("{start}")
+  printf("{pre}{c}", c=fmt(c))
+  printf("{pre}{x} --{y}", x=' ' * kb, y='-' * ka)
+  printf("{pre}{b} ) {a}", b=fmt(b, width=kb), a=fmt(a, width=ka))
+  (ds, p, w, f) = (nsplit(a, base=base, fn=list), 0, kb + 3, 0)
+  while ds:
+    p = 10 * p + ds.pop(0)
+    q = floor(p, b)
+    w += 1
+    if q > 0:
+      r = p - q
+      if f: printf("{pre}{p}", p=fmt(p, width=w))
+      printf("{pre}{q}", q=fmt(q, width=w))
+      x = ('-' * ndigits(p, base=base)).rjust(w)
+      if r: printf("{pre}{x}")
+      (p, f) = (r, 1)
+  if p: printf("{pre}{p}", p=fmt(p, width=w))
+  printf("{pre}{x}", x=x.replace('-', '='))
+  if end is not None: printf("{end}")
 
 ###############################################################################
 
