@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Mar 28 12:45:28 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Mar 28 21:49:29 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-03-26"
+__version__ = "2024-03-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -8174,20 +8174,23 @@ def output_div(a, b, base=10, pre='', start=None, end=None):
   printf("{pre}{c}", c=fmt(c))
   printf("{pre}{x} --{y}", x=' ' * kb, y='-' * ka)
   printf("{pre}{b} ) {a}", b=fmt(b, width=kb), a=fmt(a, width=ka))
-  (ds, p, w, f) = (nsplit(a, base=base, fn=list), 0, kb + 3, 0)
+  (ds, p, w, f, x) = (nsplit(a, base=base, fn=list), 0, kb + 3, 0, None)
   while ds:
     p = 10 * p + ds.pop(0)
     q = floor(p, b)
     w += 1
     if q > 0:
       r = p - q
-      if f: printf("{pre}{p}", p=fmt(p, width=w))
+      if x:
+        printf("{pre}{x}")
+        printf("{pre}{p}", p=fmt(p, width=w))
       printf("{pre}{q}", q=fmt(q, width=w))
-      x = ('-' * ndigits(p, base=base)).rjust(w)
-      if r: printf("{pre}{x}")
-      (p, f) = (r, 1)
-  if p: printf("{pre}{p}", p=fmt(p, width=w))
-  printf("{pre}{x}", x=x.replace('-', '='))
+      x = ('-' * ndigits(q, base=base)).rjust(w)
+      p = r
+  if p:
+    printf("{pre}{x}")
+    printf("{pre}{p}", p=fmt(p, width=w))
+  printf("{pre}{x}", x=('=' * ndigits(max(p, q), base=base)).rjust(w))
   if end is not None: printf("{end}")
 
 ###############################################################################
