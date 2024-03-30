@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Mar 28 22:20:31 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Mar 29 10:42:36 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-03-29"
+__version__ = "2024-03-30"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -8162,10 +8162,15 @@ def output_mul(a, b, base=10, pre='', start=None, end=None):
   printf("{pre}{x}", x='=' * k)
   if end is not None: printf("{end}")
 
-def output_div(a, b, base=10, pre='', start=None, end=None):
-  """output <a> / <b> as a long division sum"""
+def output_div(a, b, rem=0, base=10, pre='', start=None, end=None):
+  """
+  output <a> / <b> as a long division sum
+
+  if <rem> is set then the remainder will always be printed
+  (even if it is zero).
+  """
   (c, r) = divmod(a, b)
-  #printf("{a} / {b} = {c} (remainder {r})")
+  #printf("{a} / {b} = {c} (rem {r})")
   (ka, kb, kc) = (ndigits(x, base=base) for x in (a, b, c))
   # format a number
   fmt = lambda n, base=base, pad=' ', width=ka + kb + 3: int2base(n, base=base, pad=pad, width=width)
@@ -8174,23 +8179,24 @@ def output_div(a, b, base=10, pre='', start=None, end=None):
   printf("{pre}{c}", c=fmt(c))
   printf("{pre}{x} --{y}", x=' ' * kb, y='-' * ka)
   printf("{pre}{b} ) {a}", b=fmt(b, width=kb), a=fmt(a, width=ka))
-  (ds, p, w, x) = (nsplit(a, base=base, fn=list), 0, kb + 3, None)
+  (ds, p, w, s) = (nsplit(a, base=base, fn=list), 0, kb + 3, None)
   while ds:
     p = 10 * p + ds.pop(0)
     q = floor(p, b)
     w += 1
     if q > 0:
       r = p - q
-      if x:
-        printf("{pre}{x}")
+      if s:
+        printf("{pre}{s}")
         printf("{pre}{p}", p=fmt(p, width=w))
       printf("{pre}{q}", q=fmt(q, width=w))
-      x = ('-' * ndigits(q, base=base)).rjust(w)
+      s = ('-' * ndigits(max(p, q), base=base)).rjust(w)
       p = r
-  if p and x:
-    printf("{pre}{x}")
-    printf("{pre}{p}", p=fmt(p, width=w))
-  printf("{pre}{x}", x=('=' * ndigits(max(p, q), base=base)).rjust(w))
+  if p or rem:
+    if s: printf("{pre}{s}")
+    printf("{pre}{p} (rem)", p=fmt(p, width=w))
+    s = ('-' * ndigits(max(p, q), base=base)).rjust(w)
+  printf("{pre}{s}", s=s.replace('-', '='))
   if end is not None: printf("{end}")
 
 ###############################################################################
