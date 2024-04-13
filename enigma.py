@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Mar 29 10:42:36 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Apr 13 09:28:53 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-03-30"
+__version__ = "2024-04-03"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1407,6 +1407,20 @@ def diff(a, b, *rest, **kw):
   if rest: b = set(b).union(*rest)
   return fn(x for x in a if x not in b)
 
+# or: excl(ude) / incl(ude)
+excl = diff
+
+def incl(a, b, *rest, **kw):
+  """
+  return the subsequence of <a> that includes elements in <b>.
+
+  >>> incl((1, 2, 3, 4, 5), (2, 3, 5, 7))
+  (2, 3, 5)
+  """
+  fn = kw.pop('fn', tuple)
+  if kw: raise TypeError(str.format("incl: unknown arguments {kw}", kw=seq2str(kw.keys())))
+  if rest: b = set(b).union(*rest)
+  return fn(x for x in a if x in b)
 
 # unique combinations:
 # like uniq(combinations(s, k)) but more efficient
@@ -3486,7 +3500,7 @@ def sumsq(xs): "sumsq(xs) = sum(sq(x) for x in xs)"; return sum(x * x for x in x
 def isqrt(n):
   # type: (int) -> int | NoneType
   """
-  calculate intf(sqrt(n)), for integers n.
+  calculate intf(sqrt(n)), for integer n.
 
   See also: math.isqrt (Python 3.8), gmpy2.isqrt().
 
@@ -3517,7 +3531,7 @@ def isqrt(n):
 
 # square root floor and ceiling functions
 sqrtf = isqrt
-sqrtc = lambda x: (isqrt(x) if x < 1 else 1 + isqrt(x - 1))
+def sqrtc(n): "calculate intc(sqrt(n)), for integer n."; return (isqrt(n) if n < 1 else isqrt(n - 1) + 1)
 
 # it would be more Pythonic to encapsulate is_square in a class with the initialisation
 # in __init__, and the actual call in __call__, and then instantiate an object to be
@@ -3956,6 +3970,20 @@ def rcs(*vs, **kw):
 
 # like rcs() but only return integer square roots
 ircs = lambda *vs: rcs(*vs, root=is_square)
+
+# harmonic sum
+def hsum(*vs, **kw):
+  """
+  compute the harmonic sum of the specified:
+
+  e.g. hsum(a, b, c) = 1/(1/a + 1/b + 1/c)
+  """
+  div = kw.get('div', rdiv)
+  num = kw.get('num', 1)
+  return div(num, sum(div(1, v) for v in vs))
+
+# harmonic mean
+havg = lambda *vs: hsum(*vs, num=len(vs))
 
 # return roots of the form n/d in the appropriate domain
 # with domain = 'C', include = '+' (or '-') means "non-zero"
