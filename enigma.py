@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Apr 13 09:28:53 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Apr 17 22:24:12 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-04-03"
+__version__ = "2024-04-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -391,6 +391,19 @@ def cached(f):
 
 # or you can use cache, to get functools.cache() (if available) or cached() if not.
 cache = getattr(functools, 'cache', cached)
+
+# cache a generator
+def cachegen(s):
+  i = iter(s)
+  cache = list()
+  # get the value at index k
+  def fn(k, i=i, cache=cache):
+    n = k - len(cache)
+    if n >= 0:
+      cache.extend(first(i, n + 1))
+    return cache[k]
+  fn.cache = cache
+  return fn
 
 # wrap a function in another function, e.g. @wrap(uniq, verbose=1)
 def wrap(_fn, *args, **kw):
@@ -1396,6 +1409,8 @@ def item_from(select, template, **kw):
 def diff(a, b, *rest, **kw):
   """
   return the subsequence of <a> that excludes elements in <b>.
+
+  alias: excl().
 
   >>> diff((1, 2, 3, 4, 5), (3, 5, 2))
   (1, 4)
@@ -3492,7 +3507,7 @@ def sqrt(a, b=None):
   return math.sqrt(a if b is None else a / b)
 
 # sq = lambda x: x * x
-def sq(x): "sq(x) = x**2"; return x * x
+def sq(x): "sq(x) = x * x"; return x * x
 def sumsq(xs): "sumsq(xs) = sum(sq(x) for x in xs)"; return sum(x * x for x in xs)
 
 # calculate intf(sqrt(n))
@@ -5450,6 +5465,23 @@ def remove(s, *vs):
     return s.difference(vs)
   raise ValueError(str.format("remove() can't handle container of type {x}", x=type(s)))
 
+# swap items in container <s> at keys <i> and <j>
+def swap(s, i, j, *ks, **kw):
+  """
+  create a container the same as <s> but with keys <i> and <j> swapped.
+  """
+  fn = kw.get('fn', None)
+  if isinstance(s, dict):
+    r = type(s)(s)
+  elif isinstance(s, (list, tuple, basestring)):
+    r = list(s)
+    if fn is None: fn = (''.join if isinstance(s, basestring) else type(s))
+  (r[i], r[j]) = (r[j], r[i])
+  if ks:
+    for (i, j) in chunk(ks, 2):
+      (r[i], r[j]) = (r[j], r[i])
+  return (r if fn is None else fn(r))
+
 # restriction of a container <s> that only includes items at keys <ks>
 def restrict(s, ks, strict=0):
   """
@@ -5480,7 +5512,7 @@ def restrict(s, ks, strict=0):
         r.append(s[k])
       except IndexError:
         if strict: raise
-    return (join(r) if isinstance(s, basestring) else type(s)(r))
+    return (str.join('', r) if isinstance(s, basestring) else type(s)(r))
 
 # adjacency matrix for an n (columns) x m (rows) grid
 # entries are returned as lists in case you want to modify them before use
@@ -5724,12 +5756,13 @@ def bit_positions(x):
 # for "coin puzzles", see also: Denominations()
 
 # simple express:
-def express(t, ds, qs=None, min_q=0):
+def express(t, ds, qs=None, min_q=0, max_q=inf):
   """
   express total <t> using denominations <ds>.
 
   optional: using quantities chosen from <qs>
-  or: minimum quantity <min_q> (non-negative integer)
+  or: minimum quantity <min_q> (non-negative integer),
+  maximum quantity <max_q> (non-negative integer, or inf).
 
   <ds> and <qs> should be increasing sequences.
 
@@ -5751,11 +5784,11 @@ def express(t, ds, qs=None, min_q=0):
   ds = list(ds)
   if not (ds and ds[0] > 0): raise ValueError(str.format("invalid denominations {ds!r}", ds=ds))
   if qs: return express_quantities(t, ds, qs)
-  if min_q > 0: return express_denominations_min(t, ds, min_q)
-  return express_denominations(t, ds)
+  if min_q > 0: return express_denominations_min(t, ds, min_q, max_q)
+  return express_denominations(t, ds, max_q=max_q)
 
 # express total <t> using denominations <ds>
-def express_denominations(t, ds, ss=[]):
+def express_denominations(t, ds, max_q=inf, ss=[]):
   if t == 0:
     if not ds:
       yield ss
@@ -5768,19 +5801,19 @@ def express_denominations(t, ds, ss=[]):
       if r: return
       qs = [k]
     else:
-      qs = irange(0, k)
+      qs = irange(0, min(k, max_q))
     for q in qs:
-      for r in express_denominations(t - d * q, ds[1:], ss + [q]): yield r
+      for r in express_denominations(t - d * q, ds[1:], max_q, ss + [q]): yield r
 
 # express total <t> using denominations <ds>, min quantity <min_q>
-def express_denominations_min(t, ds, min_q):
+def express_denominations_min(t, ds, min_q, max_q):
   # allocate the minimum quantities
   t -= min_q * sum(ds)
   if t == 0:
     yield [min_q] * len(ds)
   elif t > 0:
     # solve for the remaining amount
-    for ss in express_denominations(t, ds):
+    for ss in express_denominations(t, ds, max_q=max_q - min_q):
       # add in the initial quantities
       yield list(q + min_q for q in ss)
 
@@ -6478,7 +6511,7 @@ def int2roman(x):
     if d < 1: continue
     s.append(n * d)
     x = r
-  return join(s)
+  return str.join('', s)
 
 
 def roman2int(x):
@@ -12453,6 +12486,19 @@ class Matrix(list):
   def transpose(self):
     "return the transposition of the matrix"
     return Matrix(zip(*self), field=self.field)
+
+  def pow(self, n):
+    "return a new matrix that is the result of this matrix to the power <n>"
+    n = as_int(n, include='0+')
+    r = Matrix.identity(self.nrows(), self.ncols(), self.field)
+    m = self
+    while n > 0:
+      (n, z) = divmod(n, 2)
+      if z: r = r.multiply(m)
+      if n: m = m.multiply(m)
+    return r
+
+  __pow__ = pow
 
   def gauss(self, B=None):
     """
