@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Apr 17 22:24:12 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Apr 18 11:33:03 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-04-12"
+__version__ = "2024-04-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5798,7 +5798,7 @@ def express_denominations(t, ds, max_q=inf, ss=[]):
     d = ds[0]
     (k, r) = divmod(t, d)
     if len(ds) == 1:
-      if r: return
+      if r or k > max_q: return
       qs = [k]
     else:
       qs = irange(0, min(k, max_q))
