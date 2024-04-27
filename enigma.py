@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Apr 18 11:33:03 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Apr 27 17:20:08 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-04-13"
+__version__ = "2024-04-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -278,12 +278,13 @@ call = lambda fn, args=(), kw=dict(): fn(*args, **kw)
 defaultdict = collections.defaultdict
 namedtuple = collections.namedtuple
 product = itertools.product  # cartesian product, but see also: cproduct()
+module = sys.modules.get
 
 # detect if running under PyPy
 _pypy = getattr(sys, 'pypy_version_info', None)
 
 # useful constants
-enigma = sys.modules[__name__]
+enigma = module(__name__)
 nl = "\n"
 pi = math.pi
 two_pi = pi + pi
@@ -897,6 +898,8 @@ def reverse(s, fn=None):
 
   note: when reversing a map, data may be lost if the original map
   does not have distinct values.
+
+  alias: rev().
 
   >>> reverse([1, 2, 3])
   [3, 2, 1]
@@ -2671,7 +2674,7 @@ def uniq1(seq, fn=None):
 
 # root: calculate the (positive) nth root of a (positive) number
 # we use math.pow rather than **/pow() to avoid generating complex numbers
-root = lambda x, n: (x if not x else math.pow(x, 1.0 / n))
+root = lambda x, n: (x if not x else math.pow(x, n ** -1))
 
 def _cbrt(x):
   """
@@ -3986,20 +3989,6 @@ def rcs(*vs, **kw):
 # like rcs() but only return integer square roots
 ircs = lambda *vs: rcs(*vs, root=is_square)
 
-# harmonic sum
-def hsum(*vs, **kw):
-  """
-  compute the harmonic sum of the specified:
-
-  e.g. hsum(a, b, c) = 1/(1/a + 1/b + 1/c)
-  """
-  div = kw.get('div', rdiv)
-  num = kw.get('num', 1)
-  return div(num, sum(div(1, v) for v in vs))
-
-# harmonic mean
-havg = lambda *vs: hsum(*vs, num=len(vs))
-
 # return roots of the form n/d in the appropriate domain
 # with domain = 'C', include = '+' (or '-') means "non-zero"
 def _roots(domain, include, F, *nds):
@@ -4739,6 +4728,51 @@ class Rdiv(object):
     return self.F(a) / b  # because mpq(x, y) changes x
 
 rdiv = Rdiv()
+
+# harmonic sum
+def hsum(vs, div=rdiv, num=1):
+  """
+  compute the harmonic sum of the specified:
+
+  e.g. hsum([a, b, c]) = 1/(1/a + 1/b + 1/c)
+  """
+  return div(num, sum(div(1, v) for v in vs))
+
+# arithmetic mean
+def amean(vs, div=rdiv):
+  """
+  calculate the arithmetic mean of values <vs>.
+
+  for integer values the result is generally rational,
+  if you only want integer values use div=div.
+  """
+  return avg(vs, div=div)
+
+# geometric mean
+def gmean(vs, root=root):
+  """
+  calculate the geometric mean of values <vs>.
+
+  for integer values the result is generally irrational (float),
+  if you only want integer values use root=is_power (or: is_square
+  for 2 arguments, is_cube for 3 arguments).
+  """
+  p = 1
+  k = 0
+  for v in vs:
+    p *= v
+    k += 1
+  return (p if k == 1 else root(p, k))
+
+# harmonic mean
+def hmean(vs, div=rdiv):
+  """
+  calculate the harmonic mean of values <vs>.
+
+  for integer values the result is generally rational,
+  if you only want integer results use as_int(hmean(...)).
+  """
+  return hsum(vs, div=div, num=len(vs))
 
 @static(impl=None)
 def rational(*args, **kw):
@@ -12155,12 +12189,16 @@ def __grouping():
       grouping.share_letters()
   """
 
-  def groups(vs, fn, s=[]):
+  def groups(vs, fn, distinct=1, s=[]):
     """
-    group the lists of elements in <vs> into groups (one element from each list)
-    such that the values in the groups satisfy the selection function <fn>
+    group the lists of elements in <vs> into groups (one element
+    from each list) such that the values in the groups satisfy the
+    selection function <fn>
 
-    returns a sequence of groups.
+    if distinct is set to a false value, then values from the
+    non-primary groups (index != 0) can be used multiple times.
+
+    returns a sequence of groups (with values in input order)
     """
     # are we done?
     if not vs[0]:
@@ -12175,7 +12213,8 @@ def __grouping():
         # check the group
         if fn(*group):
           # solve for the remaining elements (can use "yield from" in Python 3)
-          for z in groups([vs[0][1:]] + [x[:j] + x[j + 1:] for (x, j) in zip(vs[1:], js)], fn, s + [group]): yield z
+          vs1 = ([x[:j] + x[j + 1:] for (x, j) in zip(vs[1:], js)] if distinct else vs[1:])
+          for z in groups([vs[0][1:]] + vs1, fn, distinct, s + [group]): yield z
 
   # output a grouping
   def output_groups(gs, sep=", ", end=""):
@@ -12186,13 +12225,13 @@ def __grouping():
       print(str.join(sep, g))
     print(end)
 
-  def solve(vs, fn=true, sep=", ", end=""):
+  def solve(vs, fn=true, distinct=1, sep=", ", end=""):
     """
     group the lists of elements in <vs> into groups (one element from each list)
     such that the values in the groups satisfy the selection function <fn>,
     and as each collection of groups is found output them.
     """
-    for gs in groups(vs, fn):
+    for gs in groups(vs, fn, distinct=distinct):
       output_groups(gs, sep, end)
 
 
