@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Apr 27 17:20:08 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri May  3 08:01:50 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-04-25"
+__version__ = "2024-04-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1161,13 +1161,13 @@ def number(s, base=10):
   if v: return v
   return base2int(s, base=base, strip=1)
 
-# return numbers that are in the specified clauses
-def numbers(s, base=10, csep=',', crange='-', cneg='!', strip=1, enc='', fn=list):
+def numbers(ss, base=10, csep=',', crange='-', cneg='!', strip=1, enc='', fn=list):
   """
-  generate numbers according to the clauses specified in <s>.
+  generate numbers (non-negative integers) according to the
+  clauses specified in <ss>.
 
   clauses may be:
-    "<n>,...,<n>" = a sequence of numbers
+    "<clause>,...,<clause>" = a sequence of clauses
     "<n>-<n>" = a range of numbers
     "<n>" = a single number
     "!<clause>" = a clause to exclude
@@ -1177,7 +1177,8 @@ def numbers(s, base=10, csep=',', crange='-', cneg='!', strip=1, enc='', fn=list
   range and negation indicators are specified by <crange> and <cneg>
   (which can be empty to disable operation)
 
-  if strip=1 is specified non-digit characters are removed when parsing numbers.
+  if strip=1 is specified non-digit characters are removed when
+  parsing numbers.
 
   if enc is specified the specification should be enclosed.
 
@@ -1191,21 +1192,22 @@ def numbers(s, base=10, csep=',', crange='-', cneg='!', strip=1, enc='', fn=list
   [1, 2, 3, 7, 8, 9]
   >>> numbers("[1-9,!4-6]", enc="[]")
   [1, 2, 3, 7, 8, 9]
+
   """
-  s = s.strip()
+  ss = ss.strip()
   if enc:
-    if not (s[0] == enc[0] and s[-1] == enc[-1]): raise ValueError("numbers: unenclosed spec " + repr(s))
-    s = s[1:-1]
+    if not (ss[0] == enc[0] and ss[-1] == enc[-1]): raise ValueError("numbers: unenclosed spec " + repr(ss))
+    ss = ss[1:-1]
 
   # split into terms, separated by any character in <csep>
   d = csep[0]
   if len(csep) > 1:
     # map all other separators to d
-    s = re.sub(encl(re.escape(csep[1:]), '[]'), d, s)
+    s = re.sub(encl(re.escape(csep[1:]), '[]'), d, ss)
 
   # collect positive and negative terms
   (tpos, tneg) = (list(), list())
-  for t in s.split(d):
+  for t in ss.split(d):
     if not t: raise ValueError("numbers: empty term")
     # <cneg> indicates a negative term
     if cneg and t[0] == cneg:
@@ -1677,6 +1679,11 @@ class multiset(dict):
   def remove(self, item, count=1):
     """remove an item from the multiset"""
     return self.add(item, -count)
+
+  # delete an item (no error is raised if the item does not exist)
+  def delete(self, item):
+    """delete all occurrences of an item from the multiset"""
+    return self.pop(item, 0)
 
   # like self.items(), but in value order
   def most_common(self, n=None):
@@ -4890,8 +4897,11 @@ def M(n, k):
 def recurring(a, b, recur=0, base=10, digits=None):
   """
   find recurring representation of the fraction <a> / <b> in the specified base.
-  return strings (<integer-part>, <non-recurring-part>, <recurring-part>)
-  if you want rationals that normally terminate represented as non-terminating set <recur>
+
+  returns strings (<integer-part>, <non-recurring-part>, <recurring-part>)
+
+  if you want rationals that normally terminate represented as
+  non-terminating set <recur> to a true value.
 
   >>> tuple(recurring(1, 7))
   ('0', '', '142857')
