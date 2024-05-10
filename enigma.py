@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri May  3 08:01:50 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri May 10 14:13:32 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-04-29"
+__version__ = "2024-05-04"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -492,9 +492,9 @@ def as_int(x, include="", **kw):
             return n
       else:
         return n
-    return kw['default']
   except Exception:
     pass
+  if 'default' in kw: return kw['default']
   msg = "invalid integer: " + repr(x)
   if include: msg += ' [include: ' + include + ']'
   raise ValueError(msg)
@@ -9865,6 +9865,7 @@ class SubstitutedExpression(object):
     # the symbols to replace (for implicit expressions)
     if symbols is None: symbols = str_upper
     symbols = set(symbols)
+    if s2d is None: s2d = dict()
     if s2d: symbols.update(s2d.keys())
     if literal: symbols.update(literal)
     symbols = join(sorted(symbols))
@@ -9975,7 +9976,13 @@ class SubstitutedExpression(object):
           carries = carries[ck:]
           cs.append(carry)
         # add an expression for this set of columns
-        exprs.append(join(ts, fn=encl, sep=" + ") + " = " + encl(carry + rs))
+        if (not carry) and rs in ts:
+          # plain term on RHS that is also in LHS -> remaining RHS terms = 0
+          ts.remove(rs)
+          exprs.extend("0 = " + encl(t) for t in set(ts))
+        else:
+          # standard columns
+          exprs.append(join(ts, fn=encl, sep=" + ") + " = " + encl(carry + rs))
         if carry:
           # add the carry to the remaining terms
           ts_.append(carry)
@@ -10094,7 +10101,6 @@ class SubstitutedExpression(object):
         args.append(sprintf("--code={q}{x}{q}"))
 
     if self.reorder is not None:
-      print([self.reorder])
       args.append(sprintf("--reorder={self.reorder}"))
 
     if self.first is not None:
