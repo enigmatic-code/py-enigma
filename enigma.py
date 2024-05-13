@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri May 10 14:13:32 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon May 13 14:10:52 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-05-04"
+__version__ = "2024-05-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -9093,7 +9093,7 @@ class SubstitutedExpression(object):
 
       # now process the list
       xs = list()
-      for expr in exprs:
+      for expr in uniq(exprs):
         if isinstance(expr, basestring):
           # expression is a single string, turn it into an (<expr>, <value>) pair
           (v, s) = ('', re.split(r'\s+=\s+', expr))
