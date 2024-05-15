@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon May 13 14:10:52 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed May 15 13:36:09 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-05-12"
+__version__ = "2024-05-13"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1225,6 +1225,19 @@ def numbers(ss, base=10, csep=',', crange='-', cneg='!', strip=1, enc='', fn=lis
 
   # generate the numbers [[ Python 3: yield from diff(tpos, tneg) ]]
   return diff(tpos, tneg, fn=fn)
+
+def respace(x):
+  """
+  respace string <x>.
+
+  leading and trailling space is removed, and other space is reduced
+  to a single space character.
+
+  >>> respace("   hello    world!   ")
+  'hello world!'
+  """
+  if not isinstance(x, basestring): return x  # leave non-strings alone
+  return str.join(' ', str.split(x))
 
 def split(x, fn=None):
   """
@@ -4896,7 +4909,7 @@ def M(n, k):
 @static(rtype=None)
 def recurring(a, b, recur=0, base=10, digits=None):
   """
-  find recurring representation of the fraction <a> / <b> in the specified base.
+  find recurring representation of the fraction <a>/<b> in the specified base.
 
   returns strings (<integer-part>, <non-recurring-part>, <recurring-part>)
 
@@ -9091,9 +9104,9 @@ class SubstitutedExpression(object):
       answer = _expand_macros(answer, macro)
       template = _expand_macros(template, macro)
 
-      # now process the list
+      # now process the list (skipping duplicates)
       xs = list()
-      for expr in uniq(exprs):
+      for expr in uniq(exprs, fn=repr):
         if isinstance(expr, basestring):
           # expression is a single string, turn it into an (<expr>, <value>) pair
           (v, s) = ('', re.split(r'\s+=\s+', expr))
@@ -12493,6 +12506,15 @@ class Matrix(list):
   def map2d(self, f):
     "map the function <f> over the matrix"
     return Matrix(((f(x) for x in row) for row in self), field=self.field)
+
+  def diag(self, k=0, i=1):
+    """
+    return the elements of a diagonal line
+    starting at element <k> of the first row, incrementing by <i> on each row
+    """
+    for r in self:
+      yield r[k]
+      k = (k + i) % len(r)
 
   def add(self, other):
     "return a new matrix that is the result of adding a matrix to this one"
