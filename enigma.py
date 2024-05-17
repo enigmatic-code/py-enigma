@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed May 15 13:36:09 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed May 15 17:46:00 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-05-13"
+__version__ = "2024-05-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -830,8 +830,8 @@ def encl(s, b="{}", fn=str):
 
 # I would prefer join() to be a string constructor:
 #   str.from_seq(seq, sep='', enc=''), or just: str.join(seq, sep='', enc='')
-# but for now we define a utility function
-def join(seq, sep='', enc='', fn=str):
+# but here is a utility function (aka: seq2str)
+def join(seq, sep='', enc='', sort=0, rev=0, fn=str):
   """
   construct a string by joining the items in sequence <seq> as
   strings, separated by separator <sep>, and enclosed by the pair
@@ -853,13 +853,15 @@ def join(seq, sep='', enc='', fn=str):
   '57005'
 
   """
+  if sort: seq = sorted(seq)
+  if rev: seq = reversed(seq)
   r = str.join(sep, (fn(x) for x in seq))
   if enc: r = str.join('', (enc[0], r, enc[-1]))
   return r
 
-def joinf(sep='', enc='', fn=str):
+def joinf(sep='', enc='', sort=0, rev=0, fn=str):
   "return a joining function"
-  return (lambda x: join(x, sep=sep, enc=enc, fn=fn))
+  return (lambda x: join(x, sep=sep, enc=enc, sort=sort, rev=rev, fn=fn))
 
 def concat(*args, **kw):
   """
@@ -879,6 +881,9 @@ def concat(*args, **kw):
   """
   sep = kw.pop('sep', '')
   enc = kw.pop('enc', '')
+  sort = kw.pop('sort', 0)
+  rev = kw.pop('rev', 0)
+  fn = kw.pop('fn', str)
   if kw: raise TypeError(str.format("concat: unknown arguments {kw}", kw=seq2str(kw.keys())))
   if len(args) == 1:
     try:
@@ -887,7 +892,7 @@ def concat(*args, **kw):
       pass
     except:
       raise
-  return join(args, sep=sep, enc=enc)
+  return join(args, sep=sep, enc=enc, sort=sort, rev=rev, fn=fn)
 
 # reverse a sequence or a map (maybe -> rev())
 # for a unicode string if will be considered as a sequence of codepoints
@@ -5216,7 +5221,7 @@ def irange(a, b=None, step=1):
   where <k> is the step.
 
   note that it is possible to choose endpoint/step combinations where
-  the sequence of integers generated does not include b, or is empty.
+  the sequence of integers generated does not include <b>, or is empty.
 
   if <b> is specified as inf (or -inf for negative steps) the iterator
   will generate values indefinitely.
@@ -5239,7 +5244,6 @@ def irange(a, b=None, step=1):
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
   >>> list(irange(10, step=-1))
   [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
-
   """
   if not step: raise ValueError("irange: step cannot be zero")
   if b == inf:
@@ -6880,9 +6884,11 @@ def int2bcd(n, base=10, bits_per_digit=4):
   return (r if s == 1 else -r)
 
 # convert a sequence to a string: "(a, b, c)"
-def seq2str(s, sort=0, rev=0, enc="()", sep=", "):
+def seq2str(s, enc="()", sep=", ", sort=0, rev=0, fn=str):
   """
   convert a sequence to a string suitable for output.
+
+  alias: join()
 
   >>> seq2str([2, 1, 3])
   '(2, 1, 3)'
@@ -6893,9 +6899,7 @@ def seq2str(s, sort=0, rev=0, enc="()", sep=", "):
   >>> seq2str(map(seq2str, prime_factor(factorial(15) - 1)))
   '((17, 1), (31, 2), (53, 1), (1510259, 1))'
   """
-  if sort: s = sorted(s)
-  if rev: s = reversed(s)
-  return join(s, sep=sep, enc=enc)
+  return join(s, sep=sep, enc=enc, sort=sort, rev=rev, fn=fn)
 
 # convert a map to a string: "(a=1, b=2, c=3)"
 def map2str(m, sort=1, enc="()", sep=", ", arr="="):
