@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed May 15 17:46:00 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed May 22 08:55:43 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-05-14"
+__version__ = "2024-05-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1388,20 +1388,22 @@ def peek(s, k=0, **kw):
   >>> peek(p for p in primes if p % 17 == 1)
   103
   """
-  if not isinstance(s, dict):
-    # try to index into the container
+  if k >= 0:
+    if not isinstance(s, dict):
+      # try to index into the container
+      try:
+        return s[k]
+      except (KeyError, IndexError, TypeError):
+        pass
+    # try iterating through the container
+    for (i, x) in enumerate(s):
+      if i == k:
+        return x
+    # return any default value
     try:
-      return s[k]
-    except (KeyError, IndexError, TypeError):
+      return kw['default']
+    except KeyError:
       pass
-  # try iterating through the container
-  for (i, x) in enumerate(s):
-    if i == k:
-      return x
-  try:
-    return kw['default']
-  except KeyError:
-    pass
   raise ValueError(str.format("invalid index {k}", k=k))
 
 # functions to create a selector for elements/attributes from an object
@@ -4336,6 +4338,7 @@ def is_palindrome(s):
   """
   j = len(s)
   if j < 2: return True
+  # this is faster than: [[ return zip_eq(s, reversed(s), first=j // 2) ]]
   i = 0
   j -= 1
   while i < j:
