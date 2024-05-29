@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed May 22 08:55:43 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed May 29 08:38:28 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-05-21"
+__version__ = "2024-05-27"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -296,6 +296,10 @@ str_lower = "abcdefghijklmnopqrstuvwxyz"  # lower case letters
 str_digit = "0123456789"  # decimal digits
 str_nl = nl
 
+# PY_ENIGMA:
+#  v = enable verbose output
+#  p = enable prompts in arg()
+#  i = enable interaction
 _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
 version = lambda: __version__
@@ -317,7 +321,7 @@ def import_fn(spec):
 # will import on call _and_ attempt to replace <name> in <space> with the imported function
 def lazy_import(spec, **kw):
   name = (kw['name'] if 'name' in kw else str.rsplit(spec, '.', 1)[-1])
-  space = (kw['space'] if 'space' in kw else sys._getframe(1).f_globals) # replace in the defining space
+  space = (kw['space'] if 'space' in kw else sys._getframe(1).f_globals)  # replace in the defining space
   def _f(*args, **kw):
     fn = _f.fn
     if not fn:
@@ -1422,7 +1426,7 @@ def attr(*ks, **kw):
   if len(ks) == 1 and multi: return (lambda x: (f(x),))
   return f
 
-items = lambda n: map(item, xrange(n)) # (x, y, z) = items(3)
+items = lambda n: map(item, xrange(n))  # e.g. (x, y, z) = items(3)
 
 # select items according to space/comma separated template
 # item_from("p", "V, L, p") -> item(2)
@@ -1531,7 +1535,7 @@ class multiset(dict):
         try:
           s = multiset().update_from_pairs(v)
           self.update_from_dict(s)
-        except (TypeError, ValueError): # maybe more, or maybe just Error
+        except (TypeError, ValueError):  # maybe more, or maybe just Error
           self.update_from_seq(v)
     # add in any keyword items
     if kw:
@@ -3560,7 +3564,7 @@ def isqrt(n):
   """
   if n < 0: return None
   if n < 4: return int(n > 0)
-  if isqrt.impl: return isqrt.impl(n) # use math.isqrt() if available
+  if isqrt.impl: return isqrt.impl(n)  # use math.isqrt() if available
 
   # use the math.isqrt algorithm
   c = (n.bit_length() - 1) >> 1
@@ -3773,7 +3777,7 @@ def rcompose(*fns):
   return fcompose(*(reversed(fns)))
 
 is_not_none = (lambda x: x is not None)
-is_square_p = (lambda x: is_square(x) is not None) # = fcompose(is_square, is_not_none)
+is_square_p = (lambda x: is_square(x) is not None)  # = fcompose(is_square, is_not_none)
 
 # 819 rejects 95% (other good values: 63 (86%), 117 (87%), 189 (89%), 351 (90%), 504 (91%), 819 (95%))
 @static(mod=819, residues=None, cache_enabled=0, cache=dict())
@@ -3803,7 +3807,7 @@ def is_cube(n, validate=0):
     if is_cube.cache_enabled: is_cube.cache[n] = z
   return z
 
-is_cube_p = (lambda x: is_cube(x) is not None) # = fcompose(is_cube, is_not_none)
+is_cube_p = (lambda x: is_cube(x) is not None)  # = fcompose(is_cube, is_not_none)
 
 def is_cube_z(n, validate=0):
   """
@@ -4129,8 +4133,8 @@ def cubic(a, b, c, d, domain='Q', include="+-0", F=None):
     else:
       # single real root, double real root
       return _roots(domain, include, F,
-        (9 * a * d - b * c, 2 * p), # double root
-        (4 * a * b * c - 9 * a * a * d - b * b * b, a * p), # single root
+        (9 * a * d - b * c, 2 * p),  # double root
+        (4 * a * b * c - 9 * a * a * d - b * b * b, a * p),  # single root
       )
 
   # are we looking for exact rational roots?
@@ -4706,9 +4710,9 @@ def Rational(src=None, verbose=None):
   select a class for representing rational numbers.
 
   >> Q = Rational(verbose=1)
-  [Rational: using gmpy2.mpq]
+  [Rational] using gmpy2.mpq
   >> Q = Rational(src="fractions.Fraction", verbose=1)
-  [Rational: using fractions.Fraction]
+  [Rational] using fractions.Fraction
   """
   s = f = None
   if src is None:
@@ -4735,10 +4739,10 @@ def Rational(src=None, verbose=None):
         Rational.fix_gmpy2 = (not catch(require, "gmpy2.version", "2.1.4"))
       break
   if verbose is None: verbose = ('v' in _PY_ENIGMA)
-  if verbose: printf("[Rational: using {s}]", s=(s if f else f))
+  if verbose: printf("[Rational] using {s}", s=(s if f else f))
   # fix for gmpy2.mpq() behaviour (issue #334) - may be fixed in gmpy2.version() > 2.1.2
   if Rational.fix_gmpy2 and s == 'gmpy2.mpq':
-    if verbose: printf("[Rational: applying fix for {s}]")
+    if verbose: printf("[Rational] applying fix for {s}")
     f = (lambda x, y=None, fn=f: (fn(x) if y is None else fn(x) / y))
   return f
 
@@ -5192,7 +5196,7 @@ def printf(fmt='', **kw):
   a=1 b=2 c=42
   """
   s = _sprintf(fmt, kw, sys._getframe(1))
-  d = dict() # flush=1
+  d = dict()  # flush=1
   if s.endswith('\\'): (s, d['end']) = (s[:-1], '')
   print(s, **d)
 
@@ -5214,7 +5218,7 @@ def catch(fn, *args, **kw):
 # inclusive range iterator
 # irange(a, b) -> [a, a + 1, ..., b]
 # irange(n) -> irange(0, n - 1) -> [0, ..., n - 1]
-@static(inf=inf) # so b=irange.inf can be used
+@static(inf=inf)  # so b=irange.inf can be used
 def irange(a, b=None, step=1):
   """
   irange(a, b) =
@@ -6389,7 +6393,7 @@ def find_zero(f, a, b, t=1e-9, ft=1e-6):
   >>> r = find_zero(lambda x: sq(x) - 4, 0.0, 10.0)
   >>> round(r.v, 6)
   2.0
-  >>> r = find_zero(lambda x: sq(x) + 4, 0.0, 10.0) # doctest: +IGNORE_EXCEPTION_DETAIL
+  >>> r = find_zero(lambda x: sq(x) + 4, 0.0, 10.0)  # doctest: +IGNORE_EXCEPTION_DETAIL
   Traceback (most recent call last):
     ...
   ValueError: value not found
@@ -6397,7 +6401,7 @@ def find_zero(f, a, b, t=1e-9, ft=1e-6):
   # find a minimum of the absolute value
   r = find_min(f, a, b, t, m=abs)
   # and check the function value is close enough to 0
-  if ft < abs(r.fv): raise ValueError("value not found") # try a smaller t, or a larger ft
+  if ft < abs(r.fv): raise ValueError("value not found")  # try a smaller t, or a larger ft
   r.ft = ft
   return r
 
@@ -6761,6 +6765,7 @@ def digit_map(a=0, b=9, digits=None):
   return dict((digits[i], i) for i in irange(a, b))
 
 # int2words implementation for lang='en' (English)
+# there is a 'num2words' library that handles different languages
 
 _numbers = {
   0: 'zero',
@@ -7032,8 +7037,8 @@ class Accumulator(object):
 
     The accumulation function and initial value can be specified.
     """
-    self.fn = fn # used to accumulate
-    self.fn1 = fn1 # used to set initial value
+    self.fn = fn  # used to accumulate
+    self.fn1 = fn1  # used to set initial value
     self.value = value
     if collect and data is None: data = []
     self.collect = collect
@@ -7727,10 +7732,10 @@ class _PrimeSieveE6(object):
     # initial sieve
     self.sieve = array([0])
     self.max = 1
-    self.num = None # record the number of primes
+    self.num = None  # record the number of primes
     # return n copies of True or False values
-    self.T = (lambda n, v=array([1]): v * n) # used to extend the array
-    self.F = (lambda n, v=array([0]): v * n) # used to exclude non-primes
+    self.T = (lambda n, v=array([1]): v * n)  # used to extend the array
+    self.F = (lambda n, v=array([0]): v * n)  # used to exclude non-primes
     if _primes_array_optimise:
       if array.__name__ == 'bitarray':
         # bitarray can set all values in a slice to the same boolean value
@@ -7825,16 +7830,18 @@ class _PrimeSieveE6(object):
     if not (b is None or b == inf): b += 1
     return self.generate(a, b)
 
-  # generate tuples of primes from the sieve (in the interval [a, b])
-  def tuples(self, k, a=0, b=inf):
+  # generate k-subsets of primes from the sieve (in the interval [a, b])
+  def subsets(self, k, a=0, b=inf):
     # consider increasing values for the largest prime
     for p in self.irange(a, b):
       if k == 1:
         yield (p,)
       elif k > 1:
         # generate the smaller primes
-        for ps in self.tuples(k - 1, a=a, b=p - 1):
+        for ps in self.subsets(k - 1, a=a, b=p - 1):
           yield ps + (p,)
+
+  tuples = subsets  # best to use subsets()
 
   # prime test (may throw IndexError if n is too large)
   def is_prime(self, n):
@@ -7843,10 +7850,10 @@ class _PrimeSieveE6(object):
 
     (may throw IndexError for numbers larger than the sieve).
     """
-    if n < 2: return False # 0, 1 -> F
-    if n < 4: return True # 2, 3 -> T
+    if n < 2: return False  # 0, 1 -> F
+    if n < 4: return True   # 2, 3 -> T
     r = n % 6
-    if r != 1 and r != 5: return False # (n % 6) != (1, 5) -> F
+    if r != 1 and r != 5: return False  # (n % 6) != (1, 5) -> F
     if self.expandable: self.expand(n)
     return bool(self.sieve[n // 3])
 
@@ -8276,7 +8283,7 @@ def output_mul(a, b, base=10, pre='', start=None, end=None):
   if start is not None: printf("{start}")
   printf("{pre}{a}", a=fmt(a))
   printf("{pre}{b} *", b=fmt(b))
-  printf("{pre}{x}", x='-' * k) # if b != 0: ...
+  printf("{pre}{x}", x='-' * k)  # if b != 0: ...
   for (i, d) in enumerate(nsplit(b, base=base, reverse=1)):
     p = a * d
     #if p == 0: continue
@@ -8807,7 +8814,7 @@ bungled_sum = SubstitutedSum.bungled_sum
 
 # find words in string <s>
 def _find_words(s, r=1):
-  words = set(re.findall(r'{(\w+?)}', s)) # re.UNICODE
+  words = set(re.findall(r'{(\w+?)}', s))  # re.UNICODE
   if r:
     # return the words
     return words
@@ -8998,8 +9005,8 @@ class SubstitutedExpression(object):
       v = (get_default(k, s2d, l2d) if k == 's2d' else get_default(k, scope[k]))
       setattr(self, k, v)
 
-    self._processed = 0 # set by process
-    self._prepared = 0 # set by prepare()
+    self._processed = 0  # set by process
+    self._prepared = 0  # set by prepare()
 
     if self.process: self._process()
 
@@ -9021,7 +9028,7 @@ class SubstitutedExpression(object):
   v1 = vH | vT | vA | vW  # 1 = header + solutions + count
   v2 = v1 | vI  # 2 = 1 + solver info
   v3 = v2 | vE | vC  # 3 = 2 + timing + code
-  v9 = vH | vT | vA | vE | vP | vI | vC | vW # 9 = everything
+  v9 = vH | vT | vA | vE | vP | vI | vC | vW  # 9 = everything
 
   def _verbose(self, n):
     if not n: return 0
@@ -9404,7 +9411,7 @@ class SubstitutedExpression(object):
 
     # generate the program (line by line)
     (prog, _, indent) = ([], "", "  ")
-    (vx, vy, vr) = ("_x_", "_y_", "_r_") # local variables (that don't clash with _sym(x))
+    (vx, vy, vr) = ("_x_", "_y_", "_r_")  # local variables (that don't clash with _sym(x))
 
     # start with any initialisation code
     if code:
@@ -9461,7 +9468,7 @@ class SubstitutedExpression(object):
 
       # EXPERIMENTAL: do something about: "<iterator>: = <word>
       if ('i' in opt) and k == 3 and expr.endswith(':'):
-        prog.append(sprintf("{_}for {vx} in {expr}")) # expr already has a colon
+        prog.append(sprintf("{_}for {vx} in {expr}"))  # expr already has a colon
         _ += indent
         #prog.append(sprintf("{_}{w} = {vx}", w=_sym(val)))
         done.update(xsyms)
@@ -9501,11 +9508,11 @@ class SubstitutedExpression(object):
               prog.append(sprintf("{_}{w} = {x}", w=_sym(w), x=_word(w, base)))
 
       # calculate the expression
-      if k != 0 and (not expr.endswith(':')): # (but not for the answer expression)
+      if k != 0 and (not expr.endswith(':')):  # (but not for the answer expression)
         x = _replace_words(expr, (lambda w: encl(_sym(w), '()')))
         prog.append(sprintf("{_}try:"))
         prog.append(sprintf("{_}  {vx} = int({x})"))
-        prog.append(sprintf("{_}except NameError:")) # catch undefined functions
+        prog.append(sprintf("{_}except NameError:"))  # catch undefined functions
         prog.append(sprintf("{_}  raise"))
         if warn and verbose & self.vW:
           prog.append(sprintf("{_}except Exception as e:"))
@@ -9513,7 +9520,7 @@ class SubstitutedExpression(object):
           prog.append(sprintf("{_}  {msg}"))
           prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'return')))
         else:
-          prog.append(sprintf("{_}except Exception:")) # maybe "except (ArithmeticError, ValueError)"
+          prog.append(sprintf("{_}except Exception:"))  # maybe "except (ArithmeticError, ValueError)"
           prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'return')))
 
       # check the value
@@ -10117,7 +10124,7 @@ class SubstitutedExpression(object):
       if isinstance(code, basestring):
         code = [code]
       for x in code:
-        if q: x = x.replace(q, "\\" + q) # TODO: check quoting works
+        if q: x = x.replace(q, "\\" + q)  # TODO: check quoting works
         args.append(sprintf("--code={q}{x}{q}"))
 
     if self.reorder is not None:
@@ -10158,7 +10165,7 @@ class SubstitutedExpression(object):
     args = self.to_args(quote=quote)
     if not args: raise ValueError()
 
-    args.insert(0, "SubstitutedExpression") # self.__class__.__name__
+    args.insert(0, "SubstitutedExpression")  # self.__class__.__name__
 
     if file is None:
       # just return the args
@@ -10249,7 +10256,7 @@ class SubstitutedExpression(object):
       # --invalid=<digits>,<letters> (or -i<ds>,<ls>)
       # NOTE: <digits> are specified in decimal (not --base)
       if opt['d2i'] is None: opt['d2i'] = dict()
-      if v == '': return True # empty value will allow leading zeros
+      if v == '': return True  # empty value will allow leading zeros
       (ds, s) = _split(v, maxsplit=-1)
       for i in numbers(ds, csep=_split_sep):
         opt['d2i'][i] = opt['d2i'].get(i, set()).union(s)
@@ -10326,7 +10333,7 @@ class SubstitutedExpression(object):
           return None
 
       except Exception:
-        raise ValueError(str.format("[{name}] invalid option: {arg}", name=cls.__name__, arg=arg)) # from None
+        raise ValueError(str.format("[{name}] invalid option: {arg}", name=cls.__name__, arg=arg))  # from None
 
     return opt
 
@@ -10565,8 +10572,8 @@ class Slots(object):
     self._id = 0
 
     # slot properties
-    self._s2p = defaultdict(set) # <slot> -> <props>
-    self._p2s = defaultdict(lambda: defaultdict(set)) # <type> -> <value> -> <slots>
+    self._s2p = defaultdict(set)  # <slot> -> <props>
+    self._p2s = defaultdict(lambda: defaultdict(set))  # <type> -> <value> -> <slots>
 
   # allocate a new slot (with (k, v) properties)
   def slot_new(self, *props):
@@ -10576,7 +10583,7 @@ class Slots(object):
     return i
 
   def slot_setprops(self, i, *props):
-    ps = self._s2p[i] # properties for slot i
+    ps = self._s2p[i]  # properties for slot i
     for (k, v) in props:
 
       if k == _EQ:
@@ -11493,7 +11500,7 @@ class Football(object):
     # table - columns in the substituted table (dict)
     # vs - allowable values
     def check_row(t, d, r, table, vs):
-      cow = True # copy on write flag for d
+      cow = True  # copy on write flag for d
       for (k, v) in r.items():
         # extract the corresponding letter
         x = table.get(k, None)
@@ -11911,13 +11918,13 @@ class Timer(object):
     if hasattr(time, 'thread_time'):
       d['T'] = time.thread_time
     if hasattr(time, 'process_time') and sys.platform != "win32":
-      d['P'] = time.process_time # process time
+      d['P'] = time.process_time  # process time
     if hasattr(time, 'perf_counter'):
-      d['E'] = time.perf_counter # elapsed time
+      d['E'] = time.perf_counter  # elapsed time
     elif sys.platform == "win32" and hasattr(time, 'clock'):
-      d['E'] = time.clock # elapsed time
+      d['E'] = time.clock  # elapsed time
     elif hasattr(time, 'time'):
-      d['E'] = time.time # elapsed time
+      d['E'] = time.time  # elapsed time
     Timer.timers = d
 
   def __init__(self, name='timing', timer="PE", file=sys.stderr, exit_report=1, auto_start=1, verbose=0):
@@ -12367,7 +12374,7 @@ def _matrix_gauss(A, B):
       det = -det
 
     for j in xrange(i + 1, n):
-      t = A[j][i] / A[i][i] # note use of /
+      t = A[j][i] / A[i][i]  # note use of /
       for k in xrange(i + 1, n):
         A[j][k] -= t * A[i][k]
       for k in xrange(p):
@@ -12379,7 +12386,7 @@ def _matrix_gauss(A, B):
       for k in xrange(p):
         B[i][k] -= t * B[j][k]
 
-    t = 1 / A[i][i] # note use of /
+    t = 1 / A[i][i]  # note use of /
     det *= A[i][i]
     for j in xrange(p):
       B[i][j] *= t
@@ -12702,7 +12709,7 @@ class Matrix(list):
     specified as:
 
       A = (row, row, row, ...) B = (const, const, const, ...)
-      A = (row, row, row, ...) B = const # if all consts are equal
+      A = (row, row, row, ...) B = const  # if all consts are equal
       A = ((row, const), (row, const), ...)
     """
     field = (field or F)
@@ -12755,7 +12762,7 @@ def compare_versions(x, y):
   return compare(fn(x), fn(y))
 
 # require version to be at least specified value
-def require(key, value=None, cmp=compare_versions):
+def require(key, value=None, cmp=compare_versions, verbose=None):
   """
   check the value of a "<module>.<attr>" key against a specified minimum value.
 
@@ -12765,12 +12772,14 @@ def require(key, value=None, cmp=compare_versions):
     require("enigma.version", "2022-12-05")
     require("sys.version", "3.10")
   """
+  if verbose is None and 'v' in _PY_ENIGMA: verbose = 1
   (mod, k) = key.split('.')
   try:
     v = getattr(sys.modules[mod], k)
     if callable(v): v = v()
   except (KeyError, AttributeError, ValueError):
     raise ValueError(str.format("unable to extract {key!r}", key=key))
+  if verbose: print(str.format("[require] {key!r} = {v!r} >= {value!r}", key=key, v=v, value=value))
   if value is not None and cmp(v, value) < 0:
     raise ValueError(str.format("version mismatch {key!r} = {v!r}; require >= {value!r}", key=key, v=v, value=value))
   return v
@@ -13426,3 +13435,4 @@ def _namecheck(name, verbose=0):
   return name == "__main__" or name == "<run_path>"
 
 if _namecheck(__name__): _enigma_main()
+
