@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun  3 09:24:34 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun  3 09:37:36 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-06-01"
+__version__ = "2024-06-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1393,7 +1393,7 @@ def peek(s, k=0, **kw):
   103
 
   """
-  if kw.get('validate'): k = as_int(k)
+  if kw.get('validate'): k = as_int(k, include="0+")
   if k >= 0:
     if not isinstance(s, dict):
       # try to index into the container
@@ -1405,15 +1405,14 @@ def peek(s, k=0, **kw):
     for (i, x) in enumerate(s):
       if i == k:
         return x
-    # return any default value
-    try:
-      return kw['default']
-    except KeyError:
-      pass
+  # return any default value
+  try:
+    return kw['default']
+  except KeyError:
+    pass
   raise IndexError(str.format("invalid index {k}", k=k))
 
-# get an item from a sequence, or return the default value
-# (negative indices are not allowed)
+# get an item from a sequence, or return the default value (negative indices are not allowed)
 def seq_get(s, k=None, default=None):
   if k is None:
     return (lambda k: seq_get(s, k=k, default=default))
