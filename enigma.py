@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed May 29 08:38:28 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun  3 09:24:34 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-05-27"
+__version__ = "2024-06-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1371,11 +1371,11 @@ def peek(s, k=0, **kw):
   """
   return an element of a container.
 
-  empty containers return the specified 'default' value, or raise a
-  ValueError.
+  if k is specified the first k values chosen are discarded (so, for a
+  sequence, you will get s[k]).
 
-  if k is specified the first k values chosen are discarded
-  (so, for a sequence, you will get s[k]).
+  empty containers (or those with too few elements) return the
+  specified 'default' value, or raise an IndexError.
 
   note that if the container is an iterator, items will be consumed.
 
@@ -1391,7 +1391,9 @@ def peek(s, k=0, **kw):
   31
   >>> peek(p for p in primes if p % 17 == 1)
   103
+
   """
+  if kw.get('validate'): k = as_int(k)
   if k >= 0:
     if not isinstance(s, dict):
       # try to index into the container
@@ -1408,7 +1410,15 @@ def peek(s, k=0, **kw):
       return kw['default']
     except KeyError:
       pass
-  raise ValueError(str.format("invalid index {k}", k=k))
+  raise IndexError(str.format("invalid index {k}", k=k))
+
+# get an item from a sequence, or return the default value
+# (negative indices are not allowed)
+def seq_get(s, k=None, default=None):
+  if k is None:
+    return (lambda k: seq_get(s, k=k, default=default))
+  else:
+    return peek(s, k, default=default)
 
 # functions to create a selector for elements/attributes from an object
 # passing multi=1 forces a multivalued return, even if only one element is specified
