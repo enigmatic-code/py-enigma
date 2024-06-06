@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun  3 09:53:12 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun  6 10:19:31 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -225,7 +225,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-06-03"
+__version__ = "2024-06-04"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1415,7 +1415,7 @@ def peek(s, k=0, **kw):
 # get an item from a sequence, or return the default value (negative indices are not allowed)
 def seq_get(s, k=None, default=None):
   if k is None:
-    return (lambda k: seq_get(s, k=k, default=default))
+    return (lambda k: peek(s, k, default=default))
   else:
     return peek(s, k, default=default)
 
@@ -5904,8 +5904,9 @@ def express_quantities(t, ds, qs, ss=[]):
   elif ds:
     d = ds[0]
     for q in qs:
-      if d * q > t: break
-      for r in express_quantities(t - d * q, ds[1:], qs, ss + [q]): yield r
+      t_ = t - d * q
+      if t_ < 0: break
+      for r in express_quantities(t_, ds[1:], qs, ss + [q]): yield r
 
 # express total <t> using (<denomination>, <quantity>) pairs <vs>
 # vs = ordered list of (<denomination>, <quantity>) pairs
