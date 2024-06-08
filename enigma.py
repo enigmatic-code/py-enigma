@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun  6 10:19:31 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jun  8 13:08:26 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -57,6 +57,8 @@ decompose              - construct and call a Decompose() function
 diff                   - sequence difference
 digit_map              - create a map of digits to corresponding integer values
 digrt                  - the digital root of a number
+disjoint_cproduct      - disjoint cartesian product
+disjoint_union         - disjoint union
 divc                   - ceiling division
 divf                   - floor division
 div                    - exact division (or None)
@@ -225,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-06-04"
+__version__ = "2024-06-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1232,7 +1234,7 @@ def numbers(ss, base=10, csep=',', crange='-', cneg='!', strip=1, enc='', fn=lis
     # otherwise, a numeric literal
     ts.append(base2int(t, base=base, strip=strip))
 
-  # generate the numbers [[ Python 3: yield from diff(tpos, tneg) ]]
+  # generate the numbers; [Python 3]: [[ yield from ... ]]
   return diff(tpos, tneg, fn=fn)
 
 def respace(x):
@@ -1353,6 +1355,32 @@ def disjoint_union(ss, fn=set):
         if x in rs: return
         rs.add(x)
   return rs
+
+# ss = remaining sets to process
+# vs = selected values
+_dc_key_fn = (lambda item: len(item[1]))
+def _disjoint_cproduct(ss, vs):
+  # final slot?
+  if len(ss) == 1:
+    # final slot
+    (j, xs) = peek(ss.items())
+    for x in xs:
+      vs[j] = x
+      yield tuple(vs)
+  else:
+    # choose a slot with the fewest options
+    (j, xs) = min(ss.items(), key=_dc_key_fn)
+    for x in xs:
+      vs[j] = x
+      ss_ = dict((k, v.difference([x])) for (k, v) in ss.items() if k != j)
+      # [Python 3]: [[ yield from ... ]]
+      for z in _disjoint_cproduct(ss_, vs): yield z
+
+# disjoint cartestian product of a sequence of sets, any value may only appear in one position
+def disjoint_cproduct(ss):
+  ss = dict(enumerate(set(xs) for xs in ss))
+  if not ss: return [()]
+  return _disjoint_cproduct(ss, [None] * len(ss))
 
 # set intersection of a bunch of sequences
 def intersect(ss, fn=set):
@@ -2565,7 +2593,7 @@ def partitions(seq, n, pad=0, value=None, distinct=None):
   else:
     if distinct is None: distinct = is_pairwise_distinct(*seq)
     fn = (_partitions if distinct else ipartitions)
-    # or in Python 3: [[ yield from fn(seq, n) ]]
+    # [Python 3]: [[ yield from ... ]]
     for z in fn(seq, n): yield z
 
 
@@ -2596,7 +2624,7 @@ def choose(vs, fns, s=None, distinct=0):
         s_ = list(s)
         s_.append(v)
         if fn is None or fn(*s_):
-          # choose the rest [[Python 3: yield from ...]]
+          # choose the rest; [Python 3]: [[ yield from ... ]]
           for z in choose(vs, fns[1:], s_, distinct): yield z
 
 
@@ -4428,6 +4456,8 @@ def avg(seq, div=fdiv):
     k += 1
   return div(t, k)
 
+iavg = lambda seq: avg(seq, div=div)
+
 # vector dot product: dot(xs, ys, strict=0, fnp=multiply, fns=sum)
 def dot(*vs, **kw):
   """
@@ -5078,7 +5108,7 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
     dmax = divf(k * b, a)
     # find a suitable reciprocal
     for d in irange(max(m, dmin), min(M, dmax)):
-      # solve for the remaining fraction [[Python 3: yield from ... ]]
+      # solve for the remaining fraction; [Python 3]: [[ yield from ... ]]
       for ds in reciprocals(k - 1, b * d, a * d - b, d + g, M, g, rs + [d]): yield ds
 
 
@@ -9598,8 +9628,10 @@ class SubstitutedExpression(object):
         block = gensym('_substituted_expression_block')
         blocks.append(block)
         # return the current state of the symbols
-        # Python3 can use [[ yield from ... ]]
-        prog.append(sprintf("{_}for {vr} in {block}({block_args}): yield {vr}"))
+        if _python == 2:
+          prog.append(sprintf("{_}for {vr} in {block}({block_args}): yield {vr}"))
+        else:
+          prog.append(sprintf("{_}yield from {block}({block_args})"))
         block = None
 
     # [denest] work around statically nested block limit
@@ -11332,10 +11364,10 @@ class Football(object):
     if not gs: gs = [self._games]
     if 'repeat' in kw: gs = gs * kw['repeat']
     if len(gs) == 1:
-      # [Python 3]: yield from ...
+      # [Python 3]: [[ yield from ... ]]
       for r in gs[0]: yield r
     else:
-      # [Python 3]: yield from ...
+      # [Python 3]: [[ yield from ... ]]
       for r in cproduct(gs): yield r
 
   # points for a game
@@ -11414,14 +11446,14 @@ class Football(object):
       # is it unplayed?
       if g == 'x':
         if valid(None):
-          # [Python 3]: yield from ...
+          # [Python 3]: [[ yield from ... ]]
           for r in self._scores(gs, ts, f, a, min_goals, valid, s + [None]): yield r
       # is it a draw?
       elif g == 'd':
         for i in irange(min_goals, min(f, a)):
           s0 = (i, i)
           if valid(s0):
-            # [Python 3]: yield from ...
+            # [Python 3]: [[ yield from ... ]]
             for r in self._scores(gs, ts, f - i, a - i, min_goals, valid, s + [s0]): yield r
       # is it a win?
       elif g == 'w':
@@ -11429,7 +11461,7 @@ class Football(object):
           for i in irange(j + 1, f):
             s0 = ((j, i) if t else (i, j))
             if valid(s0):
-              # [Python 3]: yield from ...
+              # [Python 3]: [[ yield from ... ]]
               for r in self._scores(gs, ts, f - i, a - j, min_goals, valid, s + [s0]): yield r
       # is it a loss?
       elif g == 'l':
@@ -11437,7 +11469,7 @@ class Football(object):
           for j in irange(i + 1, a):
             s0 = ((j, i) if t else (i, j))
             if valid(s0):
-              # [Python 3]: yield from
+              # [Python 3]: [[ yield from ... ]]
               for r in self._scores(gs, ts, f - i, a - j, min_goals, valid, s + [s0]): yield r
 
   # compute goals for, against
@@ -12201,7 +12233,7 @@ def __template_system():
       templates = templates[:i] + templates[i + 1:]
 
     # now we can solve the system of templates
-    # (in Python 3 we can use "yield from"
+    # [Python 3]: [[ yield from ... ]]
     for z in generate(values, templates): yield z
 
   # return the namespace
@@ -12265,7 +12297,7 @@ def __grouping():
         group = (vs[0][0],) + t
         # check the group
         if fn(*group):
-          # solve for the remaining elements (can use "yield from" in Python 3)
+          # solve for the remaining elements; [Python 3]: [[ yield from ... ]]
           vs1 = ([x[:j] + x[j + 1:] for (x, j) in zip(vs[1:], js)] if distinct else vs[1:])
           for z in groups([vs[0][1:]] + vs1, fn, distinct, s + [group]): yield z
 
@@ -13445,4 +13477,3 @@ def _namecheck(name, verbose=0):
   return name == "__main__" or name == "<run_path>"
 
 if _namecheck(__name__): _enigma_main()
-
