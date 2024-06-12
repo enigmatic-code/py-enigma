@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jun  8 13:08:26 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 12 09:06:53 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-06-07"
+__version__ = "2024-06-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1358,12 +1358,11 @@ def disjoint_union(ss, fn=set):
 
 # ss = remaining sets to process
 # vs = selected values
-_dc_key_fn = (lambda item: len(item[1]))
+_dc_key_fn = (lambda k_v: len(k_v[1]))  # (k, v) -> len(v)
 def _disjoint_cproduct(ss, vs):
   # final slot?
   if len(ss) == 1:
-    # final slot
-    (j, xs) = peek(ss.items())
+    [(j, xs)] = ss.items()
     for x in xs:
       vs[j] = x
       yield tuple(vs)
@@ -1371,8 +1370,8 @@ def _disjoint_cproduct(ss, vs):
     # choose a slot with the fewest options
     (j, xs) = min(ss.items(), key=_dc_key_fn)
     for x in xs:
-      vs[j] = x
       ss_ = dict((k, v.difference([x])) for (k, v) in ss.items() if k != j)
+      vs[j] = x
       # [Python 3]: [[ yield from ... ]]
       for z in _disjoint_cproduct(ss_, vs): yield z
 
