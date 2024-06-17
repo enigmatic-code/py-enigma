@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 12 09:06:53 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun 17 08:55:55 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-06-08"
+__version__ = "2024-06-16"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1234,7 +1234,7 @@ def numbers(ss, base=10, csep=',', crange='-', cneg='!', strip=1, enc='', fn=lis
     # otherwise, a numeric literal
     ts.append(base2int(t, base=base, strip=strip))
 
-  # generate the numbers; [Python 3]: [[ yield from ... ]]
+  # generate the numbers
   return diff(tpos, tneg, fn=fn)
 
 def respace(x):
@@ -1372,14 +1372,18 @@ def _disjoint_cproduct(ss, vs):
     for x in xs:
       ss_ = dict((k, v.difference([x])) for (k, v) in ss.items() if k != j)
       vs[j] = x
-      # [Python 3]: [[ yield from ... ]]
-      for z in _disjoint_cproduct(ss_, vs): yield z
+      #yield from _disjoint_cproduct(ss_, vs)  #[Python 3]
+      for z in _disjoint_cproduct(ss_, vs): yield z  #[Python 2]
 
 # disjoint cartestian product of a sequence of sets, any value may only appear in one position
 def disjoint_cproduct(ss):
-  ss = dict(enumerate(set(xs) for xs in ss))
-  if not ss: return [()]
-  return _disjoint_cproduct(ss, [None] * len(ss))
+  d = dict()
+  for (k, xs) in enumerate(ss):
+    xs = set(xs)
+    if not xs: return []
+    d[k] = xs
+  if not d: return [()]
+  return _disjoint_cproduct(d, [None] * len(d))
 
 # set intersection of a bunch of sequences
 def intersect(ss, fn=set):
@@ -1440,6 +1444,7 @@ def peek(s, k=0, **kw):
   raise IndexError(str.format("invalid index {k}", k=k))
 
 # get an item from a sequence, or return the default value (negative indices are not allowed)
+# (use peek() if you want to get an IndexError exception)
 def seq_get(s, k=None, default=None):
   if k is None:
     return (lambda k: peek(s, k, default=default))
@@ -2592,8 +2597,8 @@ def partitions(seq, n, pad=0, value=None, distinct=None):
   else:
     if distinct is None: distinct = is_pairwise_distinct(*seq)
     fn = (_partitions if distinct else ipartitions)
-    # [Python 3]: [[ yield from ... ]]
-    for z in fn(seq, n): yield z
+    #yield from fn(seq, n)  #[Python 3]
+    for z in fn(seq, n): yield z  #[Python 2]
 
 
 # see: [ https://enigmaticcode.wordpress.com/2017/05/17/tantalizer-482-lapses-from-grace/#comment-7169 ]
@@ -2623,8 +2628,9 @@ def choose(vs, fns, s=None, distinct=0):
         s_ = list(s)
         s_.append(v)
         if fn is None or fn(*s_):
-          # choose the rest; [Python 3]: [[ yield from ... ]]
-          for z in choose(vs, fns[1:], s_, distinct): yield z
+          # choose the rest
+          #yield from choose(vs, fns[1:], s_, distinct)  #[Python 3]
+          for z in choose(vs, fns[1:], s_, distinct): yield z  #[Python 2]
 
 
 def first(s, count=1, skip=0, fn=list):
@@ -5107,8 +5113,9 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
     dmax = divf(k * b, a)
     # find a suitable reciprocal
     for d in irange(max(m, dmin), min(M, dmax)):
-      # solve for the remaining fraction; [Python 3]: [[ yield from ... ]]
-      for ds in reciprocals(k - 1, b * d, a * d - b, d + g, M, g, rs + [d]): yield ds
+      # solve for the remaining fraction
+      #yield from reciprocals(k - 1, b * d, a * d - b, d + g, M, g, rs + [d])  #[Python 3]
+      for ds in reciprocals(k - 1, b * d, a * d - b, d + g, M, g, rs + [d]): yield ds  #[Python 2]
 
 
 # command line arguments
@@ -11363,11 +11370,11 @@ class Football(object):
     if not gs: gs = [self._games]
     if 'repeat' in kw: gs = gs * kw['repeat']
     if len(gs) == 1:
-      # [Python 3]: [[ yield from ... ]]
-      for r in gs[0]: yield r
+      #yield from gs[0]  #[Python 3]
+      for r in gs[0]: yield r  #[Python 2]
     else:
-      # [Python 3]: [[ yield from ... ]]
-      for r in cproduct(gs): yield r
+      #yield from cproduct(gs)  #[Python 3]
+      for r in cproduct(gs): yield r  #[Python 2]
 
   # points for a game
   def points(self, g, t=0):
@@ -11438,38 +11445,39 @@ class Football(object):
         yield s
     else:
       # check the first game
-      # [Python 3]: (x, *xs) = xs
-      (g, gs) = (gs[0], gs[1:])
-      (t, ts) = (ts[0], ts[1:])
+      #(g, *gs) = gs  #[Python 3]
+      #(t, *ts) = ts  #[Python 3]
+      (g, gs) = (gs[0], gs[1:])  #[Python 2]
+      (t, ts) = (ts[0], ts[1:])  #[Python 2]
       if t: g = self._swap.get(g, g)
       # is it unplayed?
       if g == 'x':
         if valid(None):
-          # [Python 3]: [[ yield from ... ]]
-          for r in self._scores(gs, ts, f, a, min_goals, valid, s + [None]): yield r
+          #yield from self._scores(gs, ts, f, a, min_goals, valid, s + [None])  #[Python 3]
+          for r in self._scores(gs, ts, f, a, min_goals, valid, s + [None]): yield r  #[Python 2]
       # is it a draw?
       elif g == 'd':
         for i in irange(min_goals, min(f, a)):
           s0 = (i, i)
           if valid(s0):
-            # [Python 3]: [[ yield from ... ]]
-            for r in self._scores(gs, ts, f - i, a - i, min_goals, valid, s + [s0]): yield r
+            #yield from self._scores(gs, ts, f - i, a - i, min_goals, valid, s + [s0])  #[Python 3]
+            for r in self._scores(gs, ts, f - i, a - i, min_goals, valid, s + [s0]): yield r  #[Python 2]
       # is it a win?
       elif g == 'w':
         for j in irange(min_goals, a):
           for i in irange(j + 1, f):
             s0 = ((j, i) if t else (i, j))
             if valid(s0):
-              # [Python 3]: [[ yield from ... ]]
-              for r in self._scores(gs, ts, f - i, a - j, min_goals, valid, s + [s0]): yield r
+              #yield from self._scores(gs, ts, f - i, a - j, min_goals, valid, s + [s0])  #[Python 3]
+              for r in self._scores(gs, ts, f - i, a - j, min_goals, valid, s + [s0]): yield r  #[Python 2]
       # is it a loss?
       elif g == 'l':
         for i in irange(min_goals, f):
           for j in irange(i + 1, a):
             s0 = ((j, i) if t else (i, j))
             if valid(s0):
-              # [Python 3]: [[ yield from ... ]]
-              for r in self._scores(gs, ts, f - i, a - j, min_goals, valid, s + [s0]): yield r
+              #yield from self._scores(gs, ts, f - i, a - j, min_goals, valid, s + [s0])  #[Python 3]
+              for r in self._scores(gs, ts, f - i, a - j, min_goals, valid, s + [s0]): yield r  #[Python 2]
 
   # compute goals for, against
   def goals(self, ss, ts):
@@ -12232,8 +12240,8 @@ def __template_system():
       templates = templates[:i] + templates[i + 1:]
 
     # now we can solve the system of templates
-    # [Python 3]: [[ yield from ... ]]
-    for z in generate(values, templates): yield z
+    #yield from generate(values, templates)  #[Python 3]
+    for z in generate(values, templates): yield z  #[Python 2]
 
   # return the namespace
   return locals()
@@ -12296,9 +12304,10 @@ def __grouping():
         group = (vs[0][0],) + t
         # check the group
         if fn(*group):
-          # solve for the remaining elements; [Python 3]: [[ yield from ... ]]
+          # solve for the remaining elements
           vs1 = ([x[:j] + x[j + 1:] for (x, j) in zip(vs[1:], js)] if distinct else vs[1:])
-          for z in groups([vs[0][1:]] + vs1, fn, distinct, s + [group]): yield z
+          #yield from groups([vs[0][1:]] + vs1, fn, distinct, s + [group])  #[Python 3]
+          for z in groups([vs[0][1:]] + vs1, fn, distinct, s + [group]): yield z  #[Python 2]
 
   # output a grouping
   def output_groups(gs, sep=", ", end=""):
@@ -13117,6 +13126,34 @@ def run(cmd, *args, **kw):
 def timed_run(*args):
   run(*args, timed=1)
 
+# configure a file according to tags
+# lines of the form: [[ ... #[tag] ]] will be uncommented
+# and lines of the form: [[ ... #[other-tag] ]] will be commented out
+def configure_file(path, tags):
+  path = os.path.realpath(path)
+  printf("configure_file: path = {path!r}; tags = {tags!r}")
+  tmppath = path + ".tmp"
+  with open(tmppath, 'wt') as out:
+    with open(path, 'r') as fh:
+      for s in fh:
+        # check for a tag
+        m = re.match(r'^(\s*)(\S.*)(\S*\#\[)(.+)(\].*\n)$', s)
+        if m:
+          (spc, text, bra, tag, ket) = m.groups()
+          (has_tag, is_disabled) = (tag in tags, text.startswith('#'))
+          if has_tag and is_disabled:
+            #printf("ENABLE: {s!r}")
+            s = ''.join([spc, text[1:], bra, tag, ket])
+            #printf("----->: {s!r}")
+          elif (not has_tag) and (not is_disabled):
+            #printf("DISABLE: {s!r}")
+            s = ''.join([spc, '#', text, bra, tag, ket])
+            #printf("------>: {s!r}")
+        # otherwise leave the line unaltered
+        out.write(s)
+  # rename the file
+  os.rename(tmppath, path)
+
 ###############################################################################
 
 # implementation of command line options
@@ -13263,6 +13300,22 @@ def _enigma_pip(requirements=0, update=0, verbose=0):
     if verbose: printf(">>> {cmd}", cmd=join(cmd, sep=' '))
     subprocess.call(cmd)
     return
+
+# this configures the enigma.py file for Python 2 or Python 3
+#   enigma.py -C3  =  configure for Python 3
+#   enigma.py -C2  =  configure for Python 2 [default]
+# it modifies the file, so it may fail checksum verification
+def _enigma_configure(args):
+  if args == '3':
+    tag = 'Python 3'
+  elif args == '2' or args == '':
+    tag = 'Python 2'
+  else:
+    printf("configure: invalid args {args!r}")
+    return
+
+  printf("EXPERIMENTAL: configure [{tag}]")
+  configure_file(__file__, {tag})
 
 __doc__ += """
 
@@ -13470,6 +13523,11 @@ def _enigma_main(args=None):
   if 'p' in args:
     kw = dict((w, w[0] in args['p']) for w in ['requirements', 'update', 'verbose'])
     _enigma_pip(**kw)
+
+  # -C3 = configure for Python 3
+  # -C2 = -C = configure for Python 2
+  if 'C' in args:
+    _enigma_configure(args['C'])
 
 def _namecheck(name, verbose=0):
   if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
