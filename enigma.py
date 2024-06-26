@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun 17 08:55:55 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 26 15:31:22 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -29,7 +29,7 @@ all_same               - check arguments all have the same value
 arg                    - extract an argument from the command line
 args                   - extract a list of arguments from the command line
 as_int                 - check argument is an integer
-base2int               - convert a string in the specified base to an integer
+base2int, str2int      - convert a string in the specified base to an integer
 base_digits            - get/set digits used in numerical base conversion
 bit_from_positions     - construct an integer by setting bits in specified positions
 bit_permutations       - generate bit permutations
@@ -99,7 +99,7 @@ group                  - collect values of a sequences into groups
 hypot                  - calculate hypotenuse
 icount                 - count the number of elements of an iterator that satisfy a predicate
 implies                - logical implication (p -> q)
-int2base               - convert an integer to a string in the specified base
+int2base, int2str      - convert an integer to a string in the specified base
 int2bcd                - convert an integer to binary coded decimal
 int2roman              - convert an integer to a Roman Numeral
 int2words              - convert an integer to equivalent English words
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-06-16"
+__version__ = "2024-06-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1282,6 +1282,8 @@ def chunk(seq, n=2, pad=0, value=None, fn=tuple):
 
   (for overlapping tuples see tuples())
 
+  see also: itertools.batched() (Python 3.12)
+
   >>> list(chunk(irange(1, 8)))
   [(1, 2), (3, 4), (5, 6), (7, 8)]
   >>> list(chunk(irange(1, 8), 3))
@@ -1299,6 +1301,8 @@ def clump(seq, fn=None):
   """
   generate (<value>, <count>) pairs for contiguous blocks of repeated values
   in sequence <seq> (according to function <fn>).
+
+  see also: itertools.groupby()
 
   >>> list(clump([1, 1, 1, 2, 2, 3]))
   [[1, 1, 1], [2, 2], [3]]
@@ -1325,9 +1329,13 @@ def clump(seq, fn=None):
   yield xs
 
 # set union of a bunch of sequences
-def union(ss, fn=set):
+def union(ss, fn=set, fnu=None):
   """construct a set that is the union of the sequences in <ss>"""
-  return fn().union(*ss)
+  # formerly this was: [[ fn().union(*ss) ]] but that doesn't seem to work with generators
+  if fnu is None: fnu = fn.update
+  rs = fn()
+  for s in ss: fnu(rs, s)
+  return rs
 
 # disjoint set union of a bunch of sequences (or None)
 # any value may appear in only one of the sequences
@@ -1444,7 +1452,7 @@ def peek(s, k=0, **kw):
   raise IndexError(str.format("invalid index {k}", k=k))
 
 # get an item from a sequence, or return the default value (negative indices are not allowed)
-# (use peek() if you want to get an IndexError exception)
+# (use peek(s, k) if you want to get an IndexError exception)
 def seq_get(s, k=None, default=None):
   if k is None:
     return (lambda k: peek(s, k, default=default))
@@ -1952,9 +1960,15 @@ class multiset(dict):
   # if <k> is specified, only find subsets of size <k>
   # returns subsets of the original multiset, optionally processed by <fn>
   def express(self, v, k=None, fn=identity):
-    vs = sorted(dict.items(self))
-    for rs in express_pairs(v, vs, self.sum(), k=k):
+    ps = sorted(dict.items(self))
+    for rs in express_pairs(v, ps, self.sum(), k=k):
       yield fn(multiset.from_pairs(rs))
+
+  # are all values in <vs> expressible using subsets of this multiset?
+  def expressible(self, vs, k=None):
+    ps = sorted(dict.items(self))
+    t = self.sum()
+    return all(any(express_pairs(v, ps, t, k)) for v in vs)
 
   # generate elements in order
   def sorted(self, key=None, reverse=False):
@@ -6156,7 +6170,7 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
 # all-in-one
 def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   """
-  decompose <t> in <k>-sequences of non-negative integers that sum to <t>
+  decompose <t> into <k>-sequences of non-negative integers that sum to <t>
 
     t = total sum of each sequence
     k = length of sequences to generate
@@ -6713,6 +6727,8 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   be of the form "{<n>:<n>:...}" where <n> is the digit value
   expressed in decimal (using digits 0-9).
 
+  alias: int2str().
+
   see also: gmpy2.digits()
 
   >>> int2base(-42)
@@ -6760,11 +6776,15 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
     if group > 0: r = rev(join((join(x) for x in chunk(rev(r), group)), sep=rev(sep)))
   return (p + r if p else r)
 
+int2str = int2base
+
 def base2int(s, base=10, strip=0, digits=None):
   """
   convert a string representation of an integer in the specified base to an integer.
 
   if <strip> is set, then invalid characters in the conversion are ignored.
+
+  alias: str2int().
 
   >>> base2int('-42')
   -42
@@ -6796,6 +6816,8 @@ def base2int(s, base=10, strip=0, digits=None):
     f = 1
   if f == 0: return None  # if no characters processed
   return (-n if neg else n)
+
+str2int = base2int
 
 def digit_map(a=0, b=9, digits=None):
   """
@@ -12609,6 +12631,14 @@ class Matrix(list):
 
   __rsub__ = lambda self, other: -self + other
 
+  # A.combine(B, fn=operator.mul)  # gives elementwise multiplication
+  def combine(self, other, fn=operator.add, strict=False):
+    "return a new matrix that is the elementwise combination of this matrix and the other"
+    if strict:
+      return Matrix((((fn(a, b) for (a, b) in zip(r1, r2, strict=True)) for (r1, r2) in zip(self, other, strict=True))), field=self.field)
+    else:
+      return Matrix((((fn(a, b) for (a, b) in zip(r1, r2)) for (r1, r2) in zip(self, other))), field=self.field)
+
   def multiply(self, other):
     "return a new matrix that is the result of multiplying this matrix by another"
     tr_other = other.transpose()
@@ -13049,7 +13079,7 @@ def run(cmd, *args, **kw):
         import shlex
         import subprocess
         # attempt to use a shebang line (see: run.py)
-        path = os.path.abspath(cmd)
+        path = os.path.realpath(cmd)
         if interp:
           cmd = interp.strip()
           # if it is a run file...
@@ -13127,8 +13157,9 @@ def timed_run(*args):
   run(*args, timed=1)
 
 # configure a file according to tags
-# lines of the form: [[ ... #[tag] ]] will be uncommented
+# lines of the form: [[ #... #[tag] ]] will be uncommented
 # and lines of the form: [[ ... #[other-tag] ]] will be commented out
+# other lines are left unaltered
 def configure_file(path, tags):
   path = os.path.realpath(path)
   printf("configure_file: path = {path!r}; tags = {tags!r}")
