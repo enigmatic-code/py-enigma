@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 26 15:31:22 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun 28 12:27:44 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-06-21"
+__version__ = "2024-06-25"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1237,7 +1237,7 @@ def numbers(ss, base=10, csep=',', crange='-', cneg='!', strip=1, enc='', fn=lis
   # generate the numbers
   return diff(tpos, tneg, fn=fn)
 
-def respace(x):
+def respace(x, sep=' '):
   """
   respace string <x>.
 
@@ -1248,7 +1248,7 @@ def respace(x):
   'hello world!'
   """
   if not isinstance(x, basestring): return x  # leave non-strings alone
-  return str.join(' ', str.split(x))
+  return str.join(sep, str.split(x))
 
 def split(x, fn=None):
   """
@@ -1897,6 +1897,10 @@ class multiset(dict):
     multiplying item counts by <n>.
     """
     return multiset.from_pairs((k, n * v) for (k, v) in dict.items(self))
+
+  # how many subsets of this multiset
+  def powerset_size(self):
+    return multiply(v + 1 for v in dict.values(self))
 
   def subsets(self, size=None, min_size=0, max_size=None):
     """generate subsets of a multiset"""
@@ -7252,6 +7256,29 @@ def poly_trim(p):
   while len(p) > 1 and p[-1] == 0: p.pop()
   return p
 
+# parse a string as a polynomial
+def poly_from_str(s, var='x'):
+  d = defaultdict(int)
+  sgn = +1
+  # split string into segments
+  for x in re.split(r'\s*([+-])\s*', respace(s, sep='')):
+    if x == '': continue
+    elif x == '-': sgn = -1
+    elif x == '+': sgn = +1
+    else:
+      i = x.find(var)
+      if i == -1:
+        # constant term (= x^0)
+        d[0] += sgn * number(x)
+      else:
+        # variable found, parse coefficient and exponent
+        c = number(x[:i])
+        if c is None: c = 1
+        e = number(x[i:])
+        if e is None: e = 1
+        d[e] += sgn * c
+  return poly_from_pairs(d.items())
+
 # multiply two polynomials
 def poly_mul(p, q):
   (np, nq) = (len(p), len(q))
@@ -7717,12 +7744,20 @@ class Polynomial(list):
     return cls(poly_from_roots(rs))
 
   @classmethod
+  def from_str(cls, s):
+    return cls(poly_from_str(s))
+
+  @classmethod
   def unit(cls):
-    return cls(poly_unit)
+    return cls(poly_unit)  # -> 1
 
   @classmethod
   def zero(cls):
-    return cls(poly_zero)
+    return cls(poly_zero)  # -> 0
+
+  @classmethod
+  def var(cls):
+    return cls([0, 1])  # -> x
 
   # sum() is only documented for "numeric" values (although it works)
   # but you can use this instead...
