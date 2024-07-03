@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun 28 12:27:44 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul  3 11:34:43 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-06-25"
+__version__ = "2024-06-26"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1960,22 +1960,30 @@ class multiset(dict):
     """
     return multinomial(self.values())
 
-  # express value <v> using a subset of this multiset
-  # if <k> is specified, only find subsets of size <k>
-  # returns subsets of the original multiset, optionally processed by <fn>
   def express(self, v, k=None, fn=identity):
+    """
+    express value <v> using a subset of this multiset.
+
+    if <k> is specified, only find subsets of size <k>.
+
+    return subsets of the original multiset, optionally processed by <fn>.
+    """
     ps = sorted(dict.items(self))
     for rs in express_pairs(v, ps, self.sum(), k=k):
       yield fn(multiset.from_pairs(rs))
 
-  # are all values in <vs> expressible using subsets of this multiset?
   def expressible(self, vs, k=None):
+    """
+    are all values in <vs> expressible using subsets of this multiset?
+
+    see: multiset.express()
+    """
     ps = sorted(dict.items(self))
     t = self.sum()
     return all(any(express_pairs(v, ps, t, k)) for v in vs)
 
-  # generate elements in order
   def sorted(self, key=None, reverse=False):
+    """generate elements of the multiset in order"""
     for k in sorted(dict.keys(self), key=key, reverse=reverse):
       for _ in xrange(self.get(k)):
         yield k
@@ -13539,7 +13547,7 @@ enigma.py has the following command-line usage:
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.12.2',
+  version=__version__, python='2.7.18', python3='3.12.4',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
