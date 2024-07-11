@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul  3 11:34:43 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jul 11 14:33:43 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-06-26"
+__version__ = "2024-07-10"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1483,6 +1483,29 @@ def item_from(select, template, **kw):
   split = lambda s: (re.split(r'[\s,]+', s.strip("()[]{}")) if isinstance(s, basestring) else s)
   fields = dict((k, v) for (v, k) in enumerate(split(template)))
   return item(*(fields[k] for k in split(select)), **kw)
+
+# make a range from a slice on a sequence of length n
+def make_range(i, n):
+  (a, b, c) = (i.start, i.stop, i.step)
+  a = (0 if a is None else (a + n if a < 0 else a))
+  b = (n if b is None else (b + n if b < 0 else b))
+  c = (1 if c is None else c)
+  return range(a, b, c)
+
+# a circular list, where indices are calculates mod length
+class CircularList(list):
+
+  def __getitem__(self, i):
+    n = len(self)
+    # deal with a slice argument -> return a list
+    if isinstance(i, slice): return list(self[j] for j in make_range(i, n))
+    # otherwise, integer index -> return an element
+    if n == 0: raise IndexError("list index out of range")
+    return list.__getitem__(self, operator.index(i) % n)
+
+  # list.copy() returns a list(), so re-wrap it
+  def copy(self):
+    return self.__class__(list.copy(self))
 
 def diff(a, b, *rest, **kw):
   """
@@ -9116,7 +9139,7 @@ class SubstitutedExpression(object):
       v = (get_default(k, s2d, l2d) if k == 's2d' else get_default(k, scope[k]))
       setattr(self, k, v)
 
-    self._processed = 0  # set by process
+    self._processed = 0  # set by _process()
     self._prepared = 0  # set by prepare()
 
     if self.process: self._process()
@@ -9383,7 +9406,7 @@ class SubstitutedExpression(object):
   # NOTE: the generated code can have more than 20 nested blocks,
   # which raises a SyntaxError in CPython. A workaround is to use PyPy
   # instead (which doesn't seem to have this limitation)
-  def _prepare(self):
+  def _prepare(self, verbose=None):
 
     base = self.base
     symbols = self.symbols
@@ -9401,7 +9424,7 @@ class SubstitutedExpression(object):
     sane = self.sane
     warn = self.warn
     opt = self.opt
-    verbose = self.verbose
+    if verbose is None: verbose = self.verbose
 
     words = self._words
     invalid = self._invalid
@@ -9756,7 +9779,7 @@ class SubstitutedExpression(object):
       # or more than 100 indent levels - PyPy does not have these limitations)
       printf("SubstitutedExpression: compilation error from Python interpreter [{sys.executable}]")
       if not (verbose & self.vC):
-        printf("(use verbose level 256 to output code before compilation)")
+        printf("(use verbose level 'C' to output code before compilation)")
         printf("(or use the \"denest=1\" option (--denest, -X) to reduce program complexity)")
       raise
     eval(code, gs)
@@ -9778,7 +9801,8 @@ class SubstitutedExpression(object):
     verbose - if set to >0 solutions are output as they are found, >1 additional information is output.
     """
 
-    if not self._prepared: self._prepare()
+    verbose = (self.verbose if verbose is None else self._verbose(verbose))
+    if not self._prepared: self._prepare(verbose)
     if self._fail: return
 
     solver = self._solver
@@ -9786,7 +9810,6 @@ class SubstitutedExpression(object):
     header = self.header
     if check is None: check = self.check
     if first is None: first = self.first
-    verbose = (self.verbose if verbose is None else self._verbose(verbose))
 
     if self.sane > 0 and verbose & self.vW and self.template and self.base > len(base_digits()):
       printf("WARNING: base {self.base} specified, exceeds base_digits()")
@@ -9844,8 +9867,7 @@ class SubstitutedExpression(object):
         parameter was also set)
     """
     verbose = (self.verbose if verbose is None else self._verbose(verbose))
-
-    if not self._prepared: self._prepare()
+    if not self._prepared: self._prepare(verbose)
 
     # return:
     # n = number of solutions
