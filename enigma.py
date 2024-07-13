@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jul 11 14:33:43 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul 13 14:46:43 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-07-10"
+__version__ = "2024-07-12"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -12107,12 +12107,14 @@ class Timer(object):
     self._t1 = None
     self._t0 = self._timer()
     if self._verbose: printf("[{self._name}] start = {self._t0}")
+    return self
 
   def stop(self, report=0):
     """set the stop time of a timer"""
     self._t1 = self._timer()
     if self._verbose: printf("[{self._name}] stop = {self._t1}")
     if report: self.report(force=1)
+    return self
 
   def elapsed(self, disable_report=1):
     """
@@ -12722,6 +12724,11 @@ class Matrix(list):
   def transpose(self):
     "return the transposition of the matrix"
     return Matrix(zip(*self), field=self.field)
+
+  def extract(self, rows, cols):
+    """extract a sub-matrix from this matrix"""
+    (rows, cols) = (list(rows), list(cols))
+    return Matrix(list(list(self[row][col] for col in cols) for row in rows), field=self.field)
 
   def pow(self, n):
     "return a new matrix that is the result of this matrix to the power <n>"
