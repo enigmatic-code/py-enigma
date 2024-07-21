@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul 13 14:46:43 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 21 14:06:27 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-07-12"
+__version__ = "2024-07-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6676,7 +6676,7 @@ def int2roman(x):
     x = r
   return str.join('', s)
 
-
+# NOTE: this is more forgiving than is_roman()
 def roman2int(x):
   """
   return the integer value of a Roman Numeral <x>.
@@ -6705,19 +6705,19 @@ def is_roman(x):
   check if a Roman Numeral <x> is valid.
 
   >>> is_roman('IV')
-  True
+  4
   >>> is_roman('IIII')
-  True
+  4
   >>> is_roman('XIVI')
-  False
+  0
   """
   x = str(x).upper()
-  if x == 'IIII': return True
+  if x == 'IIII': return 4
   try:
     i = roman2int(x)
   except ValueError:
-    return False
-  return int2roman(i) == x
+    return 0
+  return (i if int2roman(i) == x else 0)
 
 # digits = (default) digits for use in converting bases
 @static(digits=str_digit + str_upper)
