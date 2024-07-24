@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 21 14:06:27 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 24 13:34:10 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-07-20"
+__version__ = "2024-07-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -6261,6 +6261,40 @@ def algorithmX(X, Y, soln):
 
       soln.pop()
 
+# find exact hitting sets using algorithmX
+def exact_hitting_set(ss):
+  """
+  find exact hitting sets for the sets in <ss>.
+
+  each returned value consists of a collection of elements
+  where every set from <ss> has exactly one element in common
+  with the returned value.
+
+  # from [ https://en.wikipedia.org/wiki/Exact_cover#Exact_hitting_set ]
+  >>> list(exact_hitting_set(["ab", "ef", "de", "abc", "cd", "de", "acef"]))
+  [['b', 'd', 'f']]
+  """
+  # map elements to indices
+  tgt = sorted(union(ss))
+  n = len(tgt)
+  m = dict((x, i) for (i, x) in enumerate(tgt))
+
+  # X is a dict of sets (of indices)
+  X = dict()
+  for (i, s) in enumerate(ss):
+    X[i] = set(m[x] for x in s)
+
+  # Y shows which sets elements belong to
+  Y = list(list() for _ in irange(n))
+  for (i, s) in enumerate(ss):
+    for x in s:
+      Y[m[x]].append(i)
+
+  # find exact covers using algorithmX
+  for rs in algorithmX(X, Y, list()):
+    # turn the indices back to elements
+    yield sorted(tgt[i] for i in rs)
+
 # input: ss = sequence of collections of sets [ [a0, a1, ...], [b1, b2, ...], [c1, c2, ...] ... ]
 # output: sequence of sets (a, b, c, ...) one from each collection
 def exact_cover(sss, tgt=None):
@@ -6637,49 +6671,41 @@ def polygon_area(ps, m=0.5, sum=math.fsum):
 # Roman Numerals
 # the following is good for numbers in the range 1 - 4999
 
-_romans = (
-  # X bar = 10000
-  # V bar = 5000
-  # (<numeral>, <value>, <max-repeats>)
-  ('M',  1000, 4),
-  ('CM',  900, 1),
-  ('D',   500, 1),
-  ('CD',  400, 1),
-  ('C',   100, 3),
-  ('XC',   90, 1),
-  ('L',    50, 1),
-  ('XL',   40, 1),
-  ('X',    10, 3),
-  ('IX',    9, 1),
-  ('V',     5, 1),
-  ('IV',    4, 1),
-  ('I',     1, 4)
+# values for letters in roman numerals
+_romans = {
+  'M': 1000, 'D': 500, 'C': 100, 'L': 50, 'X': 10, 'V': 5, 'I': 1,
+}
+
+# place values for roman numerals
+_int2roman = (
+  ("", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"), # units
+  ("", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC"), # tens
+  ("", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"), # hundreds
+  ("", "M", "MM", "MMM", "MMMM"), # thousands
 )
 
-
-def int2roman(x):
+def int2roman(n, validate=0):
   """
-  return a representation of an integer <x> (from 1 to 4999) as a Roman Numeral
+  return a representation of an integer <n> (from 1 to 4999) as a Roman Numeral
 
   >>> int2roman(4)
   'IV'
   >>> int2roman(1999)
   'MCMXCIX'
   """
-  x = as_int(x)
-  if not (0 < x < 5000): raise ValueError("integer out of range: {x}".format(x=x))
-  s = list()
-  for (n, i, m) in _romans:
-    (d, r) = divmod(x, i)
-    if d < 1: continue
-    s.append(n * d)
-    x = r
-  return str.join('', s)
+  if validate: n = as_int(n)
+  if not (0 < n < 5000): raise ValueError("integer out of range: {n}".format(n=n))
+  return str.join('', list(_int2roman[i][x] for (i, x) in enumerate(nsplitter(n)))[::-1])
 
-# NOTE: this is more forgiving than is_roman()
-def roman2int(x):
+def roman2int(r, strict=1):
   """
-  return the integer value of a Roman Numeral <x>.
+  return the integer value of a Roman Numeral <r>.
+
+  if 'strict' is set (the default), then the function only accepts
+  Roman Numerals in "standard" form.
+
+  if 'strict' is not set, then the function is generous with what it
+  accepts as a Roman Numeral.
 
   >>> roman2int('IV')
   4
@@ -6687,22 +6713,39 @@ def roman2int(x):
   4
   >>> roman2int('MCMXCIX')
   1999
+  >>> roman2int('XLXV', strict=0)
+  55
   """
-  x = str(x).upper()
-  p = r = 0
-  for (n, i, m) in _romans:
-    (k, c) = (len(n), 0)
-    while x[p:p + k] == n and c < m:
-      r += i
-      p += k
-      c += 1
-  if p < len(x): raise ValueError("invalid Roman numeral: {x}".format(x=x))
-  return r
+  r = str(r).upper()
+  if r == 'IIII': return 4
+  # group letters into clumps, and value the clumps
+  try:
+    vs = list(_romans[s[0]] * len(s) for s in clump(r))
+  except KeyError:
+    raise ValueError("invalid Roman numeral: {r!r}".format(r=r))
+  # evaluate the list
+  n = i = 0
+  while True:
+    if i + 1 < len(vs):
+      (a, b) = (vs[i], vs[i + 1])
+      if a < b:
+        # subtractive form
+        n += b - a
+        i += 2
+      else:
+        # additive form
+        n += a
+        i += 1
+    else:
+      if i < len(vs): n += vs[i]
+      break
+  if strict and int2roman(n) != r:
+    raise ValueError("invalid roman numeral: {r!r}".format(r=r))
+  return n
 
-
-def is_roman(x):
+def is_roman(r):
   """
-  check if a Roman Numeral <x> is valid.
+  check if a Roman Numeral <x> is valid (i.e. in "standard" form).
 
   >>> is_roman('IV')
   4
@@ -6711,13 +6754,10 @@ def is_roman(x):
   >>> is_roman('XIVI')
   0
   """
-  x = str(x).upper()
-  if x == 'IIII': return 4
-  try:
-    i = roman2int(x)
-  except ValueError:
-    return 0
-  return (i if int2roman(i) == x else 0)
+  r = str(r).upper()
+  if r == 'IIII': return 4
+  return catch(roman2int, r, strict=1) or 0
+
 
 # digits = (default) digits for use in converting bases
 @static(digits=str_digit + str_upper)
