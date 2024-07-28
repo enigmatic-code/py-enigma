@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 24 13:34:10 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 28 16:33:32 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-07-23"
+__version__ = "2024-07-27"  # 15th anniversary version!
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1616,14 +1616,12 @@ class multiset(dict):
 
   def update_from_seq(self, vs, count=1):
     """update a multiset from a sequence of items"""
-    for x in vs:
-      self.add(x, count=count)
+    for x in vs: self.add(x, count=count)
     return self
 
   def update_from_pairs(self, vs):
     """update a multiset from a sequence of (<item>, <count>) pairs"""
-    for (x, n) in vs:
-      self.add(x, as_int(n))
+    for (x, n) in vs: self.add(x, count=as_int(n))
     return self
 
   def update_from_dict(self, d):
@@ -1636,24 +1634,22 @@ class multiset(dict):
     create a multiset from a dict of <item> -> <count> values
     (or multiple dicts).
     """
-    m = multiset()
-    for v in vs:
-      m.update_from_dict(v)
+    m = cls()
+    for v in vs: m.update_from_dict(v)
     return m
 
   @classmethod
-  def from_pairs(self, *vs):
+  def from_pairs(cls, *vs):
     """
     create a multiset from a sequence of (<item>, <count>) pairs
     (or multiple sequences).
     """
-    m = multiset()
-    for v in vs:
-      m.update_from_pairs(v)
+    m = cls()
+    for v in vs: m.update_from_pairs(v)
     return m
 
   @classmethod
-  def from_seq(self, *vs, **kw):
+  def from_seq(cls, *vs, **kw):
     """
     create a multiset from a sequence of items (or multiple sequences).
 
@@ -1662,9 +1658,8 @@ class multiset(dict):
     """
     count = kw.pop('count', 1)
     if kw: raise TypeError(str.format("multiset.from_seq: unknown arguments {kw}", kw=seq2str(kw.keys())))
-    m = multiset()
-    for v in vs:
-      m.update_from_seq(v, count=count)
+    m = cls()
+    for v in vs: m.update_from_seq(v, count=count)
     return m
 
   # count all elements in the multiset
@@ -1802,7 +1797,7 @@ class multiset(dict):
     item counts are summed.
     """
     for m in rest:
-      if not isinstance(m, dict): m = multiset(m)
+      if not isinstance(m, dict): m = self.__class__(m)
       self.update_from_dict(m)
     return self
 
@@ -1826,7 +1821,7 @@ class multiset(dict):
     maximal item counts are retained.
     """
     for m in rest:
-      if not isinstance(m, dict): m = multiset(m)
+      if not isinstance(m, dict): m = self.__class__(m)
       for (item, count) in m.items(): self[item] = max(count, self.get(item, 0))
     return self
 
@@ -1839,7 +1834,7 @@ class multiset(dict):
 
     maximal item counts are retained.
     """
-    return multiset(self).union_update(*rest)
+    return self.copy().union_update(*rest)
 
   # intersection of self and some other multisets (minimal item counts are retained)
   def intersection(self, *rest):
@@ -1850,16 +1845,16 @@ class multiset(dict):
 
     minimal item counts are retained.
     """
-    r = multiset(self)
+    r = self.copy()
     for m in rest:
-      if not isinstance(m, dict): m = multiset(m)
+      if not isinstance(m, dict): m = self.__class__(m)
       r = multiset.from_pairs((item, min(count, r.get(item, 0))) for (item, count) in m.items())
     return r
 
   # is this multiset a subset of m?
   def issubset(self, m, strict=0):
     """test if the multiset is contained in multiset <m>"""
-    if not isinstance(m, dict): m = multiset(m)
+    if not isinstance(m, dict): m = self.__class__(m)
     # check sizes
     r = compare(self.size(), m.size())
     if r == 1 or (strict and r == 0): return False
@@ -1880,8 +1875,8 @@ class multiset(dict):
 
     returns (self - m, m - self)
     """
-    if not isinstance(m, dict): m = multiset(m)
-    (d1, d2) = (multiset(), multiset())
+    if not isinstance(m, dict): m = self.__class__(m)
+    (d1, d2) = (self.__class__(), self.__class__())
     for item in set(self.keys()).union(m.keys()):
       count = self.get(item, 0) - m.get(item, 0)
       if count > 0:
@@ -1909,7 +1904,7 @@ class multiset(dict):
   def is_disjoint(self, *rest):
     """test if the multiset is disjoint from a bunch of other multisets"""
     for m in rest:
-      if not isinstance(m, dict): m = multiset(m)
+      if not isinstance(m, dict): m = self.__class__(m)
       if any(x in self for x in m): return False
     return True
 
@@ -1938,7 +1933,10 @@ class multiset(dict):
 
   def copy(self):
     """return a copy of the multiset"""
-    return multiset.from_dict(self)
+    #return self.__class__.from_dict(self)
+    r = self.__class__()
+    for (k, v) in self.items(): r[k] = v
+    return r
 
   def min(self, **kw):
     """
@@ -4718,8 +4716,48 @@ def mdivmod(x, *vs):
   rs.insert(0, x)
   return rs
 
+def qsum(fs, normal=1):
+  """
+  determine the numerator and denominator of the sum of the fractions
+  given in <fs>, a sequence of (<numberator>, <denominator>) pairs.
+
+  if normal is set, then the fraction will be reduced to lowest terms.
+
+  fraction([(a, b), (c, d), (e, f), ...]) -> a/b + c/d + e/f + ...
+
+  >>> qsum([(1, 2), (1, 3), (1, 6)])  # 1/2 + 1/3 + 1/6 = 1
+  (1, 1)
+  >>> qsum([(1, 2), (3, 4), (5, 6)])  # 1/2 + 3/4 + 5/6 = 25/12
+  (25, 12)
+  """
+  if not fs: return (0, 1)  # = 0
+  # go through the fractions in pairs
+  fs = iter(fs)
+  (a, b) = next(fs)
+  for (c, d) in fs: (a, b) = (a * d + b * c, b * d)
+  if b == 0: raise ZeroDivisionError("fraction can't have zero denominator")
+  if normal:
+    if b < 0: (a, b) = (-a, -b)
+    g = gcd(a, b)
+    if g != 1: (a, b) = (a // g, b // g)
+  return (a, b)
+
+# sum of reciprocals
+def rsum(ds, normal=1):
+  """determine the sum of the reciprocals 1/d1 + 1/d2 + ..."""
+  if not ds: return (0, 1)  # = 0
+  ds = list(ds)
+  if len(ds) == 1: return (1, ds[0])
+  b = multiply(ds)
+  if b == 0: raise ZeroDivisionError("fraction can't have zero denominator")
+  a = sum(b // d for d in ds)
+  if normal:
+    if b < 0: (a, b) = (-a, -b)
+    g = gcd(a, b)
+    if g != 1: (a, b) = (a // g, b // g)
+  return (a, b)
+
 # for those times when Rational() is overkill
-@static(Fraction=None)
 def fraction(*args, **kw):
   """
   return the numerator and denominator of the fraction a/b in lowest terms
@@ -4736,17 +4774,8 @@ def fraction(*args, **kw):
   >>> fraction(1, 2,  3, 4,  5, 6)  # 1/2 + 3/4 + 5/6 = 25/12
   (25, 12)
   """
-  if not args: return (0, 1)  # 0
-  # go through the fractions in pairs
-  ps = chunk(args, 2)
-  (a, b) = next(ps)
-  for (c, d) in ps:
-    (a, b) = (a * d + b * c, b * d)
-  if b == 0: raise ZeroDivisionError("fraction can't have zero denominator")
-  if b < 0: (a, b) = (-a, -b)
-  g = gcd(a, b)
-  if g != 1: (a, b) = (a // g, b // g)
-  return (a, b)
+  if not args: return (0, 1)  # = 0
+  return qsum(chunk(args, 2), normal=kw.get('normal', 1))
 
 @static(rtype=None)
 def Fraction(*args):
@@ -5133,11 +5162,36 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
   >>> list(reciprocals(3, 1))
   [[2, 3, 6], [2, 4, 4], [3, 3, 3]]
   """
-  # are we done?
-  if k == 1:
-    (d, r) = divmod(b, a)
-    if r == 0 and not (d < m or d > M):
-      yield rs + [d]
+  # check remaining fraction against the k largest possible reciprocals
+  if g == 0 or k < 2:
+    (p, q) = (k, m)
+  else:
+    x = m + (k - 1) * g
+    if x > M: return
+    ds = list(irange(m, x, step=g))
+    (p, q) = rsum(ds, normal=0)
+  z = q * a - p * b
+  if z == 0: yield rs + ([m] * k if g == 0 else ds)
+  if z >= 0: return
+
+  # more to do?
+  if k > 2:
+    dmax = divf(k * b, a)
+    if M == inf:
+      # general case
+      dmin = divc(b + 1, a)
+    else:
+      x = M - g * (k - 2)
+      if x < m: return
+      # but if M is given we can find a better dmin [suggested by frits]
+      (p, q) = rsum(irange(x, M, step=g), normal=0)
+      dmin = divc(b * q, a * q - b * p)
+    # find a suitable reciprocal
+    for d in irange(max(m, dmin), min(M, dmax)):
+      # solve for the remaining fraction
+      #yield from reciprocals(k - 1, b * d, a * d - b, d + g, M, g, rs + [d])  #[Python 3]
+      for ds in reciprocals(k - 1, b * d, a * d - b, d + g, M, g, rs + [d]): yield ds  #[Python 2]
+
   elif k == 2:
     # special case k = 2
     if M == inf:
@@ -5149,22 +5203,11 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
       (e, r) = divmod(d * b, d * a - b)
       if r == 0 and not (e < d + g or e > M):
         yield rs + [d, e]
-  else:
-    if M == inf:
-      # general case
-      dmin = divc(b + 1, a)
-    else:
-      # but if M is given we can find a better dmin [suggested by frits]
-      xs = list(M - g * i for i in xrange(k - 1))
-      xd = multiply(xs)
-      xn = sum(xd // x for x in xs)
-      dmin = divc(b * xd, a * xd - b * xn)
-    dmax = divf(k * b, a)
-    # find a suitable reciprocal
-    for d in irange(max(m, dmin), min(M, dmax)):
-      # solve for the remaining fraction
-      #yield from reciprocals(k - 1, b * d, a * d - b, d + g, M, g, rs + [d])  #[Python 3]
-      for ds in reciprocals(k - 1, b * d, a * d - b, d + g, M, g, rs + [d]): yield ds  #[Python 2]
+
+  elif k == 1:
+    (d, r) = divmod(b, a)
+    if r == 0 and not (d < m or d > M):
+      yield rs + [d]
 
 
 # command line arguments
@@ -6230,7 +6273,7 @@ def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
 
 # exact set cover (using Knuth's Algorithm X)
 
-# in-place algorithmX implementation (X, soln are modified)
+# in-place algorithm X implementation (X, soln are modified)
 def algorithmX(X, Y, soln):
   if not X:
     yield soln
@@ -6261,7 +6304,7 @@ def algorithmX(X, Y, soln):
 
       soln.pop()
 
-# find exact hitting sets using algorithmX
+# find exact hitting sets using algorithm X
 def exact_hitting_set(ss):
   """
   find exact hitting sets for the sets in <ss>.
@@ -6290,7 +6333,7 @@ def exact_hitting_set(ss):
     for x in s:
       Y[m[x]].append(i)
 
-  # find exact covers using algorithmX
+  # find exact covers using algorithm X
   for rs in algorithmX(X, Y, list()):
     # turn the indices back to elements
     yield sorted(tgt[i] for i in rs)
@@ -6335,7 +6378,7 @@ def exact_cover(sss, tgt=None):
     for k in y:
       X[k].add(i)
 
-  # find exact covers using algorithmX
+  # find exact covers using algorithm X
   k = len(sss)
   for rs in algorithmX(X, Y, list()):
     # turn the selected rows of Y, back into sets
@@ -7815,8 +7858,8 @@ class Polynomial(list):
     return cls(poly_from_roots(rs))
 
   @classmethod
-  def from_str(cls, s):
-    return cls(poly_from_str(s))
+  def from_str(cls, s, var='x'):
+    return cls(poly_from_str(s, var=var))
 
   @classmethod
   def unit(cls):
