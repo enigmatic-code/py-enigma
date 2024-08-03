@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 28 16:33:32 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Aug  3 16:47:36 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-07-27"  # 15th anniversary version!
+__version__ = "2024-07-29"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3880,8 +3880,8 @@ def is_cube(n, validate=0):
 
   >>> is_cube(27)
   3
-  >>> is_cube(49) is not None
-  False
+  >>> is_cube(49) is None
+  True
   >>> is_cube(0)
   0
   """
@@ -7530,10 +7530,15 @@ def poly_interpolate(ps, field=None):
 # scale a polynomial to give integer coefficents
 def poly_scale(p, F=None):
   if not p: return p
-  if F is None: F = Rational()
-  p = list(map(F, p))
-  m = call(mlcm, (f.denominator for f in p))
-  p = list(int(m * f) for f in p)
+  try:
+    # are coefficients already integers?
+    p = list(as_int(x) for x in p)
+  except ValueError:
+    # assume rationals
+    if F is None: F = Rational()
+    p = list(map(F, p))
+    m = mlcm(*(f.denominator for f in p))
+    p = list(int(m * f) for f in p)
   g = mgcd(*p)
   if g > 1: p = list(x // g for x in p)
   return p
@@ -7707,6 +7712,8 @@ class Polynomial(list):
   Polynomials are represented by a list of their coefficents:
 
     a + b.x + c.x^2 + d.x^3 + ... ->  [a, b, c, d, ...]
+
+  coefficients are intended to be integers or rational numbers.
   """
 
   def __repr__(self, var='x'):
@@ -10144,7 +10151,7 @@ class SubstitutedExpression(object):
     # check terms/result are fully alphametic, and strip braces
     for i in xrange(len(sums)):
       (terms, result) = sums[i]
-      assert all(x[0] == '{' and x[-1] == '}' for x in terms + [result]), "terms/result must be fully alphametic"
+      assert all(x[0] == '{' and x[-1] == '}' for x in terms + [result]), "sum must be fully alphametic"
       sums[i] = (list(x[1:-1] for x in terms), result[1:-1])
 
     # find words in: terms, result, extra, answer
@@ -10378,23 +10385,23 @@ class SubstitutedExpression(object):
     return args
 
   # generate appropriate command line arguments to reconstruct this instance
-  def save(self, file=None, quote=1):
+  def save(self, fh=None, quote=1):
 
     args = self.to_args(quote=quote)
     if not args: raise ValueError()
 
     args.insert(0, "SubstitutedExpression")  # self.__class__.__name__
 
-    if file is None:
+    if fh is None:
       # just return the args
       pass
-    elif isinstance(file, basestring):
+    elif isinstance(fh, basestring):
       # treat the string as a filename
-      with open(file, 'wt') as f:
+      with open(fh, 'wt') as f:
         writelines(f, args)
     else:
       # assume a file handle has been passed
-      writelines(file, args)
+      writelines(fh, args)
 
     return args
 
