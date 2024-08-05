@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug  3 16:47:36 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Aug  5 09:08:48 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-07-29"
+__version__ = "2024-08-04"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2401,7 +2401,9 @@ def cproduct(ss, **kw):
   >>> set(cproduct(chunk(irange(1, 4), 2))) == {(1, 3), (1, 4), (2, 3), (2, 4)}
   True
   """
-  return itertools.product(*ss, **kw)  # = call(itertools.product, ss, kw)
+  fn = kw.pop('fn', None)
+  rs = itertools.product(*ss, **kw)
+  return ((fn(x) for x in rs) if fn else rs)
 
 # here's workaround for more complicated parameter unpacking in Python 3
 #
