@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Aug  5 09:08:48 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Aug  8 09:50:35 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -227,7 +227,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-08-04"
+__version__ = "2024-08-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1029,7 +1029,8 @@ def nsplitter(n, k=None, base=10, validate=0):
       yield r
 
 def nsplit(n, k=None, base=10, fn=tuple, reverse=0, validate=0):
-  """split an integer into digits (using base <base> representation)
+  """
+  split an integer into digits (using base <base> representation)
 
   if <k> is specified it gives the number of digits to return, if the
   number has too few digits the the result is zero padded at the beginning,
@@ -1079,8 +1080,7 @@ if getattr(int, 'bit_count', None):
 else:
   def dsum2(n): "fast alternative to dsum(n, base=2)"; return bin(abs(n)).count('1', 2)
 
-# equivalent to: len(nsplit(n))
-# (we could use logarithms for "smallish" numbers)
+# equivalent to: len(nsplit(n)) (we could use logarithms for "smallish" numbers)
 def ndigits(n, base=10, validate=0):
   """
   return the number of digits in a number, when represented in the specified base.
@@ -1451,9 +1451,26 @@ def peek(s, k=0, **kw):
     pass
   raise IndexError(str.format("invalid index {k}", k=k))
 
-# get an item from a sequence, or return the default value (negative indices are not allowed)
-# (use peek(s, k) if you want to get an IndexError exception)
 def seq_get(s, k=None, default=None):
+  """
+  get the item at index <k> from sequence <s>, or return the
+  default value if the index is not valid (negative indices are not
+  allowed).
+
+  (use peek(s, k) if you want to get an IndexError exception).
+
+  if k is None, then a function is returned to get an item from the
+  specified sequence <s>.
+
+  >>> seq_get([1, 2, 3], 1)
+  2
+  >>> seq_get([1, 2, 3], 4) is None
+  True
+  >>> seq_get("abc", -1) is None
+  True
+  >>> seq_get("abc")(1)
+  'b'
+  """
   if k is None:
     return (lambda k: peek(s, k, default=default))
   else:
