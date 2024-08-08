@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Aug  8 09:50:35 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Aug  8 10:07:07 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -53,7 +53,7 @@ coprime_pairs          - generate coprime pairs
 cproduct               - cartesian product of a sequence of sequences
 cslice                 - cumulative slices of an array
 csum                   - cumulative sum
-decompose              - construct and call a Decompose() function
+decompose              - find sequences of integers with the specified sum
 diff                   - sequence difference
 digit_map              - create a map of digits to corresponding integer values
 digrt                  - the digital root of a number
@@ -175,6 +175,7 @@ roman2int              - convert a Roman Numeral to an integer
 rotate                 - rotate a sequence
 seq_all_different      - check elements of a sequence are pairwise distinct
 seq_all_same           - check elements of a sequence are all the same
+seq_get                - get an item from a sequence
 singleton              - return the value from a single valued container
 split                  - split a value into characters
 sprintf                - interpolate variables into a string
@@ -227,7 +228,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-08-07"
+__version__ = "2024-08-08"
 
 __credits__ = """Brian Gladman, contributor"""
 
