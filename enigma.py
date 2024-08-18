@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug 10 07:57:55 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Aug 18 08:14:46 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -228,7 +228,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-08-09"
+__version__ = "2024-08-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -998,7 +998,7 @@ def nconcat(*digits, **kw):
   >>> nconcat([127, 0, 0, 1], base=256)
   2130706433
   """
-  # in Python3 [[ def nconcat(*digits, base=10): ]] is allowed instead
+  # in Python 3 [[ def nconcat(*digits, base=10): ]] is allowed instead
   base = kw.pop('base', 10)
   if kw: raise TypeError(str.format("nconcat: unknown arguments {kw}", kw=seq2str(kw.keys())))
   # allow a sequence to be passed as a single argument
@@ -1076,9 +1076,8 @@ def dsum(n, k=None, base=10, validate=0):
   return sum(nsplitter(n, k=k, base=base, validate=validate))
 
 # population count, Hamming weight, bitsum(), bit_count()
-if getattr(int, 'bit_count', None):
-  dsum2 = int.bit_count
-else:
+dsum2 = getattr(int, 'bit_count', None)
+if not dsum2:
   def dsum2(n): "fast alternative to dsum(n, base=2)"; return bin(abs(n)).count('1', 2)
 
 # equivalent to: len(nsplit(n)) (we could use logarithms for "smallish" numbers)
@@ -1618,52 +1617,58 @@ class multiset(dict):
     for v in vs:
       if isinstance(v, dict):
         # from a dict
-        self.update_from_dict(v)
+        self.update_from_dict(v, validate=1)
       else:
         # from a sequence
         v = list(v)
         try:
-          s = multiset().update_from_pairs(v)
-          self.update_from_dict(s)
+          s = multiset().update_from_pairs(v, validate=1)
+          self.update_from_dict(s, validate=1)
         except (TypeError, ValueError):  # maybe more, or maybe just Error
-          self.update_from_seq(v)
+          self.update_from_seq(v, validate=1)
     # add in any keyword items
     if kw:
       for (x, n) in kw.items():
-        self.add(x, n)
+        self.add(x, n, validate=1)
 
-  def update_from_seq(self, vs, count=1):
+  def update_from_seq(self, vs, count=1, validate=0):
     """update a multiset from a sequence of items"""
-    for x in vs: self.add(x, count=count)
+    for x in vs:
+      self.add(x, count=count, validate=validate)
     return self
 
-  def update_from_pairs(self, vs):
+  def update_from_pairs(self, vs, validate=0):
     """update a multiset from a sequence of (<item>, <count>) pairs"""
-    for (x, n) in vs: self.add(x, count=as_int(n))
+    for (x, n) in vs:
+      self.add(x, count=n, validate=validate)
     return self
 
-  def update_from_dict(self, d):
+  def update_from_dict(self, d, validate=0):
     """update a multiset from a dict of <item> -> <count> values"""
-    return self.update_from_pairs(d.items())
+    return self.update_from_pairs(d.items(), validate=validate)
 
   @classmethod
-  def from_dict(cls, *vs):
+  def from_dict(cls, *vs, **kw):
     """
     create a multiset from a dict of <item> -> <count> values
     (or multiple dicts).
     """
+    validate = kw.pop('validate', 0)
+    if kw: raise TypeError(str.format("multiset.from_dict: unknown arguments {kw}", kw=seq2str(kw.keys())))
     m = cls()
-    for v in vs: m.update_from_dict(v)
+    for v in vs: m.update_from_dict(v, validate=validate)
     return m
 
   @classmethod
-  def from_pairs(cls, *vs):
+  def from_pairs(cls, *vs, **kw):
     """
     create a multiset from a sequence of (<item>, <count>) pairs
     (or multiple sequences).
     """
+    validate = kw.pop('validate', 0)
+    if kw: raise TypeError(str.format("multiset.from_pairs: unknown arguments {kw}", kw=seq2str(kw.keys())))
     m = cls()
-    for v in vs: m.update_from_pairs(v)
+    for v in vs: m.update_from_pairs(v, validate=validate)
     return m
 
   @classmethod
@@ -1675,9 +1680,10 @@ class multiset(dict):
     element of the sequence inserted into the multiset.
     """
     count = kw.pop('count', 1)
+    validate = kw.pop('validate', 0)
     if kw: raise TypeError(str.format("multiset.from_seq: unknown arguments {kw}", kw=seq2str(kw.keys())))
     m = cls()
-    for v in vs: m.update_from_seq(v, count=count)
+    for v in vs: m.update_from_seq(v, count=count, validate=validate)
     return m
 
   # count all elements in the multiset
@@ -1767,12 +1773,13 @@ class multiset(dict):
     return dict.get(self, item, 0)
 
   # add an item
-  def add(self, item, count=1):
+  def add(self, item, count=1, validate=0):
     """
     add an item to a multiset.
 
     count can be negative to remove items.
     """
+    if validate: count = as_int(count)
     try:
       count += self[item]
       if count == 0:
@@ -1785,9 +1792,9 @@ class multiset(dict):
     return self
 
   # remove an item
-  def remove(self, item, count=1):
+  def remove(self, item, count=1, validate=0):
     """remove an item from the multiset"""
-    return self.add(item, -count)
+    return self.add(item, -count, validate=validate)
 
   # delete an item (no error is raised if the item does not exist)
   def delete(self, item):
@@ -1807,20 +1814,22 @@ class multiset(dict):
   # provide some useful operations on multisets
 
   # update self with some other multisets (item counts are summed)
-  def update(self, *rest):
+  def update(self, *rest, **kw):
     """
     update the multiset with some other multisets (or objects that can
     be interpreted as multisets).
 
     item counts are summed.
     """
+    validate = kw.pop('validate', 0)
+    if kw: raise TypeError(str.format("multiset.update: unknown arguments {kw}", kw=seq2str(kw.keys())))
     for m in rest:
       if not isinstance(m, dict): m = self.__class__(m)
-      self.update_from_dict(m)
+      self.update_from_dict(m, validate=validate)
     return self
 
   # combine self and some other multisets (item counts are summed)
-  def combine(self, *rest):
+  def combine(self, *rest, **kw):
     """
     return a new multiset that is the result of the original multiset
     updated with some other multisets (or objects that can be
@@ -1828,7 +1837,9 @@ class multiset(dict):
 
     item counts are summed.
     """
-    return multiset(self).update(*rest)
+    validate = kw.pop('validate', 0)
+    if kw: raise TypeError(str.format("multiset.combine: unknown arguments {kw}", kw=seq2str(kw.keys())))
+    return multiset(self).update(*rest, validate=validate)
 
   # union update of self and some other multiset (maximal item counts are retained)
   def union_update(self, *rest):
@@ -2097,7 +2108,7 @@ def mpermutations(s, k=None):
   if k is None: k = len(s)
   return mP(s, k)
 
-# a simple implementation of derangements
+# a simple implementation of derangements (of distinct elements)
 # as in itertools elements are permuted by index, not value
 def derangements(s, k=None):
   s = list(s)
@@ -2623,9 +2634,10 @@ def _partitions(seq, n):
   if not (len(seq) > n):
     yield (seq,)
   else:
-    for x in itertools.combinations(seq[1:], n - 1):
-      p = (seq[0],) + tuple(x)
-      for ps in _partitions(diff(seq[1:], x), n):
+    (x, rest) = (seq[0], seq[1:])
+    for xs in itertools.combinations(rest, n - 1):
+      p = (x,) + xs
+      for ps in _partitions(diff(rest, xs), n):
         yield (p,) + ps
 
 
@@ -2666,6 +2678,95 @@ def partitions(seq, n, pad=0, value=None, distinct=None):
     fn = (_partitions if distinct else ipartitions)
     #yield from fn(seq, n)  #[Python 3]
     for z in fn(seq, n): yield z  #[Python 2]
+
+
+# permutations and cycles:
+# TODO: maybe make a Permutation class (subclass tuple)
+
+def cycles(qs, ps=None):
+  """
+  find the cycles of a permutation <qs> (from original order <ps>).
+
+  if <ps> is not specified a sorted version of <qs> is used.
+
+  a cycle of the form (x, y, z) means when the permutation is applied
+  the following transitions occur:
+
+    x -> y, y -> z, z -> x
+
+  i.e. y is in the position previously occupied by x, etc.
+
+  >>> list(cycles([2, 6, 5, 4, 3, 1]))
+  [(1, 2, 6), (3, 5), (4,)]
+  """
+  if ps is None: ps = sorted(qs)
+  # construct a map of the permutations
+  m = dict(zip(ps, qs))
+  # construct cycles
+  rs = set(ps)  # remaining elements
+  while rs:
+    cyc = [min(rs)]
+    while True:
+      x = m[cyc[-1]]
+      if x != cyc[0]:
+        cyc.append(x)
+      else:
+        break
+    yield tuple(cyc)
+    rs.difference_update(cyc)
+
+def permutation(cycs, ps=None):
+  """
+  permute a sequence <ps> according to cycles <cycs>.
+
+  if ps is not specified it is determined from the elements in the cycles.
+  """
+  if ps is None: ps = sorted(flatten(cycs))
+  m = dict()
+  for cyc in cycs:
+    m.update(tuples(cyc, 2, circular=1))
+  return tuple(m[x] for x in ps)
+
+# make cycles from elements <xs> of length <k>
+def _cycles(xs, k, ss=[]):
+  if not xs:
+    yield ss
+  else:
+    (x, rest) = (xs[0], xs[1:])
+    for rs in itertools.permutations(rest, k - 1):
+      #yield from _cycles(diff(rest, rs), k, ss + [(x,) + rs])  #[Python 3]
+      for z in _cycles(diff(rest, rs), k, ss + [(x,) + rs]): yield z  #[Python 2]
+
+# make permutations from given cycle lengths
+def _perms_from_cycles(seq, cycs, ss=[]):
+  if not cycs:
+    yield ss
+  else:
+    k = cycs.peek()
+    v = cycs[k]
+    # choose n elements for this group of cycles
+    for xs in itertools.combinations(seq, k * v):
+      for cs in _make_cycles(xs, k):
+        #yield from _perms_from_cycles(diff(seq, xs), cycs.copy().remove(k, v), ss + cs)  #[Python 3]
+        for z in _perms_from_cycles(diff(seq, xs), cycs.copy().remove(k, v), ss + cs): yield z  #[Python 2]
+
+# generate permutations from specified cycle lengths
+def permutations_from_cycles(seq, cycs, fn=None):
+  """
+  generate permutations of sequence <seq> using the cycle
+  lengths specified in <cycs>.
+
+  if <fn> is None then permutations are returned as cycles
+
+  if you want the permuted sequence use: fn=permutation
+  """
+  seq = list(seq)
+  # make sure cycs is a multiset
+  if not isinstance(cycs, multiset): cycs = multiset(cycs)
+  assert len(seq) == cycs.sum()
+  # generate permutations as cycles
+  for x in _perms_from_cycles(seq, cycs):
+    yield (fn(x) if fn else x)
 
 
 # see: [ https://enigmaticcode.wordpress.com/2017/05/17/tantalizer-482-lapses-from-grace/#comment-7169 ]
@@ -3581,7 +3682,6 @@ def fib(*s, **kw):
 # NOTE: that this will return 0 if n = 0 and None if n is not a perfect k-th power,
 # so [[ power(n, k) ]] will evaluate to True only for positive n
 # if you want to allow n to be 0 you should check: [[ power(n, k) is not None ]]
-#
 def iroot(n, k):
   """
   compute the largest integer x such that pow(x, k) <= n.
@@ -3639,7 +3739,7 @@ def is_power(n, k):
 
 def sqrt(a, b=None):
   """
-  the (real) square root of a / b (or just a if b is None)
+  the (real) square root of <a> / <b> (or just <a> if <b> is None)
 
   >>> sqrt(9)
   3.0
@@ -4586,6 +4686,22 @@ def bit_and(r, *vs):
     r &= v
     if not r: break
   return r
+
+def bit_rol(n, k=1, w=None):
+  if k == 0: return n
+  if k < 0: return bit_ror(n, -k, w=w)
+  if w is None: w = n.bit_length()
+  r = w - k
+  mask = (1 << r) - 1
+  return ((n & mask) << k) | (n >> r)
+
+def bit_ror(n, k=1, w=None):
+  if k == 0: return n
+  if k < 0: return bit_rol(n, -k, w=w)
+  if w is None: w = n.bit_length()
+  r = w - k
+  mask = (1 << k) - 1
+  return ((n & mask) << r) | (n >> k)
 
 def _gcd(a, b):
   """
@@ -7392,6 +7508,9 @@ def poly_trim(p):
 
 # parse a string as a polynomial
 def poly_from_str(s, var='x'):
+  if s == var: return [0, 1]
+  if s == '1': return [1]
+  if s == '0': return [0]
   d = defaultdict(int)
   sgn = +1
   # split string into segments
@@ -7847,6 +7966,18 @@ class Polynomial(list):
     p = (self - v if v else self)
     return poly_rational_roots(p, domain=domain, include=include, F=F)
 
+  def roots(self, v=0, domain='Q', include="+-0", F=None):
+    "find roots of the polynomial = v"
+    p = (self - v if v else self)
+    k = p.degree()
+    if not (k > 2):
+      return p.quadratic_roots(domain=domain, include=include, F=F)
+    if not (k > 3):
+      return p.cubic_roots(domain=domain, include=include, F=F)
+    if domain in 'QZ':
+      return p.rational_roots(domain=domain, include=include, F=F)
+    raise ValueError("Polynomial.roots: maybe try find_roots()")
+
   def divmod(self, q, div=rdiv):
     (d, r) = poly_divmod(self, q, div=div)
     return (self.__class__(d), self.__class__(r))
@@ -7863,7 +7994,7 @@ class Polynomial(list):
   def drop_factor(self, *qs):
     return self.__class__(poly_drop_factor(self, *qs))
 
-  # best effort find roots of a polynomial
+  # best effort find roots of a polynomial by factorisation
   def find_roots(self, v=0, domain='Q', F=None, div=None, warn=1):
     p = (self - v if v else self)
     for (f, n) in p.factor(F=F, div=div):
@@ -7873,8 +8004,7 @@ class Polynomial(list):
       if d > 3:
         if domain in 'FC' and warn: printf("WARNING: Polynomial.find_roots: ignoring poly factor {f}")
         continue
-      for x in f.cubic_roots(domain=domain, F=F):
-        yield x
+      for x in f.cubic_roots(domain=domain, F=F): yield x
 
   @classmethod
   def from_pairs(cls, ps):
@@ -7897,11 +8027,18 @@ class Polynomial(list):
     return cls(poly_zero)  # -> 0
 
   @classmethod
-  def var(cls):
-    return cls([0, 1])  # -> x
+  def linear(cls, a=1, b=0):
+    return cls([b, a])  # -> a.x + b
 
-  # sum() is only documented for "numeric" values (although it works)
-  # but you can use this instead...
+  @classmethod
+  def quadratic(cls, a=1, b=0, c=0):
+    return cls([c, b, a])  # -> a.x^2 + b.x + c
+
+  @classmethod
+  def cubic(cls, a=1, b=0, c=0, d=0):
+    return cls([d, c, b, a])  # -> a.x^3 + b.x^2 + c.x + d
+
+  # sum() is only documented for "numeric" values (although it works), but you can use this instead...
   @classmethod
   def sum(cls, ps):
     "return the sum of a sequence of polynomials"
@@ -9704,7 +9841,7 @@ class SubstitutedExpression(object):
         # start a new function block
         block = blocks[-1]
         _ = indent_reset
-        # In Python3 we can use [[ nonlocal ]] instead of passing the symbols around
+        # In Python 3 we can use [[ nonlocal ]] instead of passing the symbols around
         prog.append(sprintf("{_}def {block}({block_args}):"))
         _ += indent
         if decl: prog.append(sprintf("{_}{decl}"))
