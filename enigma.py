@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Aug 18 08:14:46 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Aug 21 08:30:39 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -53,6 +53,7 @@ coprime_pairs          - generate coprime pairs
 cproduct               - cartesian product of a sequence of sequences
 cslice                 - cumulative slices of an array
 csum                   - cumulative sum
+cycles                 - generate cycles of a permutation
 decompose              - find sequences of integers with the specified sum
 diff                   - sequence difference
 digit_map              - create a map of digits to corresponding integer values
@@ -145,13 +146,14 @@ mod                    - return a function to find residues modulo m
 multiply               - the product of numbers in a sequence
 nconcat                - concatenate single digits into an integer
 ndigits                - number of digits used to represent a number in a base
-nreverse               - reverse the digits in an integer
+nreverse, nrev         - reverse the digits in an integer
 nsplit                 - split an integer into single digits
 number                 - create an integer from a string ignoring non-digits
 ordered                - return arguments as an ordered tuple
 P, nPr                 - permutations function (nPr)
 partitions             - partition a sequence of distinct values into tuples
 peek                   - return an element of a container
+permutation            - make a permutation from a set of cycles
 pi                     - float approximation to pi
 poly_*                 - routines manipulating polynomials, wrapped as Polynomial
 powers                 - generate a range of powers
@@ -170,7 +172,7 @@ recurring2fraction     - find the fraction corrresponding to a decimal expansion
 repdigit               - number consisting of repeated digits
 repeat                 - repeatedly apply a function to a value
 restrict               - the restriction of a container to certain keys
-reverse                - reverse a sequence
+reverse, rev           - reverse a sequence
 roman2int              - convert a Roman Numeral to an integer
 rotate                 - rotate a sequence
 seq_all_different      - check elements of a sequence are pairwise distinct
@@ -228,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-08-17"
+__version__ = "2024-08-20"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3751,6 +3753,7 @@ def sqrt(a, b=None):
 
 # sq = lambda x: x * x
 def sq(x): "sq(x) = x * x"; return x * x
+def diffsq(x, y): "diffsq(x, y) = x^2 - y^2"; return (x - y) * (x + y)
 def sumsq(xs): "sumsq(xs) = sum(sq(x) for x in xs)"; return sum(x * x for x in xs)
 
 # calculate intf(sqrt(n))
@@ -7967,16 +7970,27 @@ class Polynomial(list):
     return poly_rational_roots(p, domain=domain, include=include, F=F)
 
   def roots(self, v=0, domain='Q', include="+-0", F=None):
-    "find roots of the polynomial = v"
+    """
+    find all roots of the polynomial = v that satisfy the specified requirements.
+
+    domain = 'Z' (integer roots), 'Q' (rational roots), 'F' (real (float) roots),
+      'C' ( complex roots).
+
+    for non-complex roots, <include> can be specified to include just roots
+    that some combination of zero = '0', positive = '+', negative = '-'.
+
+    currently the routine cannot find non-integer/non-rational roots for irreducible
+    polynomials of degree 4 or more.
+    """
     p = (self - v if v else self)
     k = p.degree()
-    if not (k > 2):
-      return p.quadratic_roots(domain=domain, include=include, F=F)
-    if not (k > 3):
-      return p.cubic_roots(domain=domain, include=include, F=F)
+    if k < 3:
+      return quadratic(p.coeff(2), p.coeff(1), p.coeff(0), domain=domain, include=include, F=F)
+    if k < 4:
+      return cubic(p.coeff(3), p.coeff(2), p.coeff(1), p.coeff(0), domain=domain, include=include, F=F)
     if domain in 'QZ':
       return p.rational_roots(domain=domain, include=include, F=F)
-    raise ValueError("Polynomial.roots: maybe try find_roots()")
+    raise ValueError("Polynomial.roots: polynomial too complicated, maybe try find_roots()")
 
   def divmod(self, q, div=rdiv):
     (d, r) = poly_divmod(self, q, div=div)
@@ -7994,8 +8008,8 @@ class Polynomial(list):
   def drop_factor(self, *qs):
     return self.__class__(poly_drop_factor(self, *qs))
 
-  # best effort find roots of a polynomial by factorisation
   def find_roots(self, v=0, domain='Q', F=None, div=None, warn=1):
+    "try to find roots of a polynomial by factorisation"
     p = (self - v if v else self)
     for (f, n) in p.factor(F=F, div=div):
       d = f.degree()
