@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Aug 21 08:30:39 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Sep  2 09:58:48 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-08-20"
+__version__ = "2024-09-01"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4426,8 +4426,8 @@ def intr(x):
   """
   if x < 0:
     x = -x
-    return -int((x + x + 1) // 2)
-  return int((x + x + 1) // 2)
+    return -(int(x + x + 1) // 2)
+  return (int(x + x + 1) // 2)
 
 def divf(a, b):
   """
@@ -5178,6 +5178,26 @@ def M(n, k):
   """
   return C(n + k - 1, k)
 
+def recurring_digits(a, b, recur=0, base=10):
+  """
+  find the non-recurring/recurring digits in the base <base> expansion
+  of the proper fraction <a> / <b>.
+  """
+  if b == 0 or (recur and a == 0):
+    raise ValueError("invalid input fraction: {a} / {b} [recur={recur}]".format(a=a, b=b, recut=bool(recur)))
+  r = dict()
+  s = list()
+  n = 0
+  while True:
+    j = r.get(a)
+    # have we seen this dividend before?
+    if j is not None: return (s[:j], s[j:])
+    # no, we haven't
+    r[a] = n
+    n += 1
+    (d, a) = divmod(base * a, b)
+    if recur and a == 0: (d, a) = (d - 1, b)
+    if not (d == a == 0): s.append(d)
 
 @static(rtype=None)
 def recurring(a, b, recur=0, base=10, digits=None):
@@ -5208,27 +5228,12 @@ def recurring(a, b, recur=0, base=10, digits=None):
   # the integer part
   (i, a) = divmod(a, b)
   if recur and a == 0: (i, a) = (i - 1, b)
-  # record dividends
-  r = dict()
-  s = ''
-  n = 0
-  while True:
-    j = r.get(a)
-    if j is not None:
-      # have we had this dividend before?
-      (i, nr, rr) = (int2base(i, base, digits=digits), s[:j], s[j:])
-      if neg and (nr or rr or i != '0'): i = '-' + i
-      if recurring.rtype is None: recurring.rtype = namedtuple('Recurring', 'i nr rr')
-      return recurring.rtype(i, nr, rr)
-    else:
-      # no, we haven't
-      r[a] = n
-      n += 1
-      (d, a) = divmod(base * a, b)
-      if recur and a == 0: (d, a) = (d - 1, b)
-      if not (d == a == 0):
-        # add to the digit string
-        s += int2base(d, base, digits=digits)
+  i2b = lambda n: int2base(n, base, digits=digits)
+  i = i2b(i)
+  (nr, rr) = (str.join('', map(i2b, ds)) for ds in recurring_digits(a, b, recur=recur, base=base))
+  if neg and (nr or rr or i != '0'): i = '-' + i
+  if recurring.rtype is None: recurring.rtype = namedtuple('Recurring', 'i nr rr')
+  return recurring.rtype(i, nr, rr)
 
 # Python 3.6: ...(*args, dp='.')
 def format_recurring(*args, **kw):
@@ -5992,8 +5997,8 @@ def tuples(seq, n=2, circular=0, fn=tuple):
       # return the tuple
       yield fn(t)
       # move the next value in to the tuple
-      t.append(next(i))
       t.pop(0)
+      t.append(next(i))
   except StopIteration:
     return
 
