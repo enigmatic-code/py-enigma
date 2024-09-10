@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Sep  2 09:58:48 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Sep  7 18:19:44 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-09-01"
+__version__ = "2024-09-05"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -870,7 +870,7 @@ def join(seq, sep='', enc='', sort=0, rev=0, fn=str):
 
 def joinf(sep='', enc='', sort=0, rev=0, fn=str):
   "return a joining function"
-  return (lambda x: join(x, sep=sep, enc=enc, sort=sort, rev=rev, fn=fn))
+  return functools.partial(join, sep=sep, enc=enc, sort=sort, rev=rev, fn=fn)
 
 def concat(*args, **kw):
   """
@@ -1474,7 +1474,7 @@ def seq_get(s, k=None, default=None):
   'b'
   """
   if k is None:
-    return (lambda k: peek(s, k, default=default))
+    return functools.partial(peek, s, default=default)
   else:
     return peek(s, k, default=default)
 
@@ -4197,7 +4197,7 @@ def hypot(*vs, **kw):
   return root(sum(v * v for v in vs))
 
 # alias for: hypot(..., root=is_square)
-ihypot = lambda *vs: hypot(*vs, root=is_square)
+ihypot = functools.partial(hypot, root=is_square)
 
 # root of combined squares:
 # for example (for positive x, y, z)
@@ -4230,7 +4230,7 @@ def rcs(*vs, **kw):
   return catch(root, t)
 
 # like rcs() but only return integer square roots
-ircs = lambda *vs: rcs(*vs, root=is_square)
+ircs = functools.partial(rcs, root=is_square)
 
 # return roots of the form n/d in the appropriate domain
 # with domain = 'C', include = '+' (or '-') means "non-zero"
@@ -4415,7 +4415,8 @@ def intr(x):
   round to nearest integer.
 
   if x is exactly between two integers (i.e. x = n + 0.5) then the
-  answer is the integer further away from 0.
+  answer is the integer further away from 0 (sometimes known as:
+  "round half away from zero").
 
   >>> intr(0.0)
   0
@@ -4423,6 +4424,8 @@ def intr(x):
   3
   >>> intr(-2.5)
   -3
+  >>> list((x, intr(x)) for x in irangef(-3.5, +3.5, step=1.0))
+  [(-3.5, -4), (-2.5, -3), (-1.5, -2), (-0.5, -1), (0.5, 1), (1.5, 2), (2.5, 3), (3.5, 4)]
   """
   if x < 0:
     x = -x
@@ -4631,7 +4634,7 @@ def avg(seq, div=fdiv):
     k += 1
   return div(t, k)
 
-iavg = lambda seq: avg(seq, div=div)
+iavg = functools.partial(avg, div=div)
 
 # vector dot product: dot(xs, ys, strict=0, fnp=multiply, fns=sum)
 def dot(*vs, **kw):
@@ -5228,7 +5231,7 @@ def recurring(a, b, recur=0, base=10, digits=None):
   # the integer part
   (i, a) = divmod(a, b)
   if recur and a == 0: (i, a) = (i - 1, b)
-  i2b = lambda n: int2base(n, base, digits=digits)
+  i2b = functools.partial(int2base, base=base, digits=digits)
   i = i2b(i)
   (nr, rr) = (str.join('', map(i2b, ds)) for ds in recurring_digits(a, b, recur=recur, base=base))
   if neg and (nr or rr or i != '0'): i = '-' + i
@@ -7908,6 +7911,10 @@ class Polynomial(list):
 
   __call__ = poly_value
 
+  def function(self):
+    "return a Python function that calls the polynomial"
+    return functools.partial(poly_value, self)
+
   def copy(self):
     "return a copy of the polynomial"
     return self.__class__(self)
@@ -8022,6 +8029,7 @@ class Polynomial(list):
       # currently we can only deal non-rational roots in (up to) cubic factors
       if d > 3:
         if domain in 'FC' and warn: printf("WARNING: Polynomial.find_roots: ignoring poly factor {f}")
+        # TODO: consider using mpmath.polyroots() here
         continue
       for x in f.cubic_roots(domain=domain, F=F): yield x
 
@@ -9234,7 +9242,7 @@ _sym = lambda x: '_' + x
 # this will use ascii variables 'v_<hex-code-of-symbol>'
 #_sym = cached(lambda x: 'v_' + join((int2base(ord(c), base=16) for c in x), sep="_"))
 
-_set = lambda x: join(x, sep=", ", enc="{}")
+_set = functools.partial(join, sep=", ", enc="{}")
 
 # return an expression that evaluates word <w> in base <base>
 def _word(w, base):
@@ -13842,7 +13850,7 @@ enigma.py has the following command-line usage:
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.12.5',
+  version=__version__, python='2.7.18', python3='3.12.6',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
