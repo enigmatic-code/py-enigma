@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Sep  7 18:19:44 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Sep 16 11:00:17 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-09-05"
+__version__ = "2024-09-14"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3196,6 +3196,7 @@ def is_prime(n, validate=0):
   >>> is_prime(1001)
   False
   """
+  if n is None: return None
   if validate: n = as_int(n, include="0+")
   if n < 2: return False  # 0, 1 -> F
   if n < 4: return True   # 2, 3 -> T
@@ -4844,7 +4845,11 @@ def mlcm(a, *rest):
   return reduce(lcm, rest, a)
 
 def is_coprime(*vs):
-  return mgcd(*vs) == 1
+  "check values <vs> are _pairwise_ coprime"
+  n = len(vs)
+  if n < 2: return True
+  if n == 2: return gcd(*vs) == 1
+  return mlcm(*vs) == multiply(vs)
 
 # multiple divmod
 # hours, minutes, seconds: (h, m, s) = mdivmod(x, 60, 60)
