@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Sep 16 11:00:17 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep 17 10:38:38 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -115,7 +115,7 @@ ipowers                - generate perfect powers
 irange                 - inclusive range iterator
 irangef                - inclusive range iterator with fractional steps
 iroot                  - integer kth root function
-is_coprime             - check two numbers are coprime
+is_coprime             - check numbers are pairwise coprime
 is_cube, is_cube_z     - check a number is a perfect cube
 is_distinct            - check a value is distinct from other values
 is_duplicate           - check to see if value (as a string) contains duplicate characters
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-09-14"
+__version__ = "2024-09-16"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3736,8 +3736,8 @@ def is_power(n, k):
   (True, False)
   """
   r = iroot(n, k)
-  if r is None: return None
-  return (r if r**k == n else None)
+  if r is None or r**k != n: return None
+  return r
 
 
 def sqrt(a, b=None):
@@ -4845,7 +4845,20 @@ def mlcm(a, *rest):
   return reduce(lcm, rest, a)
 
 def is_coprime(*vs):
-  "check values <vs> are _pairwise_ coprime"
+  """
+  check values <vs> are _pairwise_ coprime.
+
+  if you want to check for _setwise_ coprime use:
+
+    mgcd(*vs) == 1
+
+  >>> is_coprime(5, 6, 7)
+  True
+  >>> is_coprime(5, 6, 7, 8)
+  False
+  >>> mgcd(5, 6, 7, 8)
+  1
+  """
   n = len(vs)
   if n < 2: return True
   if n == 2: return gcd(*vs) == 1
@@ -7870,6 +7883,10 @@ class Polynomial(list):
 
   coefficients are intended to be integers or rational numbers.
   """
+
+  def __init__(self, obj, **kw):
+    if isinstance(obj, basestring): obj = poly_from_str(obj, var=kw.get('var', 'x'))
+    list.__init__(self, obj)
 
   def __repr__(self, var='x'):
     return self.__class__.__name__ + "[" + poly_print(self, var=var) + "]"
