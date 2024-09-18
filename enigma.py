@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Sep 17 10:38:38 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep 18 08:19:40 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-09-16"
+__version__ = "2024-09-17"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -530,8 +530,8 @@ def between(a, b): return (lambda x: a < x < b)  # exclusive between
 def betweene(a, b): return (lambda x: a <= x <= b)  # inclusive between
 
 # membership/non-membership of a collection
-def isin(s): return (lambda x: x in s)
-def isnotin(s): return (lambda x: x not in s)
+def is_in(s): return (lambda x: x in s)
+def is_not_in(s): return (lambda x: x not in s)
 
 # return a function that increments by a fixed amount
 def inc(i=1): return (lambda x, i=i: x + i)
@@ -3739,6 +3739,8 @@ def is_power(n, k):
   if r is None or r**k != n: return None
   return r
 
+is_power_p = (lambda n, k: is_power(n, k) is not None)
+
 
 def sqrt(a, b=None):
   """
@@ -4862,7 +4864,14 @@ def is_coprime(*vs):
   n = len(vs)
   if n < 2: return True
   if n == 2: return gcd(*vs) == 1
-  return mlcm(*vs) == multiply(vs)
+  # equivalent to [[ return mlcm(*vs) == multiply(vs) ]]
+  # calculate lcm and product
+  m = p = 1
+  for v in vs:
+    m = lcm(m, v)
+    p *= v
+    if m != p: return False
+  return True
 
 # multiple divmod
 # hours, minutes, seconds: (h, m, s) = mdivmod(x, 60, 60)
