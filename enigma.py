@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep 18 08:19:40 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 19 08:43:03 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-09-17"
+__version__ = "2024-09-18"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2917,7 +2917,7 @@ def uniq1(seq, fn=None):
 
 # root: calculate the (positive) nth root of a (positive) number
 # we use math.pow rather than **/pow() to avoid generating complex numbers
-root = lambda x, n: (x if not x else math.pow(x, n ** -1))
+root = lambda x, n: (x if not x else math.pow(x, n**-1))
 
 def _cbrt(x):
   """
@@ -3723,18 +3723,25 @@ def is_power(n, k):
   if <n> is a perfect <k>th power, returns the integer <k>th root.
   if <n> is not a perfect <k>th power, returns None.
 
-  >>> is_power(49, 2)
+  >>> is_power(16807, 5)
   7
-  >>> is_power(49, 3) is not None
+  >>> is_power(16807, 7) is not None
   False
-  >>> is_power(0, 2)
+  >>> is_power(0, 7)
   0
   >>> n = (2**60 + 1)
-  >>> (is_power(n**2, 2) is not None, is_power(n**2 + 1, 2) is not None)
+  >>> (is_power(n**5, 5) is not None, is_power(n**5 + 1, 5) is not None)
   (True, False)
-  >>> (is_power(n**3, 3) is not None, is_power(n**3 + 1, 3) is not None)
+  >>> (is_power(n**7, 7) is not None, is_power(n**7 + 1, 7) is not None)
   (True, False)
   """
+  if n is None or k == 1: return n
+  (k_, r) = divmod(k, 2)
+  if r == 0:
+    return is_power(is_square(n), k_)
+  (k_, r) = divmod(k, 3)
+  if r == 0:
+    return is_power(is_cube(n), k_)
   r = iroot(n, k)
   if r is None or r**k != n: return None
   return r
@@ -3933,11 +3940,11 @@ def ipowers(exps=None):
     if p > hi:
       yield p
       hi = p
-    heappush(pows, ((b + 1) ** e, b + 1, e))
+    heappush(pows, ((b + 1)**e, b + 1, e))
     # do we need to add in a new exponent?
     if b == 2:
       maxe = next(exps)
-      heappush(pows, (2 ** maxe, 2, maxe))
+      heappush(pows, (2**maxe, 2, maxe))
 
 def is_ipower(n, validate=0):
   """
@@ -4018,7 +4025,8 @@ def is_cube(n, validate=0):
   if (n % is_cube.mod) not in is_cube.residues: return None
   z = is_cube.cache.get(n)
   if z is None:
-    z = is_power(n, 3)
+    z = iroot(n, 3)
+    if z is not None and z * z * z != n: z = None
     if is_cube.cache_enabled: is_cube.cache[n] = z
   return z
 
