@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 19 08:43:03 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Sep 22 02:12:51 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-09-18"
+__version__ = "2024-09-21"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -3735,13 +3735,19 @@ def is_power(n, k):
   >>> (is_power(n**7, 7) is not None, is_power(n**7 + 1, 7) is not None)
   (True, False)
   """
-  if n is None or k == 1: return n
-  (k_, r) = divmod(k, 2)
-  if r == 0:
-    return is_power(is_square(n), k_)
-  (k_, r) = divmod(k, 3)
-  if r == 0:
-    return is_power(is_cube(n), k_)
+  # remove factors of 2 and 3
+  while True:
+    if n is None or k == 1: return n
+    (k_, r) = divmod(k, 2)
+    if r == 0:
+      (n, k) = (is_square(n), k_)
+      continue
+    (k_, r) = divmod(k, 3)
+    if r == 0:
+      (n, k) = (is_cube(n), k_)
+      continue
+    break
+  # use iroot() for what is left
   r = iroot(n, k)
   if r is None or r**k != n: return None
   return r
@@ -6785,16 +6791,18 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
 # 2D cartesian point, has 'x' and 'y' components, is also tuple (x, y)
 P2 = namedtuple('P2', 'x y')
 
-def point_dist(p1, p2):
+def point_distance(p1, p2):
   """
   calculate the straight line distance between points p1 (= (x1, y1))
   and p2 (= (x2, y2))
 
-  >>> point_dist((0, 0), (3, 4))
+  >>> point_distance((0, 0), (3, 4))
   5.0
   """
   ((x1, y1), (x2, y2)) = (p1, p2)
   return hypot(x1 - x2, y1 - y2)
+
+point_dist = point_distance
 
 def line_slope_intercept(p1, p2, div=fdiv):
   """
