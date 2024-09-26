@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 26 09:15:15 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 26 09:20:22 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -5494,7 +5494,8 @@ class dictify(object):
 
 @static(fn=None)
 def _sprintf(fmt, fn=None, vs=None, frame=None):
-  if _pythonv[0] > 2:
+  stack = getattr(collections, 'ChainMap', None)
+  if stack:
     # in Python 3 we can use collections.ChainMap
     ds = []
     if fn:
@@ -5504,7 +5505,7 @@ def _sprintf(fmt, fn=None, vs=None, frame=None):
     if frame:
       ds.append(frame.f_locals)
       ds.append(frame.f_globals)
-    d = collections.ChainMap(*ds)
+    d = stack(*ds)
   else:
     # we can populate a dict
     d = dict()
