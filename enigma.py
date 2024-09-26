@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Sep 22 02:12:51 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 26 09:15:15 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -97,8 +97,8 @@ fraction, Fraction     - convert numerator / denominator to lowest terms
 gcd                    - greatest common divisor
 grid_adjacency         - adjacency matrix for an n x m grid
 group                  - collect values of a sequences into groups
-hypot                  - calculate hypotenuse
-icount                 - count the number of elements of an iterator that satisfy a predicate
+hypot, ihypot          - calculate hypotenuse
+icount, icount_*       - count the number of elements of an iterator that satisfy a predicate
 implies                - logical implication (p -> q)
 int2base, int2str      - convert an integer to a string in the specified base
 int2bcd                - convert an integer to binary coded decimal
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-09-21"
+__version__ = "2024-09-23"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -4200,13 +4200,15 @@ def hypot(*vs, **kw):
   a keyword argument of 'root' may be specified to provide the
   function used to calculate the root of the sum of the squares.
 
+  ihypot() is provided to return only integer values.
+
   See also: math.hypot() (Python 3.8).
 
   >>> hypot(3, 4)
   5.0
   >>> hypot(3, 4, 12)
   13.0
-  >>> hypot(3, 4, root=is_square)
+  >>> ihypot(3, 4)
   5
   """
   root = kw.pop('root', math.sqrt)
@@ -4231,10 +4233,14 @@ def rcs(*vs, **kw):
   the function used to determine the square root can be specified via
   the <root> parameter.
 
+  ircs() is provided to return only integer values.
+
   >>> rcs(3, 4)
   5.0
   >>> rcs(5, -3)
   4.0
+  >>> ircs(5, -3)
+  4
   """
   root = kw.pop('root', math.sqrt)
   if kw: raise TypeError(str.format("rcs: unknown arguments {kw}", kw=seq2str(kw.keys())))
@@ -5051,9 +5057,11 @@ def Rational(src=None, verbose=None):
     f = (lambda x, y=None, fn=f: (fn(x) if y is None else fn(x) / y))
   return f
 
-# create a function that will calculate a/b, and return an int if the result is an integer
-# or a rational object if the result is a rational
 class Rdiv(object):
+  """
+  create a function that will calculate a/b, and return an integer result if
+  the result is an integer, or a rational object if the result is a rational
+  """
   def __init__(self, F=None, src=None, verbose=None):
     self.F = F
     self.src = src
@@ -5455,7 +5463,7 @@ def args(vs, n, fn=identity, prompt=None, argv=None):
 # printf / sprintf variable interpolation
 # (see also the "say" module)
 
-# this works in all version of Python
+# this works in all version of Python (if vs is a dict)
 def __sprintf(fmt, vs): return str.format(fmt, **vs)
 
 # Python 3 has str.format_map(vs)
@@ -5475,14 +5483,38 @@ def __sprintf3(fmt, vs): return str.format_map(fmt, vs)
 #
 #   printf("... {a} + {b} = {a + b} ...", a=2, b=3)  ->  "... 2 + 3 = 5 ..."
 #
-def __sprintf36(fmt, vs): return eval('f' + repr(fmt), vs)
+def __sprintf36(fmt, vs): return eval('f' + repr(fmt), None, vs)
+
+
+class dictify(object):
+  def __init__(self, fn):
+    self.fn = fn
+  def __getitem__(self, key):
+    return self.fn(key)
 
 @static(fn=None)
-def _sprintf(fmt, vs, frame):
-  # we can't use collections.ChainMap() here as eval() in __sprintf36() barfs
-  d = dict(frame.f_globals)
-  d.update(frame.f_locals)
-  d.update(vs)
+def _sprintf(fmt, fn=None, vs=None, frame=None):
+  if _pythonv[0] > 2:
+    # in Python 3 we can use collections.ChainMap
+    ds = []
+    if fn:
+      ds.append(dictify(fn))
+    if vs:
+      ds.append(vs)
+    if frame:
+      ds.append(frame.f_locals)
+      ds.append(frame.f_globals)
+    d = collections.ChainMap(*ds)
+  else:
+    # we can populate a dict
+    d = dict()
+    if frame:
+      d.update(frame.f_globals)
+      d.update(frame.f_locals)
+    if vs:
+      d.update(vs)
+    if fn:
+      print("WARNING: sprintf 'fn' parameter is not supported in Python {_pythonv}".format(_pythonv=join(_pythonv, sep='.')))
   return _sprintf.fn(fmt, d)
 
 if _pythonv > (3, 5):
@@ -5492,8 +5524,18 @@ elif _python > 2:
 else:
   _sprintf.fn = __sprintf
 
+def strfmt(fmt='', fn=None, vs=None, frame=None):
+  """
+  format the string <fmt> using substitutions from:
+    function <fn> (in Python 3)
+    dictionary <vs>
+    local/global variables in frame <frame>
+  """
+  if isinstance(frame, int): frame = sys._getframe(frame)
+  return _sprintf(fmt, fn, vs, frame)
+
 # print with variables interpolated into the format string
-def sprintf(fmt='', **kw):
+def sprintf(fmt='', **vs):
   """
   interpolate local variables and any keyword arguments into the format string <fmt>.
 
@@ -5503,10 +5545,10 @@ def sprintf(fmt='', **kw):
   >>> sprintf("a={a} b={b} c={c}", c=42)
   'a=1 b=2 c=42'
   """
-  return _sprintf(fmt, kw, sys._getframe(1))
+  return _sprintf(fmt, None, vs, sys._getframe(1))
 
 # print with local variables interpolated into the format string
-def printf(fmt='', **kw):
+def printf(fmt='', **vs):
   """
   print format string <fmt> with interpolated local variables and
   keyword arguments.
@@ -5520,7 +5562,7 @@ def printf(fmt='', **kw):
   >>> printf("a={a} b={b} c={c}", c=42)
   a=1 b=2 c=42
   """
-  s = _sprintf(fmt, kw, sys._getframe(1))
+  s = _sprintf(fmt, None, vs, sys._getframe(1))
   d = dict()  # flush=1
   if s.endswith('\\'): (s, d['end']) = (s[:-1], '')
   print(s, **d)
@@ -6879,7 +6921,7 @@ def line_bisect(p1, p2, div=fdiv):
 # and the point p0
 def line_distance(p1, p2, p0=(0, 0)):
   """
-  Return the minimum distance between the point p0 (= (x0, y0)
+  Return the minimum distance between the point p0 (= (x0, y0))
   and a line that passes through points p1 (= (x1, y1))
   and p2 (= (x2, y2)).
 
@@ -7440,8 +7482,8 @@ class Accumulator(object):
 
   def accumulate_data(self, v, data, target=None):
     """
-    Accumulate a value, and check the accumulated value against a target value,
-    and if it matches record the data parameter.
+    Accumulate a value, and check the accumulated value against a target
+    value, and if it matches record the data parameter.
 
     You can use this to record data where some function of the data is at an
     extremum value.
@@ -13347,8 +13389,40 @@ sigusr2 = lambda pid: os.kill(pid, signal.SIGUSR2)
 
 ###############################################################################
 
-# parse a run file (which uses a shell-like syntax)
+# parse a path specification
+# if path = "/Users/jim/puzzles/enigma/enigma123.py"
+# then:
+#   {path} = "/Users/jim/puzzles/enigma/enigma123.py" = {dir}/{file}
+#   {stem} = "/Users/jim/puzzles/enigma/enigma123" = {dir}/{name}
+#   {dir}  = "/Users/jim/puzzles/enigma"
+#   {file} = "enigma123.py" = {name}{ext}
+#   {name} = "enigma123"
+#   {ext}  = ".py"
+# occurrences of {var} in spec are replaced and the resulting string returned
+def parsepath(spec, path=None):
+  if path is None:
+    # if no path is specified extract __file__ attribute from an enclosing scope
+    f = sys._getframe(1)
+    while True:
+      if not f: raise ValueError("parsepath: cannot determine reference path")
+      path = f.f_locals.get('__file__')
+      if path: break
+      f = f.f_back
+  path = os.path.realpath(path)
+  (stem, ext) = os.path.splitext(path)
+  # fill out path components using a dict
+  # (in Python 3 we could use a function)
+  vs = {
+    'path': path,
+    'stem': stem,
+    'dir' : os.path.dirname(path),
+    'file': os.path.basename(path),
+    'name': os.path.basename(stem),
+    'ext' : ext,
+  }
+  return strfmt(spec, vs=vs)
 
+# parse a run file (which uses a shell-like syntax)
 def parsefile(path, args=None, interleave=None, string=None):
 
   # parse from a file or string
@@ -13358,6 +13432,9 @@ def parsefile(path, args=None, interleave=None, string=None):
     lexer = shlex.shlex(f, posix=1)
     lexer.whitespace_split = True
     return list(lexer)
+
+  # if path is not a string, assume it is a (spec, file) pair
+  if not isinstance(path, basestring): path = call(parsepath, path)
 
   if path == '<string>':
     words = parse(string)
