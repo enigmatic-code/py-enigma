@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 26 09:21:29 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct  3 08:48:22 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-09-24"
+__version__ = "2024-10-02"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -1243,7 +1243,7 @@ def respace(x, sep=' '):
   """
   respace string <x>.
 
-  leading and trailling space is removed, and other space is reduced
+  leading and trailing space is removed, and other space is reduced
   to a single space character.
 
   >>> respace("   hello    world!   ")
@@ -4004,6 +4004,7 @@ def rcompose(*fns):
   """
   return fcompose(*(reversed(fns)))
 
+is_none = (lambda x: x is None)
 is_not_none = (lambda x: x is not None)
 is_square_p = (lambda x: is_square(x) is not None)  # = fcompose(is_square, is_not_none)
 
@@ -5494,8 +5495,8 @@ class dictify(object):
 
 @static(fn=None)
 def _sprintf(fmt, fn=None, vs=None, frame=None):
-  stack = getattr(collections, 'ChainMap', None)
-  if stack:
+  dstack = getattr(collections, 'ChainMap', None)
+  if dstack:
     # in Python 3 we can use collections.ChainMap
     ds = []
     if fn:
@@ -5505,7 +5506,7 @@ def _sprintf(fmt, fn=None, vs=None, frame=None):
     if frame:
       ds.append(frame.f_locals)
       ds.append(frame.f_globals)
-    d = stack(*ds)
+    d = (ds[0] if len(ds) == 1 else dstack(*ds))
   else:
     # we can populate a dict
     d = dict()
@@ -5528,7 +5529,7 @@ else:
 def strfmt(fmt='', fn=None, vs=None, frame=None):
   """
   format the string <fmt> using substitutions from:
-    function <fn> (in Python 3)
+    function <fn> (in Python 3) for dynamic lookup
     dictionary <vs>
     local/global variables in frame <frame>
   """
@@ -6267,8 +6268,8 @@ def express_quantities(t, ds, qs, ss=[]):
       if t_ < 0: break
       for r in express_quantities(t_, ds[1:], qs, ss + [q]): yield r
 
-# express total <t> using (<denomination>, <quantity>) pairs <vs>
-# vs = ordered list of (<denomination>, <quantity>) pairs
+# express total <t> using (<denomination>, <max-quantity>) pairs <vs>
+# vs = ordered list of (<denomination>, <max-quantity>) pairs
 # tv = total sum of values in <vs>
 # k = express using <k> values (not <k> _different_ denominations)
 # note that quantities and <tv> can be inf.
@@ -10946,9 +10947,9 @@ class SubstitutedExpression(object):
     printf()
     return -1
 
-  # class method to load a run file
   @classmethod
   def from_file(cls, path, args=None, env=None):
+    "class method to load a run file"
     (cmd, argv) = parsefile(path, args)
     if run.alias.get(cmd, cmd) != cls.__name__:
       printf("WARNING: loading '{cmd}' into '{cls.__name__}'")
@@ -10958,9 +10959,9 @@ class SubstitutedExpression(object):
     if env: opt['env'] = env
     return cls(argv, **opt)
 
-  # parse a string as a run-file
   @classmethod
   def from_string(cls, string, args=None, env=None):
+    "class method to parse a string as a run file"
     (cmd, argv) = parsefile('<string>', args, string=string)
     if argv:
       if run.alias.get(cmd, cmd) != cls.__name__:
@@ -10971,7 +10972,6 @@ class SubstitutedExpression(object):
       if env: opt['env'] = env
       return cls(argv, **opt)
 
-  # class method to provide a read/eval/print loop
   @classmethod
   def repl(cls, args=(), timed=1):
     """
@@ -10979,7 +10979,7 @@ class SubstitutedExpression(object):
 
     Use the following command to invoke it:
 
-      % python enigma.py SubstitutedExpression.repl
+      % python enigma.py -r SubstitutedExpression.repl
 
     timed=1 will time the evaluation.
 
@@ -13391,11 +13391,11 @@ sigusr2 = lambda pid: os.kill(pid, signal.SIGUSR2)
 ###############################################################################
 
 # parse a path specification
-# if path = "/Users/jim/puzzles/enigma/enigma123.py"
+# if path = "/users/jim/puzzles/enigma/enigma123.py"
 # then:
-#   {path} = "/Users/jim/puzzles/enigma/enigma123.py" = {dir}/{file}
-#   {stem} = "/Users/jim/puzzles/enigma/enigma123" = {dir}/{name}
-#   {dir}  = "/Users/jim/puzzles/enigma"
+#   {path} = "/users/jim/puzzles/enigma/enigma123.py" = {dir}/{file}
+#   {stem} = "/users/jim/puzzles/enigma/enigma123" = {dir}/{name}
+#   {dir}  = "/users/jim/puzzles/enigma"
 #   {file} = "enigma123.py" = {name}{ext}
 #   {name} = "enigma123"
 #   {ext}  = ".py"
@@ -13411,8 +13411,7 @@ def parsepath(spec, path=None):
       f = f.f_back
   path = os.path.realpath(path)
   (stem, ext) = os.path.splitext(path)
-  # fill out path components using a dict
-  # (in Python 3 we could use a function)
+  # fill out path components using a dict (in Python 3 we could use a function)
   vs = {
     'path': path,
     'stem': stem,
@@ -13975,7 +13974,7 @@ enigma.py has the following command-line usage:
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.12.6',
+  version=__version__, python='2.7.18', python3='3.12.7',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
