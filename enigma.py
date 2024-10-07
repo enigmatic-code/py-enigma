@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct  3 08:48:22 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Oct  7 14:23:40 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-10-02"
+__version__ = "2024-10-07"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -2386,6 +2386,30 @@ def group(seq, by=identity, st=None, f=identity, fn=None):
       d[k] = fn(vs)
   return d
 
+# by considering values of sequence <seq>, we consider it to consist
+# of groups formed by contiguous subsequences with the same value of <by>
+# we then look for the first value f(x) in the sequence that satisfies
+# function <fn>, and return (in order) all values in that group that
+# satisfy <fn>.
+def first_group(seq, fn, by=item(0), f=item(1)):
+  (seq, g) = (iter(seq), None)
+  # find the first value to satisfy fn
+  for x in seq:
+    v = f(x)
+    if fn(v):
+      yield v
+      g = by(x)
+      break
+  else:
+    # loop not terminated by break, so <fn> was not satisfied
+    return
+  # now look for remaining values in the same group
+  for x in seq:
+    if by(x) != g: return
+    v = f(x)
+    if fn(v):
+      yield v
+
 # see ulambda() for a workaround for more complicated unpacking
 def unpack(fn):
   """
@@ -3178,7 +3202,42 @@ def divisors_tuples(n, k, s=()):
   else:
     for (a, b) in divisors_pairs(n):
       if not (s and a < s[-1]):
-        for z in divisors_tuples(b, k - 1, s + (a,)): yield z
+        #yield from divisors_tuples(b, k - 1, s + (a,))  #[Python 3]
+        for z in divisors_tuples(b, k - 1, s + (a,)): yield z  #[Python 2]
+
+def _factorisations(n, ds, i, ss=[]):
+  # are we done?
+  if n == 1:
+    yield tuple(ss)
+  else:
+    # look for the next divisor
+    while i >= 0:
+      d = ds[i]
+      if n >= d:
+        (r, x) = divmod(n, d)
+        if x == 0:
+          #yield from _factorisations(r, ds, i, [d] + ss)  #[Python 3]
+          for z in _factorisations(r, ds, i, [d] + ss): yield z  #[Python 2]
+      i -= 1
+
+def factorisations(n, fn=prime_factor, validate=0):
+  """
+  generate factorisations of (non-negative integer) <n>
+  (sometimes known as: multiplicative partitions)
+
+  >>> sorted(factorisations(24), reverse=1)
+  [(24,), (4, 6), (3, 8), (2, 12), (2, 3, 4), (2, 2, 6), (2, 2, 2, 3)]
+  >>> sorted(factorisations(factorial(9) + 1), reverse=1)
+  [(362881,), (269, 1349), (71, 5111), (19, 19099), (19, 71, 269)]
+  """
+  if validate: n = as_int(n, include="0+")
+  # always return the trivial factorisation
+  yield (n,)
+  if n < 4: return
+  # look for other factorisations using divisors (other than 1 and n)
+  ds = trim(divisors(n, fn=fn), head=1, tail=1)
+  #yield from _factorisations(n, ds, len(ds) - 1)  #[Python 3]
+  for z in _factorisations(n, ds, len(ds) - 1): yield z  #[Python 2]
 
 # see also: is_prime_mr(), Primes.is_prime(), gmpy2.is_prime()
 def is_prime(n, validate=0):
@@ -13471,8 +13530,7 @@ _run_exit = None
 # always returns None, but sets _run_exit
 @static(alias={ 'Alphametic': 'SubstitutedExpression' })
 def run(cmd, *args, **kw):
-  """
-  run with command line arguments
+  """run with command line arguments
 
   <cmd> can be a class in enigma.py that accepts a command line,
   or it can be a run file, Python program or other script
@@ -13485,7 +13543,11 @@ def run(cmd, *args, **kw):
     repeat - for repeated runs (usually for timing purposes)
     flags - 'p' = enable prompts, 'v' = enable verbose
     interpreter - interpreter to use
+    type - run type ('run', 'python')
     verbose - enable informational output
+
+  the run type is usually inferred from the file name (.run -> 'run';
+  .py, .py2, .py3 -> 'python') but can be overridden if necessary.
   """
   global _run_exit, _PY_ENIGMA
   _run_exit = None
@@ -13501,6 +13563,7 @@ def run(cmd, *args, **kw):
   timed = kw.get('timed')
   flags = kw.get('flags', '')
   interp = kw.get('interpreter')
+  rtype = kw.get('type')
   #interact = kw.get('interact')
 
   if 'repeat' in kw:
@@ -13526,11 +13589,11 @@ def run(cmd, *args, **kw):
   if os.path.isfile(cmd):
     if verbose: printf("run: attempting to run file \"{cmd}\"")
     if timed and not isinstance(timed, basestring): timed = os.path.basename(cmd)
-    if (not interp) and cmd.endswith(".run"):
+    if (not interp) and (rtype == "run" or cmd.endswith(".run")):
       # *.run => treat it as a run file
       (cmd, args) = parsefile(cmd, args)
     else:
-      if (not interp) and any(cmd.endswith(x) for x in (".py", ".py2", ".py3")):
+      if (not interp) and (rtype == "python" or any(cmd.endswith(x) for x in (".py", ".py2", ".py3"))):
         # use runpy for *.py
         run_path = import_fn('runpy.run_path')
         get_argv(force=1, args=args)
