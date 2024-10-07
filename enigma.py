@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Oct  7 14:23:40 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Oct  7 14:28:35 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -13543,11 +13543,11 @@ def run(cmd, *args, **kw):
     repeat - for repeated runs (usually for timing purposes)
     flags - 'p' = enable prompts, 'v' = enable verbose
     interpreter - interpreter to use
-    type - run type ('run', 'python')
+    type - run type ('.run', '.py')
     verbose - enable informational output
 
-  the run type is usually inferred from the file name (.run -> 'run';
-  .py, .py2, .py3 -> 'python') but can be overridden if necessary.
+  the run type is usually inferred from the file name (.run -> '.run';
+  .py, .py2, .py3 -> '.py') but can be overridden if necessary.
   """
   global _run_exit, _PY_ENIGMA
   _run_exit = None
@@ -13589,11 +13589,11 @@ def run(cmd, *args, **kw):
   if os.path.isfile(cmd):
     if verbose: printf("run: attempting to run file \"{cmd}\"")
     if timed and not isinstance(timed, basestring): timed = os.path.basename(cmd)
-    if (not interp) and (rtype == "run" or cmd.endswith(".run")):
+    if (not interp) and (rtype == ".run" or cmd.endswith(".run")):
       # *.run => treat it as a run file
       (cmd, args) = parsefile(cmd, args)
     else:
-      if (not interp) and (rtype == "python" or any(cmd.endswith(x) for x in (".py", ".py2", ".py3"))):
+      if (not interp) and (rtype == ".py" or any(cmd.endswith(x) for x in (".py", ".py2", ".py3"))):
         # use runpy for *.py
         run_path = import_fn('runpy.run_path')
         get_argv(force=1, args=args)
