@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Oct  7 14:28:35 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Oct  7 21:18:05 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-10-07"
+__version__ = "2024-10-09"
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5628,6 +5628,23 @@ def printf(fmt='', **vs):
   if s.endswith('\\'): (s, d['end']) = (s[:-1], '')
   print(s, **d)
 
+class Failure(Exception): pass
+
+def fail(expr=True, msg=''):
+  """
+  if <expr> is true then a Failure exception is raised
+  (with optional message <msg>).
+
+  otherwise the value of <expr> is returned (which will
+  be a false value), this allows constructions of the form:
+
+    fail(expr1) or expr2
+
+  which will fail if <expr1> is true, but if it is false
+  it will return the value of <expr2>
+  """
+  if expr: raise Failure(msg)
+  return expr
 
 def catch(fn, *args, **kw):
   """
@@ -5640,7 +5657,9 @@ def catch(fn, *args, **kw):
   try:
     return fn(*args, **kw)
   except Exception:
-    #print("catch: caught exception!"); print(sys.exc_info())
+    if 'v' in _PY_ENIGMA:
+      print("catch: caught exception!")
+      print(sys.exc_info())
     return
 
 # inclusive range iterator
@@ -13578,8 +13597,24 @@ def run(cmd, *args, **kw):
 
   # an alternative way to run a solver is to use "-r[t] / --run[:timed] <file> <additional-args>"
   if cmd.startswith('-r') or cmd.startswith('--run'):
-    if cmd == "-rt" or cmd == "--run:timed": timed = 1
     if not args: raise ValueError("missing argument for -r / --run")
+    # -r[trpv]
+    if cmd.startswith("-r"):
+      for x in cmd[2:]:
+        if x == 't': timed = 1
+        elif x == 'r': rtype = ".run"
+        elif x == 'p': rtype = ".py"
+        elif x == 'v': verbose = 1
+        else: printf("run: unrecognised -r flag {x!r}")
+    # --run:timed:type=.run:verbose
+    elif cmd.startswith("--run:"):
+      for x in cmd[6:].split(':'):
+        if x == 'timed' or x == 'timed=1': timed = 1
+        elif x == 'timed=0': timed = 0
+        elif x.startswith("type="): rtype = x[5:]
+        elif x == 'verbose' or x == 'verbose=1': verbose = 1
+        elif x == 'verbose=0': verbose = 0
+        else: printf("run: unrecognised --run option {x!r}")
     (cmd, args) = (args[0], args[1:])
   elif cmd.startswith('-'):
     if verbose: printf("run: unrecognised command \"{cmd}\"")
@@ -13881,7 +13916,8 @@ def _enigma_configure(args):
   printf("EXPERIMENTAL: configure [{tag}]")
   configure_file(__file__, {tag})
 
-__doc__ += """
+if __doc__:
+  __doc__ += """
 
 COMMAND LINE USAGE:
 
