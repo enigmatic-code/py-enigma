@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Oct  7 21:18:05 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Oct  8 12:29:43 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-10-09"
+__version__ = "2024-10-10" # <year>-<month>-<number>
 
 __credits__ = """Brian Gladman, contributor"""
 
@@ -5633,7 +5633,8 @@ class Failure(Exception): pass
 def fail(expr=True, msg=''):
   """
   if <expr> is true then a Failure exception is raised
-  (with optional message <msg>).
+  (with optional message <msg>). (NOTE: "assert" statements
+  raise an exception when the expression is false).
 
   otherwise the value of <expr> is returned (which will
   be a false value), this allows constructions of the form:
@@ -5641,6 +5642,13 @@ def fail(expr=True, msg=''):
     fail(expr1) or expr2
 
   which will fail if <expr1> is true, but if it is false
+  it will return the value of <expr2>
+
+  or:
+
+    expr2 if expr1 else fail()
+
+  which will fail if <expr1> is false, but if it is true
   it will return the value of <expr2>
   """
   if expr: raise Failure(msg)
@@ -9002,7 +9010,7 @@ def substituted_sum(terms, result, digits=None, l2d=None, d2i=None, base=10):
   n = len(result)
   # make sure the terms are the same length as the result
   ts = list('_' * (n - len(t)) + t for t in terms)
-  assert all(len(t) == n for t in ts), "result is shorter than terms"
+  if not all(len(t) == n for t in ts): raise ValueError("result is shorter than terms")
   l2d['_'] = 0
   # call the solver
   for r in _substituted_sum(ts, result, digits, l2d, d2i, n, 0, base):
@@ -9276,7 +9284,7 @@ class SubstitutedSum(object):
     if ss is None:
       ss = list(range(n))
     else:
-      assert all(s < n for s in ss), "invalid suspect index"
+      if not all(s < n for s in ss): raise ValueError("invalid suspect index")
 
     # all letters in all terms
     letters = union(ts)
@@ -9905,7 +9913,7 @@ class SubstitutedExpression(object):
         # ("<word> == <expr>", None, 1)  -->  ("<expr>", "<word>", 3)
         if k == 1:
           word = xpr = None
-          assert symbols, "expr has no alphametic symbols ???"
+          if not symbols: raise ValueError("expr has no alphametic symbols ???")
           m = re.match(r'\s*\{([' + symbols + r']+)\}\s*==\s*(.+)\s*$', expr)
           if m:
             (word, xpr) = m.groups()
@@ -9952,7 +9960,7 @@ class SubstitutedExpression(object):
         r.remove(i)
       # if reorder is a list, do the specified indices (1-indexed) first
       if isinstance(reorder, list):
-        assert min(reorder) > 0 and not max(reorder) > len(exprs), "invalid reorder spec: " + repr(reorder)
+        if not (min(reorder) > 0 and not max(reorder) > len(exprs)): raise ValueError("invalid reorder spec: " + repr(reorder))
         js = tuple(j - 1 for j in reorder)
         s = js + diff(s, js)
       # update the lists
@@ -10274,7 +10282,7 @@ class SubstitutedExpression(object):
     like solve(), but just return the answer for each solution
     (assuming the 'answer' parameter has been specified).
     """
-    assert self.answer, "'answer' parameter must be specified"
+    if not self.answer: raise ValueError("'answer' parameter must be specified")
     for (_, ans) in self.solve(**kw):
       yield ans
 
@@ -10504,7 +10512,7 @@ class SubstitutedExpression(object):
     # check terms/result are fully alphametic, and strip braces
     for i in xrange(len(sums)):
       (terms, result) = sums[i]
-      assert all(x[0] == '{' and x[-1] == '}' for x in terms + [result]), "sum must be fully alphametic"
+      if not (all(x[0] == '{' and x[-1] == '}' for x in terms + [result])): raise ValueError("sum must be fully alphametic")
       sums[i] = (list(x[1:-1] for x in terms), result[1:-1])
 
     # find words in: terms, result, extra, answer
@@ -10577,7 +10585,7 @@ class SubstitutedExpression(object):
         # allocate a carry out
         if rs_:
           carry = join(carries[:ck])
-          assert len(carry) == ck, "ran out of carry symbols"
+          if not (len(carry) == ck): raise RuntimeError("ran out of carry symbols")
           carries = carries[ck:]
           cs.append(carry)
         # add an expression for this set of columns
@@ -11003,9 +11011,9 @@ class SubstitutedExpression(object):
         if opt.get('extra') is not None: extra = opt['extra'] + extra
         kw['extra'] = extra
         # check restricted arguments
-        assert 'digits' not in opt, "split_sum: doesn't handle 'digits' specification (use 'invalid' instead)"
+        if 'digits' in opt: raise ValueError("split_sum: doesn't handle 'digits' specification (use 'invalid' instead)")
         if 'distinct' in opt:
-          assert len(opt['distinct']) == 1, "split_sum: doesn't handle multiple 'distinct' values"
+          if len(opt['distinct']) > 1: raise ValueError("split_sum: doesn't handle multiple 'distinct' values")
           opt['distinct'] = opt['distinct'][0]
         # copy accepted arguments
         for k in ['base', 'symbols', 's2d', 'd2i', 'answer', 'accumulate', 'env', 'code', 'template', 'solution', 'distinct', 'literal', 'verbose']:
@@ -11233,7 +11241,7 @@ class Slots(object):
 
   # unify two sequence of slots <s> and <t>
   def unify(self, s, t):
-    assert len(s) == len(t), "unification length mismatch"
+    if len(s) != len(t): raise ValueError("unification length mismatch")
     for (i, j) in zip(s, t):
       self._unify(i, j)
 
@@ -11428,7 +11436,7 @@ class SubstitutedDivision(SubstitutedExpression):
     # allocate slots for the input data
     (a, b, c) = slots.allocate((a, b, c))
     subs = list(slots.allocate(x) for x in subs)
-    assert len(c) == len(subs), "result/intermediate mismatch"
+    if len(c) != len(subs): raise ValueError("result/intermediate mismatch")
 
     # no leading zeros (or singleton zeros, except for remainder)
     for s in chain([a, b, c], *subs):
@@ -12300,9 +12308,8 @@ class DominoGrid(object):
     """
     # checks
     n = len(grid)
-    assert n == N * M
-    (D, r) = divmod(n - grid.count(None), 2)
-    assert r == 0
+    if not (n == N * M): raise ValueError("invalid grid dimensions")
+    D = ediv(n - grid.count(None), 2)
     self.grid = grid
     self.N = N  # columns
     self.M = M  # rows
@@ -13197,7 +13204,7 @@ class Matrix(list):
     F = self.get_field()
 
     # check matrix is square
-    assert n == m, "gauss: non-square matrix"
+    if n != m: raise ValueError("gauss: non-square matrix")
 
     # if B is None, use the identity matrix
     if B is None: B = Matrix.identity(n, m)
@@ -13565,8 +13572,8 @@ def run(cmd, *args, **kw):
     type - run type ('.run', '.py')
     verbose - enable informational output
 
-  the run type is usually inferred from the file name (.run -> '.run';
-  .py, .py2, .py3 -> '.py') but can be overridden if necessary.
+  if a file is specified, and the run type is not explicitly set,
+  then it will be set from the file extension.
   """
   global _run_exit, _PY_ENIGMA
   _run_exit = None
@@ -13622,13 +13629,14 @@ def run(cmd, *args, **kw):
 
   # if cmd names a file
   if os.path.isfile(cmd):
-    if verbose: printf("run: attempting to run file \"{cmd}\"")
+    if not rtype: (_, rtype) = os.path.splitext(cmd)
+    if verbose: printf("run: attempting to run file \"{cmd}\" [type = {rtype!r}]")
     if timed and not isinstance(timed, basestring): timed = os.path.basename(cmd)
-    if (not interp) and (rtype == ".run" or cmd.endswith(".run")):
+    if (not interp) and (rtype == ".run"):
       # *.run => treat it as a run file
       (cmd, args) = parsefile(cmd, args)
     else:
-      if (not interp) and (rtype == ".py" or any(cmd.endswith(x) for x in (".py", ".py2", ".py3"))):
+      if (not interp) and (rtype in {".py", ".py2", ".py3"}):
         # use runpy for *.py
         run_path = import_fn('runpy.run_path')
         get_argv(force=1, args=args)
@@ -13651,8 +13659,8 @@ def run(cmd, *args, **kw):
         if interp:
           cmd = interp.strip()
           # if it is a run file...
-          if path.endswith(".run"):
-            args = ['--run', path] + args
+          if rtype == ".run":
+            args = ['--run:type=.run', path] + args
             path = enigma.__file__
         else:
           with open(path, 'r') as fh:
@@ -13660,7 +13668,7 @@ def run(cmd, *args, **kw):
             # find the shebang
             shebang = "#!"
             i = s.find(shebang)
-            assert i != -1, "interpreter not found"
+            if i == -1: raise RuntimeError("interpreter not found")
             cmd = s[i + len(shebang):].strip()
         cmd = shlex.split(cmd)
         cmd.append(path)
