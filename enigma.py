@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Oct  8 12:29:43 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Oct  9 08:16:10 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,9 +230,9 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-10-10" # <year>-<month>-<number>
+__version__ = "2024-10-11" # <year>-<month>-<number>
 
-__credits__ = """Brian Gladman, contributor"""
+__credits__ = "Brian Gladman, contributor"
 
 import sys
 import os
@@ -14081,7 +14081,7 @@ enigma.py has the following command-line usage:
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.12.7',
+  version=__version__, python='2.7.18', python3='3.13.0',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
