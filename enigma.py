@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Oct  9 08:16:10 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Oct 16 11:09:42 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-10-11" # <year>-<month>-<number>
+__version__ = "2024-10-15" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -3211,14 +3211,13 @@ def _factorisations(n, ds, i, ss=[]):
     yield tuple(ss)
   else:
     # look for the next divisor
-    while i >= 0:
-      d = ds[i]
+    for j in irange(i, 0, step=-1):
+      d = ds[j]
       if n >= d:
         (r, x) = divmod(n, d)
         if x == 0:
-          #yield from _factorisations(r, ds, i, [d] + ss)  #[Python 3]
-          for z in _factorisations(r, ds, i, [d] + ss): yield z  #[Python 2]
-      i -= 1
+          #yield from _factorisations(r, ds, j, [d] + ss)  #[Python 3]
+          for z in _factorisations(r, ds, j, [d] + ss): yield z  #[Python 2]
 
 def factorisations(n, fn=prime_factor, validate=0):
   """
@@ -5923,7 +5922,7 @@ def append(s, *vs):
   """
   make a new container, the same as <s> but with additional values <vs> added.
 
-  if the container has a sense or order, items are added at the end.
+  if the container has a sense of order, items are added at the end.
 
   >>> append((1, 2, 3), 4)
   (1, 2, 3, 4)
