@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Oct 19 15:47:27 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Oct 19 15:55:38 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-10-18" # <year>-<month>-<number>
+__version__ = "2024-10-19" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -8543,6 +8543,9 @@ class _PrimeSieveE6(object):
 
   def is_square_free(self, n, end=None, mr=0, mrr=0):
     return is_square_free(n, fn=(lambda n: self.prime_factor(n, end=end, mr=mr, mrr=mrr)))
+
+  def factorisations(self, n, end=None, mr=0, mrr=0):
+    return factorisations(n, fn=(lambda n: self.divisors(n, end=end, mr=mr, mrr=mrr)))
 
 # an expandable version of the sieve
 
