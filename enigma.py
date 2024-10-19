@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Oct 19 15:41:24 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Oct 19 15:47:27 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-10-16" # <year>-<month>-<number>
+__version__ = "2024-10-18" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -3224,10 +3224,16 @@ def factorisations(n, fn=divisors, validate=0):
   generate factorisations of (non-negative integer) <n>
   (sometimes known as: multiplicative partitions)
 
+  the function to determine the divisors of <n> can be specified as <fn>.
+
+  if <validate> is true, then <n> will be validated as a non-negative
+  integer.
+
   >>> sorted(factorisations(24), reverse=1)
   [(24,), (4, 6), (3, 8), (2, 12), (2, 3, 4), (2, 2, 6), (2, 2, 2, 3)]
   >>> sorted(factorisations(factorial(9) + 1), reverse=1)
   [(362881,), (269, 1349), (71, 5111), (19, 19099), (19, 71, 269)]
+
   """
   if validate: n = as_int(n, include="0+")
   # always return the trivial factorisation
