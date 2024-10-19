@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Oct 16 11:09:42 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Oct 19 15:41:24 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -57,7 +57,7 @@ cycles                 - generate cycles of a permutation
 decompose              - find sequences of integers with the specified sum
 diff                   - sequence difference
 digit_map              - create a map of digits to corresponding integer values
-digrt                  - the digital root of a number
+digrt                  - the (additive) digital root of a number
 disjoint_cproduct      - disjoint cartesian product
 disjoint_union         - disjoint union
 divc                   - ceiling division
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-10-15" # <year>-<month>-<number>
+__version__ = "2024-10-16" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -3219,7 +3219,7 @@ def _factorisations(n, ds, i, ss=[]):
           #yield from _factorisations(r, ds, j, [d] + ss)  #[Python 3]
           for z in _factorisations(r, ds, j, [d] + ss): yield z  #[Python 2]
 
-def factorisations(n, fn=prime_factor, validate=0):
+def factorisations(n, fn=divisors, validate=0):
   """
   generate factorisations of (non-negative integer) <n>
   (sometimes known as: multiplicative partitions)
@@ -3234,7 +3234,7 @@ def factorisations(n, fn=prime_factor, validate=0):
   yield (n,)
   if n < 4: return
   # look for other factorisations using divisors (other than 1 and n)
-  ds = trim(divisors(n, fn=fn), head=1, tail=1)
+  ds = trim(fn(n), head=1, tail=1)
   #yield from _factorisations(n, ds, len(ds) - 1)  #[Python 3]
   for z in _factorisations(n, ds, len(ds) - 1): yield z  #[Python 2]
 
@@ -3977,7 +3977,7 @@ def ipowers(exps=None):
   generate, in increasing order, without repeats, non-negative integers <n>
   that are perfect powers (i.e. n = pow(x, y), x >= 0, y >= 2).
 
-  <exps> is generator used for exponents (starting from 3).
+  <exps> is a generator used for exponents (starting from 3).
 
   >>> first(ipowers(), 14)
   [0, 1, 4, 8, 9, 16, 25, 27, 32, 36, 49, 64, 81, 100]
@@ -4215,7 +4215,11 @@ is_triangular_p = (lambda x: is_triangular(x) is not None)
 
 def digrt(n, base=10):
   """
-  return the digital root of positive integer <n>.
+  return the (additive) digital root of positive integer <n>.
+
+  equivalent to summing the digits of the number, and then
+  repeating the process on the result until a single digit
+  number is reached.
 
   >>> digrt(123456789)
   9
