@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Oct 19 15:55:38 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Nov  6 17:30:27 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-10-19" # <year>-<month>-<number>
+__version__ = "2024-10-31" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -284,6 +284,7 @@ defaultdict = collections.defaultdict
 namedtuple = collections.namedtuple
 product = itertools.product  # cartesian product, but see also: cproduct()
 module = sys.modules.get
+partial = functools.partial
 
 # detect if running under PyPy
 _pypy = getattr(sys, 'pypy_version_info', None)
@@ -2745,7 +2746,7 @@ def permutation(cycs, ps=None):
   """
   permute a sequence <ps> according to cycles <cycs>.
 
-  if ps is not specified it is determined from the elements in the cycles.
+  if <ps> is not specified it is determined from the elements in the cycles.
   """
   if ps is None: ps = sorted(flatten(cycs))
   m = dict()
@@ -4720,11 +4721,15 @@ def avg(seq, div=fdiv):
   >>> avg(irange(1, 10))
   5.5
   """
-  t = k = 0
-  for x in seq:
-    t += x
-    k += 1
-  return div(t, k)
+  fn = getattr(seq, '__len__', None)
+  if fn:
+    (t, n) = (sum(seq), len(seq))
+  else:
+    t = n = 0
+    for x in seq:
+      t += x
+      n += 1
+  return div(t, n)
 
 iavg = functools.partial(avg, div=div)
 
@@ -5177,6 +5182,10 @@ def gmean(vs, root=root):
     p *= v
     k += 1
   return (p if k == 1 else root(p, k))
+
+# quadratic mean (aka root mean square)
+def qmean(vs, root=math.sqrt):
+  return root(amean(sq(v) for v in vs))
 
 # harmonic mean
 def hmean(vs, div=rdiv):
@@ -8530,22 +8539,22 @@ class _PrimeSieveE6(object):
     this is a complete factorisation for <n> up to the square of the
     limit of the sieve.
     """
-    return factor(n, fn=(lambda n: self.prime_factor(n, end=end, mr=mr, mrr=mrr)))
+    return factor(n, fn=functools.partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
 
   def divisors(self, n, end=None, mr=0, mrr=0):
-    return divisors(n, fn=(lambda n: self.prime_factor(n, end=end, mr=mr, mrr=mrr)))
+    return divisors(n, fn=functools.partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
 
   def divisors_pairs(self, n, end=None, mr=0, mrr=0):
-    return divisors_pairs(n, fn=(lambda n: self.prime_factor(n, end=end, mr=mr, mrr=mrr)))
+    return divisors_pairs(n, fn=functools.partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
 
   def tau(self, n, end=None, mr=0, mrr=0):
-    return tau(n, fn=(lambda n: self.prime_factor(n, end=end, mr=mr, mrr=mrr)))
+    return tau(n, fn=functools.partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
 
   def is_square_free(self, n, end=None, mr=0, mrr=0):
-    return is_square_free(n, fn=(lambda n: self.prime_factor(n, end=end, mr=mr, mrr=mrr)))
+    return is_square_free(n, fn=functools.partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
 
   def factorisations(self, n, end=None, mr=0, mrr=0):
-    return factorisations(n, fn=(lambda n: self.divisors(n, end=end, mr=mr, mrr=mrr)))
+    return factorisations(n, fn=functools.partial(self.divisors, end=end, mr=mr, mrr=mrr))
 
 # an expandable version of the sieve
 
@@ -12608,7 +12617,7 @@ class Timer(object):
 
   def printf(self, fmt='', **kw):
     e = self.elapsed(disable_report=0)
-    s = _sprintf(fmt, kw, sys._getframe(1))
+    s = _sprintf(fmt, None, kw, sys._getframe(1))
     printf("[{n} {e}] {s}", n=self._name, e=self.format(e))
 
   def __enter__(self):
