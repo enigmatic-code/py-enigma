@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Nov  6 17:30:27 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Nov 12 11:06:01 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.13)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-10-31" # <year>-<month>-<number>
+__version__ = "2024-11-11" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -2900,6 +2900,25 @@ def repeat(fn, v=0, k=inf):
     if i == k: break
     i += 1
     v = fn(v)
+
+# repeatedly apply a function <fn> to <v> until consecutive values of
+# measure <m> satisfy function <cmp>
+def converge(fn, v, m=identity, cmp=is_equal):
+  """
+  repeatedly apply function <fn> to value <v> until consecutive
+  values of measure <m> satisfy function <cmp>.
+
+  For example, finding the square root of 2 using Newton's method:
+  (it would also be appropriate to use: cmp=math.isclose in Python >= 3.5)
+  >>> converge((lambda x, n=2.0: 0.5 * (x + n / x)), 1.0)
+  1.414213562373095
+  """
+  m0 = m(v)
+  while True:
+    v = fn(v)
+    m1 = m(v)
+    if cmp(m0, m1): return v
+    m0 = m1
 
 def uniq(seq, fn=None, verbose=0):
   """
@@ -7236,7 +7255,8 @@ int2str = int2base
 
 def base2int(s, base=10, strip=0, digits=None):
   """
-  convert a string representation of an integer in the specified base to an integer.
+  convert a string representation of an integer in the specified base
+  to an integer.
 
   if <strip> is set, then invalid characters in the conversion are ignored.
 
@@ -14133,11 +14153,15 @@ def _enigma_main(args=None):
   args = dict((arg[1], arg[2:]) for arg in args if len(arg) > 1 and arg[0] == '-')
 
   # -h => help
-  if 'h' in args: _enigma_help()
+  if 'h' in args:
+    _enigma_help()
+    return 0
 
   # -t => run tests
   # -tv => in verbose mode
-  if 't' in args: _enigma_test(verbose=('v' in args['t']))
+  if 't' in args:
+    r = _enigma_test(verbose=('v' in args['t']))
+    return r.failed
 
   # -u => check for updates, and download newer version
   # -uc => just check for updates (don't download)
@@ -14145,21 +14169,21 @@ def _enigma_main(args=None):
   # -u[d]r => replace enigma.py with downloaded file
   if 'u' in args:
     kw = dict((w, w[0] in args['u']) for w in ['check', 'download', 'rename', 'quiet', 'verbose'])
-    _enigma_update(**kw)
+    return _enigma_update(**kw)
 
   # -p = install enigma.py via pip
   # -pr => output requirements.txt entry
   if 'p' in args:
     kw = dict((w, w[0] in args['p']) for w in ['requirements', 'update', 'verbose'])
-    _enigma_pip(**kw)
+    return _enigma_pip(**kw)
 
   # -C3 = configure for Python 3
   # -C2 = -C = configure for Python 2
   if 'C' in args:
-    _enigma_configure(args['C'])
+    return _enigma_configure(args['C'])
 
 def _namecheck(name, verbose=0):
   if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
   return name == "__main__" or name == "<run_path>"
 
-if _namecheck(__name__): _enigma_main()
+if _namecheck(__name__): exit(_enigma_main())
