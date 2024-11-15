@@ -6,8 +6,8 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Nov 12 11:06:01 2024 (Jim Randell) jim.randell@gmail.com
-# Language:     Python (Python 2.7, Python 3.6 - 3.13)
+# Modified:     Thu Nov 14 14:38:52 2024 (Jim Randell) jim.randell@gmail.com
+# Language:     Python (Python 2.7, Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
 # URI:          http://www.magwag.plus.com/jim/enigma.html
@@ -230,7 +230,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-11-11" # <year>-<month>-<number>
+__version__ = "2024-11-13" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -5664,6 +5664,24 @@ def printf(fmt='', **vs):
   d = dict()  # flush=1
   if s.endswith('\\'): (s, d['end']) = (s[:-1], '')
   print(s, **d)
+
+# format output into blocks
+class Output():
+  def __init__(self, start=None, end="", prefix="  "):
+    self.start = start
+    self.end = end
+    self.prefix = prefix
+
+  def __enter__(self):
+    if self.start is not None: printf("{start}", start=self.start)
+    return self
+
+  def __exit__(self, *args):
+    if self.end is not None: printf("{end}", end=self.end)
+
+  def printf(self, fmt='', **kw):
+    s = _sprintf(fmt, None, kw, sys._getframe(1))
+    printf("{prefix}{s}", prefix=self.prefix)
 
 class Failure(Exception): pass
 
