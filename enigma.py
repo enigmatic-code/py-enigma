@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Nov 14 14:38:52 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Nov 16 14:47:15 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7, Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -217,6 +217,7 @@ Football               - a class for solving football league table puzzles
 MagicSquare            - a class for solving magic squares
 Matrix                 - a class for manipulation 2d matrices
 multiset               - an implementation of multisets (bags)
+Output                 - format blocks of output
 Polynomial             - a class for manipulating polynomials
 Primes                 - a class for creating prime sieves
 Rational               - select an implementation for rational numbers
@@ -230,7 +231,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-11-13" # <year>-<month>-<number>
+__version__ = "2024-11-15" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -2448,7 +2449,7 @@ unzip = unpack(zip)
 # cartesian product of a sequence, cproduct = unpack(itertools.product)
 def cproduct(ss, **kw):
   """
-  the cartesian product of a sequence.
+  the cartesian product of a collection of collections.
 
   so:
     itertools.product(*(<generator>)) --> cproduct(<generator>)
@@ -3762,7 +3763,7 @@ def fib(*s, **kw):
 
 # if we don't overflow floats (happens around 2^53) this works...
 #   def is_power(n, m):
-#     i = int(n**(1.0 / m) + 0.5)
+#     i = intr(n**(1.0 / m))
 #     return (i if i**m == n else None)
 # but here we use a binary search, which should work on arbitrary large integers
 #
@@ -3921,6 +3922,8 @@ def is_square(n, validate=0):
   False
   >>> is_square(0)
   0
+  >>> (is_square(10**120) is not None, is_square(10**120 + 1) is None)
+  (True, True)
   """
   if validate: n = as_int(n, include="0+")   # if validate check for non-negative integer
   if n is None or n < 0: return None
@@ -4539,10 +4542,12 @@ def intr(x):
   >>> list((x, intr(x)) for x in irangef(-3.5, +3.5, step=1.0))
   [(-3.5, -4), (-2.5, -3), (-1.5, -2), (-0.5, -1), (0.5, 1), (1.5, 2), (2.5, 3), (3.5, 4)]
   """
-  if x < 0:
-    x = -x
-    return -(int(x + x + 1) // 2)
-  return (int(x + x + 1) // 2)
+  neg = 0
+  if x < 0: (neg, x) = (1, -x)
+  (d, r) = divmod(x, 1)
+  d = int(d)
+  if r >= 0.5: d += 1
+  return (-d if neg else d)
 
 def divf(a, b):
   """
@@ -4600,11 +4605,11 @@ def divr(a, b):
   >>> divr(10, -4)
   -3
   """
+  neg = 0
   if b < 0: (a, b) = (-a, -b)
-  if a < 0:
-    a = -a
-    return -int((a + a + b) // (b + b))
-  return int((a + a + b) // (b + b))
+  if a < 0: (neg, a) = (1, -a)
+  r = int((a + a + b) // (b + b))
+  return (-r if neg else r)
 
 def ceil(x, m=1):
   """
@@ -5170,7 +5175,7 @@ rdiv = Rdiv()
 # harmonic sum
 def hsum(vs, div=rdiv, num=1):
   """
-  compute the harmonic sum of the specified:
+  compute the harmonic sum of the specified values:
 
   e.g. hsum([a, b, c]) = 1/(1/a + 1/b + 1/c)
   """
@@ -5635,7 +5640,8 @@ def strfmt(fmt='', fn=None, vs=None, frame=None):
 # print with variables interpolated into the format string
 def sprintf(fmt='', **vs):
   """
-  interpolate local variables and any keyword arguments into the format string <fmt>.
+  interpolate local variables and any keyword arguments into
+  the format string <fmt>.
 
   >>> (a, b, c) = (1, 2, 3)
   >>> sprintf("a={a} b={b} c={c}")
@@ -5667,17 +5673,28 @@ def printf(fmt='', **vs):
 
 # format output into blocks
 class Output():
-  def __init__(self, start=None, end="", prefix="  "):
+  def __init__(self, start=None, end="", prefix="  ", timed=None):
     self.start = start
     self.end = end
     self.prefix = prefix
+    self.timer = timed
 
   def __enter__(self):
-    if self.start is not None: printf("{start}", start=self.start)
+    start = self.start
+    if start is not None:
+      printf("{start}")
+    if self.timer:
+      self.timer = Timer()
     return self
 
   def __exit__(self, *args):
-    if self.end is not None: printf("{end}", end=self.end)
+    timer = self.timer
+    if timer:
+      timer.stop()
+      timer.report()
+    end = self.end
+    if end is not None:
+      printf("{end}")
 
   def printf(self, fmt='', **kw):
     s = _sprintf(fmt, None, kw, sys._getframe(1))
