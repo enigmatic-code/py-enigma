@@ -6,8 +6,8 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Nov 16 14:47:15 2024 (Jim Randell) jim.randell@gmail.com
-# Language:     Python (Python 2.7, Python 3.6 - 3.14)
+# Modified:     Sat Nov 23 09:00:18 2024 (Jim Randell) jim.randell@gmail.com
+# Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
 # URI:          http://www.magwag.plus.com/jim/enigma.html
@@ -231,7 +231,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-11-15" # <year>-<month>-<number>
+__version__ = "2024-11-18" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -2227,6 +2227,10 @@ _subsets_init()
 # aliases
 powerset = subsets
 subseqs = subsets
+
+def anagram(s):
+  "generate anagrams of <s> (treated as a string)"
+  return subsets(str(s), size=len, select='mP', fn=join)
 
 # like filter() but also returns the elements that don't satisfy the predicate
 # see also partition() recipe from itertools documentation
@@ -4745,8 +4749,7 @@ def avg(seq, div=fdiv):
   >>> avg(irange(1, 10))
   5.5
   """
-  fn = getattr(seq, '__len__', None)
-  if fn:
+  if hasattr(seq, '__len__'):
     (t, n) = (sum(seq), len(seq))
   else:
     t = n = 0
@@ -9775,7 +9778,7 @@ class SubstitutedExpression(object):
       if isinstance(exprs, basestring): exprs = [exprs]
 
       # replace any macros within expressions (and answer, template)
-      exprs = list(_expand_macros(s, macro) for s in exprs)
+      exprs = list(_expand_macros(x, macro) for x in exprs)
       answer = _expand_macros(answer, macro)
       template = _expand_macros(template, macro)
 
@@ -10476,7 +10479,7 @@ class SubstitutedExpression(object):
   def split_sum(cls,
     terms, result=None, k=1, carries=None, extra=None,
     base=None, symbols=None, s2d=None, d2i=None, distinct=None, literal=None,
-    answer=None, accumulate=None, env=None, code=None,
+    answer=None, accumulate=None, macro=None, env=None, code=None,
     template=None, solution=None, sane=None, warn=None, verbose=None
   ):
     """
@@ -10494,6 +10497,7 @@ class SubstitutedExpression(object):
 
       carries - symbols that can be used for carries between chunks
       extra - extra expressions (that don't get split)
+      macro - macros applied to extra and answer expressions
 
     the following parameters are passed to the SubstitutedExpression solver:
 
@@ -10547,6 +10551,7 @@ class SubstitutedExpression(object):
     if accumulate is None: accumulate = cls.defaults.get('accumulate', None)
     if env is None: env = cls.defaults.get('env', None)
     if code is None: code = cls.defaults.get('code', None)
+    if macro is None: macro = cls.defaults.get('macro', None)
     if sane is None: sane = cls.defaults.get('sane', 1)
     if warn is None: warn = cls.defaults.get('warn', 0)
     if verbose is None: verbose = cls.defaults.get('verbose', None)
@@ -10579,6 +10584,11 @@ class SubstitutedExpression(object):
           sums.append((ts, r))
         else:
           sums.append(v)
+
+    # replace any macros in extra, answer
+    if macro:
+      extra = list(_expand_macros(x, macro) for x in extra)
+      answer = _expand_macros(answer, macro)
 
     # convert implicit (without braces) into explicit (with braces)
     sums = list((_fix_implicit_seq(terms, symbols), _fix_implicit(result, symbols)) for (terms, result) in sums)
@@ -10689,7 +10699,6 @@ class SubstitutedExpression(object):
       template_ += " (" + answer + ")"
     if distinct == 1: distinct = symbols
     if template is None: template = template_
-
     if solution is None: solution = symbols
 
     # a solver with "standard" arguments
@@ -11092,8 +11101,8 @@ class SubstitutedExpression(object):
           if len(opt['distinct']) > 1: raise ValueError("split_sum: doesn't handle multiple 'distinct' values")
           opt['distinct'] = opt['distinct'][0]
         # copy accepted arguments
-        for k in ['base', 'symbols', 's2d', 'd2i', 'answer', 'accumulate', 'env', 'code', 'template', 'solution', 'distinct', 'literal', 'verbose']:
-          if k in opt:
+        accepted = set('base symbols s2d d2i answer accumulate env code template solution distinct literal macro verbose'.split())
+        for k in accepted.intersection(opt.keys()):
             kw[k] = opt.pop(k)
         #if opt: printf("SubstitutedExpression.run_split_sum: ignoring args: {opt}")
         self = cls.split_sum(sums, result=None, k=cols, carries=carries, **kw)
