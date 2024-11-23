@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Nov 23 09:00:18 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Nov 23 09:59:01 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -231,7 +231,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-11-18" # <year>-<month>-<number>
+__version__ = "2024-11-22" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -13854,7 +13854,7 @@ def configure_file(path, tags):
 def _enigma_help():
   print('command line arguments:')
   print('  <class> <args> = run run_command_line(<args>) method on class')
-  print('  [-r[t] | --run[:timed]] <file> [<additional-args>] = run the solver and args specified in <file>')
+  print('  [-r[{rp}tv] | --run[:type={.run,.py}][:timed][:verbose] <file> [<additional-args>] = run the solver and args specified in <file>')
   print('  -t[v] = run tests [v = verbose]')
   print('  -u[cdr[v]] = check for updates [c = only check, d = always download, r = rename after download, v = verbose]')
   print('  -p[ru[v]] = use pip for updates [r = show requirements, u = install/update, v = verbose]')
@@ -14164,6 +14164,13 @@ enigma.py has the following command-line usage:
     % python3 enigma.py --run enigma327.run
     (KBKGEQD + GAGEEYQ + ADKGEDY = EXYAAEE)
     (1912803 + 2428850 + 4312835 = 8654488) / A=4 B=9 D=3 E=8 G=2 K=1 Q=0 X=6 Y=5
+
+    additional arguments to the --run command are:
+
+      --run:type=.run (or -rr)
+      --run:type=.py  (or -rp)
+      --run:timed     (or -rt)
+      --run:verbose   (or -rv)
 
 """.format(
   version=__version__, python='2.7.18', python3='3.13.0',
