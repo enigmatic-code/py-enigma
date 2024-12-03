@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec  2 23:04:38 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Dec  3 08:19:15 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -231,7 +231,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-12-01" # <year>-<month>-<number>
+__version__ = "2024-12-02" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -4931,7 +4931,7 @@ def crt(vs):
 
   return: (x, m) where the solution is x + k.m for integers k
 
-  >>> crt([(2, 3), (3, 5), (2, 7)])
+  >>> tuple(crt([(2, 3), (3, 5), (2, 7)]))
   (23, 105)
   """
   if crt.rtype is None:
