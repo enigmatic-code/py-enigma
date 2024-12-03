@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Nov 23 09:59:01 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Dec  2 23:04:38 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -231,7 +231,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-11-22" # <year>-<month>-<number>
+__version__ = "2024-12-01" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -4913,6 +4913,40 @@ if _pythonv > (3, 7):
 else:
   invmod = _invmod
 
+# simplified CRT
+# solve: x = a (mod m); x = b (mod n)
+def crt1(a, b, m, n):
+  g = gcd(m, n)
+  if (a - b) % g != 0: return None
+  (x, y, z) = (m // g, n // g, (m * n) // g)
+  (u, v, _) = egcd(x, y)
+  return (b * u * x + a * v * y) % z
+
+@static(rtype=None, fail=None)
+def crt(vs):
+  """
+  general Chinese Remainder Theorem
+
+  solve: x = r_i (mod m_i) where vs = [(r_1, m_1), (r_2, m_2), ...]
+
+  return: (x, m) where the solution is x + k.m for integers k
+
+  >>> crt([(2, 3), (3, 5), (2, 7)])
+  (23, 105)
+  """
+  if crt.rtype is None:
+    crt.rtype = namedtuple('CRT', 'x mod')
+    crt.fail = crt.rtype(None, None)
+  if not vs: return crt.fail
+  for (i, (r, m)) in enumerate(vs):
+    if i == 0:
+      (x, mm) = (r, m)
+    else:
+      x = crt1(r, x, m, mm)
+      if x is None: return crt.fail
+      mm = lcm(m, mm)
+  return crt.rtype(x, mm)
+
 # find square roots of <a> mod <m>
 # this is OK for relatively small m, but more efficient (and complex)
 # approaches are available (e.g. sympy.ntheory.sqrt_mod_iter)
@@ -6027,8 +6061,8 @@ def append(s, *vs):
     return s.copy().update_from_seq(vs)
   raise ValueError(str.format("append() can't handle container of type {x}", x=type(s)))
 
-# this unifies removing an element (or elements) from a container:
-def remove(s, *vs):
+# this unifies removing an element (or elements) from a container
+def remove(s, *vs, **kw):
   """
   make a new container, the same as <s> but with values in <vs> removed.
 
@@ -6045,21 +6079,26 @@ def remove(s, *vs):
   >>> remove('1232', '2')
   '132'
   """
+  strict = kw.pop('strict', 0)
+  if kw: raise TypeError(str.format("remove: unknown arguments {kw}", kw=seq2str(kw.keys())))
   if isinstance(s, list):
     r = type(s)(s)
     for v in vs:
       try:
         r.remove(v)
-      except ValueError:
+      except ValueError as e:
+        if strict: raise ValueError(str.format("{v} not in list", v=v))
         continue
     return r
   if isinstance(s, tuple):
     return type(s)(remove(list(s), *vs))
   if isinstance(s, basestring):
     for v in vs:
+      if strict and v not in s: raise ValueError(str.format("{v!r} not in string", v=v))
       s = s.replace(v, '', 1)
     return s
   if isinstance(s, (set, frozenset, multiset)):
+    if strict and not s.issuperset(vs): raise ValueError(str.format("elements not in *set"))
     return s.difference(vs)
   raise ValueError(str.format("remove() can't handle container of type {x}", x=type(s)))
 
