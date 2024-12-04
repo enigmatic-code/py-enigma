@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Dec  3 08:19:15 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Dec  4 07:29:45 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -51,6 +51,7 @@ concat                 - concatenate a list of values into a string
 contains               - check for contiguous subsequence
 coprime_pairs          - generate coprime pairs
 cproduct               - cartesian product of a sequence of sequences
+crt                    - solve a collection of modular congurences
 cslice                 - cumulative slices of an array
 csum                   - cumulative sum
 cycles                 - generate cycles of a permutation
@@ -231,7 +232,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-12-02" # <year>-<month>-<number>
+__version__ = "2024-12-03" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -4927,12 +4928,14 @@ def crt(vs):
   """
   general Chinese Remainder Theorem
 
-  solve: x = r_i (mod m_i) where vs = [(r_1, m_1), (r_2, m_2), ...]
+  solve: x mod m_i = r_i where vs = [(r_1, m_1), (r_2, m_2), ...]
 
   return: (x, m) where the solution is x + k.m for integers k
 
   >>> tuple(crt([(2, 3), (3, 5), (2, 7)]))
   (23, 105)
+  >>> tuple(crt([(65, 95), (76, 97), (49, 99)]))
+  (639985, 912285)
   """
   if crt.rtype is None:
     crt.rtype = namedtuple('CRT', 'x mod')
