@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Dec  4 07:29:45 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Dec 16 08:43:50 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -232,7 +232,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-12-03" # <year>-<month>-<number>
+__version__ = "2024-12-15" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -4916,12 +4916,12 @@ else:
 
 # simplified CRT
 # solve: x = a (mod m); x = b (mod n)
-def crt1(a, b, m, n):
+def crt1(a, m, b, n):
   g = gcd(m, n)
-  if (a - b) % g != 0: return None
+  if (a - b) % g != 0: return (None, None)
   (x, y, z) = (m // g, n // g, (m * n) // g)
   (u, v, _) = egcd(x, y)
-  return (b * u * x + a * v * y) % z
+  return ((b * u * x + a * v * y) % z, z)
 
 @static(rtype=None, fail=None)
 def crt(vs):
@@ -4940,15 +4940,14 @@ def crt(vs):
   if crt.rtype is None:
     crt.rtype = namedtuple('CRT', 'x mod')
     crt.fail = crt.rtype(None, None)
-  if not vs: return crt.fail
+  x = mm = None
   for (i, (r, m)) in enumerate(vs):
     if i == 0:
       (x, mm) = (r, m)
     else:
-      x = crt1(r, x, m, mm)
+      (x, mm) = crt1(r, m, x, mm)
       if x is None: return crt.fail
-      mm = lcm(m, mm)
-  return crt.rtype(x, mm)
+  return (crt.fail if x is None else crt.rtype(x, mm))
 
 # find square roots of <a> mod <m>
 # this is OK for relatively small m, but more efficient (and complex)
@@ -5782,10 +5781,40 @@ def catch(fn, *args, **kw):
       print(sys.exc_info())
     return
 
+# round endpoints to integers
+def irange_round(a, b, step=1, rnd='i'):
+  """
+  round the endpoints of a range to integer values
+
+  i = round endpoints to give the largest range that is
+      inside the given values (default)
+  x = round endpoints to give the smallest range that
+      includes the given values
+  f = use floor rounding (intf)
+  c = use ceil rounding (intc)
+  r = use nearest integer rounding (intr)
+  b = use Python builtin rounding (round)
+  """
+  # f = floor, c = ceil, r = round
+  fn = dict(f=intf, c=intc, r=intr, b=round, I=identity)
+  (ka, kb) = (rnd[0], rnd[-1])
+  # i = internal, x = external
+  if ka == 'i':
+    ka = ('c' if step > 0 else 'f')
+  elif ka == 'x':
+    ka = ('f' if step > 0 else 'c')
+  if b == inf or b == -inf:
+    kb = 'I'
+  elif kb == 'i':
+    kb = ('f' if step > 0 else 'c')
+  elif kb == 'x':
+    kb = ('c' if step > 0 else 'f')
+  return irange(fn[ka](a), fn[kb](b), step)
+
 # inclusive range iterator
 # irange(a, b) -> [a, a + 1, ..., b]
 # irange(n) -> irange(0, n - 1) -> [0, ..., n - 1]
-@static(inf=inf)  # so b=irange.inf can be used
+@static(inf=inf, round=irange_round)  # so irange.<name> can be used
 def irange(a, b=None, step=1):
   """
   irange(a, b) =
@@ -5820,6 +5849,7 @@ def irange(a, b=None, step=1):
   [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
   """
   if not step: raise ValueError("irange: step cannot be zero")
+  if a == inf or a == -inf: raise ValueError("irange: unbounded start value")
   if b == inf:
     if step < 0: return xrange(0)
   elif b == -inf:
@@ -14215,7 +14245,7 @@ enigma.py has the following command-line usage:
       --run:verbose   (or -rv)
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.13.0',
+  version=__version__, python='2.7.18', python3='3.13.1',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
