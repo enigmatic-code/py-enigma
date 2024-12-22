@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec 16 08:43:50 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Dec 21 10:46:45 2024 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -232,7 +232,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-12-15" # <year>-<month>-<number>
+__version__ = "2024-12-16" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -1811,7 +1811,7 @@ class multiset(dict):
     """
     return the items of the multiset in order of the most common.
 
-    if n is specifed only the first n items are returned.
+    if <n> is specifed only the first <n> items are returned.
     """
     s = sorted(dict.items(self), key=(lambda t: t[::-1]), reverse=1)
     return (s if n is None else s[:n])
@@ -1974,7 +1974,7 @@ class multiset(dict):
 
   def min(self, **kw):
     """
-    return the minimum item value of a multiset (or <default>).
+    return the minimum item value in a multiset (or <default>).
 
     equivalent to: min(self)
     """
@@ -1984,7 +1984,7 @@ class multiset(dict):
 
   def max(self, **kw):
     """
-    return the maximum item value of a multiset (or <default>).
+    return the maximum item value in a multiset (or <default>).
 
     equivalent to: max(self)
     """
@@ -5784,7 +5784,10 @@ def catch(fn, *args, **kw):
 # round endpoints to integers
 def irange_round(a, b, step=1, rnd='i'):
   """
-  round the endpoints of a range to integer values
+  round the endpoints of a range to integer values.
+
+  the type of rounding used can be specified using the
+  'rnd' parameter:
 
   i = round endpoints to give the largest range that is
       inside the given values (default)
@@ -5828,6 +5831,8 @@ def irange(a, b=None, step=1):
 
   if <b> is specified as inf (or -inf for negative steps) the iterator
   will generate values indefinitely.
+
+  if you want the endpoints to be rounded to integers use irange.round().
 
   irange(n) =
   if only one value <n> is specified for the endpoints, then endpoints
@@ -9632,15 +9637,19 @@ def _fix_implicit_seq(seq, symbols):
 
 def _expand_macros(s, macro, depth=20):
   if not s: return s
-  while '@' in s:
+  # this leaves invalid macros alone
+  fn = lambda k: macro.get(k[1:], k)  # macro[k[1:]]  # raises error for invalid macros
+  while '@' in s or '$' in s:
     if depth == 0: raise ValueError("macro depth exceeded")
+    s_ = s
     try:
-      s = re.sub(r'\@(\w+)', (lambda x: macro[x.group(1)]), s)
+      s = re.sub(r'([\@\$]\w+)', (lambda x: fn(x.group(1))), s)
     except KeyError as e:
       # [Python 3] raise ValueError(...) from None
       x = ValueError(str.format("invalid macro: {k!r}", k=e.args[0]))
       if hasattr(x, '__cause__'): x.__cause__ = None
       raise x
+    if s == s_: break  # stop if line remains unchanged
     depth -= 1
   return s
 
@@ -9810,8 +9819,10 @@ class SubstitutedExpression(object):
     d2i = self.d2i
     answer = self.answer
     template = self.template
+    solution = self.solution
     distinct = self.distinct
     literal = self.literal
+    code = self.code
     denest = self.denest
     decl = self.decl
     macro = self.macro
@@ -9839,6 +9850,9 @@ class SubstitutedExpression(object):
     if literal: symbols.update(literal)
     symbols = join(sorted(symbols))
 
+    # code should be a sequence of strings
+    if code and isinstance(code, basestring): code = [code]
+
     # process expr to be a list of (<expr>, <value>) pairs, where:
     # <value> is:
     # None = look for a true value
@@ -9850,9 +9864,11 @@ class SubstitutedExpression(object):
       if isinstance(exprs, basestring): exprs = [exprs]
 
       # replace any macros within expressions (and answer, template)
-      exprs = list(_expand_macros(x, macro) for x in exprs)
-      answer = _expand_macros(answer, macro)
-      template = _expand_macros(template, macro)
+      if macro:
+        exprs = list(_expand_macros(x, macro) for x in exprs)
+        answer = _expand_macros(answer, macro)
+        template = _expand_macros(template, macro)
+        if code: code = list(_expand_macros(x, macro) for x in code)
 
       # now process the list (skipping duplicates)
       xs = list()
@@ -9885,7 +9901,7 @@ class SubstitutedExpression(object):
 
     # make the output template (which is kept in input order)
     # and also categorise the expressions to (<expr>, <value>, <cat>), where <cat> is:
-    # 0 = answer (<value> = None)
+    # 0 = answer/solution (<value> = None)
     # 1 = expression with no value, we look for a true (<value> = None)
     # 2 = expression with an integer value, we do a direct comparison (<value> = int)
     # 3 = expression with string value, we look to assign/check symbols (<value> = str)
@@ -9936,7 +9952,9 @@ class SubstitutedExpression(object):
     # find words in all exprs
     words = _find_words(_template)
     # and determine the symbols that are used
-    symbols = join(sorted(set().union(*words)))
+    symbols = set().union(*words)
+    if solution: symbols.update(solution)
+    symbols = join(sorted(symbols))
 
     # invalid (<symbol>, <digit>) assignments
     invalid = set()
@@ -9994,6 +10012,7 @@ class SubstitutedExpression(object):
     self.answer = answer
     self.distinct = distinct
     self.literal = literal
+    self.code = code
     self.denest = denest
     self.decl = decl
     self.verbose = verbose
@@ -10120,6 +10139,14 @@ class SubstitutedExpression(object):
       vs = list(vs[i] for i in s)
       ts = list(ts[i] for i in s)
 
+    # ensure all symbols are filled out
+    rs = set(symbols).difference(*xs).difference(*vs)
+    if rs:
+      exprs.append((None, None, 0))
+      xs.append(set(rs))
+      vs.append(set())
+      ts.append(join(rs, sort=1, enc="<>"))
+
     if verbose & self.vI:
       # output solver information
       printf("[base={base}, digits={digits}, symbols={symbols!r}, distinct={distinct}]")
@@ -10150,10 +10177,7 @@ class SubstitutedExpression(object):
     (vx, vy, vr) = ("_x_", "_y_", "_r_")  # local variables (that don't clash with _sym(x))
 
     # start with any initialisation code
-    if code:
-      # code should be a sequence (of strings)
-      if isinstance(code, basestring): code = [code]
-      prog.extend(code)
+    if code: prog.extend(code)
 
     # wrap it all up as function solver
     solver = gensym('_substituted_expression_solver')
@@ -10188,7 +10212,7 @@ class SubstitutedExpression(object):
     in_loop = False
     use_sets = ('s' in opt)  # use sets in code generation? [currently disabled by default]
 
-    # deal with each <expr>,<value> pair
+    # deal with each (<expr>, <value>) pair
     for ((expr, val, k), xsyms, vsyms) in zip(exprs, xs, vs):
 
       # [denest] work around statically nested block limit
@@ -10196,7 +10220,7 @@ class SubstitutedExpression(object):
         # start a new function block
         block = blocks[-1]
         _ = indent_reset
-        # In Python 3 we can use [[ nonlocal ]] instead of passing the symbols around
+        # In Python 3 we could use [[ nonlocal ]] instead of passing the symbols around
         prog.append(sprintf("{_}def {block}({block_args}):"))
         _ += indent
         if decl: prog.append(sprintf("{_}{decl}"))
@@ -10330,7 +10354,7 @@ class SubstitutedExpression(object):
           prog.append(sprintf("{_}yield from {block}({block_args})"))
         block = None
 
-    # [denest] work around statically nested block limit
+    # [denest] work around statically nested block limit in CPython
     if denest:
       if block is None:
         # we need a final trivial block
@@ -11011,9 +11035,9 @@ class SubstitutedExpression(object):
     elif k == 'C' or k == 'code':
       if 'code' not in opt: opt['code'] = []
       opt['code'].append(v)
-    elif k == '@' or k == 'macro':
+    elif k == '@' or k == '$' or k == 'macro':
       (m, t) = re.split(r'\s*=\s*', v)
-      if m[0] == '@': m = m[1:]
+      if m[0] in '@$' : m = m[1:]
       if opt.get('macro', None) is None: opt['macro'] = dict()
       opt['macro'][m] = t
     elif k == 'A' or k == 'answer':
