@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Dec 21 10:46:45 2024 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jan 19 11:24:55 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -232,7 +232,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2024-12-16" # <year>-<month>-<number>
+__version__ = "2025-01-09" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -1293,6 +1293,8 @@ def chunk(seq, n=2, pad=0, value=None, fn=tuple):
   [(1, 2), (3, 4), (5, 6), (7, 8)]
   >>> list(chunk(irange(1, 8), 3))
   [(1, 2, 3), (4, 5, 6), (7, 8)]
+  >>> list(unzip(chunk(irange(0, 9), 2)))
+  [(0, 2, 4, 6, 8), (1, 3, 5, 7, 9)]
   """
   i = iter(seq)
   while True:
@@ -1304,8 +1306,8 @@ def chunk(seq, n=2, pad=0, value=None, fn=tuple):
 # find contiguous blocks of values (according to fn)
 def clump(seq, fn=None):
   """
-  generate (<value>, <count>) pairs for contiguous blocks of repeated values
-  in sequence <seq> (according to function <fn>).
+  separate <seq> into contiguous blocks of repeated values
+  (according to function <fn>).
 
   see also: itertools.groupby()
 
@@ -1772,9 +1774,9 @@ class multiset(dict):
 
   distinct_size = (__distinct_size_pypy3 if (_pypy and _python > 2) else __distinct_size)
 
-  # return a count of the item
+  # return the count of an item
   def count(self, item):
-    """return the number of times an item occurs in the multiset"""
+    """return the number of times <item> occurs in the multiset"""
     return dict.get(self, item, 0)
 
   # add an item
@@ -2886,6 +2888,9 @@ def singleton(s, skip=0, default=None):
   r = first(s, 2, skip)
   return (r[0] if len(r) == 1 else default)
 
+# check container <s> contains only a single value
+is_singleton = lambda s, skip=0: len(first(s, 2, skip)) == 1
+
 def repeat(fn, v=0, k=inf):
   """
   generate repeated applications of function <fn> to value <v>.
@@ -2989,10 +2994,43 @@ cbrt = getattr(math, 'cbrt', _cbrt)
 # cb = lambda x: x**3
 def cb(x): "cb(x) = x**3"; return x**3
 
-# for large numbers with large prime factors use prime_factor_h() or sympy.ntheory.factorint()
+# generate prime factors
 # basis = [2, 3, 5]
-_prime_factor_ds = (1, 2, 2, 4, 2, 4, 2, 4, 6, 2, 6)  # deltas
-_prime_factor_js = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3)  # next index
+_prime_factors_deltas = [[2, 1, 2, 2], [4, 2, 4, 2, 4, 6, 2, 6]]
+_prime_factors_js = [1, 1]
+def prime_factors(n, limit=inf):
+  """
+  generate prime_factors of <n>.
+
+  factors are generated in order, and repeated factors will be returned
+  the appropriate number of times.
+
+  >>> list(prime_factors(60))
+  [2, 2, 3, 5]
+  >>> list(prime_factors(factorial(12)))
+  [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 5, 5, 7, 11]
+  >>> list(prime_factors(factorial(12) + 1))
+  [13, 13, 2834329]
+  """
+  if n < 2: return
+  # start with the first list of deltas
+  x = j = done = 0
+  while True:
+    for i in _prime_factors_deltas[j]:
+      x += i
+      if x > limit: return
+      while True:
+        if x * x > n:
+          # anything remaining is prime
+          if not (n == 1 or n > limit): yield n
+          return
+        (d, r) = divmod(n, x)
+        if r > 0: break
+        yield x
+        n = d
+    j = _prime_factors_js[j]
+
+# for large numbers with large prime factors use prime_factor_h() or sympy.ntheory.factorint()
 def prime_factor(n, limit=inf):
   """
   generate (<prime>, <exponent>) pairs in the prime factorisation of
@@ -3014,26 +3052,8 @@ def prime_factor(n, limit=inf):
   >>> list(prime_factor(factorial(12) + 1))
   [(13, 2), (2834329, 1)]
   """
-  if n > 1:
-    ds = _prime_factor_ds
-    js = _prime_factor_js
-    x = 2
-    j = 0
-    while True:
-      if x > limit: return
-      e = 0
-      while True:
-        (d, r) = divmod(n, x)
-        if r > 0: break
-        e += 1
-        n = d
-      if e > 0: yield (x, e)
-      x += ds[j]
-      if x * x > n: break
-      j = js[j]
-    if n > limit: return
-    # anything left is prime
-    if n > 1: yield (n, 1)
+  for vs in clump(prime_factors(n, limit=limit)):
+    yield (vs[0], len(vs))
 
 # maybe should be called factors() or factorise()
 def factor(n, fn=prime_factor):
@@ -3044,6 +3064,8 @@ def factor(n, fn=prime_factor):
 
   The <fn> parameter is used to generate the prime factors of the
   number. (Defaults to using prime_factor()).
+
+  see also: prime_factors()
 
   >>> factor(101)
   [101]
@@ -3289,11 +3311,11 @@ def is_prime(n, validate=0):
   if n is None: return None
   if validate: n = as_int(n, include="0+")
   if n < 2: return False  # 0, 1 -> F
-  if n < 4: return True   # 2, 3 -> T
+  if n < 5: return (n == 2 or n == 3)   # 2, 3 -> T; 4 -> F
   r = n % 6
   if r != 1 and r != 5: return False  # (n % 6) != (1, 5) -> F
 
-  for (p, e) in prime_factor(n):
+  for p in prime_factors(n):
     return p == n
   return False
 
@@ -4314,6 +4336,7 @@ def hypot(*vs, **kw):
 
 # alias for: hypot(..., root=is_square)
 ihypot = functools.partial(hypot, root=is_square)
+ihypot.__doc__ = "as hypot(), but return an integer value, or None"
 
 # root of combined squares:
 # for example (for positive x, y, z)
@@ -4351,6 +4374,7 @@ def rcs(*vs, **kw):
 
 # like rcs() but only return integer square roots
 ircs = functools.partial(rcs, root=is_square)
+ircs.__doc__ = "as rcs(), but return an integer value, or None"
 
 # return roots of the form n/d in the appropriate domain
 # with domain = 'C', include = '+' (or '-') means "non-zero"
@@ -4760,6 +4784,7 @@ def avg(seq, div=fdiv):
   return div(t, n)
 
 iavg = functools.partial(avg, div=div)
+iavg.__doc__ = "as avg(), but return an integer value, or None."
 
 # vector dot product: dot(xs, ys, strict=0, fnp=multiply, fns=sum)
 def dot(*vs, **kw):
@@ -5917,7 +5942,7 @@ def permute(ss, select='P', fn=iter):
 
 # interleave values from a bunch of iterators
 # flatten(zip(*ss), fn=iter) works if arguments are the same length
-def interleave(*ss, **kw):
+def interleave(*ss):
   ss = list(iter(s) for s in ss)
   n = len(ss)
   while n > 0:
@@ -7068,6 +7093,16 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   r.fv += v
   return r
 
+# can sides a, b, c form a triangle?
+@static(
+  area=lambda v: (None if v < 0 else 0.25 * sqrt(v)),
+  iarea=lambda v: (None if v < 0 else div(is_square(v), 4)),
+)
+def is_triangle(a, b, c, fn=gt(0)):
+  # v = (4A)^2 where A is the area of the triangle
+  v = (a + b + c) * (a + b - c) * (a + c - b) * (b + c - a)
+  return fn(v)
+
 # 2D geometry: a point is represented by (x, y)
 
 # 2D cartesian point, has 'x' and 'y' components, is also tuple (x, y)
@@ -7078,7 +7113,7 @@ def point_distance(p1, p2):
   calculate the straight line distance between points p1 (= (x1, y1))
   and p2 (= (x2, y2))
 
-  >>> point_distance((0, 0), (3, 4))
+  >>> point_distance((1, 2), (4, 6))
   5.0
   """
   ((x1, y1), (x2, y2)) = (p1, p2)
@@ -9820,6 +9855,7 @@ class SubstitutedExpression(object):
     answer = self.answer
     template = self.template
     solution = self.solution
+    header = self.header
     distinct = self.distinct
     literal = self.literal
     code = self.code
@@ -9848,6 +9884,7 @@ class SubstitutedExpression(object):
     symbols = set(symbols)
     if s2d: symbols.update(s2d.keys())
     if literal: symbols.update(literal)
+    if solution: symbols.update(solution)
     symbols = join(sorted(symbols))
 
     # code should be a sequence of strings
@@ -9951,10 +9988,10 @@ class SubstitutedExpression(object):
 
     # find words in all exprs
     words = _find_words(_template)
-    # and determine the symbols that are used
+    # and determine the symbols that need to be filled out
     symbols = set().union(*words)
-    if solution: symbols.update(solution)
-    symbols = join(sorted(symbols))
+    # make sure all specified symbols are included
+    if self.symbols: symbols.update(self.symbols)
 
     # invalid (<symbol>, <digit>) assignments
     invalid = set()
@@ -9989,20 +10026,23 @@ class SubstitutedExpression(object):
     syms = list(x.union(v) for (x, v) in zip(xs, vs))
 
     # sort out distinct=0,1
-    if isinstance(distinct, int): distinct = (symbols if distinct else '')
+    if isinstance(distinct, int): distinct = (join(symbols, sort=1) if distinct else '')
     # distinct should be a sequence (probably of strings)
     if isinstance(distinct, basestring): distinct = [distinct]
 
     # add the value of the symbols into the template
-    self.template = (_template if template is None else template)
-    if self.solution is None: self.solution = join(diff(symbols, literal))
-    if self.header is None: self.header = _replace_words(self.template, identity)
+    if template is None: template = _template
+    if solution is None: solution = join(diff(symbols, literal), sort=1)
+    if header is None: header = _replace_words(template, identity)
+
+    # complete list of symbols to determine
+    if distinct: symbols.update(*distinct)
+    if solution: symbols.update(solution)
+    symbols = join(symbols, sort=1)
 
     # sort out negative value for denest, will not be enabled if running under PyPy
     if denest < 0: denest = (0 if _pypy else -denest)
-
-    # sort out denest=1
-    if denest == 1: denest = 50
+    if denest == 1: denest = 50  # default denest value
 
     # update the processed values
     self.exprs = exprs
@@ -10010,6 +10050,9 @@ class SubstitutedExpression(object):
     self.digits = digits
     self.s2d = s2d
     self.answer = answer
+    self.template = template
+    self.solution = solution
+    self.header = header
     self.distinct = distinct
     self.literal = literal
     self.code = code
