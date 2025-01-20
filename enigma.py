@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jan 19 11:24:55 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jan 20 14:05:05 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -160,6 +160,7 @@ poly_*                 - routines manipulating polynomials, wrapped as Polynomia
 powers                 - generate a range of powers
 prime_factor           - generate terms in the prime factorisation of a number
 prime_factor_rho       - generate prime factors of large numbers
+prime_factors          - generate primes factors of a number
 printf                 - print with interpolated variables
 pythagorean_triples    - generate Pythagorean triples
 quadratic              - find roots of a quadratic equation
@@ -232,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-01-09" # <year>-<month>-<number>
+__version__ = "2025-01-19" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -2998,7 +2999,7 @@ def cb(x): "cb(x) = x**3"; return x**3
 # basis = [2, 3, 5]
 _prime_factors_deltas = [[2, 1, 2, 2], [4, 2, 4, 2, 4, 6, 2, 6]]
 _prime_factors_js = [1, 1]
-def prime_factors(n, limit=inf):
+def prime_factors(n, limit=inf, validate=0):
   """
   generate prime_factors of <n>.
 
@@ -3012,6 +3013,7 @@ def prime_factors(n, limit=inf):
   >>> list(prime_factors(factorial(12) + 1))
   [13, 13, 2834329]
   """
+  if validate: n = as_int(n, include="0+")
   if n < 2: return
   # start with the first list of deltas
   x = j = done = 0
@@ -3031,7 +3033,7 @@ def prime_factors(n, limit=inf):
     j = _prime_factors_js[j]
 
 # for large numbers with large prime factors use prime_factor_h() or sympy.ntheory.factorint()
-def prime_factor(n, limit=inf):
+def prime_factor(n, limit=inf, validate=0):
   """
   generate (<prime>, <exponent>) pairs in the prime factorisation of
   positive integer <n>.
@@ -3052,11 +3054,11 @@ def prime_factor(n, limit=inf):
   >>> list(prime_factor(factorial(12) + 1))
   [(13, 2), (2834329, 1)]
   """
-  for vs in clump(prime_factors(n, limit=limit)):
+  for vs in clump(prime_factors(n, limit=limit, validate=validate)):
     yield (vs[0], len(vs))
 
 # maybe should be called factors() or factorise()
-def factor(n, fn=prime_factor):
+def factor(n, fn=prime_factor, validate=0):
   """
   return a list of the prime factors of positive integer <n>.
 
@@ -3076,6 +3078,7 @@ def factor(n, fn=prime_factor):
   >>> factor(125)
   [5, 5, 5]
   """
+  if validate: n = as_int(n, include="0+")
   if n < 1: return None
   factors = []
   for (p, e) in fn(n):
@@ -3310,8 +3313,7 @@ def is_prime(n, validate=0):
   """
   if n is None: return None
   if validate: n = as_int(n, include="0+")
-  if n < 2: return False  # 0, 1 -> F
-  if n < 5: return (n == 2 or n == 3)   # 2, 3 -> T; 4 -> F
+  if n < 5: return (n == 2 or n == 3)   # 2, 3 -> T; 0, 1, 4 -> F
   r = n % 6
   if r != 1 and r != 5: return False  # (n % 6) != (1, 5) -> F
 
@@ -3336,7 +3338,7 @@ def _is_composite(a, d, n, s):
   # definitely composite
   return 1
 
-def is_prime_mr(n, r=0):
+def is_prime_mr(n, r=0, validate=0):
   """
   Miller-Rabin primality test for <n>.
   <r> is the number of random extra rounds performed for large numbers
@@ -3361,18 +3363,15 @@ def is_prime_mr(n, r=0):
   >>> is_prime_mr(332306998946228968225951765070086171)
   0
   """
-  # 0, 1 = not prime
-  if n < 2:
-    return 0
+  if n is None: return None
+  if validate: n = as_int(n, include="0+")
 
-  # 2, 3 = definitely prime
-  if n < 4:
-    return 2
+  # 2, 3 = definitely prime; 0, 1, 4 = not prime
+  if n < 5: return (2 if n == 2 or n == 3 else 0)
 
   # all other primes have a residue mod 6 of 1 or 5
-  x = n % 6
-  if x != 1 and x != 5:
-    return 0
+  r = n % 6
+  if r != 1 and r != 5: return 0  # not prime
 
   # compute 2^s.d = n - 1
   d = n - 1
