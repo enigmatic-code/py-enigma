@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan 20 14:05:05 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jan 22 14:44:35 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-01-19" # <year>-<month>-<number>
+__version__ = "2025-01-20" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -1517,7 +1517,7 @@ def make_range(i, n):
   c = (1 if c is None else c)
   return range(a, b, c)
 
-# a circular list, where indices are calculates mod length
+# a circular list, where indices are calculated mod length
 class CircularList(list):
 
   def __getitem__(self, i):
@@ -1534,7 +1534,10 @@ class CircularList(list):
 
 def diff(a, b, *rest, **kw):
   """
-  return the subsequence of <a> that excludes elements in <b>.
+  return the subsequence of <a> that excludes elements in <b>
+  (and <rest>).
+
+  the result is returned as a tuple, or constructed using <fn>.
 
   alias: excl().
 
@@ -8616,14 +8619,15 @@ class _PrimeSieveE6(object):
   tuples = subsets  # best to use subsets()
 
   # prime test (may throw IndexError if n is too large)
-  def is_prime(self, n):
+  def is_prime(self, n, validate=0):
     """
     check to see if the number is a prime.
 
     (may throw IndexError for numbers larger than the sieve).
     """
-    if n < 2: return False  # 0, 1 -> F
-    if n < 4: return True   # 2, 3 -> T
+    if n is None: return None
+    if validate: n = as_int(n, include="0+")
+    if n < 5: return (n == 2 or n == 3)  # 2, 3 -> T; 0, 1, 4 -> F
     r = n % 6
     if r != 1 and r != 5: return False  # (n % 6) != (1, 5) -> F
     if self.expandable: self.expand(n)
@@ -9726,15 +9730,15 @@ class SubstitutedExpression(object):
     base=10, distinct=1, process=1, reorder=1, first=0, denest=0, sane=1, warn=0, opt='', verbose=1,
     # other parameters
     exprs=None, symbols=None, digits=None, s2d=None, d2i=None, answer=None, accumulate=None,
-    literal=None, template=None, solution=None, header=None,
+    literal=None, template=None, solution=None, header=None, output=None,
     check=None, macro=None, env=None, code=None, decl=None
   )
 
   def __init__(self,
     exprs, base=None, symbols=None, digits=None, s2d=None, l2d=None, d2i=None, answer=None,
-    accumulate=None, literal=None, template=None, solution=None, header=None, distinct=None,
-    check=None, macro=None, env=None, code=None, process=None, reorder=None, first=None,
-    denest=None, decl=None, sane=None, warn=None, opt=None, verbose=None
+    accumulate=None, literal=None, template=None, solution=None, header=None, output=None,
+    distinct=None, check=None, macro=None, env=None, code=None, process=None, reorder=None,
+    first=None, denest=None, decl=None, sane=None, warn=None, opt=None, verbose=None
   ):
     """
     create a substituted expression solver.
@@ -9757,8 +9761,12 @@ class SubstitutedExpression(object):
     d2i - map of digits to invalid symbol assignments (default: leading digits cannot be 0)
     distinct - symbols which should have distinct values (1 = all, 0 = none) (default: 1)
     literal - symbols which stand for themselves (e.g. "012") (default: None)
-    answer - an expression for the answer value
-    accumulate - accumulate answers using the specified object
+    template - output template (default: derived from exprs)
+    solution - output solution values (default: derived from exprs)
+    header - output header (default: derived from exprs)
+    output - provide custom output function (default: None)
+    answer - an expression for the answer value (default: None)
+    accumulate - accumulate answers using the specified object (default: None)
     check - a boolean function used to accept/reject solutions (default: None)
     env - additional environment for evaluation (default: None)
     code - additional lines of code evaluated before solving (default: None)
@@ -10081,6 +10089,7 @@ class SubstitutedExpression(object):
     literal = self.literal
     env = self.env
     code = self.code
+    output = self.output
     reorder = self.reorder
     denest = self.denest
     decl = self.decl
@@ -10423,6 +10432,12 @@ class SubstitutedExpression(object):
     else:
       prog.append(sprintf("{_}yield {{ {d} }}"))
 
+    # compile any output function definition
+    output_fn = None
+    if output and isinstance(output, basestring):
+      output_fn = solver + "_output_fn"
+      prog.append(output_fn + " = " + output)
+
     # turn the program lines into a string
     prog = join(prog, sep=nl)
 
@@ -10452,7 +10467,9 @@ class SubstitutedExpression(object):
       raise
     eval(code, gs)
 
+    # extract the complied code
     self._solver = gs[solver]
+    if output_fn: self.output = gs[output_fn]
     self._globals = gs
     self._prepared = 1
 
@@ -10476,18 +10493,24 @@ class SubstitutedExpression(object):
     solver = self._solver
     answer = self.answer
     header = self.header
+    output = self.output
     if check is None: check = self.check
     if first is None: first = self.first
 
     if self.sane > 0 and verbose & self.vW and self.template and self.base > len(base_digits()):
       printf("WARNING: base {self.base} specified, exceeds base_digits()")
 
-    if verbose & self.vH and header: printf("{header}")
+    if verbose & self.vH and header and (not output): printf("{header}")
 
     n = 0
     for s in solver():
       if check and (not check(s)): continue
-      if verbose & self.vT: self.output_solution((s[0] if answer else s))
+      if verbose & self.vT:
+        if output:
+          # call: [[ output(self, soln) ]] or [[ output(self, soln, ans) ]]
+          call(output, (self,) + s if answer else (self, s))
+        else:
+          self.output_solution((s[0] if answer else s))
       # return the result
       yield s
       n += 1
@@ -10570,7 +10593,7 @@ class SubstitutedExpression(object):
 
     # output solutions
     s = ('' if n == 1 else 's')
-    if answer and ans:
+    if answer and ans and not self.output:
       answer = _replace_words(answer, identity)
 
       if not accumulate:
@@ -10601,7 +10624,7 @@ class SubstitutedExpression(object):
 
     return Record(n=n, answer=ans, accumulate=acc)
 
-  # backward compatability
+  # backward compatibility
   go = run
 
   def substitute(self, s, text, digits=None):
@@ -11006,6 +11029,7 @@ class SubstitutedExpression(object):
       "  --template=<str> (or -T<s>) = solution template",
       "  --solution=<str> (or -S<s>) = solution symbols",
       "  --header=<str> (or -H<s>) = solution header",
+      "  --output=<code> (or -O<s>) = custom output function"
       "  --distinct=<str> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
       "  --literal=<str> (or -L<s>) = symbols that stand for themselves",
       "  --code=<str> (or -C<s>) = initialisation code (can be used multiple times)",
@@ -11035,7 +11059,7 @@ class SubstitutedExpression(object):
   #   Exception = error
   @classmethod
   def _getopt(cls, k, v, opt, allow=()):
-    # used single character options: abcdhikrsvACDEHLMSTWXY1@
+    # used single character options: abcdhikrsvACDEHLMOSTWXY1@
 
     if k == 'h' or k == 'help':
       # --help (or -h)
@@ -11049,6 +11073,8 @@ class SubstitutedExpression(object):
       opt['solution'] = v
     elif k == 'H' or k == 'header':
       opt['header'] = v
+    elif k == 'O' or k == 'output':
+      opt['output'] = v
     elif k == 'b' or k == 'base':
       # --base=<n> (or -b)
       opt['base'] = int(v)
@@ -11765,7 +11791,7 @@ class SubstitutedDivision(SubstitutedExpression):
     opt['d2i'] = d2i
 
     # verbatim options
-    for v in ('base', 'digits', 'answer', 'accumulate', 'env', 'code', 'verbose', 'denest', 'sane', 'warn'):
+    for v in ('base', 'digits', 'answer', 'accumulate', 'env', 'code', 'output', 'verbose', 'denest', 'sane', 'warn'):
       if v in kw:
         opt[v] = kw[v]
 
@@ -11789,6 +11815,7 @@ class SubstitutedDivision(SubstitutedExpression):
     """
     verbose = (self.verbose if verbose is None else self._verbose(verbose))
     answer = self.answer
+    output = self.output
     # solution templates
     (ta, tb, tc, tsubs, tr) = self.args
     if tr is None: tr = '0'
@@ -11812,13 +11839,16 @@ class SubstitutedDivision(SubstitutedExpression):
       ss = SubstitutedDivision.rtype(a, b, c, r, subs, d, s)
       if check and (not check(ss)): continue
       # output the solution
-      if verbose & self.vT: self.output_solution(ss)
+      if verbose & self.vT:
+        if output:
+          call(output, ((self, ss, ans) if answer else (self, ss)))
+        else:
+          self.output_solution(ss)
       # return the result
       yield ((ss, ans) if answer else ss)
       if first: break
 
   def output_solution(self, s, template=None, solution=None):
-    # copy any input symbols that were eliminated
     SubstitutedExpression.output_solution(self, s.s, template=template, solution=solution)
 
   def solution_intermediates(self, s):
