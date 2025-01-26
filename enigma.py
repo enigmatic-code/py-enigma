@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jan 22 14:44:35 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jan 26 09:57:21 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-01-20" # <year>-<month>-<number>
+__version__ = "2025-01-24" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -6747,7 +6747,7 @@ def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   """
   decompose <t> into <k>-sequences of non-negative integers that sum to <t>
 
-    t = total sum of each sequence
+    t = total sum of each sequence (or a sequence of totals, used in turn)
     k = length of sequences to generate
     increasing = +1 (increasing sequences); -1 (decreasing sequences); or 0
     sep = separation between numbers (if increasing != 0); 0 allows repeats
@@ -6764,7 +6764,15 @@ def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   >>> sorted(decompose(5, 3, increasing=0, sep=0, min_v=1))
   [(1, 1, 3), (1, 2, 2), (1, 3, 1), (2, 1, 2), (2, 2, 1), (3, 1, 1)]
   """
-  return call(Decompose(increasing=increasing, sep=sep, min_v=min_v, max_v=max_v, fn=fn), (t, k))
+  # is the total iterable?
+  try:
+    ts = iter(t)
+  except TypeError:
+    ts = (t,)
+  fn = Decompose(increasing=increasing, sep=sep, min_v=min_v, max_v=max_v, fn=fn)
+  for t in ts:
+    for z in fn(t, k):
+      yield z
 
 ###############################################################################
 
@@ -8700,6 +8708,11 @@ class _PrimeSieveE6(object):
     """
     if n == 1: return ()
     return prime_factor_h(n, self, end=end, nf=mr, mr=mr, mrr=mrr)
+
+  def prime_factors(self, n, end=None, mr=0, mrr=0):
+    for (p, e) in self.prime_factor(n, end, mr, mrr):
+      for _ in range(e):
+        yield p
 
   # functions that can use self.prime_factor() instead of simple prime_factor()
 
@@ -10938,6 +10951,13 @@ class SubstitutedExpression(object):
 
     if self.accumulate:
       args.append(sprintf("--accumulate={q}{self.accumulate}{q}"))
+
+    if self.output:
+      if isinstance(self.output, basestring):
+        args.append(sprintf("--output={q}{self.output}{q}"))
+        # maybe suppress output of template/solution/header?
+      else:
+        printf("WARNING: can't generate for \"output\" parameter")
 
     if self.template:
       args.append(sprintf("--template={q}{self.template}{q}"))
