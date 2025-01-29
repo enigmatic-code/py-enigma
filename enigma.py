@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jan 26 09:57:21 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jan 29 13:32:26 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-01-24" # <year>-<month>-<number>
+__version__ = "2025-01-27" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -6769,9 +6769,9 @@ def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
     ts = iter(t)
   except TypeError:
     ts = (t,)
-  fn = Decompose(increasing=increasing, sep=sep, min_v=min_v, max_v=max_v, fn=fn)
+  f = Decompose(increasing=increasing, sep=sep, min_v=min_v, max_v=max_v, fn=fn)
   for t in ts:
-    for z in fn(t, k):
+    for z in f(t, k):
       yield z
 
 ###############################################################################
@@ -10513,7 +10513,12 @@ class SubstitutedExpression(object):
     if self.sane > 0 and verbose & self.vW and self.template and self.base > len(base_digits()):
       printf("WARNING: base {self.base} specified, exceeds base_digits()")
 
-    if verbose & self.vH and header and (not output): printf("{header}")
+    if verbose & self.vH:
+      if output:
+        # call output with a solution of None to print a header
+        catch(output, (self, None, None) if answer else (self, None))
+      elif header:
+        printf("{header}")
 
     n = 0
     for s in solver():
