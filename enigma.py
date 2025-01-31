@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jan 29 13:32:26 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jan 31 08:44:27 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-01-27" # <year>-<month>-<number>
+__version__ = "2025-01-30" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -10240,6 +10240,19 @@ class SubstitutedExpression(object):
     (prog, _, indent) = ([], "", "  ")
     (vx, vy, vr) = ("_x_", "_y_", "_r_")  # local variables (that don't clash with _sym(x))
 
+    # generate code for the assignment: v = x
+    def assign(v, x, prog, _, in_loop, warn, verbose, self):
+      prog.append(sprintf("{_}try:"))
+      prog.append(sprintf("{_}  {v} = {x}"))
+      prog.append(sprintf("{_}except NameError:"))  # catch typos in function names
+      prog.append(sprintf("{_}  raise"))
+      (extra, msg) = ('', '')
+      if warn and verbose & self.vW:
+        (extra, msg) = (' as e', 'printf("[WARNING: [{x}] {e}]", x=type(e).__name__)')
+      prog.append(sprintf("{_}except Exception{extra}:"))  # maybe "except (ArithmeticError, TypeError, ValueError)"
+      if msg: prog.append(sprintf("{_}  {msg}"))
+      prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'return')))
+
     # start with any initialisation code
     if code: prog.extend(code)
 
@@ -10334,18 +10347,7 @@ class SubstitutedExpression(object):
       # calculate the expression
       if k != 0 and (not expr.endswith(':')):  # (but not for the answer expression)
         x = _replace_words(expr, (lambda w: encl(_sym(w), '()')))
-        prog.append(sprintf("{_}try:"))
-        prog.append(sprintf("{_}  {vx} = int({x})"))
-        prog.append(sprintf("{_}except NameError:"))  # catch undefined functions
-        prog.append(sprintf("{_}  raise"))
-        if warn and verbose & self.vW:
-          prog.append(sprintf("{_}except Exception as e:"))
-          msg = 'printf("[WARNING: [{x}] {e}]", x=type(e).__name__)'
-          prog.append(sprintf("{_}  {msg}"))
-          prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'return')))
-        else:
-          prog.append(sprintf("{_}except Exception:"))  # maybe "except (ArithmeticError, ValueError)"
-          prog.append(sprintf("{_}  {skip}", skip=('continue' if in_loop else 'return')))
+        assign(vx, sprintf("int({x})"), prog, _, in_loop, warn, verbose, self)
 
       # check the value
       if k == 3:
@@ -10440,7 +10442,7 @@ class SubstitutedExpression(object):
     if answer:
       # compute the answer
       r = _replace_words(answer, (lambda w: encl(_sym(w), '()')))
-      prog.append(sprintf("{_}{vr} = {r}"))
+      assign(vr, r, prog, _, in_loop, warn, verbose, self)
       prog.append(sprintf("{_}yield ({{ {d} }}, {vr})"))
     else:
       prog.append(sprintf("{_}yield {{ {d} }}"))
