@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jan 31 08:44:27 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb  3 09:03:09 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-01-30" # <year>-<month>-<number>
+__version__ = "2025-01-31" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -559,10 +559,12 @@ def clock(m):
   return (lambda n: (n % m) or m)
 
 # like cmp() in Python 2, but results are always -1, 0, +1.
-# vs can be a triple of values to return instead, default corresponds to (-1, 0, +1)
 def compare(a, b, vs=None):
   """
   return -1 if a < b, 0 if a == b and +1 if a > b.
+
+  <vs> can be specified as a triple of values to return instead
+  of (-1, 0, +1) respectively.
 
   >>> compare(42, 0)
   1
@@ -3759,22 +3761,22 @@ def fib(*s, **kw):
   """
   generate Fibonacci type sequences (or other recurrence relations)
 
-  The initial k terms are provided as sequence s, subsequent terms are
-  calculated as a function of the preceeding k terms.
+  The initial <k> terms are provided as sequence <s>, and subsequent
+  terms are calculated as a function of the preceding <k> terms.
 
   The default function being 'sum', but a different function can be
   specified using the 'fn' parameter (which should be a function that
-  takes a sequence of k terms and computes the appropriate value).
+  takes a sequence of <k> terms and computes the appropriate value).
 
-  Standard Fibonacci numbers (OEIS A000045):
+  Standard Fibonacci numbers [OEIS A000045]:
   >>> first(fib(0, 1), 10)
   [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
 
-  Lucas numbers (OEIS A000032):
+  Lucas numbers [OEIS A000032]:
   >>> first(fib(2, 1), 10)
   [2, 1, 3, 4, 7, 11, 18, 29, 47, 76]
 
-  Tribonacci numbers (OEIS A001590):
+  Tribonacci numbers [OEIS A001590]:
   >>> first(fib(0, 1, 0), 10)
   [0, 1, 0, 1, 2, 3, 6, 11, 20, 37]
 
