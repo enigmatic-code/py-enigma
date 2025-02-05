@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb  3 09:03:09 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Feb  5 16:03:02 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-01-31" # <year>-<month>-<number>
+__version__ = "2025-02-04" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -826,7 +826,7 @@ def is_sorted(seq, strict=0, fn=operator.lt):
 
 def is_increasing(seq, strict=0): "check if <seq> is increasing"; return is_sorted(seq, strict=strict, fn=operator.lt)
 def is_decreasing(seq, strict=0): "check if <seq> is decreasing"; return is_sorted(seq, strict=strict, fn=operator.gt)
-def is_consecutive(seq, gap=1): "check is <seq> consist of consecutive values"; return is_sorted(seq, fn=(lambda x, y: x + gap == y))
+def is_consecutive(seq, gap=1, strict=1): "check is <seq> consist of consecutive values"; return is_sorted(seq, strict=strict, fn=(lambda x, y: x + gap == y))
 
 def encl(s, b="{}", fn=str):
   """
@@ -5822,25 +5822,39 @@ def irange_round(a, b, step=1, rnd='i'):
       inside the given values (default)
   x = round endpoints to give the smallest range that
       includes the given values
+  I = round endpoints to give the largest range of multiples
+      of <step> inside the given values
+  X = round endpoints to give the smallest range of multiples
+      of <step> that includes the given values
   f = use floor rounding (intf)
   c = use ceil rounding (intc)
   r = use nearest integer rounding (intr)
   b = use Python builtin rounding (round)
+  F = floor round to the nearest multiple of <step>
+  C = ceil round to the nearest multiple of <step>
   """
   # f = floor, c = ceil, r = round
-  fn = dict(f=intf, c=intc, r=intr, b=round, I=identity)
+  fn = dict(f=intf, c=intc, r=intr, b=round, F=partial(floor, m=step), C=partial(ceil, m=step), U=identity)
   (ka, kb) = (rnd[0], rnd[-1])
   # i = internal, x = external
   if ka == 'i':
     ka = ('c' if step > 0 else 'f')
   elif ka == 'x':
     ka = ('f' if step > 0 else 'c')
+  elif ka == 'I':
+    ka = ('C' if step > 0 else 'F')
+  elif ka == 'X':
+    ka = ('F' if step > 0 else 'C')
   if b == inf or b == -inf:
-    kb = 'I'
+    kb = 'U'
   elif kb == 'i':
     kb = ('f' if step > 0 else 'c')
   elif kb == 'x':
     kb = ('c' if step > 0 else 'f')
+  elif kb == 'I':
+    kb = ('F' if step > 0 else 'C')
+  elif kb == 'X':
+    kb = ('C' if step > 0 else 'F')
   return irange(fn[ka](a), fn[kb](b), step)
 
 # inclusive range iterator
@@ -6766,15 +6780,15 @@ def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   >>> sorted(decompose(5, 3, increasing=0, sep=0, min_v=1))
   [(1, 1, 3), (1, 2, 2), (1, 3, 1), (2, 1, 2), (2, 2, 1), (3, 1, 1)]
   """
+  f = Decompose(increasing=increasing, sep=sep, min_v=min_v, max_v=max_v, fn=fn)
   # is the total iterable?
   try:
     ts = iter(t)
   except TypeError:
     ts = (t,)
-  f = Decompose(increasing=increasing, sep=sep, min_v=min_v, max_v=max_v, fn=fn)
   for t in ts:
-    for z in f(t, k):
-      yield z
+    #yield from f(t, k)  #[Python 3]
+    for z in f(t, k): yield z  #[Python 2]
 
 ###############################################################################
 
