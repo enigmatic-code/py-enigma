@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Feb  5 16:03:02 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Feb  7 09:15:32 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-02-04" # <year>-<month>-<number>
+__version__ = "2025-02-05" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -5819,19 +5819,19 @@ def irange_round(a, b, step=1, rnd='i'):
   'rnd' parameter:
 
   i = round endpoints to give the largest range that is
-      inside the given values (default)
+      inside the given range (default)
   x = round endpoints to give the smallest range that
-      includes the given values
+      includes the given range
   I = round endpoints to give the largest range of multiples
-      of <step> inside the given values
+      of <step> inside the given range
   X = round endpoints to give the smallest range of multiples
-      of <step> that includes the given values
+      of <step> that includes the given range
   f = use floor rounding (intf)
-  c = use ceil rounding (intc)
+  c = use ceiling rounding (intc)
   r = use nearest integer rounding (intr)
   b = use Python builtin rounding (round)
-  F = floor round to the nearest multiple of <step>
-  C = ceil round to the nearest multiple of <step>
+  F = use floor rounding to the nearest multiple of <step>
+  C = use ceiling round to the nearest multiple of <step>
   """
   # f = floor, c = ceil, r = round
   fn = dict(f=intf, c=intc, r=intr, b=round, F=partial(floor, m=step), C=partial(ceil, m=step), U=identity)
@@ -14384,7 +14384,7 @@ enigma.py has the following command-line usage:
       --run:verbose   (or -rv)
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.13.1',
+  version=__version__, python='2.7.18', python3='3.13.2',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
