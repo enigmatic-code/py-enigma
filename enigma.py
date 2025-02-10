@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb 10 11:25:18 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb 10 11:47:23 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-02-09" # <year>-<month>-<number>
+__version__ = "2025-02-10" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -6924,13 +6924,13 @@ def _mcover(m, tgt, X, ss, reject):
     # consider subsets with this value
     xs = sorted(X[c])
     for (j, n) in enumerate(xs, start=1):
-      s = m[n]
-      # update the target
-      (tgt_, rs) = tgt.differences(s)
-      if rs: continue
       # is this sequence acceptable?
       ss_ = ss + [n]
       if reject and reject(ss_): continue
+      # update the target
+      s = m[n]
+      (tgt_, rs) = tgt.differences(s)
+      if rs: continue
       # remove the value (and any prior values) from consideration
       discard = set(xs[:j])
       # remove any values in columns that have reached 0
@@ -6938,7 +6938,6 @@ def _mcover(m, tgt, X, ss, reject):
         if v and tgt_.count(k) == 0:
           discard.update(v)
       # recurse with a new target and X
-      #X_ = dict((k, v.difference(discard)) for (k, v) in X.items())
       X_ = dict((k, X[k].difference(discard)) for k in tgt_.keys())
       if all(X_.values()):
         #yield from _mcover(m, tgt_, X_, ss_, reject)  #[Python 3]
