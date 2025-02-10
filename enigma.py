@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb 10 11:47:23 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb 10 13:55:22 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-02-10" # <year>-<month>-<number>
+__version__ = "2025-02-11" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -6961,7 +6961,7 @@ def mcover(m, tgt, reject=None):
   ks = set(tgt.keys())
   X = dict((k, set()) for k in ks)
   for (v, s) in m.items():
-    if ks.issuperset(s.keys()):
+    if tgt.issuperset(s):
       for k in s.keys():
         X[k].add(v)
   # check each target element appears
