@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb 10 13:55:22 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Feb 14 13:49:03 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-02-11" # <year>-<month>-<number>
+__version__ = "2025-02-13" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -3962,7 +3962,7 @@ def is_square(n, validate=0):
   """
   if validate: n = as_int(n, include="0+")   # if validate check for non-negative integer
   if n is None or n < 0: return None
-  if n < 2: return n
+  if n < 2: return (n if n == 0 or n == 1 else None)
   # early rejection: check <square> mod <some value> against a precomputed cache
   # e.g. <square> mod 80 = 0, 1, 4, 9, 16, 20, 25, 36, 41, 49, 64, 65 (rejects 88% of numbers)
   # mod 720 (= factorial(6)) rejects 93% of candidates
@@ -7571,10 +7571,10 @@ def int2words(n, scale='short', sep='', hyphen=' ', lang='en'):
   """
   convert an integer <n> to a string representing the number (in English).
 
-  scale - 'short' (for short scale numbers), or 'long' (for long scale numbers)
+  scale - 'short' for short scale numbers; 'long' for long scale numbers
   sep - separator between groups
   hyphen - separator between tens and units
-  lang - language (only 'en' (for English) is currently accepted)
+  lang - language; only 'en' (for English) is currently accepted
 
   >>> int2words(1234)
   'one thousand two hundred and thirty four'
