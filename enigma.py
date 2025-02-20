@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Feb 20 11:34:50 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Feb 20 11:50:32 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-02-18" # <year>-<month>-<number>
+__version__ = "2025-02-19" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -3323,12 +3323,12 @@ def is_prime(n, validate=0):
   """
   if n is None: return None
   if validate: n = as_int(n, include="0+")
-  if n < 5: return (n == 2 or n == 3)   # 2, 3 -> T; 0, 1, 4 -> F
+  if n < 6: return (n == 2 or n == 3 or n == 5)   # 2, 3 -> T; 0, 1, 4 -> F
   r = n % 6
   if r != 1 and r != 5: return False  # (n % 6) != (1, 5) -> F
 
   # faster to just check divisors % 6 = (1, 5)
-  if n > 5 and n % 5 == 0: return False
+  if n % 5 == 0: return False
   for x in irange(7, isqrt(n), step=6):
     if n % x == 0 or n % (x + 4) == 0: return False
   return True
