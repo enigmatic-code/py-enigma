@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Feb 14 13:49:03 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Feb 20 11:34:50 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-02-13" # <year>-<month>-<number>
+__version__ = "2025-02-18" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -1545,7 +1545,7 @@ def diff(a, b, *rest, **kw):
 
   >>> diff((1, 2, 3, 4, 5), (3, 5, 2))
   (1, 4)
-  >>> join(diff('newhampshire', 'wham'))
+  >>> diff('newhampshire', 'wham', fn=join)
   'nepsire'
   """
   fn = kw.pop('fn', tuple)
@@ -2462,6 +2462,7 @@ def unpack(fn):
 
 # unpacked form of zip (which also serves as an inverse to zip)
 unzip = unpack(zip)
+unzip.__doc__ = "the inverse of zip"
 
 # cartesian product of a sequence, cproduct = unpack(itertools.product)
 def cproduct(ss, **kw):
@@ -3326,9 +3327,16 @@ def is_prime(n, validate=0):
   r = n % 6
   if r != 1 and r != 5: return False  # (n % 6) != (1, 5) -> F
 
-  for p in prime_factors(n):
-    return p == n
-  return False
+  # faster to just check divisors % 6 = (1, 5)
+  if n > 5 and n % 5 == 0: return False
+  for x in irange(7, isqrt(n), step=6):
+    if n % x == 0 or n % (x + 4) == 0: return False
+  return True
+
+  ## used to be:
+  #for p in prime_factors(n):
+  #  return p == n
+  #return False
 
 prime = is_prime
 
@@ -5750,13 +5758,13 @@ class Output():
     self.end = end
     self.prefix = prefix
     self.timer = timed
+    self.held = None
+    self.immediate = 0
 
   def __enter__(self):
     start = self.start
-    if start is not None:
-      printf("{start}")
-    if self.timer:
-      self.timer = Timer()
+    if start is not None: printf("{start}")
+    if self.timer: self.timer = Timer()
     return self
 
   def __exit__(self, *args):
@@ -5765,12 +5773,24 @@ class Output():
       timer.stop()
       timer.report()
     end = self.end
-    if end is not None:
-      printf("{end}")
+    if end is not None: printf("{end}")
 
   def printf(self, fmt='', **kw):
-    s = _sprintf(fmt, None, kw, sys._getframe(1))
-    printf("{prefix}{s}", prefix=self.prefix)
+    printf("{prefix}{s}", prefix=self.prefix, s=_sprintf(fmt, None, kw, sys._getframe(1)))
+
+  def holdf(self, fmt='', **kw):
+    "this allows you to delay the printing of a string until release() is called"
+    self.held = _sprintf(fmt, None, kw, sys._getframe(1))
+    if self.immediate: self.release()
+
+  def release(self):
+    "output a string previously delayed using holdf()"
+    s = self.held
+    if s is not None:
+      printf("{prefix}{s}", prefix=self.prefix)
+      self.held = None
+
+output = Output(prefix='')
 
 class Failure(Exception): pass
 
@@ -7360,7 +7380,7 @@ def base_digits(*args):
   if args: base_digits.digits = (args[0] or (str_digit + str_upper))
   return base_digits.digits
 
-def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None):
+def int2base(i, base=10, width=None, pad=None, group=None, sep=",", neg='-', digits=None):
   """
   convert an integer <i> to a string representation in the specified
   base <base>.
@@ -7406,7 +7426,7 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
   if base < 2: raise ValueError("invalid base {base!r}".format(base=base))
   if digits is None: digits = base_digits()
   (p, r) = ('', None)
-  if i < 0: (p, i) = ('-', -i)
+  if i < 0: (p, i) = (neg, -i)
   # if there aren't enough digits switch to {<digit>:<digit>:...} format
   if len(digits) < base:
     ds = nsplit(i, base=base, fn=list)
@@ -7435,7 +7455,7 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", digits=None)
 
 int2str = int2base
 
-def base2int(s, base=10, strip=0, digits=None):
+def base2int(s, base=10, strip=0, neg="-~", digits=None):
   """
   convert a string representation of an integer in the specified base
   to an integer.
@@ -7456,9 +7476,10 @@ def base2int(s, base=10, strip=0, digits=None):
   if len(digits) > base: digits = digits[:base]
   s = str(s)
   if s == digits[0]: return 0
-  i = neg = 0
-  if s.startswith('-'):
-    neg ^= 1
+  i = fneg = 0
+  if s and s[0] in neg:
+    # - (or ~) indicate a negative integer
+    fneg ^= 1
     i += 1
   n = f = 0
   for k in range(i, len(s)):
@@ -7473,7 +7494,7 @@ def base2int(s, base=10, strip=0, digits=None):
     n += v
     f = 1
   if f == 0: return None  # if no characters processed
-  return (-n if neg else n)
+  return (-n if fneg else n)
 
 str2int = base2int
 
