@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Feb 20 11:50:32 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Mar  3 10:34:34 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-02-19" # <year>-<month>-<number>
+__version__ = "2025-02-28" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -4158,12 +4158,12 @@ def is_cube(n, validate=0):
   if validate: n = as_int(n, include="0+")
   if n < 0: return None
   if n < 2: return n
-  if not is_cube.residues: is_cube.residues = set((i * i * i) % is_cube.mod for i in xrange(is_cube.mod))
+  if not is_cube.residues: is_cube.residues = set((i**3) % is_cube.mod for i in xrange(is_cube.mod))
   if (n % is_cube.mod) not in is_cube.residues: return None
   z = is_cube.cache.get(n)
   if z is None:
     z = iroot(n, 3)
-    if z is not None and z * z * z != n: z = None
+    if z is not None and z**3 != n: z = None
     if is_cube.cache_enabled: is_cube.cache[n] = z
   return z
 
@@ -5043,6 +5043,16 @@ def mlcm(a, *rest):
   90
   """
   return reduce(lcm, rest, a)
+
+def mlcmq(*qs):
+  """
+  LCM of multiple fractions (each represented as (<num>, <den>))
+
+  >>> mlcmq((1, 2), (2, 3))
+  (2, 1)
+  """
+  (ns, ds) = zip(*qs)
+  return fraction(mlcm(*ns), mgcd(*ds))
 
 def is_coprime(*vs):
   """
@@ -5982,9 +5992,9 @@ def chain(*ss, **kw):
 def permute(ss, select='P', fn=iter):
   return flatten((subsets(s, size=len, select=select) for s in ss), fn=fn)
 
-# interleave values from a bunch of iterators
 # flatten(zip(*ss), fn=iter) works if arguments are the same length
 def interleave(*ss):
+  """interleave values from a collection of iterators"""
   ss = list(iter(s) for s in ss)
   n = len(ss)
   while n > 0:
@@ -7241,7 +7251,7 @@ def line_bisect(p1, p2, div=fdiv):
   that forms a diagonal of a square, where the other diagonal is (p1, p2).
   """
   ((x1, y1), (x2, y2)) = (p1, p2)
-  s = fdiv(x1 + x2 + y1 + y2, 2)
+  s = div(x1 + x2 + y1 + y2, 2)
   return ((s - y1, s - x2), (s - y2, s - x1))
 
 # return the closest distance between a line that passes through p1 and p2
