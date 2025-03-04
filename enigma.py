@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Mar  3 10:34:34 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Mar  4 07:37:29 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-02-28" # <year>-<month>-<number>
+__version__ = "2025-03-01" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -2792,7 +2792,7 @@ def _perms_from_cycles(seq, cycs, ss=[]):
     v = cycs[k]
     # choose n elements for this group of cycles
     for xs in itertools.combinations(seq, k * v):
-      for cs in _make_cycles(xs, k):
+      for cs in _cycles(xs, k):
         #yield from _perms_from_cycles(diff(seq, xs), cycs.copy().remove(k, v), ss + cs)  #[Python 3]
         for z in _perms_from_cycles(diff(seq, xs), cycs.copy().remove(k, v), ss + cs): yield z  #[Python 2]
 
