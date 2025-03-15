@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 15 10:45:37 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 15 10:47:56 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -234,7 +234,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-03-16" # <year>-<month>-<number>
+__version__ = "2025-03-17" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -4693,6 +4693,8 @@ def ediv(a, b):
 def distinct_chars(*vs, **kw):
   """
   check to see if arguments (as strings) consist of distinct characters.
+  return the number of distinct characters, or None if there are repeated
+  characters.
 
   if the 'size' parameter is specified then the arguments must consist of
   exactly 'size' distinct characters.
