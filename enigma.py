@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 15 10:19:23 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 15 10:45:37 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -61,6 +61,7 @@ digit_map              - create a map of digits to corresponding integer values
 digrt                  - the (additive) digital root of a number
 disjoint_cproduct      - disjoint cartesian product
 disjoint_union         - disjoint union
+distinct_chars         - check arguments (as strings) consist of distinct characters
 divc                   - ceiling division
 divf                   - floor division
 div                    - exact division (or None)
@@ -119,7 +120,6 @@ iroot                  - integer kth root function
 is_coprime             - check numbers are pairwise coprime
 is_cube, is_cube_z     - check a number is a perfect cube
 is_distinct            - check a value is distinct from other values
-is_distinct_chars      - check arguments (as strings) consist of distinct characters
 is_duplicate           - check to see if value (as a string) contains duplicate characters
 is_ipower              - check a number is a perfect power
 is_pairwise_distinct   - check all arguments are distinct
@@ -234,7 +234,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-03-15" # <year>-<month>-<number>
+__version__ = "2025-03-16" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -4690,7 +4690,7 @@ def ediv(a, b):
   if r != 0: raise ValueError("inexact division")
   return d
 
-def is_distinct_chars(*vs, **kw):
+def distinct_chars(*vs, **kw):
   """
   check to see if arguments (as strings) consist of distinct characters.
 
@@ -4700,20 +4700,18 @@ def is_distinct_chars(*vs, **kw):
   string conversion is done using 'str' (or the function specified by
   the 'fn' parameter).
 
-  >>> is_distinct_chars("hello")
-  False
-  >>> is_distinct_chars("world")
-  True
-  >>> is_distinct_chars("world", size=4)
-  False
-  >>> is_distinct_chars(98**2)
-  True
+  >>> [distinct_chars("hello")]
+  [None]
+  >>> distinct_chars("world")
+  5
+  >>> distinct_chars(98**2)
+  4
   """
   fn = kw.pop('fn', str)
-  size = kw.pop('size', None)
   if kw: raise TypeError(str.format("is_distinct_chars: unknown arguments {kw}", kw=seq2str(kw.keys())))
   s = join(vs, fn=fn)
-  return (len(s) == len(set(s)) if size is None else size == len(s) == len(set(s)))
+  k = len(s)
+  return (k if len(set(s)) == k else None)
 
 # in Python 3 we can use [[ def is_duplicate(*vs, fn=str): ]]
 def is_duplicate(*vs, **kw):
@@ -4730,7 +4728,7 @@ def is_duplicate(*vs, **kw):
   >>> is_duplicate(99**2)
   False
   """
-  return not is_distinct_chars(*vs, **kw)
+  return distinct_chars(*vs, **kw) is None
   # or using regexps
   #return True if re.search(r'(.).*\1', str(s)) else False
 
