@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 15 10:14:50 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 15 10:19:23 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -119,6 +119,7 @@ iroot                  - integer kth root function
 is_coprime             - check numbers are pairwise coprime
 is_cube, is_cube_z     - check a number is a perfect cube
 is_distinct            - check a value is distinct from other values
+is_distinct_chars      - check arguments (as strings) consist of distinct characters
 is_duplicate           - check to see if value (as a string) contains duplicate characters
 is_ipower              - check a number is a perfect power
 is_pairwise_distinct   - check all arguments are distinct
@@ -233,7 +234,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-03-14" # <year>-<month>-<number>
+__version__ = "2025-03-15" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
