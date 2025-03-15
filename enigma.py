@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Mar  4 07:37:29 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 15 10:14:50 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -233,7 +233,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-03-01" # <year>-<month>-<number>
+__version__ = "2025-03-14" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -4264,6 +4264,8 @@ def trirt(x):
   100.0
   >>> round(trirt(2), 8)
   1.56155281
+  >>> round(trirt(49), 8)
+  9.4121138
   """
   return 0.5 * (math.sqrt(8 * x + 1) - 1.0)
 
@@ -4276,6 +4278,8 @@ def is_triangular(n):
 
   >>> is_triangular(5050)
   100
+  >>> is_triangular(66066)
+  363
   >>> is_triangular(49) is not None
   False
   """
@@ -4685,9 +4689,38 @@ def ediv(a, b):
   if r != 0: raise ValueError("inexact division")
   return d
 
-def is_duplicate(*s):
+def is_distinct_chars(*vs, **kw):
+  """
+  check to see if arguments (as strings) consist of distinct characters.
+
+  if the 'size' parameter is specified then the arguments must consist of
+  exactly 'size' distinct characters.
+
+  string conversion is done using 'str' (or the function specified by
+  the 'fn' parameter).
+
+  >>> is_distinct_chars("hello")
+  False
+  >>> is_distinct_chars("world")
+  True
+  >>> is_distinct_chars("world", size=4)
+  False
+  >>> is_distinct_chars(98**2)
+  True
+  """
+  fn = kw.pop('fn', str)
+  size = kw.pop('size', None)
+  if kw: raise TypeError(str.format("is_distinct_chars: unknown arguments {kw}", kw=seq2str(kw.keys())))
+  s = join(vs, fn=fn)
+  return (len(s) == len(set(s)) if size is None else size == len(s) == len(set(s)))
+
+# in Python 3 we can use [[ def is_duplicate(*vs, fn=str): ]]
+def is_duplicate(*vs, **kw):
   """
   check to see if arguments (as strings) contain duplicate characters.
+
+  string conversion is done using 'str' (or the function specified by
+  the 'fn' parameter).
 
   >>> is_duplicate("hello")
   True
@@ -4696,8 +4729,7 @@ def is_duplicate(*s):
   >>> is_duplicate(99**2)
   False
   """
-  s = join(s)
-  return len(set(s)) != len(s)
+  return not is_distinct_chars(*vs, **kw)
   # or using regexps
   #return True if re.search(r'(.).*\1', str(s)) else False
 
@@ -5119,7 +5151,7 @@ def qsum(fs, normal=1):
     if g != 1: (a, b) = (a // g, b // g)
   return (a, b)
 
-# sum of reciprocals
+# sum of reciprocals (= unit fractions)
 def rsum(ds, normal=1):
   """determine the sum of the reciprocals 1/d1 + 1/d2 + ..."""
   if not ds: return (0, 1)  # = 0
@@ -8727,7 +8759,7 @@ class _PrimeSieveE6(object):
 
   def between(self, a, b, fn=None):
     """
-    return primes in [a, b]
+    return primes in the interval [a, b]
     """
     if self.expandable: self.extend(b)
     r = self.irange(a, b)
