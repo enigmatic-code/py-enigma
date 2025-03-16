@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 15 10:47:56 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Mar 16 13:03:18 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -181,6 +181,7 @@ rotate                 - rotate a sequence
 seq_all_different      - check elements of a sequence are pairwise distinct
 seq_all_same           - check elements of a sequence are all the same
 seq_get                - get an item from a sequence
+seq_ordered            - return an ordered tuple from the specified sequence
 singleton              - return the value from a single valued container
 split                  - split a value into characters
 sprintf                - interpolate variables into a string
@@ -234,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-03-17" # <year>-<month>-<number>
+__version__ = "2025-03-18" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -800,7 +801,7 @@ def zip_eq(*ss, **kw):
 
 def ordered(*args, **kw):
   """
-  return args as a tuple in order.
+  return <args> as a tuple in order.
 
   this is useful for making a key for a dictionary.
 
@@ -811,7 +812,20 @@ def ordered(*args, **kw):
   >>> ordered(42)
   (42,)
   """
-  return tuple(sorted(args, **kw))
+  fn = kw.pop('fn', tuple)
+  return fn(sorted(args, **kw))
+
+def seq_ordered(seq, **kw):
+  """
+  return <seq> as a tuple in order
+
+  >>> seq_ordered([2, 1, 3])
+  (1, 2, 3)
+  >>> seq_ordered([2, 1, 3], reverse=1)
+  (3, 2, 1)
+  """
+  fn = kw.pop('fn', tuple)
+  return fn(sorted(seq, **kw))
 
 # is sequence <seq> sorted?
 def is_sorted(seq, strict=0, fn=operator.lt):
@@ -4695,9 +4709,6 @@ def distinct_chars(*vs, **kw):
   check to see if arguments (as strings) consist of distinct characters.
   return the number of distinct characters, or None if there are repeated
   characters.
-
-  if the 'size' parameter is specified then the arguments must consist of
-  exactly 'size' distinct characters.
 
   string conversion is done using 'str' (or the function specified by
   the 'fn' parameter).
