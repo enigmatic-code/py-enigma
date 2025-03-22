@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Mar 16 13:03:18 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Mar 22 10:28:54 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-03-18" # <year>-<month>-<number>
+__version__ = "2025-03-21" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -2136,7 +2136,7 @@ def mP(d, n, r=()):
         d[k] += 1
 
 def mpermutations(s, k=None):
-  s = multiset(s)
+  if not isinstance(s, multiset): s = multiset.from_seq(s)
   if k is None: k = len(s)
   return mP(s, k)
 
@@ -2241,8 +2241,8 @@ def _subsets_init():
       ('R', getattr(itertools, 'combinations_with_replacement', None), None),
       ('M', (lambda s, k: product(s, repeat=k)), None),
       ('uC', uC, None),
-      ('mC', uC, (lambda s: sorted(multiset(s)))),
-      ('mP', mP, multiset),
+      ('mC', uC, (lambda s: sorted(s if isinstance(s, multiset) else multiset.from_seq(s)))),
+      ('mP', mP, (lambda s: (s if isinstance(s, multiset) else multiset.from_seq(s)))),
       ('uD', uD, None),
     ):
     if v:
