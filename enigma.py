@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Mar 22 10:28:54 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Apr 10 08:07:56 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-03-21" # <year>-<month>-<number>
+__version__ = "2025-04-09" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -628,6 +628,8 @@ def seq_all_different(*seqs, **kw):
 
   if multiple sequences are provided elements must be
   distinct across all sequences.
+
+  the elements of the sequences must be hashable.
 
   >>> seq_all_different([0, 1, 2, 3])
   True
@@ -11203,10 +11205,13 @@ class SubstitutedExpression(object):
       # --base=<n> (or -b)
       opt['base'] = int(v)
     elif k == 'a' or k == 'assign':
-      # --assign=<letter>,<digit> (or -a<letter>,<digit>)
+      # --assign=<symbol>,<digit> (or -a<symbol>,<digit>)
       # NOTE: <digit> is specified in decimal (not --base)
-      (l, d) = v.split(',', 1)
-      opt['s2d'][l] = int(d)
+      (ss, d) = v.split(',', 1)
+      d = int(d)
+      for x in ss:
+        if x == '|': continue
+        opt['s2d'][x] = int(d)
     elif k == 'd' or k == 'digits':
       # --digits=<digit>,... or <digit>-<digit> (or -d)
       # NOTE: <digits> are specified in decimal (not --base)
@@ -14465,7 +14470,7 @@ enigma.py has the following command-line usage:
       --run:verbose   (or -rv)
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.13.2',
+  version=__version__, python='2.7.18', python3='3.13.3',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
