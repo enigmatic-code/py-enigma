@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Apr 10 08:07:56 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Apr 18 09:26:19 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-04-09" # <year>-<month>-<number>
+__version__ = "2025-04-17" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -5474,7 +5474,7 @@ def recurring_digits(a, b, recur=0, base=10):
   of the proper fraction <a> / <b>.
   """
   if b == 0 or (recur and a == 0):
-    raise ValueError("invalid input fraction: {a} / {b} [recur={recur}]".format(a=a, b=b, recut=bool(recur)))
+    raise ValueError("invalid input fraction: {a} / {b} [recur={recur}]".format(a=a, b=b, recur=bool(recur)))
   r = dict()
   s = list()
   n = 0
@@ -5984,7 +5984,7 @@ def irange(a, b=None, step=1):
     if step > 0: return xrange(0)
   else:
     if b is None: (a, b) = ((0, a - 1) if step > 0 else (a - 1, 0))
-    return xrange(a, b + (1 if step > 0 else -1), step)
+    return xrange(a, (b + 1 if step > 0 else b - 1), step)
   return itertools.count(start=a, step=step)
 
 # inclusive range iterator that allows a fractional step
@@ -6035,8 +6035,10 @@ def chain(*ss, **kw):
   return flatten(ss, fn=fn)
 
 # generate permutations of the items of a sequence
-def permute(ss, select='P', fn=iter):
-  return flatten((subsets(s, size=len, select=select) for s in ss), fn=fn)
+def permute(ss, select='P'):
+  for s in ss:
+    #yield from subsets(s, size=len, select=select) #[Python 3]
+    for z in subsets(s, size=len, select=select): yield z #[Python 2]
 
 # flatten(zip(*ss), fn=iter) works if arguments are the same length
 def interleave(*ss):
@@ -6786,6 +6788,27 @@ class Denominations(object):
     m = max(self.residues[-1])
     return (None if m == inf else m - self.denominations[0])
 
+# decompose t into k increasing numbers, in range [min_v, max_v]
+# d = delta between numbers (for inc/dec seqs)
+# R = function to calculate remaining values
+# M = function to calculate next minimum value
+# r = reverse return values
+# fn = return type
+# ns = numbers collected so far
+def _decompose(t, k, min_v, max_v, d, R, M, r, fn, ns=()):
+  if k == 0:
+    if t == 0:
+      yield fn(ns)
+  elif k == 1:
+    if not (t < min_v or t > max_v):
+      ns += (t,)
+      yield fn(ns[::-1] if r else ns)
+  else:
+    k_ = k - 1
+    for n in irange(min_v, min(max_v, R(t, k, k_, min_v))):
+      #yield from _decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,)) #[Python 3]
+      for z in _decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,)): yield z #[Python 2]
+
 # return a function to generate k-sequences of positive integers with a particular total
 def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   """
@@ -6794,36 +6817,26 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
 
     k = length of sequences to generate
     increasing = +1 (increasing sequences [default]); -1 (decreasing sequences); or 0
-    sep = separation between numbers; 0 allows repeats [default: 1]
-    min_v = minimum permissible value (non-negative integer)
-    max_v = maximum permissible value (non-negative integer, or inf)
+    sep = minimum separation between numbers in the sequence; 0 allows repeats [default: 1]
+    min_v = minimum permissible value (non-negative integer) [default: 1]
+    max_v = maximum permissible value (non-negative integer, or inf) [default: inf]
     fn = return type (default is to return tuples)
-  """
-  # decompose t into k increasing numbers, in range [min_v, max_v]
-  # d = delta between numbers (for inc/dec seqs)
-  # R = function to calculate remaining values
-  # M = function to calculate next minimum value
-  # r = reverse return values
-  # fn = return type
-  # ns = numbers collected so far
-  def _decompose(t, k, min_v, max_v, d, R, M, r, fn, ns=()):
-    if k == 0:
-      if t == 0: yield fn(())
-    elif k == 1:
-      if not (t < min_v or t > max_v):
-        ns += (t,)
-        yield fn(ns[::-1] if r else ns)
-    else:
-      k_ = k - 1
-      for n in irange(min_v, min(max_v, R(t, k, k_, min_v))):
-        for z in _decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,)): yield z
 
+  Note that the 'sep' parameter specifies the separation between
+  the numbers used in constructing the sequence, not the separation
+  between adjacent numbers in the returned sequence. So when using
+  'increasing=0' specifying 'sep=1' means the numbers will all be
+  different, and 'sep=0' will allow repeats.
+  """
   if increasing == 0:
-    # generate increasing sequences with the appropriate sep value
-    # and then permute the answers (which may contain repeats if sep=0)
-    f = Decompose(k, increasing=1, sep=sep, min_v=min_v, max_v=max_v, fn=fn)
-    perm = (mpermutations if sep == 0 else itertools.permutations)
-    return (lambda t, k=k: flatten((perm(ns, k) for ns in f(t, k)), fn=iter))
+    if sep == 0:
+      R = (lambda t, k, k_, m: t - k_ * m)
+      M = (lambda n, d: min_v)
+      return (lambda t, k=k, min_v=min_v, max_v=max_v, fn=fn: _decompose(t, k, min_v, max_v, 0, R, M, 0, fn))
+    else:
+      # generate increasing sequences with the appropriate sep value and then permute the answers
+      f = Decompose(k, increasing=1, sep=sep, min_v=min_v, max_v=max_v, fn=fn)
+      return (lambda t, k=k: permute(f(t, k)))
   else:
     d = abs(sep)
     if d == 0:
@@ -6836,7 +6849,7 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
       R = (lambda t, k, k_, m: (t - (d * k * k_) // 2) // k)
       M = (lambda n, d: n + d)
     r = (increasing < 0)
-    return (lambda t, k=k, min_v=min_v: _decompose(t, k, min_v, max_v, d, R, M, r, fn))
+    return (lambda t, k=k, min_v=min_v, max_v=max_v, fn=fn: _decompose(t, k, min_v, max_v, d, R, M, r, fn))
 
 # all-in-one
 def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
@@ -11155,7 +11168,7 @@ class SubstitutedExpression(object):
       "  --template=<str> (or -T<s>) = solution template",
       "  --solution=<str> (or -S<s>) = solution symbols",
       "  --header=<str> (or -H<s>) = solution header",
-      "  --output=<code> (or -O<s>) = custom output function"
+      "  --output=<code> (or -O<s>) = custom output function",
       "  --distinct=<str> (or -D<s>) = symbols that stand for different digits (0 = off, 1 = on)",
       "  --literal=<str> (or -L<s>) = symbols that stand for themselves",
       "  --code=<str> (or -C<s>) = initialisation code (can be used multiple times)",
