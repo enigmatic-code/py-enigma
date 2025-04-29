@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Apr 18 09:26:19 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr 29 07:45:38 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-04-17" # <year>-<month>-<number>
+__version__ = "2025-04-18" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -5503,6 +5503,8 @@ def recurring(a, b, recur=0, base=10, digits=None):
   ('0', '', '142857')
   >>> tuple(recurring(3, 2))
   ('1', '5', '')
+  >>> tuple(recurring(593, 530))
+  ('1', '1', '1886792452830')
   >>> tuple(recurring(3, 2, recur=1))
   ('1', '4', '9')
   >>> tuple(recurring(5, 17, base=16))
@@ -6035,10 +6037,10 @@ def chain(*ss, **kw):
   return flatten(ss, fn=fn)
 
 # generate permutations of the items of a sequence
-def permute(ss, select='P'):
+def permute(ss, size=len, select='P'):
   for s in ss:
     #yield from subsets(s, size=len, select=select) #[Python 3]
-    for z in subsets(s, size=len, select=select): yield z #[Python 2]
+    for z in subsets(s, size=size, select=select): yield z #[Python 2]
 
 # flatten(zip(*ss), fn=iter) works if arguments are the same length
 def interleave(*ss):
@@ -6830,6 +6832,7 @@ def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   """
   if increasing == 0:
     if sep == 0:
+      # generate sequences, allowing repeats
       R = (lambda t, k, k_, m: t - k_ * m)
       M = (lambda n, d: min_v)
       return (lambda t, k=k, min_v=min_v, max_v=max_v, fn=fn: _decompose(t, k, min_v, max_v, 0, R, M, 0, fn))
@@ -6864,6 +6867,8 @@ def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
     max_v = maximum permissible value (non-negative integer, or inf)
     fn = return type (default is to return tuples)
 
+  See also: Decompose().
+
   >>> sorted(decompose(10, 3, increasing=1, min_v=1))
   [(1, 2, 7), (1, 3, 6), (1, 4, 5), (2, 3, 5)]
   >>> sorted(decompose(8, 3, increasing=1, min_v=0))
@@ -6872,6 +6877,8 @@ def decompose(t, k, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
   [(1, 1, 6), (1, 2, 5), (1, 3, 4), (2, 2, 4), (2, 3, 3)]
   >>> sorted(decompose(5, 3, increasing=0, sep=0, min_v=1))
   [(1, 1, 3), (1, 2, 2), (1, 3, 1), (2, 1, 2), (2, 2, 1), (3, 1, 1)]
+  >>> sorted(decompose(6, 3, increasing=0, sep=1, min_v=1))
+  [(1, 2, 3), (1, 3, 2), (2, 1, 3), (2, 3, 1), (3, 1, 2), (3, 2, 1)]
   """
   f = Decompose(increasing=increasing, sep=sep, min_v=min_v, max_v=max_v, fn=fn)
   # is the total iterable?
