@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr 29 07:45:38 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May 11 08:57:00 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-04-18" # <year>-<month>-<number>
+__version__ = "2025-05-04" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -1343,8 +1343,8 @@ def clump(seq, fn=None):
     v = next(seq)
   except StopIteration:
     return
-  xs = [v]
   if fn is not None: v = fn(v)
+  xs = [v]
   for x in seq:
     v_ = (x if fn is None else fn(x))
     if v_ == v:
@@ -3024,8 +3024,10 @@ def cb(x): "cb(x) = x**3"; return x**3
 
 # generate prime factors
 # basis = [2, 3, 5]
-_prime_factors_deltas = [[2, 1, 2, 2], [4, 2, 4, 2, 4, 6, 2, 6]]
-_prime_factors_js = [1, 1]
+#_prime_factors_deltas = [[2, 1, 2, 2], [4, 2, 4, 2, 4, 6, 2, 6]]
+#_prime_factors_js = [1, 1]
+_prime_factors_deltas0 = [2, 1, 2, 2]
+_prime_factors_deltas1 = [4, 2, 4, 2, 4, 6, 2, 6]
 def prime_factors(n, limit=inf, validate=0):
   """
   generate prime_factors of <n>.
@@ -3043,9 +3045,10 @@ def prime_factors(n, limit=inf, validate=0):
   if validate: n = as_int(n, include="0+")
   if n < 2: return
   # start with the first list of deltas
-  x = j = done = 0
+  deltas = _prime_factors_deltas0
+  x = done = 0
   while True:
-    for i in _prime_factors_deltas[j]:
+    for i in deltas:
       x += i
       if x > limit: return
       while True:
@@ -3057,7 +3060,7 @@ def prime_factors(n, limit=inf, validate=0):
         if r > 0: break
         yield x
         n = d
-    j = _prime_factors_js[j]
+    deltas = _prime_factors_deltas1
 
 # for large numbers with large prime factors use prime_factor_h() or sympy.ntheory.factorint()
 def prime_factor(n, limit=inf, validate=0):
@@ -5142,7 +5145,7 @@ def mdivmod(x, *vs):
 def qsum(fs, normal=1):
   """
   determine the numerator and denominator of the sum of the fractions
-  given in <fs>, a sequence of (<numberator>, <denominator>) pairs.
+  given in <fs>, a sequence of (<numerator>, <denominator>) pairs.
 
   if normal is set, then the fraction will be reduced to lowest terms.
 
