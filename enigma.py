@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 11 08:57:00 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon May 12 16:01:21 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-05-04" # <year>-<month>-<number>
+__version__ = "2025-05-11" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -9710,8 +9710,6 @@ bungled_sum = SubstitutedSum.bungled_sum
 # TODO: think about negative values - expressions resulting in an
 # alphametic word must be non-negative
 #
-# TODO: consider ordering the symbols, so we can calculate words sooner.
-#
 # TODO: consider allowing a "wildcard" character, for symbols that can take
 # on any available digit (but still not allow leading zeros). [Enigma 1579]
 #
@@ -10150,11 +10148,14 @@ class SubstitutedExpression(object):
           if len(w) > 1:
             invalid.add((w[0], 0))
 
-    # but for the rest of the time we are only interested
-    # in words in the <exprs> (not the <values>)
-    words = set()
-    for (x, _, _) in exprs:
-      words.update(w for w in _find_words(x) if len(w) > 1)
+    ## but for the rest of the time we are only interested
+    ## in words in the <exprs> (not the <values>)
+    ##words = set()
+    ##for (x, _, _) in exprs:
+    ##  words.update(w for w in _find_words(x) if len(w) > 1)
+
+    # we only need to construct words with more than 1 symbol
+    words = set(w for w in words if len(w) > 1)
 
     # find the symbols in the (<expr>, <value>) pairs
     # xs = symbols in <expr>
@@ -10391,7 +10392,7 @@ class SubstitutedExpression(object):
 
     # [denest] workaround statically nested block limit
     if denest:
-      #  set other initial values and words to None
+      # set other initial values and words to None
       for s in symbols:
         if s not in s2d:
           prog.append(sprintf("{_}{s} = None", s=_sym(s)))
@@ -10433,11 +10434,10 @@ class SubstitutedExpression(object):
         done.update(xsyms)
 
       else:
-        # deal with each symbol in <expr>
-        # TODO: we could consider these in an order that makes words
-        # in <words> as soon as possible
+        # deal with each symbol in <expr>, that it not already done
+        # we deal with symbols that appear in the most words first
+        xsyms = sorted(diff(xsyms, done), key=(lambda x: sum(x in w for w in words)), reverse=1)
         for s in xsyms:
-          if s in done: continue
           # allowable digits for s
           ds = valid[s]
           in_loop = True
@@ -10473,52 +10473,62 @@ class SubstitutedExpression(object):
 
       # check the value
       if k == 3:
-        # this is a literal (alphametic) word
-        # so it must have a non-negative value
-        prog.append(sprintf("{_}if {vx} >= 0:"))
-        _ += indent
-        for (j, y) in enumerate(val[::-1], start=-len(val)):
-          if y in done:
-            # this is a symbol with an assigned value
-            prog.append(sprintf("{_}{vy} = {vx} % {base}"))
-            # check the value
-            prog.append(sprintf("{_}if {vy} == {y}:", y=_sym(y)))
-            _ += indent
-            prog.append(sprintf("{_}{vx} //= {base}"))
-            # and check x == 0 for the final value
-            if j == -1:
-              prog.append(sprintf("{_}if {vx} == 0:"))
+        # this is a literal (alphametic) word:
+        # if we have already constructed the word ...
+        if all(x in done for x in val):
+          # we can check it directly
+          prog.append(sprintf("{_}if {vx} == {val}:", val=_sym(val)))
+          _ += indent
+        else:
+          # we extract the symbols from the result
+          # it must have a non-negative value
+          prog.append(sprintf("{_}if {vx} >= 0:"))
+          _ += indent
+          # we can set the value of the word now, to avoid recalculation
+          if len(val) > 1: prog.append(sprintf("{_}{val} = {vx}", val=_sym(val)))
+          # now we check that the value does make the word
+          for (j, y) in enumerate(val[::-1], start=-len(val)):
+            if y in done:
+              # this is a symbol with an assigned value
+              prog.append(sprintf("{_}{vy} = {vx} % {base}"))
+              # check the value
+              prog.append(sprintf("{_}if {vy} == {y}:", y=_sym(y)))
               _ += indent
-          else:
+              prog.append(sprintf("{_}{vx} //= {base}"))
+              # and check x == 0 for the final value
+              if j == -1:
+                prog.append(sprintf("{_}if {vx} == 0:"))
+                _ += indent
+            else:
             # this is a new symbol...
-            prog.append(sprintf("{_}{y} = {vx} % {base}", y=_sym(y)))
-            check = list()
-            # check it is different from existing symbols
-            if y in distinct:
-              check.extend(_sym(x) for x in done if x in distinct[y])
-            # check any invalid values for this symbol
-            for v in idigits.union(v for (s, v) in invalid if y == s):
-              check.append(str(v))
-            if check:
-              if use_sets:
-                if len(check) == 1:
-                  check = _sym(y) + " != " + check[0]
+              prog.append(sprintf("{_}{y} = {vx} % {base}", y=_sym(y)))
+              check = list()
+              # check it is different from existing symbols
+              if y in distinct:
+                check.extend(_sym(x) for x in done if x in distinct[y])
+              # check any invalid values for this symbol
+              for v in idigits.union(v for (s, v) in invalid if y == s):
+                check.append(str(v))
+              if check:
+                if use_sets:
+                  if len(check) == 1:
+                    check = _sym(y) + " != " + check[0]
+                  else:
+                    check = _sym(y) + " not in " + _set(check)
                 else:
-                  check = _sym(y) + " not in " + _set(check)
-              else:
-                check = join((_sym(y) + " != " + x for x in check), sep=" and ")
-              prog.append(sprintf("{_}if {check}:"))
-              _ += indent
-            prog.append(sprintf("{_}{vx} //= {base}"))
-            # and check x == 0 for the final value
-            if j == -1:
-              prog.append(sprintf("{_}if {vx} == 0:"))
-              _ += indent
-            done.add(y)
-            # look for words which can now be made
-            for w in words:
-              if y in w and all(x in done for x in w):
-                prog.append(sprintf("{_}{w} = {x}", w=_sym(w), x=_word(w, base)))
+                  check = join((_sym(y) + " != " + x for x in check), sep=" and ")
+                prog.append(sprintf("{_}if {check}:"))
+                _ += indent
+              prog.append(sprintf("{_}{vx} //= {base}"))
+              # and check x == 0 for the final value
+              if j == -1:
+                prog.append(sprintf("{_}if {vx} == 0:"))
+                _ += indent
+              done.add(y)
+              # look for additional words which can now be made
+              for w in words:
+                if w != val and y in w and all(x in done for x in w):
+                  prog.append(sprintf("{_}{w} = {x}", w=_sym(w), x=_word(w, base)))
 
       elif k == 1:
         # look for a True value
