@@ -6,13 +6,13 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon May 12 16:01:21 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue May 13 07:24:09 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
 # URI:          http://www.magwag.plus.com/jim/enigma.html
 #
-# (c) Copyright 2009-2024, Jim Randell, all rights reserved.
+# (c) Copyright 2009-2025, Jim Randell, all rights reserved.
 #
 ###############################################################################
 # -*- mode: Python; python-indent-offset: 2; coding: ascii -*-
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-05-11" # <year>-<month>-<number>
+__version__ = "2025-05-12" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
