@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue May 13 07:24:09 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May 18 15:24:22 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-05-12" # <year>-<month>-<number>
+__version__ = "2025-05-17" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -893,7 +893,7 @@ def join(seq, sep='', enc='', sort=0, rev=0, fn=str):
 
 def joinf(sep='', enc='', sort=0, rev=0, fn=str):
   "return a joining function"
-  return functools.partial(join, sep=sep, enc=enc, sort=sort, rev=rev, fn=fn)
+  return partial(join, sep=sep, enc=enc, sort=sort, rev=rev, fn=fn)
 
 def concat(*args, **kw):
   """
@@ -1499,7 +1499,7 @@ def seq_get(s, k=None, default=None):
   'b'
   """
   if k is None:
-    return functools.partial(peek, s, default=default)
+    return partial(peek, s, default=default)
   else:
     return peek(s, k, default=default)
 
@@ -3343,7 +3343,7 @@ def is_prime(n, validate=0):
   """
   if n is None: return None
   if validate: n = as_int(n, include="0+")
-  if n < 6: return (n == 2 or n == 3 or n == 5)   # 2, 3 -> T; 0, 1, 4 -> F
+  if n < 6: return (n == 2 or n == 3 or n == 5)   # 2, 3, 5 -> T; 0, 1, 4 -> F
   r = n % 6
   if r != 1 and r != 5: return False  # (n % 6) != (1, 5) -> F
 
@@ -4375,7 +4375,7 @@ def hypot(*vs, **kw):
   return root(sum(v * v for v in vs))
 
 # alias for: hypot(..., root=is_square)
-ihypot = functools.partial(hypot, root=is_square)
+ihypot = partial(hypot, root=is_square)
 ihypot.__doc__ = "as hypot(), but return an integer value, or None"
 
 # root of combined squares:
@@ -4413,7 +4413,7 @@ def rcs(*vs, **kw):
   return catch(root, t)
 
 # like rcs() but only return integer square roots
-ircs = functools.partial(rcs, root=is_square)
+ircs = partial(rcs, root=is_square)
 ircs.__doc__ = "as rcs(), but return an integer value, or None"
 
 # return roots of the form n/d in the appropriate domain
@@ -4848,7 +4848,7 @@ def avg(seq, div=fdiv):
       n += 1
   return div(t, n)
 
-iavg = functools.partial(avg, div=div)
+iavg = partial(avg, div=div)
 iavg.__doc__ = "as avg(), but return an integer value, or None."
 
 # vector dot product: dot(xs, ys, strict=0, fnp=multiply, fns=sum)
@@ -5523,7 +5523,7 @@ def recurring(a, b, recur=0, base=10, digits=None):
   # the integer part
   (i, a) = divmod(a, b)
   if recur and a == 0: (i, a) = (i - 1, b)
-  i2b = functools.partial(int2base, base=base, digits=digits)
+  i2b = partial(int2base, base=base, digits=digits)
   i = i2b(i)
   (nr, rr) = (str.join('', map(i2b, ds)) for ds in recurring_digits(a, b, recur=recur, base=base))
   if neg and (nr or rr or i != '0'): i = '-' + i
@@ -7229,10 +7229,28 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   area=lambda v: (None if v < 0 else 0.25 * sqrt(v)),
   iarea=lambda v: (None if v < 0 else div(is_square(v), 4)),
 )
-def is_triangle(a, b, c, fn=gt(0)):
+def is_triangle(a, b, c, fn=gt(0), validate=0):
+  """
+  check it possible to make a triangle with sides of length <a>, <b>, <c>.
+
+  by default the lengths are allowed to be 0 or negative, and the triangle
+  formed uses the absolute value of the lengths.
+
+  setting 'validate=1' will throw a ValueError for non-positive side lengths.
+
+  the area of the triangle can be returned by setting: 'fn=is_triangle.area'
+  when the area of the triangle will be returned, or None for impossible
+  configurations.
+
+  for integer only areas: 'fn=is_triangle.iarea' can be used, when None will
+  also be returned for non-integer areas.
+  """
+  if validate and not (a > 0 and b > 0 and c > 0): raise ValueError("is_triangle: invalid side length ({a}, {b}, {c})".format(a=a, b=b, c=c))
   # v = (4A)^2 where A is the area of the triangle
   v = (a + b + c) * (a + b - c) * (a + c - b) * (b + c - a)
   return fn(v)
+
+triangle_area = partial(is_triangle, fn=is_triangle.area)
 
 # 2D geometry: a point is represented by (x, y)
 
@@ -8410,7 +8428,7 @@ class Polynomial(list):
 
   def function(self):
     "return a Python function that calls the polynomial"
-    return functools.partial(poly_value, self)
+    return partial(poly_value, self)
 
   def copy(self):
     "return a copy of the polynomial"
@@ -8847,22 +8865,22 @@ class _PrimeSieveE6(object):
     this is a complete factorisation for <n> up to the square of the
     limit of the sieve.
     """
-    return factor(n, fn=functools.partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
+    return factor(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
 
   def divisors(self, n, end=None, mr=0, mrr=0):
-    return divisors(n, fn=functools.partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
+    return divisors(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
 
   def divisors_pairs(self, n, end=None, mr=0, mrr=0):
-    return divisors_pairs(n, fn=functools.partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
+    return divisors_pairs(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
 
   def tau(self, n, end=None, mr=0, mrr=0):
-    return tau(n, fn=functools.partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
+    return tau(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
 
   def is_square_free(self, n, end=None, mr=0, mrr=0):
-    return is_square_free(n, fn=functools.partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
+    return is_square_free(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
 
   def factorisations(self, n, end=None, mr=0, mrr=0):
-    return factorisations(n, fn=functools.partial(self.divisors, end=end, mr=mr, mrr=mrr))
+    return factorisations(n, fn=partial(self.divisors, end=end, mr=mr, mrr=mrr))
 
 # an expandable version of the sieve
 
@@ -9746,7 +9764,7 @@ _sym = lambda x: '_' + x
 # this will use ascii variables 'v_<hex-code-of-symbol>'
 #_sym = cached(lambda x: 'v_' + join((int2base(ord(c), base=16) for c in x), sep="_"))
 
-_set = functools.partial(join, sep=", ", enc="{}")
+_set = partial(join, sep=", ", enc="{}")
 
 # return an expression that evaluates word <w> in base <base>
 def _word(w, base):
