@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed May 21 13:10:01 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed May 21 13:44:11 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-05-18" # <year>-<month>-<number>
+__version__ = "2025-05-19" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -2870,7 +2870,7 @@ def first(s, count=1, skip=0, fn=list):
   <skip> items) as a list (or other object specified by <fn>).
 
   <count> can be a callable object, in which case items are collected
-  from <i> while <count> returns a true value when it is passed each
+  from <s> while <count> returns a true value when it is passed each
   item (after skipping the first <skip> items).
 
   <skip> can also be a callable, in which case items are skipped while
@@ -2886,25 +2886,24 @@ def first(s, count=1, skip=0, fn=list):
   >>> first(powers(0, inf, 2), count=lt(200))
   [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196]
   """
-  if callable(count):
-    if skip == 0:
-      r = itertools.takewhile(count, s)
-    elif callable(skip):
-      r = itertools.takewhile(count, itertools.dropwhile(skip, s))
-    else:
-      r = itertools.takewhile(count, itertools.islice(s, skip, None))
-  elif count == inf:
-    if skip == 0:
-      r = s
-    elif callable(skip):
-      r = itertools.dropwhile(skip, s)
-    else:
-      r = itertools.islice(s, skip, None)
+  # anything to skip?
+  if callable(skip):
+    # skip while <skip> is true
+    s = itertools.dropwhile(skip, s)
+  elif skip > 0:
+    # skip <count> elements [assume non-negative integer]
+    s = itertools.islice(s, skip, None)
+
+  if count == inf or count is None:
+    # keep going to the end of the iterable
+    r = s
+  elif callable(count):
+    # collect until <count> is false
+    r = itertools.takewhile(count, s)
   else:
-    if callable(skip):
-      r = itertools.islice(itertools.dropwhile(skip, s), count)
-    else:
-      r = itertools.islice(s, skip, skip + count)
+    # collect <count> elements [assume positive integer]
+    r = itertools.islice(s, count)
+
   return (r if fn is None else fn(r))
 
 # return the single value if s contains only a single value (else None)
