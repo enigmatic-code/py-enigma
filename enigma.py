@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 18 15:24:22 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed May 21 13:10:01 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-05-17" # <year>-<month>-<number>
+__version__ = "2025-05-18" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -2894,9 +2894,17 @@ def first(s, count=1, skip=0, fn=list):
     else:
       r = itertools.takewhile(count, itertools.islice(s, skip, None))
   elif count == inf:
-    r = s
+    if skip == 0:
+      r = s
+    elif callable(skip):
+      r = itertools.dropwhile(skip, s)
+    else:
+      r = itertools.islice(s, skip, None)
   else:
-    r = itertools.islice(s, skip, skip + count)
+    if callable(skip):
+      r = itertools.islice(itertools.dropwhile(skip, s), count)
+    else:
+      r = itertools.islice(s, skip, skip + count)
   return (r if fn is None else fn(r))
 
 # return the single value if s contains only a single value (else None)
@@ -3343,7 +3351,7 @@ def is_prime(n, validate=0):
   """
   if n is None: return None
   if validate: n = as_int(n, include="0+")
-  if n < 6: return (n == 2 or n == 3 or n == 5)   # 2, 3, 5 -> T; 0, 1, 4 -> F
+  if n < 6: return (n == 2 or n == 3 or n == 5)  # 2, 3, 5 -> T; 0, 1, 4 -> F
   r = n % 6
   if r != 1 and r != 5: return False  # (n % 6) != (1, 5) -> F
 
