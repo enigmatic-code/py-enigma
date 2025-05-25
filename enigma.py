@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed May 21 13:44:11 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May 25 18:26:50 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-05-19" # <year>-<month>-<number>
+__version__ = "2025-05-24" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -2643,7 +2643,7 @@ def find(seq, v):
   if isinstance(seq, dict):
     # search the keys
     # (or we could use find() in the values, and return the correspond index in keys)
-    for (k, x) in s.items():
+    for (k, x) in seq.items():
       if x == v: return k
   else:
     # search the sequence
@@ -6170,7 +6170,7 @@ def delete(s, ks=()):
   """
   return an updated version of object <s> with items at keys <ks> removed.
 
-  >>> delete(dict(a=1, b=2, c=3), 'bc') == dict(a=1)
+  >>> delete(dict(a=1, b=2, c=3), "bc") == dict(a=1)
   True
   >>> delete("bananas", [0, 2, 4, 6])
   'aaa'
