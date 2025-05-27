@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 25 18:26:50 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue May 27 11:25:37 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-05-24" # <year>-<month>-<number>
+__version__ = "2025-05-25" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -4942,7 +4942,7 @@ def _gcd(a, b):
   """
   while b:
     (a, b) = (b, a % b)
-  return a
+  return abs(a)
 
 # or use math.gcd() [available from 3.5; from 3.9 = mgcd]
 gcd = getattr(math, 'gcd', _gcd)
@@ -4987,7 +4987,7 @@ def egcd(a, b):
   while b:
     (q, r) = divmod(a, b)
     (a, b, x0, x1, y0, y1) = (b, r, x1, x0 - q * x1, y1, y0 - q * y1)
-  return (x0, y0, a)
+  return ((x0, y0, a) if a > 0 else (-x0, -y0, -a))
 
 # multiplicative inverse of <n> mod <m>
 def _invmod(n, m):
