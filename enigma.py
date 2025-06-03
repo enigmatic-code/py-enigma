@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue May 27 11:25:37 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jun  3 08:57:15 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-05-25" # <year>-<month>-<number>
+__version__ = "2025-05-26" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -1459,7 +1459,8 @@ def peek(s, k=0, **kw):
   103
 
   """
-  if kw.get('validate'): k = as_int(k, include="0+")
+  if kw.pop('validate', None): k = as_int(k, include="0+")
+  if kw and list(kw.keys()) != ['default']: raise TypeError(str.format("peek: unknown arguments {kw}", kw=seq2str(kw.keys())))
   if k >= 0:
     if not isinstance(s, dict):
       # try to index into the container
@@ -1605,15 +1606,14 @@ def ucombinations(s, k=None):
 # the multiset is implemented as a dict mapping <item> -> <count>
 class multiset(dict):
   """
-  an implementation of multisets.
+  an implementation of multisets (sometimes known as: bags)
 
   it can be used as an alternative to collections.Counter(), but note
   the following differences:
 
     len() counts the number of elements (not the number of distinct elements)
 
-    iterating through a multiset provides all elements (not just distinct
-    elements)
+    iterating through a multiset provides all elements (not just distinct elements)
   """
 
   def __init__(self, *vs, **kw):
@@ -2083,6 +2083,9 @@ class multiset(dict):
   # generate item pairs
   def to_pairs(self):
     return tuple(sorted(dict.items(self)))
+
+  def __hash__(self):
+    return hash(self.to_pairs())
 
   def to_dict(self):
     return dict(self)
@@ -4982,8 +4985,7 @@ def egcd(a, b):
   #return (t, s - q * t, g)
   #
   # or iteratively...
-  (x0, x1) = (1, 0)
-  (y0, y1) = (0, 1)
+  (x0, x1, y0, y1) = (1, 0, 0, 1)
   while b:
     (q, r) = divmod(a, b)
     (a, b, x0, x1, y0, y1) = (b, r, x1, x0 - q * x1, y1, y0 - q * y1)
@@ -5045,6 +5047,36 @@ def crt(vs):
       (x, mm) = crt1(r, m, x, mm)
       if x is None: return crt.fail
   return (crt.fail if x is None else crt.rtype(x, mm))
+
+# solve linear diophantine equations in 2 variables:
+def diop_linear(a, b, c, fn=0):
+  """
+  solve the linear Diophantine equation a.X + b.Y = c for integers X, Y
+  (where a, b are non-zero, and gcd(a, b) divides c).
+
+  return ((X0, Y0), (Xd, Yd)) to give solutions of the form:
+
+    (X, Y) = (X0 + t.Xd, Y0 + t.Yd) for integer t
+
+  the value of X0 returned is the smallest non-negative integer possible and Xd is non-negative
+
+  however, if <fn> is set, then a function f: t -> (X, Y) is returned instead
+  """
+  if a == 0 or b == 0: raise Value("diop_linear: invalid equation")
+  (X, Y, g) = egcd(a, b)
+  if g > 1:
+    (a, b, c) = (a // g, b // g, div(c, g))
+    if c is None: raise ValueError("diop_linear: no solutions")
+  # calculate particular solution (X0, Y0) and deltas (Xd, Yd)
+  (X0, Y0) = (c * X, c * Y)
+  (Xd, Yd) = ((-b, a) if b < 0 else (b, -a))
+  # adjust X0 to be the smallest value
+  t = divc(-X0, Xd)
+  X0 += t * Xd
+  Y0 += t * Yd
+  #assert all(a * (X0 + t * Xd) + b * (Y0 + t * Yd) == c for t in irange(-50, 50))
+  if fn: return (lambda t: (X0 + t * Xd, Y0 + t * Yd))
+  return ((X0, Y0), (Xd, Yd))
 
 # find square roots of <a> mod <m>
 # this is OK for relatively small m, but more efficient (and complex)
@@ -5247,6 +5279,11 @@ def ratio_q(*qs):
   # turn the fractions into integers
   m = call(mlcm, (q.denominator for q in qs))
   return call(ratio, (int(m * q) for q in qs))
+
+# check a/b == c/d
+def ratio_eq(r1, r2):
+  ((a, b), (c, d)) = (r1, r2)
+  return (a * d == b * c)
 
 # find an appropriate rational class
 # (could also try "sympy.Rational", but not for speed)
@@ -9225,8 +9262,8 @@ def output_mul(a, b, base=10, pre='', start=None, end=None):
   printf("{pre}{x}", x='-' * k)  # if b != 0: ...
   for (i, d) in enumerate(nsplit(b, base=base, reverse=1)):
     p = a * d
-    #if p == 0: continue
-    #printf("{pre}{x}{p}{y} = {d} * {a}", x=' ' * (k - i - ndigits(p)), y=' ' * i)
+    if p == 0: continue  # skip 0 products
+    #printf("{pre}{p}{x} = {d} * {a}", p=fmt(p, width=k - i), x=' ' * i)
     printf("{pre}{p}", p=fmt(p, width=k - i))
   printf("{pre}{x}", x='-' * k)
   printf("{pre}{c}", c=fmt(c))
