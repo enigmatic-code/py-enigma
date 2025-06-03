@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jun  3 08:57:15 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jun  3 11:08:21 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-05-26" # <year>-<month>-<number>
+__version__ = "2025-06-01" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -5049,7 +5049,7 @@ def crt(vs):
   return (crt.fail if x is None else crt.rtype(x, mm))
 
 # solve linear diophantine equations in 2 variables:
-def diop_linear(a, b, c, fn=0):
+def diop_linear(a, b, c, mX=0, fn=0):
   """
   solve the linear Diophantine equation a.X + b.Y = c for integers X, Y
   (where a, b are non-zero, and gcd(a, b) divides c).
@@ -5058,9 +5058,10 @@ def diop_linear(a, b, c, fn=0):
 
     (X, Y) = (X0 + t.Xd, Y0 + t.Yd) for integer t
 
-  the value of X0 returned is the smallest non-negative integer possible and Xd is non-negative
+  the value of X0 returned is the smallest integer possible above mX,
+  and Xd is positive.
 
-  however, if <fn> is set, then a function f: t -> (X, Y) is returned instead
+  however, if <fn> is set, then a function f: t -> (X, Y) is returned instead.
   """
   if a == 0 or b == 0: raise Value("diop_linear: invalid equation")
   (X, Y, g) = egcd(a, b)
@@ -5071,7 +5072,7 @@ def diop_linear(a, b, c, fn=0):
   (X0, Y0) = (c * X, c * Y)
   (Xd, Yd) = ((-b, a) if b < 0 else (b, -a))
   # adjust X0 to be the smallest value
-  t = divc(-X0, Xd)
+  t = divc(mX - X0, Xd)
   X0 += t * Xd
   Y0 += t * Yd
   #assert all(a * (X0 + t * Xd) + b * (Y0 + t * Yd) == c for t in irange(-50, 50))
