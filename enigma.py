@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jun  3 11:08:21 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun  5 08:43:40 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-01" # <year>-<month>-<number>
+__version__ = "2025-06-02" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -5058,8 +5058,8 @@ def diop_linear(a, b, c, mX=0, fn=0):
 
     (X, Y) = (X0 + t.Xd, Y0 + t.Yd) for integer t
 
-  the value of X0 returned is the smallest integer possible above mX,
-  and Xd is positive.
+  the value of X0 returned is the smallest integer possible above (or equal
+  to) mX, and Xd is positive.
 
   however, if <fn> is set, then a function f: t -> (X, Y) is returned instead.
   """
@@ -5076,7 +5076,7 @@ def diop_linear(a, b, c, mX=0, fn=0):
   X0 += t * Xd
   Y0 += t * Yd
   #assert all(a * (X0 + t * Xd) + b * (Y0 + t * Yd) == c for t in irange(-50, 50))
-  if fn: return (lambda t: (X0 + t * Xd, Y0 + t * Yd))
+  if fn: return (lambda t, X0=X0, Y0=Y0, Xd=Xd, Yd=Yd, : (X0 + t * Xd, Y0 + t * Yd))
   return ((X0, Y0), (Xd, Yd))
 
 # find square roots of <a> mod <m>
@@ -5964,7 +5964,8 @@ def irange_round(a, b, step=1, rnd='i'):
   C = use ceiling round to the nearest multiple of <step>
   """
   # f = floor, c = ceil, r = round
-  fn = dict(f=intf, c=intc, r=intr, b=round, F=partial(floor, m=step), C=partial(ceil, m=step), U=identity)
+  m = abs(step)
+  fn = dict(f=intf, c=intc, r=intr, b=round, F=partial(floor, m=m), C=partial(ceil, m=m), U=identity)
   (ka, kb) = (rnd[0], rnd[-1])
   # i = internal, x = external
   if ka == 'i':
@@ -5985,7 +5986,7 @@ def irange_round(a, b, step=1, rnd='i'):
     kb = ('F' if step > 0 else 'C')
   elif kb == 'X':
     kb = ('C' if step > 0 else 'F')
-  return irange(fn[ka](a), fn[kb](b), step)
+  return irange(fn[ka](a), fn[kb](b), step=step)
 
 # inclusive range iterator
 # irange(a, b) -> [a, a + 1, ..., b]
