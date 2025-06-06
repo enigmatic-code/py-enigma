@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun  5 08:43:40 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun  6 14:36:30 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-02" # <year>-<month>-<number>
+__version__ = "2025-06-05" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -6612,30 +6612,30 @@ def express(t, ds, qs=None, min_q=0, max_q=inf):
   express total <t> using denominations <ds>.
 
   optional: using quantities chosen from <qs>
-  or: minimum quantity <min_q> (non-negative integer),
-  maximum quantity <max_q> (non-negative integer, or inf).
+  or: minimum quantity <min_q> (integer),
+  maximum quantity <max_q> (integer, or inf).
 
   <ds> and <qs> should be increasing sequences.
 
   generated values are the quantities for each denomination in <ds>.
 
-  >>> list(express(20, (3, 5, 7)))
+  >>> list(express(20, [3, 5, 7]))
   [[0, 4, 0], [1, 2, 1], [2, 0, 2], [5, 1, 0]]
 
-  >>> list(express(20, (3, 5, 7), min_q=1))
+  >>> list(express(20, [3, 5, 7], min_q=1))
   [[1, 2, 1]]
 
-  >>> list(express(20, (3, 5, 7), qs=(0, 1, 2)))
+  >>> list(express(20, [3, 5, 7], qs=[0, 1, 2]))
   [[1, 2, 1], [2, 0, 2]]
 
   the number of ways to change 1 pound into smaller coins
-  >>> icount(express(100, (1, 2, 5, 10, 20, 50)))
+  >>> icount(express(100, [1, 2, 5, 10, 20, 50]))
   4562
   """
   ds = list(ds)
   if not (ds and ds[0] > 0): raise ValueError(str.format("invalid denominations {ds!r}", ds=ds))
   if qs: return express_quantities(t, ds, qs)
-  if min_q > 0: return express_denominations_min(t, ds, min_q, max_q)
+  if min_q != 0: return express_denominations_min(t, ds, min_q, max_q)
   return express_denominations(t, ds, max_q=max_q)
 
 # express total <t> using denominations <ds>
@@ -14567,7 +14567,7 @@ enigma.py has the following command-line usage:
       --run:verbose   (or -rv)
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.13.3',
+  version=__version__, python='2.7.18', python3='3.13.4',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
