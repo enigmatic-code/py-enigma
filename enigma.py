@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun  6 14:36:30 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jun  7 09:43:38 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-05" # <year>-<month>-<number>
+__version__ = "2025-06-06" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -5063,7 +5063,7 @@ def diop_linear(a, b, c, mX=0, fn=0):
 
   however, if <fn> is set, then a function f: t -> (X, Y) is returned instead.
   """
-  if a == 0 or b == 0: raise Value("diop_linear: invalid equation")
+  if a == 0 or b == 0: raise ValueError("diop_linear: invalid equation")
   (X, Y, g) = egcd(a, b)
   if g > 1:
     (a, b, c) = (a // g, b // g, div(c, g))
