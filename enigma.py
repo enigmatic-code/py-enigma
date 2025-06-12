@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jun  7 09:43:38 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun 12 09:47:31 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-06" # <year>-<month>-<number>
+__version__ = "2025-06-10" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -4057,7 +4057,8 @@ def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
     for x in irange(min_v, inf):
       x2 = x * x
       if x2 * (k - 1) > n: break
-      for z in sum_of_squares(n - x2, k - 1, x + sep, sep, ss + [x]): yield z
+      #yield from sum_of_squares(n - x2, k - 1, x + sep, sep, ss + [x])  #[Python 3]
+      for z in sum_of_squares(n - x2, k - 1, x + sep, sep, ss + [x]): yield z  #[Python 2]
 
 # generate powers from a range
 def powers(a, b, k=2, step=1, fn=None):
@@ -5076,7 +5077,7 @@ def diop_linear(a, b, c, mX=0, fn=0):
   X0 += t * Xd
   Y0 += t * Yd
   #assert all(a * (X0 + t * Xd) + b * (Y0 + t * Yd) == c for t in irange(-50, 50))
-  if fn: return (lambda t, X0=X0, Y0=Y0, Xd=Xd, Yd=Yd, : (X0 + t * Xd, Y0 + t * Yd))
+  if fn: return (lambda t, X0=X0, Y0=Y0, Xd=Xd, Yd=Yd : (X0 + t * Xd, Y0 + t * Yd))
   return ((X0, Y0), (Xd, Yd))
 
 # find square roots of <a> mod <m>
@@ -5681,7 +5682,9 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
     if M == inf:
       dmin = divc(b + 1, a)
     else:
-      dmin = divc(b * M, a * M - b)
+      x = a * M - b
+      if x < 1: return
+      dmin = divc(b * M, x)
     dmax = divf(b + b, a)
     for d in irange(max(m, dmin), min(M, dmax)):
       (e, r) = divmod(d * b, d * a - b)
