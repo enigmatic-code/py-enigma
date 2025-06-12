@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun 12 10:36:49 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun 12 11:20:40 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-11" # <year>-<month>-<number>
+__version__ = "2025-06-12" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -5646,6 +5646,9 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
   1/3 + 1/3 + 1/3 = 1
   >>> list(reciprocals(3, 1))
   [[2, 3, 6], [2, 4, 4], [3, 3, 3]]
+
+  >>> list(reciprocals(3, 3, M=15))
+  [[5, 15, 15], [6, 10, 15], [6, 12, 12], [8, 8, 12], [9, 9, 9]]
   """
   # check remaining fraction against the k largest possible reciprocals
   if g == 0 or k < 2:
@@ -6154,6 +6157,12 @@ def flattened(s, depth=None, test=_flatten_test, fn=None):
   z = (test(s) if depth is None or depth > 0 else None)
   if z is None: return s
   return _flattened(z, depth, test)
+
+# merge a collection of sorted iterables into a single iterable
+def merge(seqs, uniq=0):
+  from heapq import merge
+  r = merge(*seqs)
+  return (uniq1(r) if uniq else r)
 
 # in Python 3 we could use functools.singledispatch
 # or in Python 3.10+ we could use structural pattern matching
