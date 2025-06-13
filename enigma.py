@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun 12 11:20:40 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun 13 11:26:01 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-12" # <year>-<month>-<number>
+__version__ = "2025-06-13" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -5650,6 +5650,7 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
   >>> list(reciprocals(3, 3, M=15))
   [[5, 15, 15], [6, 10, 15], [6, 12, 12], [8, 8, 12], [9, 9, 9]]
   """
+  if a < 1 or b < 1 or k < 1: return
   # check remaining fraction against the k largest possible reciprocals
   if g == 0 or k < 2:
     (p, q) = (k, m)
@@ -5671,7 +5672,7 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
     else:
       x = M - g * (k - 2)
       if x < m: return
-      # but if M is given we can find a better dmin [suggested by frits]
+      # but if M is given we can find a better dmin [suggested by Frits]
       (p, q) = ((k - 1, M) if g == 0 else rsum(irange(x, M, step=g), normal=0))
       dmin = divc(b * q, a * q - b * p)
     # find a suitable reciprocal
@@ -14579,7 +14580,7 @@ enigma.py has the following command-line usage:
       --run:verbose   (or -rv)
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.13.4',
+  version=__version__, python='2.7.18', python3='3.13.5',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
