@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun 13 11:26:01 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun 13 14:08:34 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-13" # <year>-<month>-<number>
+__version__ = "2025-06-14" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -5632,7 +5632,7 @@ def recurring2fraction(i, nr, rr, base=10, digits=None):
   return ((i * b - a, b) if i < 0 else (i * b + a, b))
 
 # see: Enigma 348
-def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
+def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[], validate=0):
   """
   generate k whole numbers (d1, d2, ..., dk) such that 1/d1 + 1/d2 + ... + 1/dk = a/b
   the numbers are generated as an ordered list
@@ -5649,8 +5649,20 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
 
   >>> list(reciprocals(3, 3, M=15))
   [[5, 15, 15], [6, 10, 15], [6, 12, 12], [8, 8, 12], [9, 9, 9]]
+
+  there are 3462 ways to express 1 as the sum of 6 reciprocals
+  >>> icount(reciprocals(6))
+  3462
+
+  or 2320 if the reciprocals must all be different
+  >>> icount(reciprocals(6, g=1))
+  2320
   """
-  if a < 1 or b < 1 or k < 1: return
+  if validate:
+    (k, b, a, m) = (as_int(x, include="+") for x in (k, b, a, m))
+    if M != inf: M = as_int(M, include="+")
+    g = as_int(g, include="0+")
+  if a < 1 or b < 1 or k < 1 or m < 1 or M < m or g < 0: return
   # check remaining fraction against the k largest possible reciprocals
   if g == 0 or k < 2:
     (p, q) = (k, m)
@@ -5665,17 +5677,15 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
 
   # more to do?
   if k > 2:
+    dmin = divc(b + 1, a)
     dmax = divf(k * b, a)
-    if M == inf:
-      # general case
-      dmin = divc(b + 1, a)
-    else:
+    if M != inf:
+      # if M is given we can maybe find a better dmin [suggested by Frits]
       x = M - g * (k - 2)
       if x < m: return
-      # but if M is given we can find a better dmin [suggested by Frits]
       (p, q) = ((k - 1, M) if g == 0 else rsum(irange(x, M, step=g), normal=0))
-      dmin = divc(b * q, a * q - b * p)
-    # find a suitable reciprocal
+      dmin = max(dmin, divc(b * q, a * q - b * p))
+    # find a suitable next reciprocal
     for d in irange(max(m, dmin), min(M, dmax)):
       # solve for the remaining fraction
       #yield from reciprocals(k - 1, b * d, a * d - b, d + g, M, g, rs + [d])  #[Python 3]
