@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun 13 14:08:34 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun 13 14:13:08 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -5693,13 +5693,12 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[], validate=0):
 
   elif k == 2:
     # special case k = 2
-    if M == inf:
-      dmin = divc(b + 1, a)
-    else:
+    dmin = divc(b + 1, a)
+    dmax = divf(b + b, a)
+    if M != inf:
       x = a * M - b
       if x < 1: return
-      dmin = divc(b * M, x)
-    dmax = divf(b + b, a)
+      dmin = max(dmin, divc(b * M, x))
     for d in irange(max(m, dmin), min(M, dmax)):
       (e, r) = divmod(d * b, d * a - b)
       if r == 0 and not (e < d + g or e > M):
