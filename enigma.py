@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun 13 14:13:08 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jun 13 17:27:23 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-14" # <year>-<month>-<number>
+__version__ = "2025-06-15" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -5631,7 +5631,7 @@ def recurring2fraction(i, nr, rr, base=10, digits=None):
   (a, b) = fraction(n, d)
   return ((i * b - a, b) if i < 0 else (i * b + a, b))
 
-# see: Enigma 348
+# thanks to Brian for testing
 def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[], validate=0):
   """
   generate k whole numbers (d1, d2, ..., dk) such that 1/d1 + 1/d2 + ... + 1/dk = a/b
@@ -5650,11 +5650,11 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[], validate=0):
   >>> list(reciprocals(3, 3, M=15))
   [[5, 15, 15], [6, 10, 15], [6, 12, 12], [8, 8, 12], [9, 9, 9]]
 
-  there are 3462 ways to express 1 as the sum of 6 reciprocals
+  there are 3462 ways to express 1 as the sum of 6 reciprocals [OEIS A002966]
   >>> icount(reciprocals(6))
   3462
 
-  or 2320 if the reciprocals must all be different
+  or 2320 if the reciprocals must all be different [OEIS AA006585]
   >>> icount(reciprocals(6, g=1))
   2320
   """
@@ -5665,14 +5665,15 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[], validate=0):
   if a < 1 or b < 1 or k < 1 or m < 1 or M < m or g < 0: return
   # check remaining fraction against the k largest possible reciprocals
   if g == 0 or k < 2:
-    (p, q) = (k, m)
+    z = m * a - k * b
+    if z == 0: yield rs + ([m] * k)
   else:
     x = m + (k - 1) * g
     if x > M: return
     ds = list(irange(m, x, step=g))
     (p, q) = rsum(ds, normal=0)
-  z = q * a - p * b
-  if z == 0: yield rs + ([m] * k if g == 0 else ds)
+    z = q * a - p * b
+    if z == 0: yield rs + ds
   if z >= 0: return
 
   # more to do?
@@ -5684,7 +5685,8 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[], validate=0):
       x = M - g * (k - 2)
       if x < m: return
       (p, q) = ((k - 1, M) if g == 0 else rsum(irange(x, M, step=g), normal=0))
-      dmin = max(dmin, divc(b * q, a * q - b * p))
+      z = q * a - p * b
+      if z > 0: dmin = max(dmin, divc(b * q, z))
     # find a suitable next reciprocal
     for d in irange(max(m, dmin), min(M, dmax)):
       # solve for the remaining fraction
