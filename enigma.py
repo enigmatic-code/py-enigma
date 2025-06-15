@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jun 13 17:27:23 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 15 13:50:26 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-15" # <year>-<month>-<number>
+__version__ = "2025-06-16" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -410,10 +410,25 @@ cache = getattr(functools, 'cache', cached)
 
 # cache a generator
 def cachegen(s):
+  """
+  allow indexed access to a generator.
+
+  the returned object is a callable that can be passed a
+  (non-negative) index as argument to return the value at that index.
+
+  values are cached in the 'cache' attribute of the returned object.
+
+  >>> f = cachegen(fib(0, 1))
+  >>> f(30)
+  832040
+  >>> f(10)
+  55
+  """
   i = iter(s)
   cache = list()
   # get the value at index k
   def fn(k, i=i, cache=cache):
+    if k < 0: raise IndexError(str.format("invalid index {k}", k=k))
     n = k - len(cache)
     if n >= 0:
       cache.extend(first(i, n + 1))
@@ -3004,8 +3019,27 @@ def uniq1(seq, fn=None):
   >>> join(uniq1('bookkeeper'))
   'bokeper'
   """
-  for vs in clump(seq, fn=fn):
-    yield vs[0]
+  # originally:
+  #   for vs in clump(seq, fn=fn): yield vs[0]
+  # this is equivalent, but returns values sooner
+  seq = iter(seq)
+  try:
+    # get the first value
+    v = next(seq)
+    fnv = (v if fn is None else fn(v))
+    while 1:
+      # return the value
+      yield v
+      # skip repeats
+      while 1:
+        v = next(seq)
+        x = (v if fn is None else fn(v))
+        if x == fnv: continue
+        # move on to the next value
+        fnv = x
+        break
+  except StopIteration:
+    pass
 
 
 # root: calculate the (positive) nth root of a (positive) number
@@ -5631,7 +5665,7 @@ def recurring2fraction(i, nr, rr, base=10, digits=None):
   (a, b) = fraction(n, d)
   return ((i * b - a, b) if i < 0 else (i * b + a, b))
 
-# thanks to Brian for testing
+# thanks to Brian for testing this routine
 def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[], validate=0):
   """
   generate k whole numbers (d1, d2, ..., dk) such that 1/d1 + 1/d2 + ... + 1/dk = a/b
