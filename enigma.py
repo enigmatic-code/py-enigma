@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 15 13:50:26 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jun 17 09:03:05 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-16" # <year>-<month>-<number>
+__version__ = "2025-06-17" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -409,7 +409,7 @@ def cached(f):
 cache = getattr(functools, 'cache', cached)
 
 # cache a generator
-def cachegen(s):
+def cachegen(seq):
   """
   allow indexed access to a generator.
 
@@ -424,14 +424,14 @@ def cachegen(s):
   >>> f(10)
   55
   """
-  i = iter(s)
+  seq = iter(seq)
   cache = list()
   # get the value at index k
-  def fn(k, i=i, cache=cache):
+  def fn(k, seq=seq, cache=cache):
     if k < 0: raise IndexError(str.format("invalid index {k}", k=k))
     n = k - len(cache)
     if n >= 0:
-      cache.extend(first(i, n + 1))
+      cache.extend(first(seq, n + 1))
     return cache[k]
   fn.cache = cache
   return fn
@@ -6107,9 +6107,12 @@ def irangef(a, b, step=1):
     yield a + i * step
 
 # flatten a list of lists
-def flatten(s, fn=list):
+def flatten(seq, skip=1, fn=list):
   """
   flatten a list of lists (actually an iterator of iterators).
+
+  if 'skip' is set then iterators specified as a value equivalent to
+  boolean 'False' are ignored (i.e. treated as the empty container).
 
   the function: chain(*s) = flatten(s) is provided as a convenience.
 
@@ -6119,8 +6122,11 @@ def flatten(s, fn=list):
   (1, 2, 3, 4, 5, 6, 7, 8, 9)
   >>> flatten([['abc'], ['def', 'ghi']])
   ['abc', 'def', 'ghi']
+
   """
-  return fn(j for i in s if i is not None for j in i)
+  if skip: seq = filter(None, seq)
+  #return fn(j for i in seq if i is not None for j in i)
+  return fn(itertools.chain(*seq))
 
 # chain(a, b, c) = flatten([a, b, c])
 # so: unpack(chain) = flatten
