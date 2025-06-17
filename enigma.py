@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jun 17 09:03:05 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jun 17 10:25:51 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-17" # <year>-<month>-<number>
+__version__ = "2025-06-18" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -391,7 +391,7 @@ def cached(f):
   cache() is also available which will use Python's own function
   (functools.cache), if available, otherwise cached().
 
-  see also: functools.lru_cache() (Python 3.2), functools.cache() (Python 3.9).
+  see also: functools.lru_cache() (Python 3.2+), functools.cache() (Python 3.9+).
   """
   f.cache = cache = dict()
   @functools.wraps(f)
@@ -1322,7 +1322,7 @@ def chunk(seq, n=2, pad=0, value=None, fn=tuple):
 
   (for overlapping tuples see tuples())
 
-  see also: itertools.batched() (Python 3.12)
+  see also: itertools.batched() (Python 3.12+)
 
   >>> list(chunk(irange(1, 8)))
   [(1, 2), (3, 4), (5, 6), (7, 8)]
@@ -1355,11 +1355,11 @@ def clump(seq, fn=None):
   """
   seq = iter(seq)
   try:
-    v = next(seq)
+    x = next(seq)
   except StopIteration:
     return
-  if fn is not None: v = fn(v)
-  xs = [v]
+  v = (x if fn is None else fn(x))
+  xs = [x]
   for x in seq:
     v_ = (x if fn is None else fn(x))
     if v_ == v:
@@ -3050,7 +3050,7 @@ def _cbrt(x):
   """
   return the cube root of a number (as a float).
 
-  see also: math.cbrt() (Python 3.11)
+  see also: math.cbrt() (Python 3.11+)
 
   >>> round(cbrt(27.0), 6)
   3.0
@@ -3971,7 +3971,7 @@ def isqrt(n):
   """
   calculate intf(sqrt(n)), for integer n.
 
-  See also: math.isqrt (Python 3.8), gmpy2.isqrt().
+  See also: math.isqrt (Python 3.8+), gmpy2.isqrt().
 
   >>> isqrt(9)
   3
@@ -4406,7 +4406,7 @@ def hypot(*vs, **kw):
 
   ihypot() is provided to return only integer values.
 
-  See also: math.hypot() (Python 3.8).
+  See also: math.hypot() (Python 3.8+).
 
   >>> hypot(3, 4)
   5.0
@@ -4855,7 +4855,7 @@ def multiply(seq, r=1, mod=None):
 
   if <mod> is specified, the result at each stage is calculate mod <mod>.
 
-  See also: math.prod() (Python 3.8).
+  See also: math.prod() (Python 3.8+).
 
   >>> multiply(irange(1, 7))
   5040
@@ -4917,7 +4917,7 @@ def dot(*vs, **kw):
   with the parameters 'fnp' (default is: multiply) and 'fns' (default
   is: sum).
 
-  see also: math.sumprod() (Python 3.12)
+  see also: math.sumprod() (Python 3.12+)
 
   >>> dot((1, 3, -5), (4, -2, -1))
   3
@@ -5143,7 +5143,7 @@ def mgcd(a, *rest):
   """
   GCD of multiple (two or more) integers.
 
-  see also: math.gcd() (Python 3.9)
+  see also: math.gcd() (Python 3.9+)
 
   >>> mgcd(123, 456)
   3
@@ -5161,7 +5161,7 @@ def mlcm(a, *rest):
   """
   LCM of multiple (two or more) integers.
 
-  see also: math.lcm() (Python 3.9)
+  see also: math.lcm() (Python 3.9+)
 
   >>> mlcm(2, 3, 5, 9)
   90
@@ -5509,7 +5509,7 @@ def nPr(n, r):
   the number of ordered r-length selections from n elements
   (elements can only be used once).
 
-  see also: math.perm() (Python 3.8).
+  see also: math.perm() (Python 3.8+).
 
   >>> nPr(10, 3)
   720
@@ -5526,7 +5526,7 @@ def nCr(n, r):
   the number of unordered r-length selections from n elements
   (elements can only be used once).
 
-  see also: math.comb() (Python 3.8).
+  see also: math.comb() (Python 3.8+).
 
   >>> nCr(10, 3)
   120
@@ -6109,10 +6109,10 @@ def irangef(a, b, step=1):
 # flatten a list of lists
 def flatten(seq, skip=1, fn=list):
   """
-  flatten a list of lists (actually an iterator of iterators).
+  flatten a sequence of sequences.
 
   if 'skip' is set then iterators specified as a value equivalent to
-  boolean 'False' are ignored (i.e. treated as the empty container).
+  boolean 'False' are ignored (i.e. treated as the empty sequence).
 
   the function: chain(*s) = flatten(s) is provided as a convenience.
 
@@ -6139,9 +6139,8 @@ def chain(*ss, **kw):
   >>> chain("abc", (1, 2, 3), None, [4, 5, 6], fn=tuple)
   ('a', 'b', 'c', 1, 2, 3, 4, 5, 6)
   """
-  fn = kw.pop("fn", iter)
-  if kw: raise TypeError(str.format("chain: unknown arguments {kw}", kw=seq2str(kw.keys())))
-  return flatten(ss, fn=fn)
+  if 'fn' not in kw: kw['fn'] = iter
+  return flatten(ss, **kw)
 
 # generate permutations of the items of a sequence
 def permute(ss, size=len, select='P'):
@@ -6496,7 +6495,7 @@ def csum(seq, s=0, fn=operator.add, empty=0):
   if 'empty' is set to a true value then the initial value 's' will be
   initially returned.
 
-  see also: itertools.accumulate() (Python 3.2).
+  see also: itertools.accumulate() (Python 3.2+).
 
   >>> list(csum(irange(1, 10)))
   [1, 3, 6, 10, 15, 21, 28, 36, 45, 55]
@@ -6533,7 +6532,7 @@ def tuples(seq, n=2, circular=0, fn=tuple):
   if 'circular' is set to true, then values from the beginning of <seq>
   will be used to complete tuples when the end is reached.
 
-  see also: itertools.pairwise() (Python 3.10).
+  see also: itertools.pairwise() (Python 3.10+).
 
   >>> list(tuples('ABCDE'))
   [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'E')]
@@ -6543,28 +6542,28 @@ def tuples(seq, n=2, circular=0, fn=tuple):
   [(1, 2, 3), (2, 3, 4), (3, 4, 5), (4, 5, 1), (5, 1, 2)]
   """
   if n < 1: raise ValueError(str.format("invalid tuple length: {n!r}", n=n))
-  i = iter(seq)
+  seq = iter(seq)
   if circular and n > 1:
     # we need extract the first (n - 1) items and add them to the end
-    xs = first(i, n - 1)
+    xs = first(seq, n - 1)
     if not xs: return
     m = len(xs)
     if m < n - 1:
-      i = itertools.chain(xs, i, (xs[k % m] for k in xrange(n - 1)))
+      seq = itertools.chain(xs, seq, (xs[k % m] for k in xrange(n - 1)))
     else:
-      i = itertools.chain(xs, i, xs)
+      seq = itertools.chain(xs, seq, xs)
 
   t = list()
   try:
     # collect the first tuple
     for _ in xrange(n):
-      t.append(next(i))
+      t.append(next(seq))
     while True:
       # return the tuple
       yield fn(t)
       # move the next value in to the tuple
       t.pop(0)
-      t.append(next(i))
+      t.append(next(seq))
   except StopIteration:
     return
 
