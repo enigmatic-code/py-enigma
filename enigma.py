@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jun 17 10:25:51 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jun 19 09:54:42 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,7 +235,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-18" # <year>-<month>-<number>
+__version__ = "2025-06-19" # <year>-<month>-<number>
 
 __credits__ = "Brian Gladman, contributor"
 
@@ -5668,11 +5668,12 @@ def recurring2fraction(i, nr, rr, base=10, digits=None):
 # thanks to Brian for testing this routine
 def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[], validate=0):
   """
-  generate k whole numbers (d1, d2, ..., dk) such that 1/d1 + 1/d2 + ... + 1/dk = a/b
+  generate <k> positive integers (d1, d2, ..., dk) such that 1/d1 + 1/d2 + ... + 1/dk = a/b.
+
   the numbers are generated as an ordered list
-  m = minimum allowed number
-  M = maximum allowed number
-  g = minimum allowed gap between numbers
+  m = minimum allowed denominator
+  M = maximum allowed denominator
+  g = minimum allowed gap between denominators
 
   e.g. 3 reciprocals that sum to 1:
   1/2 + 1/3 + 1/6 = 1
@@ -6124,8 +6125,9 @@ def flatten(seq, skip=1, fn=list):
   ['abc', 'def', 'ghi']
 
   """
+  # was: [[ return fn(j for i in seq if i is not None for j in i) ]]
   if skip: seq = filter(None, seq)
-  #return fn(j for i in seq if i is not None for j in i)
+  # could use: [[ fn(itertools.chain.from_iterable(seq) ]] to allow unbounded seq
   return fn(itertools.chain(*seq))
 
 # chain(a, b, c) = flatten([a, b, c])
