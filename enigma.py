@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jun 19 09:54:42 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 22 17:15:38 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -36,6 +36,7 @@ bit_permutations       - generate bit permutations
 bit_positions          - return positions of bits set
 C, nCr                 - combinatorial function (nCr)
 cache, cached          - decorator for caching functions
+cachegen               - cache a generator (to allow indexed access)
 catch                  - catch errors in a function call
 cb                     - the cube of the argument
 cbrt                   - the (real) cube root of a number
@@ -172,6 +173,7 @@ rcs, ircs              - root of combined squares
 reciprocals            - generate reciprocals that sum to a given fraction
 recurring              - decimal representation of fractions
 recurring2fraction     - find the fraction corrresponding to a decimal expansion
+repeat                 - generate repeated applications of a function
 repdigit               - number consisting of repeated digits
 repeat                 - repeatedly apply a function to a value
 restrict               - the restriction of a container to certain keys
@@ -235,9 +237,9 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-19" # <year>-<month>-<number>
+__version__ = "2025-06-21" # <year>-<month>-<number>
 
-__credits__ = "Brian Gladman, contributor"
+__credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
 import sys
 import os
@@ -1093,7 +1095,7 @@ def nsplit(n, k=None, base=10, fn=tuple, reverse=0, validate=0):
   (127, 0, 0, 1)
   >>> nsplit(7, 3)
   (0, 0, 7)
-  >>> nsplit(111**2, 3)
+  >>> nsplit(sq(111), 3)
   (3, 2, 1)
 
   """
@@ -4063,7 +4065,7 @@ def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
   """
   return ordered k-sequences of non-negative integers (a, b, ...) such that:
 
-    n = a**2 + b**2 + ...
+    n = sq(a) + sq(b) + ...
 
   min_v - specifies the minimum allowable value in the returned sequences
   sep - specified the minimum separation between values
@@ -4767,7 +4769,7 @@ def distinct_chars(*vs, **kw):
   [None]
   >>> distinct_chars("world")
   5
-  >>> distinct_chars(98**2)
+  >>> distinct_chars(sq(98))
   4
   """
   fn = kw.pop('fn', str)
@@ -4788,7 +4790,7 @@ def is_duplicate(*vs, **kw):
   True
   >>> is_duplicate("world")
   False
-  >>> is_duplicate(99**2)
+  >>> is_duplicate(sq(99))
   False
   """
   return distinct_chars(*vs, **kw) is None
@@ -5670,7 +5672,7 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[], validate=0):
   """
   generate <k> positive integers (d1, d2, ..., dk) such that 1/d1 + 1/d2 + ... + 1/dk = a/b.
 
-  the numbers are generated as an ordered list
+  the denominators are generated as an ordered list
   m = minimum allowed denominator
   M = maximum allowed denominator
   g = minimum allowed gap between denominators
