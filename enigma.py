@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 22 17:15:38 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 25 13:20:59 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -237,7 +237,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-21" # <year>-<month>-<number>
+__version__ = "2025-06-23" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -471,6 +471,12 @@ def true(*args, **kw):
   # type: (...) -> bool
   """a function that ignores any arguments and returns True"""
   return True
+
+# a function that returns a false value
+def false(*args, **kw):
+  # type: (...) -> bool
+  """a function that ignores any arguments and returns False"""
+  return False
 
 # a function that returns its arguments
 #def tupl(*args, fn=None): return (args if fn is None else fn(args))
@@ -1100,8 +1106,8 @@ def nsplit(n, k=None, base=10, fn=tuple, reverse=0, validate=0):
 
   """
   ds = nsplitter(n, k=k, base=base, validate=validate)
-  if reverse: return fn(ds)
-  return fn(list(ds)[::-1])
+  if not reverse: ds = rev(ds)
+  return fn(ds)
 
 def dsum(n, k=None, base=10, validate=0):
   """
@@ -1520,6 +1526,19 @@ def seq_get(s, k=None, default=None):
     return partial(peek, s, default=default)
   else:
     return peek(s, k, default=default)
+
+def seq_items(seq, i=0):
+  """
+  generate (<index>, <value>) pairs from sequence <seq>.
+
+  items are generated started from index <i> (i.e. the first
+  <i> items are skipped).
+
+  >>> list(seq_items("ABCDEF", 3))
+  [(3, 'D'), (4, 'E'), (5, 'F')]
+  """
+  if i == 0: return enumerate(seq)
+  return enumerate(itertools.islice(seq, i, None), start=i)
 
 # functions to create a selector for elements/attributes from an object
 # passing multi=1 forces a multivalued return, even if only one element is specified
@@ -6108,6 +6127,29 @@ def irangef(a, b, step=1):
   n = (inf if b == inf else divf(b - a, step))
   for i in irange(0, n):
     yield a + i * step
+
+# conditional range
+def crange(a=0, fn=true, step=1):
+  """
+  generate the sequence:
+
+    [a, a + step, a + 2*step, ...]
+
+  until the 'fn' condition returns false.
+
+  the value that fails the 'fn' condition is not returned.
+
+  >>> list(crange(0, lt(10)))
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  >>> list(crange(0, le(10)))
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  >>> list(crange(10, ge(0), step=-1))
+  [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+  """
+  x = a
+  while fn(x):
+    yield x
+    x += step
 
 # flatten a list of lists
 def flatten(seq, skip=1, fn=list):
