@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 25 13:20:59 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 25 14:33:43 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -1537,8 +1537,9 @@ def seq_items(seq, i=0):
   >>> list(seq_items("ABCDEF", 3))
   [(3, 'D'), (4, 'E'), (5, 'F')]
   """
+  if i > 0: return enumerate(itertools.islice(seq, i, None), start=i)
   if i == 0: return enumerate(seq)
-  return enumerate(itertools.islice(seq, i, None), start=i)
+  raise ValueError("seq_items: invalid start value: i={i}".format(i=i))
 
 # functions to create a selector for elements/attributes from an object
 # passing multi=1 forces a multivalued return, even if only one element is specified
