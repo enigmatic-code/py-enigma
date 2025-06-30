@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 25 14:33:43 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun 30 16:47:31 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -91,7 +91,7 @@ find_max               - find the maximum value of a function
 find_min               - find the minimum value of a function
 find_value             - find where a function has a specified value
 find_zero              - find where a function is zero
-first                  - return items from the start of an iterator
+first, ifirst          - return items from the start of an iterator
 flatten                - flatten a list of lists
 flattened              - fully flatten a nested structure
 floor                  - generalised floor function
@@ -237,7 +237,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-23" # <year>-<month>-<number>
+__version__ = "2025-06-28" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -2945,6 +2945,9 @@ def first(s, count=1, skip=0, fn=list):
     r = itertools.islice(s, count)
 
   return (r if fn is None else fn(r))
+
+# like first() but default 'fn' is iter
+ifirst = partial(first, fn=iter)
 
 # return the single value if s contains only a single value (else None)
 # NOTE: similar to the Python expression : [[ [x] = s ]]
@@ -5806,7 +5809,7 @@ def arg(v, n, fn=identity, prompt=None, argv=None):
     if s: r = fn(s)
   if 'v' in _PY_ENIGMA:
     if not prompt: prompt = "value"
-    printf("[arg{n}: {prompt} = {r!r}]")
+    printf("[arg{n}] {prompt} = {r!r}")
   return r
 
 # get a list of similar arguments
