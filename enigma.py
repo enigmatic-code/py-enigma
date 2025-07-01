@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun 30 16:47:31 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jul  1 16:05:53 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -237,7 +237,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-06-28" # <year>-<month>-<number>
+__version__ = "2025-07-01" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -331,26 +331,47 @@ def import_fn(spec):
   return getattr(importer(mod), fn)
 
 # lazy importer
-# will import on call _and_ attempt to replace <name> in <space> with the imported function
-def lazy_import(spec, **kw):
-  name = (kw['name'] if 'name' in kw else str.rsplit(spec, '.', 1)[-1])
-  space = (kw['space'] if 'space' in kw else sys._getframe(1).f_globals)  # replace in the defining space
-  def _f(*args, **kw):
-    fn = _f.fn
-    if not fn:
-      #printf("lazy_import: importing {spec}")
-      # cache the function
-      fn = _f.fn = import_fn(spec)
-      if name and space:
-        # attempt to replace the name in appropriate namespace
-        try:
-          space[name] = fn
-        except Exception:
-          pass
-    # call the function
+class LazyImporter(object):
+
+  def __init__(self, spec, **kw):
+    self.spec = spec
+    self.name = (kw.get('name') or str.rsplit(spec, '.', 1)[-1])
+    self.space = (kw.get('space') or sys._getframe(1).f_globals)  # replace in defining space
+    self.verbose = (kw.get('verbose') or ('v' in _PY_ENIGMA))
+    self.obj = None
+
+  # do the import
+  def do_import(self):
+    if self.verbose: printf("[LazyImporter] importing {self.spec}")
+    obj = import_fn(self.spec)
+    if self.name and self.space:
+      # attempt to replace the name in the appropriate namespace
+      try:
+        self.space[self.name] = obj
+      except Exception as e:
+        pass
+    # cache the object
+    self.obj = obj
+    return obj
+
+  # function call
+  def __call__(self, *args, **kw):
+    #print(['__call__', self, args, kw])
+    # do the import
+    fn = self.obj or self.do_import()
+    # call the real function
     return fn(*args, **kw)
-  _f.fn = None
-  return _f
+
+  # attribute fetch
+  def __getattr__(self, key):
+    #print(['__getattr__', self, key])
+    if key == '__wrapped__': return  # otherwise doctest fails
+    # do the import
+    obj = self.obj or self.do_import()
+    # return the real attribute
+    return getattr(obj, key)
+
+lazy_import = LazyImporter
 
 # add attributes to a function (to use as static variables)
 # (but for better performance use global variables, or mutable default parameters)
@@ -5341,10 +5362,24 @@ def ratio_q(*qs):
   m = call(mlcm, (q.denominator for q in qs))
   return call(ratio, (int(m * q) for q in qs))
 
-# check a/b == c/d
+# check values in r1 are the same ratio as values in r2
 def ratio_eq(r1, r2):
-  ((a, b), (c, d)) = (r1, r2)
-  return (a * d == b * c)
+  """
+  >>> ratio_eq((3, 4), (6, 8))
+  True
+  >>> ratio_eq((3, 4, 5), (6, 8, 10))
+  True
+  """
+  rs = iter(zip(r1, r2))
+  # get the first pair
+  try:
+    (p, q) = next(rs)
+  except StopIteration:
+    return True
+  # and check the rest
+  return all(p * y == x * q for (x, y) in rs)
+
+fraction_eq = ratio_eq
 
 # find an appropriate rational class
 # (could also try "sympy.Rational", but not for speed)
@@ -14355,6 +14390,16 @@ def configure_file(path, tags):
 
 ###############################################################################
 
+# this lets you import files from py-enigma-plus as sub-packages of enigma
+# (providing you have them installed)
+rectpack = lazy_import("rectpack")
+polyominoes = lazy_import("polyominoes")
+polyiamonds = lazy_import("polyiamonds")
+graph = lazy_import("graph")
+pells = lazy_import("pells")
+
+###############################################################################
+
 # implementation of command line options
 
 # help (-h)
@@ -14744,4 +14789,6 @@ def _namecheck(name, verbose=0):
   if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
   return name == "__main__" or name == "<run_path>"
 
-if _namecheck(__name__): exit(_enigma_main())
+if _namecheck(__name__):
+  rc =  _enigma_main()
+  if not sys.flags.interactive: sys.exit(rc)
