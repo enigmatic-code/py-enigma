@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jul  1 16:05:53 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jul  7 08:51:46 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -237,7 +237,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-07-01" # <year>-<month>-<number>
+__version__ = "2025-07-05" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -5363,14 +5363,15 @@ def ratio_q(*qs):
   return call(ratio, (int(m * q) for q in qs))
 
 # check values in r1 are the same ratio as values in r2
-def ratio_eq(r1, r2):
+def ratio_eq(r1, r2, **kw):
   """
   >>> ratio_eq((3, 4), (6, 8))
   True
   >>> ratio_eq((3, 4, 5), (6, 8, 10))
   True
   """
-  rs = iter(zip(r1, r2))
+  strict = kw.pop('strict', None)
+  rs = iter(zip(r1, r2, strict=strict) if strict is not None else zip(r1, r2))
   # get the first pair
   try:
     (p, q) = next(rs)
@@ -14392,11 +14393,9 @@ def configure_file(path, tags):
 
 # this lets you import files from py-enigma-plus as sub-packages of enigma
 # (providing you have them installed)
-rectpack = lazy_import("rectpack")
-polyominoes = lazy_import("polyominoes")
-polyiamonds = lazy_import("polyiamonds")
-graph = lazy_import("graph")
-pells = lazy_import("pells")
+# NOTE: enigma.cube is already an alias for enigma.is_cube
+for k in ["rectpack", "polyominoes", "polyiamonds", "graph", "pells"]:
+  setattr(enigma, k, lazy_import(k))
 
 ###############################################################################
 
