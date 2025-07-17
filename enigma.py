@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jul  7 08:51:46 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 16 14:09:38 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -219,6 +219,7 @@ Decompose              - return a decompose() function
 Delay                  - a class for the delayed evaluation of a function
 Denominations          - express amounts using specified denominations
 DominoGrid             - a class for solving domino grid puzzles
+Enumerator             - a class for iterating through a sequence and counting the items
 Football               - a class for solving football league table puzzles
 MagicSquare            - a class for solving magic squares
 Matrix                 - a class for manipulation 2d matrices
@@ -237,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-07-05" # <year>-<month>-<number>
+__version__ = "2025-07-15" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -2488,7 +2489,7 @@ def group(seq, by=identity, st=None, f=identity, fn=None):
 # we then look for the first value f(x) in the sequence that satisfies
 # function <fn>, and return (in order) all values in that group that
 # satisfy <fn>.
-def first_group(seq, fn, by=item(0), f=item(1)):
+def first_group(seq, fn=true, by=item(0), f=item(1)):
   (seq, g) = (iter(seq), None)
   # find the first value to satisfy fn
   for x in seq:
@@ -8054,7 +8055,6 @@ class Delay(object):
 # Value Accumulator
 
 class Accumulator(object):
-
   """
   A value accumulator.
 
@@ -8191,6 +8191,43 @@ class MultiAccumulator(object):
 
   def __getitem__(self, i):
     return self.multi[i]
+
+###############################################################################
+
+# sequence iterator/enumerator
+
+class Enumerator(object):
+  """
+  iterate through a sequence, counting the number of items returned
+
+  >>> ss = Enumerator(primes.between(10, 99))
+  >>> xs = list(ss.iter())
+  >>> ss.count
+  21
+
+  >>> ss = Enumerator([])
+  >>> xs = list(ss)
+  >>> ss.count
+  0
+  """
+
+  def __init__(self, seq, count=0):
+    self.seq = seq
+    self.count = count  # count the number of items returned
+
+  def iter(self, skip=0):
+    """iterate through the sequence, counting the number of items returned"""
+    for (i, x) in seq_items(self.seq, skip):
+      yield x
+      self.count += 1
+
+  __iter__ = iter
+
+  def enumerate(self, skip=0, offset=0):
+    """enumerate the sequence, counting the number of items returned"""
+    for (i, x) in seq_items(self.seq, skip):
+      yield (i + offset, x)
+      self.count += 1
 
 ###############################################################################
 
