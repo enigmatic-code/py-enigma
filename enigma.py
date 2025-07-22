@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jul 17 14:32:35 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jul 22 16:14:20 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-07-16" # <year>-<month>-<number>
+__version__ = "2025-07-20" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -13783,6 +13783,10 @@ class Matrix(list):
     for r in self:
       yield r[k]
       k = (k + i) % len(r)
+
+  def diagonal(self, k=0, i=1, fn=tuple):
+    "return a diagonal"
+    return fn(self.diag(k, i))
 
   def add(self, other):
     "return a new matrix that is the result of adding a matrix to this one"
