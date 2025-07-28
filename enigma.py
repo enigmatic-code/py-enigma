@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jul 22 16:14:20 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jul 24 09:32:34 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-07-20" # <year>-<month>-<number>
+__version__ = "2025-07-23" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -5130,6 +5130,87 @@ def crt(vs):
       if x is None: return crt.fail
   return (crt.fail if x is None else crt.rtype(x, mm))
 
+# find roots of integer valued polynomial p(x) = v modulo n^k
+def poly_roots_mod(p, v=0, cache=1):
+  f = (p if v == 0 else (lambda x: p(x) - v))
+  cache = (dict() if cache else None)
+
+  # find roots of f mod (b^k) using Hensel's lemma
+  def hensel(b, k):
+    if k == 0: return [0]
+    assert k > 0
+    bk = b**k
+    # check the cache
+    if cache:
+      rs = cache.get(bk)
+      if rs is not None:
+        return rs
+    # find the roots
+    k1 = k - 1
+    bk1 = b**k1
+    rs = list()
+    for r in hensel(b, k1):
+      for i in irange(b):
+        x = i * bk1 + r
+        if f(x) % bk == 0:
+          rs.append(x)
+    # cache if necessary
+    if cache is not None: cache[bk] = rs
+    return rs
+
+  # find roots of f mod (n^k)
+  def roots(n, k=1, fn=prime_factor):
+    # check the cache
+    if cache is not None:
+      nk = (n if k == 1 else n**k)
+      rs = cache.get(nk)
+      if rs is not None:
+        return rs
+    # find roots for each prime factor of n
+    (hs, bs) = (list(), list())
+    for (f, e) in fn(n):
+      ek = (e if k == 1 else e * k)
+      hs.append(hensel(f, ek))
+      bs.append(f**ek)
+    # combine roots using CRT
+    rs = list(crt(zip(xs, bs)).x for xs in cproduct(hs))
+    # cache if necessary
+    if cache is not None: cache[nk] = rs
+    return rs
+
+  roots.p = p
+  return roots
+
+# this may be faster than sqrtmod() for large (composite) m
+def poly_roots_mod_sqrtmod(a, m, k=1, fn=prime_factor):
+  "find square roots of <a> mod <m^k>"
+  return poly_roots_mod(sq, a)(m, k, fn)
+poly_roots_mod.sqrtmod = poly_roots_mod_sqrtmod
+
+# find square roots of <a> mod <m>
+# this is OK for relatively small m, but more efficient (and complex)
+# approaches are available (e.g. sympy.ntheory.sqrt_mod_iter)
+def sqrtmod(a, m):
+  """
+  find square roots of a mod m.
+
+  i.e. values x such that (x * x) is congurent to a (mod m).
+
+  >>> sorted(sqrtmod(1, 16))
+  [1, 7, 9, 15]
+  >>> sorted(sqrtmod(17, 43))
+  [19, 24]
+  >>> sorted(sqrtmod(-1, 25))
+  [7, 18]
+  """
+  a %= m
+  for x in irange(0, m // 2):
+    if (x * x) % m == a:
+      # x is a root
+      yield x
+      # -x (mod mk) is also a root
+      if x > 0 and m > 2 * x: yield m - x
+
 # solve linear diophantine equations in 2 variables:
 def diop_linear(a, b, c, mX=0, fn=0):
   """
@@ -5160,30 +5241,6 @@ def diop_linear(a, b, c, mX=0, fn=0):
   #assert all(a * (X0 + t * Xd) + b * (Y0 + t * Yd) == c for t in irange(-50, 50))
   if fn: return (lambda t, X0=X0, Y0=Y0, Xd=Xd, Yd=Yd : (X0 + t * Xd, Y0 + t * Yd))
   return ((X0, Y0), (Xd, Yd))
-
-# find square roots of <a> mod <m>
-# this is OK for relatively small m, but more efficient (and complex)
-# approaches are available (e.g. sympy.ntheory.sqrt_mod_iter)
-def sqrtmod(a, m):
-  """
-  find square roots of a mod m.
-
-  i.e. values x such that (x * x) is congurent to a (mod m).
-
-  >>> sorted(sqrtmod(1, 16))
-  [1, 7, 9, 15]
-  >>> sorted(sqrtmod(17, 43))
-  [19, 24]
-  >>> sorted(sqrtmod(-1, 25))
-  [7, 18]
-  """
-  a %= m
-  for x in irange(0, m // 2):
-    if (x * x) % m == a:
-      # x is a root
-      yield x
-      # -x (mod m) is also a root
-      if x > 0 and m > 2 * x: yield m - x
 
 # multiple GCD
 def mgcd(a, *rest):
