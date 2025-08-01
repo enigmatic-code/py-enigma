@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jul 24 09:32:34 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug  1 15:39:49 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-07-23" # <year>-<month>-<number>
+__version__ = "2025-07-28" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -1553,8 +1553,8 @@ def seq_items(seq, i=0):
   """
   generate (<index>, <value>) pairs from sequence <seq>.
 
-  items are generated started from index <i> (i.e. the first
-  <i> items are skipped).
+  items are generated starting from index <i>
+  (i.e. the first <i> items are skipped).
 
   >>> list(seq_items("ABCDEF", 3))
   [(3, 'D'), (4, 'E'), (5, 'F')]
@@ -3996,7 +3996,8 @@ is_power_p = (lambda n, k: is_power(n, k) is not None)
 
 def sqrt(a, b=None):
   """
-  the (real) square root of <a> / <b> (or just <a> if <b> is None)
+  return the (real) square root of <a>/<b> (or just <a>
+  if <b> is None) as a float.
 
   >>> sqrt(9)
   3.0
@@ -4004,7 +4005,7 @@ def sqrt(a, b=None):
   1.5
   """
   # / is operator.truediv() here
-  return math.sqrt(a if b is None else a / b)
+  return math.sqrt(a if b is None else (a / b))
 
 # sq = lambda x: x * x
 def sq(x): "sq(x) = x * x"; return x * x
@@ -7579,6 +7580,19 @@ def line_intersect(p1, p2, p3, p4, internal=0, div=fdiv):
   if internal & 2 and (q2 < 0 or q2 > 1): raise ValueError("external intersection on line 2")
   # return intersection point (pt) (also: x, y, q1, q2)
   return Record(pt=(x, y), x=x, y=y, q1=q1, q2=q2)
+
+# t=0 -> p1; t=1 -> p2
+def line_param(p1, p2, t=None):
+  """
+  return a function that returns points on a line joining p1 and p2.
+
+  if t = 0 then p1 is returned, and if t = 1 then p2 is returned.
+
+  if t is specified then the function will be called with parameter t.
+  """
+  ((x1, y1), (x2, y2)) = (p1, p2)
+  f = lambda t, xd=x2 - x1, yd=y2 - y1: (x1 + t * xd, y1 + t * yd)
+  return (f if t is None else f(t))
 
 # return a line segment the same length as (p1, p2) that is its perpendicular bisector
 # i.e. (p1, p2) forms the diagonal of a square, the other diagonal is the return value (p3, p4)
