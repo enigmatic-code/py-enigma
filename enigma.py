@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug  1 15:39:49 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Aug 11 16:50:16 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -170,7 +170,6 @@ ratio, ratio_q         - find lowest terms integer ratio
 rational               - represet a rational number
 rcompose               - reverse functional composition
 rcs, ircs              - root of combined squares
-reciprocals            - generate reciprocals that sum to a given fraction
 recurring              - decimal representation of fractions
 recurring2fraction     - find the fraction corrresponding to a decimal expansion
 repeat                 - generate repeated applications of a function
@@ -195,6 +194,7 @@ subsets, subseqs       - generate subsequences of an iterator
 substitute             - substitute symbols for digits in text
 substituted_expression - a substituted expression (alphametic/cryptarithm) solver
 substituted_sum        - a solver for substituted sums
+sum_of_reciprocals     - decompose a fraction into a sum of reciprocals (unit fractions)
 sum_of_squares         - decompose an integer into a sum of squares
 sumsq                  - calculate the sum of the squares of a sequence of values
 tau                    - tau(n) is the number of divisors of n
@@ -238,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-07-28" # <year>-<month>-<number>
+__version__ = "2025-08-08" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -584,8 +584,9 @@ def betweene(a, b): return (lambda x: a <= x <= b)  # inclusive between
 def is_in(s): return (lambda x: x in s)
 def is_not_in(s): return (lambda x: x not in s)
 
-# return a function that increments by a fixed amount
-def inc(i=1): return (lambda x, i=i: x + i)
+def inc(i=1):
+  """return a function that increments by a fixed amount"""
+  return (lambda x, i=i: x + i)
 
 def mod(m):
   """
@@ -4077,10 +4078,10 @@ def is_square(n, validate=0):
   False
   >>> is_square(0)
   0
-  >>> (is_square(10**120) is not None, is_square(10**120 + 1) is None)
+  >>> (is_square(5**46) is not None, is_square(5**46 + 1) is None)
   (True, True)
   """
-  if validate: n = as_int(n, include="0+")   # if validate check for non-negative integer
+  if validate: n = as_int(n, include="0+")   # validate -> check for non-negative integer
   if n is None or n < 0: return None
   if n < 2: return (n if n == 0 or n == 1 else None)
   # early rejection: check <square> mod <some value> against a precomputed cache
@@ -4566,8 +4567,10 @@ def quadratic(a, b, c, domain="Q", include="+-0", F=None):
   D = b * b - 4 * a * c
   if D < 0 and domain != "C": return _roots(domain, '', None)
 
+  d = -2 * a
+  if 'v' in _PY_ENIGMA: printf("quadratic: a={a} b={b} c={c} -> ({b} +/- sqrt({D})) / {d}")
+
   if domain in "CF":
-    d = -2 * a
     if D == 0: return _roots(domain, include, F, (b, d))
     r = D**0.5
     return _roots(domain, include, F, (b + r, d), (b - r, d))
@@ -4575,7 +4578,6 @@ def quadratic(a, b, c, domain="Q", include="+-0", F=None):
   elif domain in "QZ":
     r = is_square_q(D, F=F)
     if r is not None:
-      d = -2 * a
       if D == 0: return _roots(domain, include, F, (b, d))
       return _roots(domain, include, F, (b + r, d), (b - r, d))
 
@@ -5786,8 +5788,10 @@ def recurring2fraction(i, nr, rr, base=10, digits=None):
   return ((i * b - a, b) if i < 0 else (i * b + a, b))
 
 # thanks to Brian for testing this routine
-def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[], validate=0):
+def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[]):
   """
+  see also: sum_of_reciprocals().
+
   generate <k> positive integers (d1, d2, ..., dk) such that 1/d1 + 1/d2 + ... + 1/dk = a/b.
 
   the denominators are generated as an ordered list
@@ -5813,10 +5817,6 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[], validate=0):
   >>> icount(reciprocals(6, g=1))
   2320
   """
-  if validate:
-    (k, b, a, m) = (as_int(x, include="+") for x in (k, b, a, m))
-    if M != inf: M = as_int(M, include="+")
-    g = as_int(g, include="0+")
   if a < 1 or b < 1 or k < 1 or m < 1 or M < m or g < 0: return
   # check remaining fraction against the k largest possible reciprocals
   if g == 0 or k < 2:
@@ -5866,6 +5866,37 @@ def reciprocals(k, b=1, a=1, m=1, M=inf, g=0, rs=[], validate=0):
     if r == 0 and not (d < m or d > M):
       yield rs + [d]
 
+# alternative interface to reciprocals
+# allows f can be specified as (a, b) for a/b or just b for 1/b
+# allows input validation
+def sum_of_reciprocals(k, f, min_d=1, max_d=inf, gap_d=0, validate=0):
+  """
+  generate k-sets of reciprocals (unit fractions) that sum to the fraction f.
+
+  f can be specified as a single positive integer to find solutions for the
+  unit fraction 1/f, or as a pair of positive integers (a, b) to find
+  solutions for the fraction a/b.
+
+  return values are collections of k positive integers (d1, d2, ..., dk),
+  returned as an ordered list, such that:
+
+    f = 1/d1 + 1/d2 + ... + 1/dk
+
+  min_d = minimum allowed denominator
+  max_d = maxumum allowed denominator
+  gap_d = minimum allowed gap between denominators
+    gap_d=1 gives distinct denominators; gap_d=0 allows repeated values
+  validate = enable parameter validation
+  """
+  try:
+    (a, b) = f
+  except TypeError:
+    (a, b) = (1, f)
+  if validate:
+    (k, b, a, m) = (as_int(x, include="+") for x in (k, b, a, m))
+    if M != inf: M = as_int(M, include="+")
+    g = as_int(g, include="0+")
+  return reciprocals(k, b, a, m=min_d, M=max_d, g=gap_d)
 
 # command line arguments
 
@@ -14507,8 +14538,8 @@ def configure_file(path, tags):
 # this lets you import files from py-enigma-plus as sub-packages of enigma
 # (providing you have them installed)
 # NOTE: enigma.cube is already an alias for enigma.is_cube
-for k in ["rectpack", "polyominoes", "polyiamonds", "graph", "pells"]:
-  setattr(enigma, k, lazy_import(k))
+#for k in ["rectpack", "polyominoes", "polyiamonds", "graph", "pells"]:
+#  setattr(enigma, k, lazy_import(k))
 
 ###############################################################################
 
