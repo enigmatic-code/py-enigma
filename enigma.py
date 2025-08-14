@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Aug 11 16:50:16 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Aug 14 14:48:20 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-08-08" # <year>-<month>-<number>
+__version__ = "2025-08-13" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -1428,14 +1428,15 @@ def disjoint_union(ss, fn=set):
   """
   rs = None
   for xs in ss:
-    if not rs:
-      rs = fn(xs)
+    xs = fn(xs)
+    if rs is None:
+      rs = xs
     else:
-      # this seems to be faster than updating rs and checking cardinality
-      for x in xs:
-        if x in rs: return
-        rs.add(x)
+      if not rs.isdisjoint(xs): return None
+      rs.update(xs)
   return rs
+
+is_disjoint = lambda ss, fn=set: disjoint_union(ss, fn=fn) is not None
 
 # ss = remaining sets to process
 # vs = selected values
