@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Aug 14 14:48:20 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug 15 08:39:46 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-08-13" # <year>-<month>-<number>
+__version__ = "2025-08-14" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -1436,6 +1436,7 @@ def disjoint_union(ss, fn=set):
       rs.update(xs)
   return rs
 
+# check sequences in <ss> are disjoint
 is_disjoint = lambda ss, fn=set: disjoint_union(ss, fn=fn) is not None
 
 # ss = remaining sets to process
@@ -9003,15 +9004,15 @@ class _PrimeSieveE6(object):
     # other parameters
     self.expandable = 0  # set to 1 to allow automatic expansion
     self.verbose = verbose
-    # now extend the sieve to the required size
-    self.extend(n)
+    # now expand the sieve to the required size
+    self.expand(n)
 
   def __repr__(self):
     return self.__class__.__name__ + '(max=' + repr(self.max) + ')'
 
-  def extend(self, n):
+  def expand(self, n):
     """
-    extend the sieve up to (at least) <n>
+    expand the sieve up to (at least) <n>
     """
     if not (n > self.max): return
     #if self.verbose: printf("[{x}: expanding to {n}]", x=self.__class__.__name__)
@@ -9152,7 +9153,7 @@ class _PrimeSieveE6(object):
     """
     return primes in the interval [a, b]
     """
-    if self.expandable: self.extend(b)
+    if self.expandable: self.expand(b)
     r = self.irange(a, b)
     return (r if fn is None else fn(r))
 
@@ -9268,19 +9269,19 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     self.expandable = 1
 
   # expand the sieve up to n, or by the next chunk
-  def extend(self, n=None):
+  def expand(self, n=None):
     """
-    extend the sieve to include primes up to (at least) n.
+    expand the sieve to include primes up to (at least) n.
 
     if n is not specified that sieve will be expanded according to the
     function specified in __init__().
     """
     if n is None: n = self.chunk(self.max)
-    _PrimeSieveE6.extend(self, n)
+    _PrimeSieveE6.expand(self, n)
     return self
 
   # for backwards compatibility
-  expand = extend
+  extend = expand
 
   # generate all primes, a chunk at a time
   # end = inf (or None), will expand the sieve for ever
@@ -9313,7 +9314,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
     # have we asked for unlimited generation?
     if b is None or b == inf: return self.generate(a)
     # otherwise, upper limit is provided
-    self.extend(b)
+    self.expand(b)
     return _PrimeSieveE6.range(self, a, b)
 
 # create a suitable prime sieve
@@ -9339,7 +9340,7 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=
 
   The collection can be extended manually to a new upper limit:
 
-  >>> primes.extend(100)
+  >>> primes.expand(100)
   >>> sum(primes)
   1060
   >>> 97 in primes
