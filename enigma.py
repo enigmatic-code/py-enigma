@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug 15 09:27:34 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Aug 16 15:11:15 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-08-15" # <year>-<month>-<number>
+__version__ = "2025-08-16" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -5139,6 +5139,17 @@ def crt(vs):
 
 # find roots of integer valued polynomial p(x) = v modulo n^k
 def poly_roots_mod(p, v=0, cache=1):
+  """
+  find roots of integer valued polynomial p(x) = v mod n^k.
+
+  the function is passed the polynomial <p> and value <v>, and it
+  returns a function roots(n, k) that calculates the roots mod <n>^<k>
+
+  e.g. to find the square roots of 9 mod 5488:
+  >>> roots = poly_roots_mod(sq, 9)
+  >>> sorted(roots(5488))
+  [3, 683, 2061, 2741, 2747, 3427, 4805, 5485]
+  """
   f = (p if v == 0 else (lambda x: p(x) - v))
   cache = (dict() if cache else None)
 
