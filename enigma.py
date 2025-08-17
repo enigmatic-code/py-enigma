@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Aug 16 15:11:15 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Aug 17 13:14:39 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-08-16" # <year>-<month>-<number>
+__version__ = "2025-08-17" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -767,7 +767,7 @@ def seq_all_same_r(seq, **kw):
 
   if the sequence has fewer than 2 elements, 'same' is trivially true.
   """
-  i = iter(seq)
+  itr = iter(seq)
   n = 0
   # is value specified?
   if 'value' in kw:
@@ -775,13 +775,13 @@ def seq_all_same_r(seq, **kw):
   else:
     # otherwise, use the first value
     try:
-      v = next(i)
+      v = next(itr)
       n = 1
     except StopIteration:
       # empty sequence
       return Record(same=True, empty=True, value=None)
   # check the rest of the sequence
-  for x in i:
+  for x in itr:
     if x != v:
       return Record(same=False, empty=False, value=None)
     n = 1
@@ -1362,9 +1362,9 @@ def chunk(seq, n=2, pad=0, value=None, fn=tuple):
   >>> list(unzip(chunk(irange(0, 9), 2)))
   [(0, 2, 4, 6, 8), (1, 3, 5, 7, 9)]
   """
-  i = iter(seq)
+  itr = iter(seq)
   while True:
-    s = fn(itertools.islice(i, 0, n))
+    s = fn(itertools.islice(itr, 0, n))
     if not s: break
     x = (n - len(s) if pad else 0)
     yield (s if x == 0 else s + fn([value] * x))
@@ -1471,13 +1471,13 @@ def disjoint_cproduct(ss):
 # set intersection of a bunch of sequences
 def intersect(ss, fn=set):
   """construct a set that is the intersection of the sequences in <ss>"""
-  i = iter(ss)
+  itr = iter(ss)
   try:
-    s = fn(next(i))
+    s = fn(next(itr))
   except StopIteration:
     pass
   else:
-    return s.intersection(*i)
+    return s.intersection(*itr)
   raise ValueError("empty intersection")
 
 # return an element of a container
@@ -5201,7 +5201,7 @@ def poly_roots_mod(p, v=0, cache=1):
 
 # this may be faster than sqrtmod() for large (composite) m
 def poly_roots_mod_sqrtmod(a, m, k=1, fn=prime_factor):
-  "find square roots of <a> mod <m^k>"
+  "find square roots of <a> mod <m>^<k>"
   return poly_roots_mod(sq, a)(m, k, fn)
 poly_roots_mod.sqrtmod = poly_roots_mod_sqrtmod
 
@@ -6078,18 +6078,34 @@ def printf(fmt='', **vs):
 
 # format output into blocks
 class Output():
-  def __init__(self, start=None, end="", prefix="  ", timed=None):
+  def __init__(self, start=None, end="", prefix="  ", timed=None, override=1):
     self.start = start
     self.end = end
     self.prefix = prefix
     self.timer = timed
+    self.override = override
     self.held = None
     self.immediate = 0
+    self._saved = None
 
   def __enter__(self):
     start = self.start
     if start is not None: printf("{start}")
-    if self.timer: self.timer = Timer()
+    if self.override:
+      # override names: printf -> self.printf
+      frame = sys._getframe(1)
+      if frame:
+        vs = frame.f_locals
+        d = dict()
+        for k in ['printf']:
+          fn = vs[k]
+          if fn:
+            d[k] = fn
+            vs[k] = self.printf
+        if d:
+          self._saved = (vs, d)
+    if self.timer:
+      self.timer = Timer()
     return self
 
   def __exit__(self, *args):
@@ -6097,6 +6113,12 @@ class Output():
     if timer:
       timer.stop()
       timer.report()
+    if self._saved:
+      # restore any saved names
+      (vs, d) = self._saved
+      for (k, v) in d.items():
+        vs[k] = v
+      self._saved = None
     end = self.end
     if end is not None: printf("{end}")
 
