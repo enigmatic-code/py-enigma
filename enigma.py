@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Aug 17 13:14:39 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Aug 20 11:34:19 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-08-17" # <year>-<month>-<number>
+__version__ = "2025-08-19" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -6084,7 +6084,7 @@ class Output():
     self.prefix = prefix
     self.timer = timed
     self.override = override
-    self.held = None
+    self.held = list()
     self.immediate = 0
     self._saved = None
 
@@ -6127,16 +6127,22 @@ class Output():
 
   def holdf(self, fmt='', **kw):
     "this allows you to delay the printing of a string until release() is called"
-    self.held = _sprintf(fmt, None, kw, sys._getframe(1))
+    self.held.append(_sprintf(fmt, None, kw, sys._getframe(1)))
     if self.immediate: self.release()
 
   def release(self):
-    "output a string previously delayed using holdf()"
-    s = self.held
-    if s is not None:
-      printf("{prefix}{s}", prefix=self.prefix)
-      self.held = None
+    "output strings previously delayed using holdf()"
+    held = self.held
+    if held:
+      for s in held:
+        printf("{prefix}{s}", prefix=self.prefix)
+      self.held = list()
 
+  def discard(self):
+    "discard any previously delayed strings"
+    self.held = list()
+
+# to use: output.printf() (and more probably output.holdf(), output.release())
 output = Output(prefix='')
 
 class Failure(Exception): pass
@@ -6336,10 +6342,11 @@ def flatten(seq, skip=1, fn=list):
   ['abc', 'def', 'ghi']
 
   """
-  # was: [[ return fn(j for i in seq if i is not None for j in i) ]]
   if skip: seq = filter(None, seq)
-  # could use: [[ fn(itertools.chain.from_iterable(seq) ]] to allow unbounded seq
-  return fn(itertools.chain(*seq))
+  return fn(x for itr in seq if itr is not None for x in itr)
+  # NOTE: the following are not necessarily equivalent wrt to generators
+  # could use: [[ return fn(itertools.chain(*seq)) ]]
+  # could use: [[ return fn(itertools.chain.from_iterable(seq) ]] to allow unbounded seq
 
 # chain(a, b, c) = flatten([a, b, c])
 # so: unpack(chain) = flatten
