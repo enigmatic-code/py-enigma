@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Aug 20 11:34:19 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Aug 21 15:18:38 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-08-19" # <year>-<month>-<number>
+__version__ = "2025-08-20" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -6343,10 +6343,15 @@ def flatten(seq, skip=1, fn=list):
 
   """
   if skip: seq = filter(None, seq)
-  return fn(x for itr in seq if itr is not None for x in itr)
-  # NOTE: the following are not necessarily equivalent wrt to generators
-  # could use: [[ return fn(itertools.chain(*seq)) ]]
-  # could use: [[ return fn(itertools.chain.from_iterable(seq) ]] to allow unbounded seq
+  r = (x for itr in seq for x in itr)
+  return (r if fn is None else fn(r))
+  # similar to using:
+  #return fn(itertools.chain.from_iterable(seq))
+  # NOTE: but the following is not necessarily equivalent if generators are involved
+  #return fn(itertools.chain(*seq))
+
+# shortcut for flatten() that returns a generator
+iflatten = partial(flatten, fn=None)
 
 # chain(a, b, c) = flatten([a, b, c])
 # so: unpack(chain) = flatten
@@ -6359,7 +6364,7 @@ def chain(*ss, **kw):
   >>> chain("abc", (1, 2, 3), None, [4, 5, 6], fn=tuple)
   ('a', 'b', 'c', 1, 2, 3, 4, 5, 6)
   """
-  if 'fn' not in kw: kw['fn'] = iter
+  if 'fn' not in kw: kw['fn'] = None
   return flatten(ss, **kw)
 
 # generate permutations of the items of a sequence
