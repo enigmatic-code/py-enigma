@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Aug 21 15:18:38 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Aug 27 15:05:30 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -92,7 +92,7 @@ find_min               - find the minimum value of a function
 find_value             - find where a function has a specified value
 find_zero              - find where a function is zero
 first, ifirst          - return items from the start of an iterator
-flatten                - flatten a list of lists
+flatten, iflatten      - flatten a list of lists
 flattened              - fully flatten a nested structure
 floor                  - generalised floor function
 format_recurring       - output the result from recurring()
@@ -234,11 +234,11 @@ SubstitutedSum         - a class for solving substituted addition sums
 Timer                  - a class for measuring elapsed timings
 """
 
-# Python 3 style print() and division
+# use Python 3 style print() and division
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-08-20" # <year>-<month>-<number>
+__version__ = "2025-08-21" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman, Frits ter Veen"
 
@@ -4350,7 +4350,7 @@ def is_power_of(n, k, validate=0):
   (i, m) = drop_factors(n, k)
   return (i if m == 1 else None)
 
-# alias
+# alias (but see also ndigits())
 ilog = is_power_of
 
 def tri(n):
@@ -4756,7 +4756,7 @@ def divc(a, b):
   >>> divc(4.5, 1)
   5
   """
-  return -int(-a // b)
+  return -int(a // -b)
 
 cdiv = divc
 
@@ -4784,7 +4784,7 @@ def ceil(x, m=1):
   return lowest multiple of <m>, not less than <x>
   """
   if m == 1: return intc(x)
-  return m * -int(-x // m)
+  return m * -int(x // -m)
 
 def div(a, b):
   """
@@ -4934,6 +4934,9 @@ def avg(seq, div=fdiv):
   for sequences this is equivalent to: sum(seq) / len(seq)
 
   the function used for division can be provided with the 'div' parameter.
+
+  Note: For calculating the mean of floats, statistics.mean() may be
+  more appropriate
 
   >>> avg(irange(1, 10))
   5.5
@@ -5597,7 +5600,7 @@ def rational(*args, **kw):
   if rational.impl is None: rational.impl = Rational()
   return rational.impl(*args, **kw)
 
-def factorial(a, *bs):
+def factorial(a, *bs, **kw):
   """
   return a! / b!.
 
@@ -5610,7 +5613,11 @@ def factorial(a, *bs):
   >>> factorial(11, 4, 4, 2)
   34650
   """
+  validate = kw.pop('validate', 0)
+  if kw: raise TypeError(str.format("factorial: unknown arguments {kw}", kw=seq2str(kw.keys())))
+  if validate: a = as_int(a, include="0+")
   if not bs: return math.factorial(a)
+  if validate: bs = tuple(as_int(b, include="0+") for b in bs)
   r = None
   bs = sorted(bs, reverse=1)
   b = bs[0]
