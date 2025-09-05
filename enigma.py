@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Aug 27 15:05:30 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Sep  5 10:41:43 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,9 +238,9 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-08-21" # <year>-<month>-<number>
+__version__ = "2025-09-04" # <year>-<month>-<number>
 
-__credits__ = "contributors - Brian Gladman, Frits ter Veen"
+__credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
 import sys
 import os
@@ -2922,7 +2922,7 @@ def choose(vs, fns, s=None, distinct=0):
     # choose the next value
     fn = fns[0]
     for v in vs:
-      if (not distinct) or v not in s:
+      if not (distinct and v in s):
         s_ = list(s)
         s_.append(v)
         if fn is None or fn(*s_):
@@ -7431,6 +7431,9 @@ class Record(object):
     d = self.__dict__
     for k in sorted(d.keys()):
       yield (k, d[k])
+
+  def __str__(self):
+    return map2str((k, v) for (k, v) in self)
 
   def __repr__(self):
     return self.__class__.__name__ + map2str((k, repr(v)) for (k, v) in self)
