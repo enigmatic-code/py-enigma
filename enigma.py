@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Sep  5 10:41:43 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Sep 12 13:57:34 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-09-04" # <year>-<month>-<number>
+__version__ = "2025-09-11" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -417,7 +417,11 @@ def cached(f):
 
   see also: functools.lru_cache() (Python 3.2+), functools.cache() (Python 3.9+).
   """
-  f.cache = cache = dict()
+  cache = dict()
+  try:
+    f.cache = cache
+  except AttributeError:
+    pass
   @functools.wraps(f)
   def _inner(*k):
     try:
@@ -573,6 +577,7 @@ def fdiv(a, b, fn=float):
   return fn(a) / fn(b)
 
 # less than/greater than (or equal) to a target; useful for filter() etc.
+def eq(t): return (lambda x: x == t)
 def lt(t): return (lambda x: x < t)
 def le(t): return (lambda x: x <= t)
 def gt(t): return (lambda x: x > t)
@@ -8105,7 +8110,7 @@ def seq2str(s, enc="()", sep=", ", sort=0, rev=0, fn=str):
   '(1, 2, 3)'
   >>> seq2str(first(primes, 10))
   '(2, 3, 5, 7, 11, 13, 17, 19, 23, 29)'
-  >>> seq2str(map(seq2str, prime_factor(factorial(15) - 1)))
+  >>> seq2str(prime_factor(factorial(15) - 1))
   '((17, 1), (31, 2), (53, 1), (1510259, 1))'
   """
   return join(s, sep=sep, enc=enc, sort=sort, rev=rev, fn=fn)
@@ -13754,7 +13759,7 @@ def __grouping():
     use the <cache> parameter to control whether the function is
     cached or not.
     """
-    fn = ((lambda x: x == k) if isinstance(k, int) else k)
+    fn = (k if callable(k) else eq(k))
     # check each pair of values shares exactly <k> different letters
     def check(*vs):
       return all(fn(len(letters(a).intersection(letters(b)))) for (a, b) in itertools.combinations(vs, 2))
