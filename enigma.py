@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Sep 12 14:13:58 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Sep 14 11:02:30 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -238,7 +238,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-09-12" # <year>-<month>-<number>
+__version__ = "2025-09-13" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -7573,6 +7573,26 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   r.fv += v
   return r
 
+# EXPERIMENTAL
+def find_values(f, v, a, b, t=1e-9, ft=1e-6):
+  "find all values x where f(x) = v for x in [a, b]"
+  # find a value
+  r = find_value(f, v, a, b, t, ft)
+  yield r
+  # and then consider values in the remaining parts
+  x = r.v
+  d = 3 * ft  # delta
+  try:
+    #yield from find_values(f, v, a, x - d, t, ft)  #[Python 3]
+    for r in find_values(f, v, a, x - d, t, ft): yield r  #[Python 2]
+  except ValueError:
+    pass
+  try:
+    #yield from find_values(f, v, x + d, b, t, ft)  #[Python 3]
+    for r in find_values(f, v, x + d, b, t, ft): yield r  #[Python 2]
+  except ValueError:
+    pass
+
 # can sides a, b, c form a triangle?
 @static(
   area=lambda v: (None if v < 0 else 0.25 * sqrt(v)),
@@ -13746,7 +13766,7 @@ def __grouping():
   # useful selection functions
 
   # return the set of letters in a string
-  @cached
+  @cache
   def letters(s):
     return set(x for x in s.lower() if x.isalpha())
 
@@ -13763,7 +13783,7 @@ def __grouping():
     # check each pair of values shares exactly <k> different letters
     def check(*vs):
       return all(fn(len(letters(a).intersection(letters(b)))) for (a, b) in itertools.combinations(vs, 2))
-    return (cached(check) if cache else check)
+    return (enigma.cache(check) if cache else check)
 
   # return the namespace
   return locals()
