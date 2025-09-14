@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Sep 14 11:02:30 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Sep 14 12:48:25 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -89,8 +89,9 @@ filter_unique          - partition an iterator into values that are unique, and 
 find, rfind            - find the index of an object in a sequence
 find_max               - find the maximum value of a function
 find_min               - find the minimum value of a function
-find_value             - find where a function has a specified value
-find_zero              - find where a function is zero
+find_value             - find a location where a function has a specified value
+find_values            - find all locations where a function has a specified value
+find_zero              - find a location where a function is zero
 first, ifirst          - return items from the start of an iterator
 flatten, iflatten      - flatten a list of lists
 flattened              - fully flatten a nested structure
@@ -238,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-09-13" # <year>-<month>-<number>
+__version__ = "2025-09-14" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -7573,25 +7574,21 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   r.fv += v
   return r
 
-# EXPERIMENTAL
-def find_values(f, v, a, b, t=1e-9, ft=1e-6):
+def find_values(f, v, a, b, t=1e-9, ft=1e-6, rt=1e-3):
   "find all values x where f(x) = v for x in [a, b]"
-  # find a value
-  r = find_value(f, v, a, b, t, ft)
-  yield r
-  # and then consider values in the remaining parts
-  x = r.v
-  d = 3 * ft  # delta
-  try:
-    #yield from find_values(f, v, a, x - d, t, ft)  #[Python 3]
-    for r in find_values(f, v, a, x - d, t, ft): yield r  #[Python 2]
-  except ValueError:
-    pass
-  try:
-    #yield from find_values(f, v, x + d, b, t, ft)  #[Python 3]
-    for r in find_values(f, v, x + d, b, t, ft): yield r  #[Python 2]
-  except ValueError:
-    pass
+  # regions to check
+  rs = [(a, b)]
+  while rs:
+    (a, b) = rs.pop(0)
+    # look for a value in this region
+    try:
+      r = find_value(f, v, a, b, t, ft)
+    except ValueError:
+      continue
+    # return this value
+    yield r
+    # and consider the regions before and after the root
+    rs.extend([(a, r.v - rt), (r.v + rt, b)])
 
 # can sides a, b, c form a triangle?
 @static(
