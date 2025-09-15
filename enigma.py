@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Sep 14 12:48:25 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Sep 15 09:17:36 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-09-14" # <year>-<month>-<number>
+__version__ = "2025-09-15" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -4561,6 +4561,7 @@ def quadratic(a, b, c, domain="Q", include="+-0", F=None):
   >>> sorted(quadratic(1, 1, -6, domain="Z"))
   [-3, 2]
   """
+  # select the field
   if domain in "CF":
     if F is None: F = (complex if domain == 'C' else float)
   elif domain in "QZ":
@@ -4582,7 +4583,8 @@ def quadratic(a, b, c, domain="Q", include="+-0", F=None):
 
   if domain in "CF":
     if D == 0: return _roots(domain, include, F, (b, d))
-    r = D**0.5
+    D = F(D)  # NOTE: gmpy.mpq does not allow pow(mpq, float)
+    r = (sqrt(D) if domain == 'F' else pow(D, 0.5))
     return _roots(domain, include, F, (b + r, d), (b - r, d))
 
   elif domain in "QZ":
@@ -7575,19 +7577,27 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   return r
 
 def find_values(f, v, a, b, t=1e-9, ft=1e-6, rt=1e-3):
-  "find all values x where f(x) = v for x in [a, b]"
+  """
+  find all values x where f(x) = v for x in [a, b].
+
+  see: find_value()
+
+  additional arguments:
+
+  rt = minimum separation between values returned.
+  """
   # regions to check
   rs = [(a, b)]
   while rs:
     (a, b) = rs.pop(0)
-    # look for a value in this region
+    # look for a solution in this region
     try:
       r = find_value(f, v, a, b, t, ft)
     except ValueError:
       continue
     # return this value
     yield r
-    # and consider the regions before and after the root
+    # and consider the regions before and after this solution
     rs.extend([(a, r.v - rt), (r.v + rt, b)])
 
 # can sides a, b, c form a triangle?
