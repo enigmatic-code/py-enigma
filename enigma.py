@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Sep 15 09:17:36 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep 16 08:05:06 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-09-15" # <year>-<month>-<number>
+__version__ = "2025-09-16" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -4583,8 +4583,7 @@ def quadratic(a, b, c, domain="Q", include="+-0", F=None):
 
   if domain in "CF":
     if D == 0: return _roots(domain, include, F, (b, d))
-    D = F(D)  # NOTE: gmpy.mpq does not allow pow(mpq, float)
-    r = (sqrt(D) if domain == 'F' else pow(D, 0.5))
+    r = pow(F(D), 0.5)  # NOTE: gmpy.mpq does not allow pow(mpq, float)
     return _roots(domain, include, F, (b + r, d), (b - r, d))
 
   elif domain in "QZ":
