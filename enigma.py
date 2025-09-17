@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Sep 16 14:38:21 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep 17 09:58:22 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -7481,16 +7481,17 @@ def gss_minimiser(f, a, b, t=1e-9, m=None):
   (v, fv) = ((x1, f1) if f1 < f2 else (x2, f2))
   return Record(v=v, fv=fv, t=t, i=i)
 
+# NOTE: using functools.partial and setting __name__ and __doc__ doesn't work (in Python 2.7 and 3.3)
+# see: http://bugs.python.org/issue12790
 
-find_min = gss_minimiser
-find_min.__name__ = 'find_min'
-find_min.__doc__ = """
+def find_min(f, a, b, t=1e-9, m=None):
+  """
   find a minimum value of a (well behaved) function over an interval.
 
   f = function to minimise (should take a single float argument)
   a, b = the interval to minimise over (a < b)
   t = the tolerance to work to
-  m = the metric we want to minimise (default is None = the value of the function)
+  m = the metric we want to minimise (default: None = the value of the function)
 
   the result is returned as a record with the following fields:
   v = the calculated value at which the function is minimised
@@ -7500,10 +7501,9 @@ find_min.__doc__ = """
   >>> r = find_min(lambda x: sq(x - 2), 0.0, 10.0)
   >>> round(r.v, 6)
   2.0
-"""
+  """
+  return gss_minimiser(f, a, b, t=t, m=m)
 
-# NOTE: using functools.partial and setting __name__ and __doc__ doesn't work (in Python 2.7 and 3.3)
-# see: http://bugs.python.org/issue12790
 def find_max(f, a, b, t=1e-9):
   """
   find a maximum value of a (well behaved) function over an interval.
@@ -7521,7 +7521,7 @@ def find_max(f, a, b, t=1e-9):
   >>> round(r.v, 6)
   2.0
   """
-  return gss_minimiser(f, a, b, t=t, m=neg)
+  return find_min(f, a, b, t=t, m=neg)
 
 # we can also use the minimiser to find roots
 # there are more rapidly converging root finding algorithms,
@@ -7571,8 +7571,9 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
   >>> round(r.v, 6)
   2.0
   """
-  r = find_zero((lambda x: f(x) - v), a, b, t, ft)
-  r.fv += v
+  fn = (f if v == 0 else (lambda x: f(x) - v))
+  r = find_zero(fn, a, b, t, ft)
+  if v != 0: r.fv += v
   return r
 
 def find_values(f, v, a, b, t=1e-9, ft=1e-6, rt=1e-3):
