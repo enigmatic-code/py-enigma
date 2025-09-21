@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Sep 19 10:36:12 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Sep 21 14:07:31 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-09-18" # <year>-<month>-<number>
+__version__ = "2025-09-20" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -304,7 +304,8 @@ nl = "\n"
 pi = math.pi
 two_pi = pi + pi
 inf = float('+inf')
-empty = frozenset()  # the empty set
+fset = frozenset  # "fset" is a shortcut for "frozenset"
+empty = fset()  # the empty set
 
 str_upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  # upper case letters
 str_lower = "abcdefghijklmnopqrstuvwxyz"  # lower case letters
@@ -3362,7 +3363,7 @@ def divisors_pairs(n, k=1, fn=prime_factor, every=0, validate=0):
 
   if the 'every' parameter is set, then pairs with a > b are also generated.
   """
-  if validate: n = as_int(n, include="0+")
+  if validate: (n, k) = (as_int(n, include="0+"), as_int(k, include="0+"))
   if n == 0 and k > 0:
     yield (0, 0)
     return
@@ -3372,21 +3373,33 @@ def divisors_pairs(n, k=1, fn=prime_factor, every=0, validate=0):
     if a > b and (not every): break
     yield (a, b)
 
-def divisors_tuples(n, k, s=()):
+def _divisors_tuples(n, k, s=()):
+  if k == 1:
+    if not (s and n < s[-1]):
+      yield s + (n,)
+  elif k > 1:
+    for (a, b) in divisors_pairs(n):
+      if not (s and a < s[-1]):
+        #yield from _divisors_tuples(b, k - 1, s + (a,))  #[Python 3]
+        for z in _divisors_tuples(b, k - 1, s + (a,)): yield z  #[Python 2]
+
+def divisors_tuples(n, k, validate=0):
   """
   find ordered <k>-tuples that multiply to give <n>.
 
   >>> list(divisors_tuples(1335, 3))
   [(1, 1, 1335), (1, 3, 445), (1, 5, 267), (1, 15, 89), (3, 5, 89)]
   """
-  if k == 1:
-    if not (s and n < s[-1]):
-      yield s + (n,)
-  else:
-    for (a, b) in divisors_pairs(n):
-      if not (s and a < s[-1]):
-        #yield from divisors_tuples(b, k - 1, s + (a,))  #[Python 3]
-        for z in divisors_tuples(b, k - 1, s + (a,)): yield z  #[Python 2]
+  if validate: (n, k) = (as_int(n, include="0+"), as_int(k, include="0+"))
+  if k == 0:
+    if n == 1: return iter([()])
+    return iter([])
+  elif k == 1:
+    return iter([(n,)])
+  elif k == 2:
+    return divisors_pairs(n)
+  elif k > 2:
+    return _divisors_tuples(n, k)
 
 def _factorisations(n, ds, i, ss=[]):
   # are we done?
@@ -4019,7 +4032,10 @@ def sqrt(a, b=None):
   return math.sqrt(a if b is None else (a / b))
 
 # sq = lambda x: x * x
-def sq(x): "sq(x) = x * x"; return x * x
+def sq(x, y=None, div=fdiv):
+  "return (x/y) squared (or x squared if y is None)"
+  if y is not None: x = div(x, y)
+  return x * x
 def diffsq(x, y): "diffsq(x, y) = x^2 - y^2"; return (x - y) * (x + y)
 def sumsq(xs): "sumsq(xs) = sum(sq(x) for x in xs)"; return sum(x * x for x in xs)
 
@@ -6571,7 +6587,7 @@ def append(s, *vs):
     r = s.copy()
     r.update(vs)
     return r
-  if isinstance(s, frozenset):
+  if isinstance(s, fset):
     return s.union(vs)
   if isinstance(s, multiset):
     return s.copy().update_from_seq(vs)
@@ -6613,7 +6629,7 @@ def remove(s, *vs, **kw):
       if strict and v not in s: raise ValueError(str.format("{v!r} not in string", v=v))
       s = s.replace(v, '', 1)
     return s
-  if isinstance(s, (set, frozenset, multiset)):
+  if isinstance(s, (set, fset, multiset)):
     if strict and not s.issuperset(vs): raise ValueError(str.format("elements not in *set"))
     return s.difference(vs)
   raise ValueError(str.format("remove() can't handle container of type {x}", x=type(s)))
