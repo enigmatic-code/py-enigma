@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep 17 09:58:22 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Sep 19 10:36:12 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-09-17" # <year>-<month>-<number>
+__version__ = "2025-09-18" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -13702,7 +13702,8 @@ def __grouping():
         # check the group
         if fn(*group):
           # solve for the remaining elements
-          vs1 = ([x[:j] + x[j + 1:] for (x, j) in zip(vs[1:], js)] if distinct else vs[1:])
+          vs1 = vs[1:]
+          if distinct: vs1 = list(delete(x, [j]) for (x, j) in zip(vs1, js))
           #yield from groups([vs[0][1:]] + vs1, fn, distinct, s + [group])  #[Python 3]
           for z in groups([vs[0][1:]] + vs1, fn, distinct, s + [group]): yield z  #[Python 2]
 
