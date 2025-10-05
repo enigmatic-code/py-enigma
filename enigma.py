@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Sep 21 14:07:31 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Oct  5 15:41:44 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-09-20" # <year>-<month>-<number>
+__version__ = "2025-10-05" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -1728,7 +1728,7 @@ class multiset(dict):
     # add in any keyword items
     if kw:
       for (x, n) in kw.items():
-        self.add(x, n, validate=1)
+        self.add(x, count=n, validate=1)
 
   def update_from_seq(self, vs, count=1, validate=0):
     """update a multiset from a sequence of items"""
@@ -1886,14 +1886,14 @@ class multiset(dict):
         return self
     except KeyError:
       pass
-    if count < 0: raise ValueError(str.format("negative count: {item} -> {count}", item=item, count=count))
+    if count < 0: raise ValueError(str.format("multiset.add: negative count for {item!r} -> {count}", item=item, count=count))
     if count > 0: self[item] = count
     return self
 
   # remove an item
   def remove(self, item, count=1, validate=0):
     """remove an item from the multiset"""
-    return self.add(item, -count, validate=validate)
+    return self.add(item, count=-count, validate=validate)
 
   # delete an item (no error is raised if the item does not exist)
   def delete(self, item):
@@ -2008,9 +2008,9 @@ class multiset(dict):
     for item in set(self.keys()).union(m.keys()):
       count = self.get(item, 0) - m.get(item, 0)
       if count > 0:
-        d1.add(item, count)
+        d1.add(item, count=count)
       elif count < 0:
-        d2.add(item, -count)
+        d2.add(item, count=-count)
     return (d1, d2)
 
   # difference between self and m
@@ -2150,6 +2150,43 @@ class multiset(dict):
   def map2str(self, sort=1, enc='()', sep=', ', arr='='):
     """call map2str() on the multiset"""
     return map2str(self, sort=sort, enc=enc, sep=sep, arr=arr)
+
+  def fmt(self, flags='d', sort=1, rev=0):
+    """
+    format a multiset as a string.
+
+    the first flag control the formatting:
+
+      d = dictionary formatting
+      l = list formatting
+      p = pairs formatting
+
+    additional flags:
+
+      r = use repr() on elements
+      c = include constructor function
+    """
+    r = "???"
+    f = flags[0]
+    if f in 'dp':
+      ks = self.keys()
+      if sort: ks = sorted(ks, reverse=rev)
+      fn = (repr if 'r' in flags else identity)
+      if f == 'd':
+        r = map2str(((fn(k), self.get(k)) for k in ks), arr=": ", sep=", ", enc="{}")
+        if 'c' in flags: r = "multiset.from_dict({r})".format(r=r)
+      elif f == 'p':
+        ps = ("({k}, {v})".format(k=fn(k), v=self.get(k)) for k in ks)
+        r = seq2str(ps, sep=", ", enc="[]")
+        if 'c' in flags: r = "multiset.from_pairs({r})".format(r=r)
+    elif f == 'l':
+      # format as a list
+      seq = self
+      if sort: seq = seq.sorted(reverse=rev)
+      if 'r' in flags: seq = map(repr, seq)
+      r = seq2str(seq, sep=", ", enc="[]")
+      if 'c' in flags: r = "multiset.from_seq({r})".format(r=r)
+    return r
 
   # generate item pairs
   def to_pairs(self):
@@ -13808,6 +13845,17 @@ def __grouping():
     def check(*vs):
       return all(fn(len(letters(a).intersection(letters(b)))) for (a, b) in itertools.combinations(vs, 2))
     return (enigma.cache(check) if cache else check)
+
+  # or: using multisets ...
+  @cache
+  def mletters(s):
+    return multiset.from_seq(x for x in s.lower() if x.isalpha())
+
+  def mshare_letters(k, cache=1):
+    fn = (k if callable(k) else eq(k))
+    def check(*vs):
+      return all(fn(len(mletters(a).intersection(mletters(b)))) for (a, b) in itertools.combinations(vs, 2))
+    return (enigma.cached(check) if cache else check)
 
   # return the namespace
   return locals()
