@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Oct  5 15:41:44 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Oct 10 08:05:25 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-10-05" # <year>-<month>-<number>
+__version__ = "2025-10-08" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -3140,9 +3140,11 @@ def uniq1(seq, fn=None):
 
 # root: calculate the (positive) nth root of a (positive) number
 # we use math.pow rather than **/pow() to avoid generating complex numbers
-root = lambda x, n: (x if not x else math.pow(x, n**-1))
+root = lambda x, n: (None if x is None else math.pow(x, n**-1))
 
-def _cbrt(x):
+# use math.cbrt() if available [Python 3.11+]
+@static(impl=getattr(math, 'cbrt', None))
+def cbrt(x):
   """
   return the cube root of a number (as a float).
 
@@ -3153,11 +3155,10 @@ def _cbrt(x):
   >>> round(cbrt(-27.0), 6)
   -3.0
   """
-  r = root(abs(x), 3.0)
+  if x is None: return None
+  fn = cbrt.impl
+  r = (fn(abs(x)) if fn else root(abs(x), 3.0))
   return (-r if x < 0 else r)
-
-# use math.cbrt() [available from 3.11]
-cbrt = getattr(math, 'cbrt', _cbrt)
 
 # cb = lambda x: x**3
 def cb(x): "cb(x) = x**3"; return x**3
@@ -3512,6 +3513,11 @@ def is_prime(n, validate=0):
 
 prime = is_prime
 
+def is_composite(n, validate=0):
+  if n is None: return None
+  if validate: n = as_int(n, include="0+")
+  if n < 4: return False
+  return not is_prime(n)
 
 # Miller-Rabin primality test (originally suggested by Brian Gladman)
 
@@ -4065,6 +4071,7 @@ def sqrt(a, b=None):
   >>> sqrt(9, 4)
   1.5
   """
+  if a is None: return None
   # / is operator.truediv() here
   return math.sqrt(a if b is None else (a / b))
 
@@ -15024,7 +15031,7 @@ enigma.py has the following command-line usage:
       --run:verbose   (or -rv)
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.13.5',
+  version=__version__, python='2.7.18', python3='3.14.0',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
