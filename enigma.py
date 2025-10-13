@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Oct 10 08:05:25 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Oct 12 16:15:41 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-10-08" # <year>-<month>-<number>
+__version__ = "2025-10-12" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -2110,6 +2110,15 @@ class multiset(dict):
     60
     """
     return multinomial(self.values())
+
+  def mpermutations(self, k=None):
+    """
+    return all possible arrangements of this multiset.
+
+    >>> icount(multiset("banana").arrangements())
+    60
+    """
+    return mpermutations(self, k=k)
 
   def express(self, v, k=None, fn=identity):
     """
@@ -8483,6 +8492,11 @@ class Enumerator(object):
       self.count += 1
       yield (i + offset, x)
 
+  def output(self, skip=0, offset=0, fmt="{count}: {element}"):
+    """output the contents of the enumerator"""
+    for (count, element) in self.enumerate(skip=skip, offset=offset):
+      printf(fmt)
+
 ###############################################################################
 
 # Routines for dealing with polynomials
@@ -9271,6 +9285,12 @@ class _PrimeSieveE6(object):
 
   # allows use of "in"
   __contains__ = is_prime
+
+  def is_composite(self, n, validate=0):
+    if n is None: return None
+    if validate: n = as_int(n, include="0+")
+    if n < 4: return False
+    return not self.is_prime(n)
 
   # before, after: return the prime immediately before/after n
   def before(self, n):
