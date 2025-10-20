@@ -6,8 +6,8 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Oct 13 09:05:30 2025 (Jim Randell) jim.randell@gmail.com
-# Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.14)
+# Modified:     Mon Oct 20 08:12:22 2025 (Jim Randell) jim.randell@gmail.com
+# Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
 # URI:          http://www.magwag.plus.com/jim/enigma.html
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-10-13" # <year>-<month>-<number>
+__version__ = "2025-10-19" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -1475,6 +1475,8 @@ def disjoint_cproduct(ss):
   if not d: return [()]
   return _disjoint_cproduct(d, [None] * len(d))
 
+distinct_cproduct = disjoint_cproduct
+
 # set intersection of a bunch of sequences
 def intersect(ss, fn=set):
   """construct a set that is the intersection of the sequences in <ss>"""
@@ -2228,6 +2230,9 @@ class multiset(dict):
   __lt__ = lambda self, m: self.issubset(m, strict=1)
   __gt__ = lambda self, m: self.issuperset(m, strict=1)
 
+# alias
+mset = multiset  # "mset" is a shortcut for "multiset"
+
 def mcombinations(s, k=None):
   s = sorted(multiset(s))
   if k is None: k = len(s)
@@ -2955,8 +2960,7 @@ def permutations_from_cycles(seq, cycs, fn=None):
 # see: [ https://enigmaticcode.wordpress.com/2017/05/17/tantalizer-482-lapses-from-grace/#comment-7169 ]
 # choose: choose values from <vs> satisfying <fns> in turn
 # distinct - true if values must be distinct
-# s - initial sequence (that supports 'copy()' and 'append()')
-def choose(vs, fns, s=None, distinct=0):
+def choose(vs, fns, k=None, ss=None, distinct=0, multi_vs=0, multi_fns=1):
   """
   choose values from <vs> satisfying <fns> in turn.
 
@@ -2964,24 +2968,37 @@ def choose(vs, fns, s=None, distinct=0):
 
   set 'distinct' if all values should be distinct.
 
+  if you want to specify a sequence of values for each choice then set the
+  'multi_vs' flag, and if you want to specify a single function for each
+  test then clear the 'multi_fns' flag.
+
+  if at least one of the 'multi' flags is set, then the number of choices to
+  perform is set to the length of the corresponding value (if they are both
+  set then the minimum value is used). otherwise the number of choices should
+  be specified as <k>.
+
   >>> list(choose([1, 2, 3], [None, (lambda a, b: abs(a - b) == 1), (lambda a, b, c: abs(b - c) == 1)]))
   [[1, 2, 1], [1, 2, 3], [2, 1, 2], [2, 3, 2], [3, 2, 1], [3, 2, 3]]
   """
-  if s is None: s = list()
+  if k is None:
+    if multi_vs: k = len(vs)
+    if multi_fns: k = (len(fns) if k is None else min(len(fns), k))
+    if k is None: raise ValueError("choose: one of multi_vs, multi_fns, k should be set")
+  if ss is None: ss = list()
   # are we done?
-  if not fns:
-    yield s
-  else:
+  if k == 0:
+    yield ss
+  elif k > 0:
+    i = len(ss)
     # choose the next value
-    fn = fns[0]
-    for v in vs:
-      if not (distinct and v in s):
-        s_ = list(s)
-        s_.append(v)
-        if fn is None or fn(*s_):
+    fn = (fns[i] if multi_fns else fns)
+    for v in (vs[i] if multi_vs else vs):
+      if not (distinct and v in ss):
+        ss_ = ss + [v]
+        if fn is None or fn(*ss_):
           # choose the rest
-          #yield from choose(vs, fns[1:], s_, distinct)  #[Python 3]
-          for z in choose(vs, fns[1:], s_, distinct): yield z  #[Python 2]
+          #choose(vs, fns, k - 1, ss_, distinct, multi_vs, multi_fns)  #[Python 3]
+          for z in choose(vs, fns, k - 1, ss_, distinct, multi_vs, multi_fns): yield z  #[Python 2]
 
 
 def first(s, count=1, skip=0, fn=list):
@@ -3749,7 +3766,7 @@ def prime_factor_h(n, ps=None, end=None, nf=0, mr=0, mrr=0):
     for (p, e) in prime_factor_rho(n, mrr=mrr):
       yield (p, e * m)
 
-def tau(n, fn=prime_factor):
+def tau(n, fn=prime_factor, validate=0):
   """
   count the number of divisors of a positive integer <n>.
 
@@ -3760,6 +3777,7 @@ def tau(n, fn=prime_factor):
   >>> tau(factorial(23) - 1, fn=(lambda n: prime_factor_h(n, mr=1)))
   4
   """
+  if validate: n = as_int(n, include="0+")
   return multiply(e + 1 for (_, e) in fn(n))
 
 
