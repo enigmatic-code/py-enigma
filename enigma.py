@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Oct 20 08:12:22 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Oct 20 08:41:28 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-10-19" # <year>-<month>-<number>
+__version__ = "2025-10-20" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -5425,10 +5425,21 @@ def is_coprime(*vs):
   return True
 
 # multiple divmod
-# hours, minutes, seconds: (h, m, s) = mdivmod(x, 60, 60)
-# days, hours, minutes, seconds: (d, h, m, s) = mdivmod(x, 24, 60, 60)
-# days, hours, minutes, seconds, fractional seconds: (d, h, m, s, f) = mdivmod(x, 24, 60, 60, 1)
 def mdivmod(x, *vs):
+  """
+  perform multiple applications of divmod.
+
+  examples:
+    hours, minutes, seconds:
+      (h, m, s) = mdivmod(x, 60, 60)
+    days, hours, minutes, seconds:
+      (d, h, m, s) = mdivmod(x, 24, 60, 60)
+    days, hours, minutes, seconds, fractional seconds:
+      (d, h, m, s, f) = mdivmod(x, 24, 60, 60, 1)
+
+  >>> mdivmod(45296, 60, 60)
+  [12, 34, 56]
+  """
   rs = list()
   for v in reversed(vs):
     (x, r) = divmod(x, v)
