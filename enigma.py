@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Oct 20 08:41:28 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Oct 26 13:05:17 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-10-20" # <year>-<month>-<number>
+__version__ = "2025-10-25" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -2958,15 +2958,15 @@ def permutations_from_cycles(seq, cycs, fn=None):
 
 
 # see: [ https://enigmaticcode.wordpress.com/2017/05/17/tantalizer-482-lapses-from-grace/#comment-7169 ]
-# choose: choose values from <vs> satisfying <fns> in turn
-# distinct - true if values must be distinct
-def choose(vs, fns, k=None, ss=None, distinct=0, multi_vs=0, multi_fns=1):
+def choose(vs, fns, k=None, ss=None, distinct=0, increasing=0, multi_vs=0, multi_fns=1):
   """
   choose values from <vs> satisfying <fns> in turn.
 
   if all values are acceptable then a value of None can be passed in <fns>.
 
-  set 'distinct' if all values should be distinct.
+  set 'distinct' if all values in the sequence should be distinct.
+  set 'increasing' if all values in the sequence should be increasing.
+  set both flags for values that form a strictly increasing sequence.
 
   if you want to specify a sequence of values for each choice then set the
   'multi_vs' flag, and if you want to specify a single function for each
@@ -2993,12 +2993,13 @@ def choose(vs, fns, k=None, ss=None, distinct=0, multi_vs=0, multi_fns=1):
     # choose the next value
     fn = (fns[i] if multi_fns else fns)
     for v in (vs[i] if multi_vs else vs):
-      if not (distinct and v in ss):
-        ss_ = ss + [v]
-        if fn is None or fn(*ss_):
-          # choose the rest
-          #choose(vs, fns, k - 1, ss_, distinct, multi_vs, multi_fns)  #[Python 3]
-          for z in choose(vs, fns, k - 1, ss_, distinct, multi_vs, multi_fns): yield z  #[Python 2]
+      if distinct and v in ss: continue
+      if increasing and ss and ss[-1] > v: continue
+      ss_ = ss + [v]
+      if fn is None or fn(*ss_):
+        # choose the rest
+        #choose(vs, fns, k - 1, ss_, distinct, multi_vs, multi_fns)  #[Python 3]
+        for z in choose(vs, fns, k - 1, ss_, distinct, increasing, multi_vs, multi_fns): yield z  #[Python 2]
 
 
 def first(s, count=1, skip=0, fn=list):
@@ -14744,6 +14745,12 @@ def configure_file(path, tags):
         out.write(s)
   # rename the file
   os.rename(tmppath, path)
+
+def increase_recursion_limit(factor=10):
+  n = sys.getrecursionlimit()
+  n *= factor
+  sys.setrecursionlimit(n)
+  return n
 
 ###############################################################################
 
