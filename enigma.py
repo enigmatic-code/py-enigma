@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Oct 26 13:52:55 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Nov  7 17:03:23 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-10-26" # <year>-<month>-<number>
+__version__ = "2025-11-07" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -669,10 +669,18 @@ def is_distinct(value, *args):
 distinct = is_distinct
 
 # <seq> has <n> distinct values
-def distinct_values(seq, n=None):
+def seq_is_distinct(seq, n=None):
+  """
+  returns True if the finite sequence <seq> has no repeated values, or
+  if <n> is specified contains exactly <n> different values.
+
+  alias: distinct_values().
+  """
   seq = list(seq)
   if n is None: n = len(seq)
   return len(set(seq)) == n
+
+distinct_values = seq_is_distinct
 
 # this is the same as: seq_multiplicity(seq, n=1)
 def seq_all_different(*seqs, **kw):
@@ -2966,7 +2974,7 @@ def choose(vs, fns, k=None, ss=None, distinct=0, increasing=0, gap=0, multi_vs=0
 
   set 'distinct' if all values in the sequence should be distinct.
   set 'increasing' if all values in the sequence should be increasing.
-  the 'gap' value can be set to indicate the minimum gap in increasing sequences.
+  the 'gap' value can be set to indicate the minimum permissible gap in increasing sequences.
 
   if you want to specify a sequence of values for each choice then set the
   'multi_vs' flag, and if you want to specify a single function for each
@@ -4920,7 +4928,7 @@ def distinct_chars(*vs, **kw):
   4
   """
   fn = kw.pop('fn', str)
-  if kw: raise TypeError(str.format("is_distinct_chars: unknown arguments {kw}", kw=seq2str(kw.keys())))
+  if kw: raise TypeError(str.format("distinct_chars: unknown arguments {kw}", kw=seq2str(kw.keys())))
   s = join(vs, fn=fn)
   k = len(s)
   return (k if len(set(s)) == k else None)
