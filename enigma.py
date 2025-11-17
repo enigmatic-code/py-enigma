@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Nov 16 16:07:31 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Nov 17 11:08:01 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-11-16" # <year>-<month>-<number>
+__version__ = "2025-11-17" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -332,6 +332,16 @@ def import_fn(spec):
   if '.' not in spec: return importer(spec)
   (mod, fn) = spec.rsplit('.', 1)
   return getattr(importer(mod), fn)
+
+# execute some python code, and return a namespace with the result
+def exec_file(path, name=None):
+  # if path is not a string, assume it is a (spec, file) pair
+  if not isinstance(path, basestring): path = call(parsepath, path)
+  with open(path, 'r') as fh:
+    code = compile(fh.read(), path, 'exec')
+  ns = dict()
+  eval(code, ns)
+  return namespace(name, ns)
 
 # lazy importer
 class LazyImporter(object):
