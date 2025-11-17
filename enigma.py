@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Nov 17 11:08:01 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Nov 17 23:05:44 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-11-17" # <year>-<month>-<number>
+__version__ = "2025-11-18" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -326,22 +326,27 @@ version = lambda: __version__
 #   Q = import_fn('mpmath.rational.mpq')
 #   urlopen = import_fn('urllib2.urlopen')  # Python 2
 #   urlopen = import_fn('urllib.request.urlopen')  # Python 3
-def import_fn(spec):
+def import_fn(spec, verbose=0):
   # we could use importlib.import_module() here
   importer = lambda x: __import__(x, fromlist=[''])
-  if '.' not in spec: return importer(spec)
+  if '.' not in spec:
+    if verbose or 'v' in _PY_ENIGMA: print(str.format("[import_fn] importing \"{spec}\" ...", spec=spec))
+    return importer(spec)
   (mod, fn) = spec.rsplit('.', 1)
+  if verbose or 'v' in _PY_ENIGMA: print(str.format("[import_fn] importing \"{mod}\" ...", mod=mod))
   return getattr(importer(mod), fn)
 
 # execute some python code, and return a namespace with the result
-def exec_file(path, name=None):
+def exec_file(path, name=None, verbose=0):
   # if path is not a string, assume it is a (spec, file) pair
   if not isinstance(path, basestring): path = call(parsepath, path)
+  # execute the file
+  if verbose or 'v' in _PY_ENIGMA: print(str.format("[exec_file] executing \"{path}\" ...", path=path))
   with open(path, 'r') as fh:
     code = compile(fh.read(), path, 'exec')
   ns = dict()
   eval(code, ns)
-  return namespace(name, ns)
+  return make_namespace(name, ns)
 
 # lazy importer
 class LazyImporter(object):
@@ -7757,10 +7762,10 @@ def triangle_point(b, a, c, div=fdiv, sqrt=sqrt):
 
   the returned value is a point P = (x, y) with non-negative y value (height)
   where the base extends from O = (0, 0) to Q = (b, 0) (so |OQ| = b)
-  and |OP| = a, |PQ| = b
+  and |OP| = a, |PQ| = c.
   """
   x = div(a*a + b*b - c*c, 2*b)
-  y = sqrt(a*a - x*x)
+  y = (sqrt(a*a - x*x) if x is not None else None)
   return P2(x, y)
 
 def triangle_height(b, a, c, div=fdiv, sqrt=sqrt): return triangle_point(b, a, c, div=div, sqrt=sqrt).y
