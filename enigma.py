@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Nov 17 23:05:44 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Nov 21 15:46:39 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-11-18" # <year>-<month>-<number>
+__version__ = "2025-11-19" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -7763,9 +7763,13 @@ def triangle_point(b, a, c, div=fdiv, sqrt=sqrt):
   the returned value is a point P = (x, y) with non-negative y value (height)
   where the base extends from O = (0, 0) to Q = (b, 0) (so |OQ| = b)
   and |OP| = a, |PQ| = c.
+
+  see also: triangle_height() to just get the height of the triangle (y).
   """
-  x = div(a*a + b*b - c*c, 2*b)
-  y = (sqrt(a*a - x*x) if x is not None else None)
+  (x, y) = (div(a*a + b*b - c*c, 2*b), None)
+  if x is not None:
+    y2 = a*a - x*x
+    if y2 >= 0: y = sqrt(y2)
   return P2(x, y)
 
 def triangle_height(b, a, c, div=fdiv, sqrt=sqrt): return triangle_point(b, a, c, div=div, sqrt=sqrt).y
