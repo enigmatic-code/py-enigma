@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Nov 21 15:54:43 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Nov 22 16:41:13 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-11-20" # <year>-<month>-<number>
+__version__ = "2025-11-22" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -13052,6 +13052,17 @@ class Football(object):
     if ts is None: ts = [0] * len(ss)
     return tuple(('x' if s is None else 'ldw'[compare(s[0 ^ t], s[1 ^ t]) + 1]) for (s, t) in zip(ss, ts))
 
+  # extract keys from a dictionary relevant to team t
+  # return (<ks>, <ts>)
+  def extract_keys(self, d, t):
+    (ks, ts) = (list(), list())
+    for k in d.keys():
+      i = find(k, t)
+      if i != -1:
+        ks.append(k)
+        ts.append(i)
+    return (ks, ts)
+
   # extract values from a dictionary relevant to team t
   # return (<vs>, <ts>)
   def extract(self, d, t):
@@ -13059,7 +13070,7 @@ class Football(object):
     Extract values from dictionary <d> that are relevant to team <t>.
 
     A pair (<vs>, <ts>) is returned.
-    <vs> is the list of relevant values.
+    <vs> is the list of relevant values
     <ts> is the index of the team in the corresponding key
 
     Given a dictionary of matches outcomes <matches> the table row for
@@ -13074,12 +13085,8 @@ class Football(object):
       (ss, ts) = football.extract(scores, A)
       (forA, againstA) = football.goals(ss, ts)
     """
-    (vs, ts) = (list(), list())
-    for (k, v) in d.items():
-      i = find(k, t)
-      if i != -1:
-        vs.append(v)
-        ts.append(i)
+    (ks, ts) = self.extract_keys(d, t)
+    vs = list(d[k] for k in ks)
     return (vs, ts)
 
   # shortcuts to extract table row and goals for/against
