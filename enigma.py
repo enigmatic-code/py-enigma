@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Nov 22 16:41:13 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Nov 23 12:48:08 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -45,7 +45,7 @@ chain                  - see: flatten()
 choose                 - choose a sequence of values satisfying some functions
 chunk                  - go through an iterable in chunks
 clock                  - clock arithmetic variant on mod()
-clump                  - collect contiguous blocks of the same value
+clump, clump_val       - collect contiguous blocks of the same value
 collect                - collect items according to accept/reject criteria
 compare                - comparator function
 concat                 - concatenate a list of values into a string
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-11-22" # <year>-<month>-<number>
+__version__ = "2025-11-23" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -1400,19 +1400,12 @@ def chunk(seq, n=2, pad=0, value=None, fn=tuple):
     yield (s if x == 0 else s + fn([value] * x))
 
 # find contiguous blocks of values (according to fn)
-def clump(seq, fn=None):
+def clump_val(seq, fn=None):
   """
   separate <seq> into contiguous blocks of repeated values
   (according to function <fn>).
 
-  see also: itertools.groupby()
-
-  >>> list(clump([1, 1, 1, 2, 2, 3]))
-  [[1, 1, 1], [2, 2], [3]]
-  >>> list(clump("bookkeeper"))
-  [['b'], ['o', 'o'], ['k', 'k'], ['e', 'e'], ['p'], ['e'], ['r']]
-  >>> list(clump(map(tri, irange(1, 10)), fn=mod(2)))
-  [[1, 3], [6, 10], [15, 21], [28, 36], [45, 55]]
+  see also: itertools.groupby(seq, fn).
   """
   seq = iter(seq)
   try:
@@ -1426,10 +1419,27 @@ def clump(seq, fn=None):
     if v_ == v:
       xs.append(x)
     else:
-      yield xs
+      yield (v, xs)
       v = v_
       xs = [x]
-  yield xs
+  yield (v, xs)
+
+def clump(seq, fn=None):
+  """
+  separate <seq> into contiguous blocks of repeated values
+  (according to function <fn>).
+
+  use clump_val() if you also want the common value.
+
+  >>> list(clump([1, 1, 1, 2, 2, 3]))
+  [[1, 1, 1], [2, 2], [3]]
+  >>> list(clump("bookkeeper"))
+  [['b'], ['o', 'o'], ['k', 'k'], ['e', 'e'], ['p'], ['e'], ['r']]
+  >>> list(clump(map(tri, irange(1, 10)), fn=mod(2)))
+  [[1, 3], [6, 10], [15, 21], [28, 36], [45, 55]]
+  """
+  for (v, xs) in clump_val(seq, fn):
+    yield xs
 
 # set union of a bunch of sequences
 def union(ss, fn=set, fnu=None):
