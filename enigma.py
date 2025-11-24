@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Nov 23 12:48:08 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Nov 24 07:57:25 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-11-23" # <year>-<month>-<number>
+__version__ = "2025-11-24" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -2697,19 +2697,19 @@ def ulambda(args, expr=None):
   return eval(expr)
 
 # count the number of occurrences of a predicate in an iterator
-def icount(i, p=None, t=None):
+def icount(seq, p=None, t=None):
   """
-  count the number of elements in iterator <i> that satisfy predicate <p>,
+  count the number of elements in <seq> that satisfy predicate <p>,
   the termination limit <t> controls how much of the iterator we visit,
   so we don't have to count all occurrences.
 
-  So, to find if exactly <n> elements of <i> satisfy <p> use:
+  So, to find if exactly <n> elements of <seq> satisfy <p> use:
 
-  icount(i, p, n + 1) == n
+    icount(seq, p, n + 1) == n
 
-  which is what icount_exactly(i, p, n) does.
+  which is what icount_exactly(seq, p, n) does.
 
-  This will examine all elements of <i> to verify there are exactly 4 primes
+  This will examine all elements of <seq> to verify there are exactly 4 primes
   less than 10:
   >>> icount_exactly(irange(1, 10), is_prime, 4)
   True
@@ -2718,27 +2718,27 @@ def icount(i, p=None, t=None):
   >>> icount_exactly(irange(1, 100), is_prime, 20)
   False
 
-  To find if at least <n> elements of <i> satisfy <p> use:
+  To find if at least <n> elements of <seq> satisfy <p> use:
 
-  icount(i, p, n) == n
+    icount(seq, p, n) == n
 
-  This is what icount_at_least(i, p, n) does.
+  This is what icount_at_least(seq, p, n) does.
 
   The following will stop testing at 71 (the 20th prime):
   >>> icount_at_least(irange(1, 100), is_prime, 20)
   True
 
-  To find if at most <n> elements of <i> satisfy <p> use:
+  To find if at most <n> elements of <seq> satisfy <p> use:
 
-  icount(i, p, n + 1) < n + 1
+    icount(seq, p, n + 1) < n + 1
 
-  This is what icount_at_most(i, p, n) does.
+  This is what icount_at_most(seq, p, n) does.
 
   The following will stop testing at 73 (the 21st prime):
   >>> icount_at_most(irange(1, 100), is_prime, 20)
   False
 
-  If p is not specified a function that always returns True is used,
+  If <p> is not specified a function that always returns True is used,
   so you can use this function to count the number of items in a (finite) iterator:
 
   >>> icount(Primes(1000))
@@ -2747,25 +2747,27 @@ def icount(i, p=None, t=None):
   """
   if p is None:
     if t is None:
-      if hasattr(i, '__len__'):
-        return len(i)
+      if hasattr(seq, '__len__'):
+        return len(seq)
       else:
         # a quick way to count an iterable
-        d = collections.deque(enumerate(i, start=1), maxlen=1)
-        return (d[0][0] if d else 0)
+        #d = collections.deque(enumerate(seq, start=1), maxlen=1)
+        #return (d[0][0] if d else 0)
+        # this seems to be faster now:
+        return sum(1 for _ in seq)
     else:
       p = true
   n = 0
-  for x in i:
+  for x in seq:
     if p(x):
       n += 1
       if n == t: break
   return n
 
 # icount recipes
-icount_exactly = lambda i, p=None, n=None: icount(i, p, n + 1) == n
-icount_at_least = lambda i, p=None, n=None: icount(i, p, n) == n
-icount_at_most = lambda i, p=None, n=None: icount(i, p, n + 1) < n + 1
+icount_exactly = lambda seq, p=None, n=None: icount(seq, p, n + 1) == n
+icount_at_least = lambda seq, p=None, n=None: icount(seq, p, n) == n
+icount_at_most = lambda seq, p=None, n=None: icount(seq, p, n + 1) < n + 1
 
 # find: like index(), but return -1 instead of throwing an error
 def find(seq, v):
