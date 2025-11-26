@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Nov 24 07:57:25 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Nov 26 08:16:01 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-11-24" # <year>-<month>-<number>
+__version__ = "2025-11-25" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -2745,21 +2745,18 @@ def icount(seq, p=None, t=None):
   168
 
   """
-  if p is None:
-    if t is None:
-      if hasattr(seq, '__len__'):
-        return len(seq)
-      else:
-        # a quick way to count an iterable
-        #d = collections.deque(enumerate(seq, start=1), maxlen=1)
-        #return (d[0][0] if d else 0)
-        # this seems to be faster now:
-        return sum(1 for _ in seq)
+  if t is None:
+    if p is None:
+      # we just need a count of the items in <seq>
+      if hasattr(seq, '__len__'): return len(seq)
+      # was: [[ d = collections.deque(enumerate(seq, start=1), maxlen=1); return (d[0][0] if d else 0) ]]
+      return sum(1 for _ in seq)
     else:
-      p = true
+      return sum(1 for x in seq if p(x))
+  # otherwise t is defined
   n = 0
   for x in seq:
-    if p(x):
+    if p is None or p(x):
       n += 1
       if n == t: break
   return n
@@ -4345,6 +4342,7 @@ def is_ipower(n, validate=0):
 
 # compose functions in order (forward functional composition, "and then")
 # so: fcompose(f, g, h)(x) == h(g(f(x)))
+# [maybe implement this as a class?]
 def fcompose(f, *gs):
   """
   forward functional composition ("and then")
@@ -4358,18 +4356,22 @@ def fcompose(f, *gs):
   """
   # special case for 1 or 2 functions
   n = len(gs)
-  if n == 0:
-    return f
+  if n == 0: return f
   if n == 1:
     g = gs[0]
-    return (lambda *args, **kw: g(f(*args, **kw)))
-  # general case
-  def fn(*args, **kw):
-    r = f(*args, **kw)
-    for g in gs:
-      r = g(r)
-    return r
+    fn = lambda *args, **kw: g(f(*args, **kw))
+  else:
+    # general case
+    def fn(*args, **kw):
+      r = f(*args, **kw)
+      for g in gs:
+        r = g(r)
+      return r
+  fn.fns = (f,) + gs
   return fn
+
+# alias for "function pipelines"
+pipeline = fcompose
 
 # compose functions in reverse order (reverse functional composition, "after")
 # so: rcompose(f, g, h)(x) = f(g(h(x)))
@@ -4381,6 +4383,7 @@ def rcompose(*fns):
   """
   return fcompose(*(reversed(fns)))
 
+# see: operator.is_none, operator.is_not_none (Python 3.14+)
 is_none = (lambda x: x is None)
 is_not_none = (lambda x: x is not None)
 is_square_p = (lambda x: is_square(x) is not None)  # = fcompose(is_square, is_not_none)
