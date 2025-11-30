@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Nov 26 08:16:01 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Nov 30 09:21:35 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -235,11 +235,11 @@ SubstitutedSum         - a class for solving substituted addition sums
 Timer                  - a class for measuring elapsed timings
 """
 
-# use Python 3 style print() and division
+# use Python 3 style print() and division in Python 2
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-11-25" # <year>-<month>-<number>
+__version__ = "2025-11-28" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -825,7 +825,7 @@ def seq_all_same(seq, **kw):
   True
   >>> seq_all_same([1, 1, 1, 1, 1, 1], value=4)
   False
-  >>> seq_all_same(Primes(expandable=1))
+  >>> seq_all_same(primes.irange(1, inf))
   False
   """
   return seq_all_same_r(seq, **kw).same
@@ -850,7 +850,7 @@ def zip_eq(*ss, **kw):
   """
   check sequences have the same elements.
 
-  the 'strict' argument is passsed to zip (which supported in some Python
+  the 'strict' argument is passsed to zip (which is supported in some Python
   versions, and throws an error if the inputs are not of equal length)
 
   the 'first' parameter limits checks for the first <k> elements
@@ -2694,7 +2694,9 @@ def ulambda(args, expr=None):
     #expr = sprintf("lambda *_x_: [{expr} for [{args}] in [_x_]][0]")
     #expr = sprintf("lambda *_x_: peek({expr} for [{args}] in [_x_])")
     expr = str.format("lambda *_x_: next({expr} for [{args}] in [_x_])", expr=expr, args=args)
-  return eval(expr)
+  # evaluate in the parent scope
+  frame = sys._getframe(1)
+  return eval(expr, frame.f_globals, frame.f_locals)
 
 # count the number of occurrences of a predicate in an iterator
 def icount(seq, p=None, t=None):
@@ -2709,8 +2711,8 @@ def icount(seq, p=None, t=None):
 
   which is what icount_exactly(seq, p, n) does.
 
-  This will examine all elements of <seq> to verify there are exactly 4 primes
-  less than 10:
+  This will examine all elements of <seq> to verify there are exactly
+  4 primes less than 10:
   >>> icount_exactly(irange(1, 10), is_prime, 4)
   True
 
@@ -2738,10 +2740,10 @@ def icount(seq, p=None, t=None):
   >>> icount_at_most(irange(1, 100), is_prime, 20)
   False
 
-  If <p> is not specified a function that always returns True is used,
-  so you can use this function to count the number of items in a (finite) iterator:
+  If <p> is not specified a function that always returns True is used, so you
+  can use this function to count the number of items in a (finite) iterator:
 
-  >>> icount(Primes(1000))
+  >>> icount(primes.between(1, 1000))
   168
 
   """
@@ -6954,7 +6956,7 @@ def last(seq, count=1, fn=list):
 
   >>> last([1, 2, 3, 4])
   [4]
-  >>> last(Primes(30), 3)
+  >>> last(primes.between(1, 30), 3)
   [19, 23, 29]
   """
   try:
