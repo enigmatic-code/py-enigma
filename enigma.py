@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Nov 30 09:21:35 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Dec  5 14:26:15 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-11-28" # <year>-<month>-<number>
+__version__ = "2025-12-01" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -2667,7 +2667,7 @@ def cproduct(ss, **kw):
 #
 #   fn = ulambda("(x, (y, z)): x + y + z")
 #
-def ulambda(args, expr=None):
+def ulambda(args, expr=None, env=None):
   """
   provide an equivalent to the Python 2 expression:
 
@@ -2694,9 +2694,12 @@ def ulambda(args, expr=None):
     #expr = sprintf("lambda *_x_: [{expr} for [{args}] in [_x_]][0]")
     #expr = sprintf("lambda *_x_: peek({expr} for [{args}] in [_x_])")
     expr = str.format("lambda *_x_: next({expr} for [{args}] in [_x_])", expr=expr, args=args)
-  # evaluate in the parent scope
-  frame = sys._getframe(1)
-  return eval(expr, frame.f_globals, frame.f_locals)
+  if env is None:
+    # evaluate in the parent scope
+    frame = sys._getframe(1)
+    env = (frame.f_globals, frame.f_locals)
+  (globals, locals) = env
+  return eval(expr, globals, locals)
 
 # count the number of occurrences of a predicate in an iterator
 def icount(seq, p=None, t=None):
@@ -4525,7 +4528,7 @@ def is_triangular(n):
   """
   check positive integer <n> is a triangular number.
 
-  if <n> is a triangular number, returns integer <k> such that T(k) == n.
+  if <n> is a triangular number, returns integer <k> such that tri(k) == n.
   if <n> is not a triangular number, returns None.
 
   >>> is_triangular(5050)
