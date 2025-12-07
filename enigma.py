@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Dec  5 14:26:15 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Dec  7 09:28:19 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-12-01" # <year>-<month>-<number>
+__version__ = "2025-12-06" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -10399,6 +10399,18 @@ def writelines(fh, lines, sep=None, flush=1):
     fh.write(sep)
   if flush: fh.flush()
 
+# read lines from <fh>
+# strip (1 = newlines, 2 = comments)
+def readlines(fh, strip=3, fn=None, st=bool):
+  while True:
+    x = fh.readline()
+    if not x: break
+    if strip & 1: x = x.strip()
+    if strip & 2: x = x.partition('#')[0]
+    if fn: x = fn(x)
+    if st(x):
+      yield x
+
 # split string <s> on any of the characters in <sep>
 _split_sep = ',|+'
 
@@ -15162,7 +15174,7 @@ enigma.py has the following command-line usage:
       --run:verbose   (or -rv)
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.14.0',
+  version=__version__, python='2.7.18', python3='3.14.2',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
