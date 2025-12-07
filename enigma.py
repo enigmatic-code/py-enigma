@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Dec  7 09:28:19 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Dec  7 09:42:34 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-12-06" # <year>-<month>-<number>
+__version__ = "2025-12-07" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -10402,6 +10402,17 @@ def writelines(fh, lines, sep=None, flush=1):
 # read lines from <fh>
 # strip (1 = newlines, 2 = comments)
 def readlines(fh, strip=3, fn=None, st=bool):
+  """
+  read lines from file handle <fh>
+
+  strip = 1 will strip trailing whitespace (including newlines)
+  strip = 2 will strip #-comments
+  strip = 3 does both (default)
+
+  fn = function to manipulate (stripped) lines (default = None)
+
+  st = check for (stripped, manipulated) lines (default = bool)
+  """
   while True:
     x = fh.readline()
     if not x: break
