@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Dec  7 09:42:34 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Dec  8 14:52:48 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-12-07" # <year>-<month>-<number>
+__version__ = "2025-12-08" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -4676,11 +4676,11 @@ def _roots(domain, include, F, *nds):
 
 # find roots of a quadratic equation
 # domain = "Z" (integer), "Q" (rational), "F" (float), "C" (complex float)
-def quadratic(a, b, c, domain="Q", include="+-0", F=None):
+def quadratic(a, b, c, v=0, domain="Q", include="+-0", F=None):
   """
   find roots of the quadratic equation:
 
-     a.x^2 + b.x + c = 0
+     a.x^2 + b.x + c = v
 
   in the specified domain:
 
@@ -4699,6 +4699,9 @@ def quadratic(a, b, c, domain="Q", include="+-0", F=None):
     if F is None: F = Rational()
   else:
     raise ValueError(str.format("quadratic: invalid domain {domain!r}", domain=domain))
+
+  # if v specified?
+  if v: c -= v
 
   # linear equation?
   if a == 0:
@@ -10391,17 +10394,25 @@ def gensym(x):
   gensym.i += 1
   return concat(x, gensym.i)
 
-# file.writelines does NOT include newline characters
-def writelines(fh, lines, sep=None, flush=1):
-  if sep is None: sep = os.linesep
+# NOTE: file.writelines does NOT include newline characters
+def writelines(fh, lines, sep=os.linesep, flush=1):
   for line in lines:
     fh.write(line)
-    fh.write(sep)
+    if sep: fh.write(sep)
   if flush: fh.flush()
 
+def _readlines(fh, strip=3, fn=None, st=bool):
+  while True:
+    x = fh.readline()
+    if not x: break
+    if strip & 2: x = x.partition('#')[0]  # strip #-comments
+    if strip & 1: x = x.strip()  # strip whitespace
+    if fn: x = fn(x)
+    if st(x):
+      yield x
+
 # read lines from <fh>
-# strip (1 = newlines, 2 = comments)
-def readlines(fh, strip=3, fn=None, st=bool):
+def readlines(fh, strip=3, fn=None, st=bool, first=None):
   """
   read lines from file handle <fh>
 
@@ -10412,15 +10423,14 @@ def readlines(fh, strip=3, fn=None, st=bool):
   fn = function to manipulate (stripped) lines (default = None)
 
   st = check for (stripped, manipulated) lines (default = bool)
+
+  first = stop after returning the first <first> valid lines
   """
-  while True:
-    x = fh.readline()
-    if not x: break
-    if strip & 1: x = x.strip()
-    if strip & 2: x = x.partition('#')[0]
-    if fn: x = fn(x)
-    if st(x):
-      yield x
+  # just read the first few lines?
+  if first is not None:
+    return ifirst(_readlines(fh, strip=strip, fn=fn, st=st), first)
+  else:
+    return _readlines(fh, strip=strip, fn=fn, st=st)
 
 # split string <s> on any of the characters in <sep>
 _split_sep = ',|+'
