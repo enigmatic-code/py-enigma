@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec  8 14:52:48 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Dec  8 15:02:57 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-12-08" # <year>-<month>-<number>
+__version__ = "2025-12-09" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -4729,11 +4729,11 @@ def quadratic(a, b, c, v=0, domain="Q", include="+-0", F=None):
   return _roots(domain, '', None)
 
 # find roots of a cubic equation
-def cubic(a, b, c, d, domain='Q', include="+-0", F=None):
+def cubic(a, b, c, d, v=0, domain='Q', include="+-0", F=None):
   """
   find roots of the cubic equation:
 
-     a.x^3 + b.x^2 + c.x + d = 0
+     a.x^3 + b.x^2 + c.x + d = v
 
   in the specified domain:
 
@@ -4752,6 +4752,9 @@ def cubic(a, b, c, d, domain='Q', include="+-0", F=None):
     if F is None: F = Rational()
   else:
     raise ValueError(str.format("cubic: invalid domain {domain!r}", domain=domain))
+
+  # is v specified?
+  if v: d -= v
 
   # is quadratic?
   if a == 0:
