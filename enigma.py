@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec  8 15:02:57 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Dec 14 11:31:40 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-12-09" # <year>-<month>-<number>
+__version__ = "2025-12-10" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -1404,6 +1404,10 @@ def clump_val(seq, fn=None):
   """
   separate <seq> into contiguous blocks of repeated values
   (according to function <fn>).
+
+  returns (<value>, <seq-items>) pairs
+
+  use clump() if you just want the <seq-items> values.
 
   see also: itertools.groupby(seq, fn).
   """
@@ -2685,7 +2689,6 @@ def ulambda(args, expr=None, env=None):
   """
   if expr is None:
     (args, _, expr) = (x.strip() for x in args.partition(":"))
-
   if _python == 2:
     # in Python 2 it is straightforward lambda
     expr = str.format("lambda {args}: {expr}", args=args, expr=expr)
@@ -2698,8 +2701,7 @@ def ulambda(args, expr=None, env=None):
     # evaluate in the parent scope
     frame = sys._getframe(1)
     env = (frame.f_globals, frame.f_locals)
-  (globals, locals) = env
-  return eval(expr, globals, locals)
+  return eval(expr, env[0], env[1])
 
 # count the number of occurrences of a predicate in an iterator
 def icount(seq, p=None, t=None):
@@ -12180,21 +12182,36 @@ def substituted_expression(*args, **kw):
   for r in SubstitutedExpression(*args, **kw).solve():
     yield r
 
-# useful in square root extractions (see: sphinx5.run, sphinx10.run, sphinx12.run)
+# useful in square root extractions (see: sphinx05.run, sphinx10.run, sphinx12.run)
 # [ https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Decimal_(base_10) ]
 @static(base=10)
-def sqrx(p, c, x):
+def sqrx(x, y, z=None):
   """
-  perform a step in the extraction of a square root
+  perform a step in the extraction of a square root:
 
-  p = digits of the square root extracted so far
-  c = current value in the extraction
-  x = next digit in the extraction
+  2-argument form:
+
+  sqrx(x, y) = y * (2 * base * x + y)
+    x = digits of the square root extracted so far
+    y = next digit in the extraction
+
+  3-argument from:
+
+  sqrx(p, c, x)
+    p = digits of the square root extracted so far
+    c = current value in the extraction
+    x = next digit in the extraction
   return = next y value (to be subtracted from c)
 
   None is returned if x is not the next digit in the extraction.
+
+  the base can be set via: sqrx.base = <int>
   """
-  fn = lambda p, x, b=sqrx.base: x * (2 * b * p + x)
+  fn = lambda x, y, b=sqrx.base: y * (2 * b * x + y)
+  # 2-argument form:
+  if z is None: return fn(x, y)
+  # (obsolete) 3-argument form:
+  (p, c, x) = (x, y, z)
   (y, y1) = (fn(p, x), fn(p, x + 1))
   if y <= c < y1: return y
 
