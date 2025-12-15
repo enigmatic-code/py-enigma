@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Dec 14 11:31:40 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Dec 15 08:31:47 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-12-10" # <year>-<month>-<number>
+__version__ = "2025-12-11" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -2818,8 +2818,9 @@ def find(seq, v):
 
 def rfind(seq, v):
   """find the last index of a value in a sequence, return -1 if not found"""
-  i = find(seq[::-1], v)
-  return (-1 if i == -1 else len(s) - i - 1)
+  n = len(seq)
+  i = find(reversed(seq), v)
+  return (-1 if i == -1 else n - i - 1)
 
 # trim elements from a sequence
 def trim(seq, head=0, tail=0, fn=None):
