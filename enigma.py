@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec 15 22:27:40 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Dec 18 10:38:02 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-12-15" # <year>-<month>-<number>
+__version__ = "2025-12-17" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -9872,6 +9872,34 @@ def output_div(a, b, rem=0, base=10, pre='', start=None, end=None):
     printf("{pre}{p} (rem)", p=fmt(p, width=w))
     s = ('-' * ndigits(max(p, q), base=base)).rjust(w)
   printf("{pre}{s}", s=s.replace('-', '='))
+  if end is not None: printf("{end}")
+
+def output_sqrx(x, r=None, base=10, pre='', start=None, end=None):
+  """output the extraction of the square root of <x>"""
+  if start is not None: printf("{start}")
+  if r is None: r = isqrt(x)
+  n = ndigits(x, base=base)
+  fmt = partial(int2base, base=base, pad=' ')
+  printf("{pre}   {x}{r}", r=fmt(r, group=1, sep=' '), x=' ' * (n + 1 - 2*ndigits(r, base=base)))
+  printf("{pre}  -{x}", x='-' * n)
+  printf("{pre}\\/ {x}", x=fmt(x))
+  # chop digits of x in pairs
+  xds = nsplit(x, base=base*base)
+  rds = nsplit(r, base=base)
+  w = (1 if xds[0] < base else 2)
+  r = z = 0
+  sqrx.base = base
+  for (i, (xd, d)) in enumerate(zip(xds, rds)):
+    z = z*base*base + xd
+    if i > 0 and d > 0: printf("{pre}   {z}", z=fmt(z, width=w).rjust(w))
+    p = sqrx(r, d)
+    z -= p
+    if d > 0:
+      printf("{pre}   {p}", p=fmt(p, width=w))
+      printf("{pre}   {s}", s=(('=' if z == 0 else '-') * ndigits(p, base=base)).rjust(w))
+    w += 2
+    r = r*base + d
+  if z: printf("{pre}   {z} (rem)", z=fmt(z, width=w).rjust(w))
   if end is not None: printf("{end}")
 
 ###############################################################################
