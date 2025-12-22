@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Dec 18 10:38:02 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Dec 22 22:13:14 2025 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-12-17" # <year>-<month>-<number>
+__version__ = "2025-12-22" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -9856,7 +9856,7 @@ def output_div(a, b, rem=0, base=10, pre='', start=None, end=None):
   printf("{pre}{b} ) {a}", b=fmt(b, width=kb), a=fmt(a, width=ka))
   (ds, p, w, s) = (nsplit(a, base=base, fn=list), 0, kb + 3, None)
   while ds:
-    p = 10 * p + ds.pop(0)
+    p = base * p + ds.pop(0)
     q = floor(p, b)
     w += 1
     if q > 0:
@@ -12212,7 +12212,7 @@ def substituted_expression(*args, **kw):
 # useful in square root extractions (see: sphinx05.run, sphinx10.run, sphinx12.run)
 # [ https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Decimal_(base_10) ]
 @static(base=10)
-def sqrx(x, y, z=None):
+def sqrx(x, y=None, z=None):
   """
   perform a step in the extraction of a square root:
 
@@ -12234,6 +12234,8 @@ def sqrx(x, y, z=None):
 
   the base can be set via: sqrx.base = <int>
   """
+  # 1-argument form (same as: sqrx(0, y) = y*y
+  if y is None: return x * x
   fn = lambda x, y, b=sqrx.base: y * (2 * b * x + y)
   # 2-argument form:
   if z is None: return fn(x, y)
