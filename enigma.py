@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Dec 22 22:13:14 2025 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jan  1 11:56:23 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-12-22" # <year>-<month>-<number>
+__version__ = "2025-12-27" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -1114,6 +1114,7 @@ def nconcat(*digits, **kw):
 def nsplitter(n, k=None, base=10, validate=0):
   """split integer <n> into digits, starting with the least significant digit"""
   if base < 2: raise ValueError(str.format("invalid base: {base!r}", base=base))
+  if n == inf or n == -inf: raise ValueError(str.format("invalid number: {n!r}", n=n))
   if validate: (n, base) = (as_int(n), as_int(base, include='+'))
   n = abs(n)
   if k is None:
@@ -1184,10 +1185,12 @@ def ndigits(n, base=10, validate=0):
   """
   return the number of digits in a number, when represented in the specified base.
 
+  if the number is not an integer, only the integer part is considered.
+
   >>> ndigits(factorial(70))
   101
   """
-  #return sum(1 for _ in nsplitter(n, base=base, validate=validate))
+  if n == inf or n == -inf: return inf
   return icount(nsplitter(n, base=base, validate=validate))
 
 # TODO: maybe: ndigit(n, i, j, k, ...) -> extract digits i, j, k from n
@@ -3748,7 +3751,7 @@ def prime_factor_h(n, ps=None, end=None, nf=0, mr=0, mrr=0):
 
     # is this a prime in the sieve?
     if n < ps.max:
-      if f == 0 and ps.is_prime(n):
+      if f == 0 and ps.contains(n):
         yield (n, 1)
         return
 
@@ -6198,9 +6201,9 @@ else:
 def strfmt(fmt='', fn=None, vs=None, frame=None):
   """
   format the string <fmt> using substitutions from:
-    function <fn> (in Python 3) for dynamic lookup
-    dictionary <vs>
-    local/global variables in frame <frame>
+  - function <fn> (in Python 3) for dynamic lookup
+  - dictionary <vs>
+  - local/global variables in frame <frame>
   """
   if isinstance(frame, int): frame = sys._getframe(frame)
   return _sprintf(fmt, fn, vs, frame)
@@ -9372,11 +9375,12 @@ class _PrimeSieveE6(object):
   tuples = subsets  # best to use subsets()
 
   # prime test (may throw IndexError if n is too large)
-  def is_prime(self, n, validate=0):
+  def contains(self, n, validate=0):
     """
-    check to see if the number is a prime.
+    check if the number <n> is a prime in the sieve.
 
-    (may throw IndexError for numbers larger than the sieve).
+    this is a constant time lookup in the sieve, and may throw
+    IndexError for numbers larger than the sieve.
     """
     if n is None: return None
     if validate: n = as_int(n, include="0+")
@@ -9386,10 +9390,32 @@ class _PrimeSieveE6(object):
     if self.expandable: self.expand(n)
     return bool(self.sieve[n // 3])
 
-  prime = is_prime
-
   # allows use of "in"
-  __contains__ = is_prime
+  __contains__ = contains
+
+  # alternative "is_prime" test by searching the sieve for prime factors
+  def is_prime(self, n, validate=0):
+    """
+    check if the number <n> is prime, either if it is contained in the sieve
+    or by searching for prime factors that are contained in the sieve.
+
+    this can test numbers up to the square of the size of the sieve.
+    """
+    if n is None: return None
+    if validate: n = as_int(n, include="0+")
+    if n < 5: return (n == 2 or n == 3)
+    r = n % 6
+    if r != 1 and r != 5: return False
+    # for numbers less then the sieve size, we can just look them up
+    if n <= self.max: return bool(self.sieve[n // 3])
+    # otherwise we look for prime factors
+    r = isqrt(n)
+    if self.expandable: self.expand(r)
+    for p in self.irange(2, r):
+      if n % p == 0: return False
+    return True
+
+  prime = is_prime
 
   def is_composite(self, n, validate=0):
     if n is None: return None
@@ -9453,7 +9479,7 @@ class _PrimeSieveE6(object):
     factors.
 
     Note: By default this will only return primes up to the limit of
-    the sieve, so may not be a complete factorisation of <n>.  However
+    the sieve, so may not be a complete factorisation of <n>. However
     when <mr> is set it will also attempt to look for larger
     probabalistic prime factors.
     """
@@ -9524,7 +9550,7 @@ class _PrimeSieveE6X(_PrimeSieveE6):
   True
 
   The sieve will automatically expand as it is used:
-  >>> primes.is_prime(17000023)
+  >>> primes.contains(17000023)
   True
   >>> primes.max
   17000023
