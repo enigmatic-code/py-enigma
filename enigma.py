@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jan  1 11:56:23 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jan  7 09:21:05 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2025-12-27" # <year>-<month>-<number>
+__version__ = "2026-01-04" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -4157,7 +4157,7 @@ def sumsq(xs): "sumsq(xs) = sum(sq(x) for x in xs)"; return sum(x * x for x in x
 def isqrt(n):
   # type: (int) -> int | NoneType
   """
-  calculate intf(sqrt(n)), for integer n.
+  calculate intf(sqrt(n)), for non-negative integer n.
 
   See also: math.isqrt (Python 3.8+), gmpy2.isqrt().
 
@@ -4170,8 +4170,10 @@ def isqrt(n):
   >>> isqrt(17)
   4
   """
-  if n < 0: return None
-  if n < 4: return int(n > 0)
+  if n is None or n < 0: return None
+  if n == inf: return inf
+  if n < 4: return (0 if n < 1 else 1)
+  n = int(n)  # just the integer part
   if isqrt.impl: return isqrt.impl(n)  # use math.isqrt() if available
 
   # use the math.isqrt algorithm
@@ -4492,7 +4494,14 @@ def is_power_of(n, k, validate=0):
   return (i if m == 1 else None)
 
 # alias (but see also ndigits())
-ilog = is_power_of
+def ilog(x, k=10, validate=0):
+  """
+  return the largest positive integer <n> such that: pow(<k>, <n>) <= <x>.
+  """
+  if validate: k = as_int(k, include="+")
+  if x == inf or x is None: return x
+  if x < 1: raise ValueError("ilog: value must be 1+")
+  return ndigits(int(x), base=k) - 1
 
 def tri(n):
   """
