@@ -6,13 +6,13 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jan  7 09:21:05 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jan 14 14:23:58 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
 # URI:          http://www.magwag.plus.com/jim/enigma.html
 #
-# (c) Copyright 2009-2025, Jim Randell, all rights reserved.
+# (c) Copyright 2009-2026, Jim Randell, all rights reserved.
 #
 ###############################################################################
 # -*- mode: Python; python-indent-offset: 2; coding: ascii -*-
@@ -43,7 +43,7 @@ cbrt                   - the (real) cube root of a number
 ceil                   - generalised ceiling function
 chain                  - see: flatten()
 choose                 - choose a sequence of values satisfying some functions
-chunk                  - go through an iterable in chunks
+chunk                  - go through a sequence in chunks
 clock                  - clock arithmetic variant on mod()
 clump, clump_val       - collect contiguous blocks of the same value
 collect                - collect items according to accept/reject criteria
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-01-04" # <year>-<month>-<number>
+__version__ = "2026-01-13" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -1380,7 +1380,7 @@ def rotate(s, k=1):
 # or you can use itertools.izip_longest(*[iter(l)]*n) for padded chunks
 def chunk(seq, n=2, pad=0, value=None, fn=tuple):
   """
-  iterate through iterable <seq> in chunks of size <n>.
+  iterate through <seq> in chunks of size <n>.
 
   (for overlapping tuples see tuples())
 
@@ -2429,9 +2429,9 @@ def anagram(s):
 # see also partition() recipe from itertools documentation
 # (but note that itertools.partition() returns (false, true) lists)
 @static(rtype=None)
-def filter2(p, i, fn=list):
+def filter2(p, seq, fn=list):
   """
-  use a predicate to partition an iterable into those elements that
+  use a predicate to partition a sequence into those elements that
   satisfy the predicate, and those that do not.
 
   returns the partition of the original sequence as:
@@ -2445,10 +2445,10 @@ def filter2(p, i, fn=list):
 
   alias: partition()
 
-  >>> tuple(filter2(lambda n: n % 2 == 0, irange(1, 10)))
+  >>> tuple(filter2((lambda n: n % 2 == 0), irange(1, 10)))
   ([2, 4, 6, 8, 10], [1, 3, 5, 7, 9])
   """
-  t = list((x, p(x)) for x in i)
+  t = list((x, p(x)) for x in seq)
   if filter2.rtype is None: filter2.rtype = namedtuple('Filter2', 'true false')
   return filter2.rtype(fn(x for (x, v) in t if v), fn(x for (x, v) in t if not v))
 
@@ -6597,7 +6597,7 @@ def flattened(s, depth=None, test=_flatten_test, fn=None):
 
   <test> can be used to determine how objects are flattened, it should return either
   - None, if the object is not to be flattened, or
-  - an iterable of objects representing one level of flattening
+  - a sequence of objects representing one level of flattening
   default behaviour is to flatten sequences other than strings
 
   >>> list(flattened([[1, [2, [3, 4, [5], [[]], [[6, 7], 8], [[9]]]], []]]))
@@ -8511,22 +8511,22 @@ class Accumulator(object):
         # otherwise, just record the data verbatim
         self.data = data
 
-  def accumulate_from(self, s):
-    """accumulate values from iterable object <s>"""
-    for v in s:
+  def accumulate_from(self, seq):
+    """accumulate values from sequence <seq>"""
+    for v in seq:
       self.accumulate(v)
     return self
 
-  def accumulate_data_from(self, s, value=0, data=1):
+  def accumulate_data_from(self, seq, value=0, data=1):
     """
-    accumulate values and data from iterable object <s>.
+    accumulate values and data from sequence <seq>.
 
     <value>, <data> can be an index into elements from <s>
     or a function to extract the appropriate value from an element.
     """
     if not callable(value): value = item(value)
     if not callable(data): data = item(data)
-    for x in s:
+    for x in seq:
       self.accumulate_data(value(x), data(x))
     return self
 
