@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jan 14 14:23:58 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jan 19 09:53:04 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -84,15 +84,15 @@ farey                  - generate Farey sequences of coprime pairs
 fcompose               - forward functional composition
 fdiv                   - float division
 fib                    - generate fibonacci sequences
-filter2                - partition an iterator into values that satisfy a predicate, and those that do not
-filter_unique          - partition an iterator into values that are unique, and those that are not
+filter2                - partition a sequence into values that satisfy a predicate, and those that do not
+filter_unique          - partition a sequence into values that are unique, and those that are not
 find, rfind            - find the index of an object in a sequence
 find_max               - find the maximum value of a function
 find_min               - find the minimum value of a function
 find_value             - find a location where a function has a specified value
 find_values            - find all locations where a function has a specified value
 find_zero              - find a location where a function is zero
-first, ifirst          - return items from the start of an iterator
+first, ifirst          - return items from the start of a sequence
 flatten, iflatten      - flatten a list of lists
 flattened              - fully flatten a nested structure
 floor                  - generalised floor function
@@ -102,14 +102,14 @@ gcd                    - greatest common divisor
 grid_adjacency         - adjacency matrix for an n x m grid
 group                  - collect values of a sequences into groups
 hypot, ihypot          - calculate hypotenuse
-icount, icount_*       - count the number of elements of an iterator that satisfy a predicate
+icount, icount_*       - count the number of elements of a sequence that satisfy a predicate
 implies                - logical implication (p -> q)
 int2base, int2str      - convert an integer to a string in the specified base
 int2bcd                - convert an integer to binary coded decimal
 int2roman              - convert an integer to a Roman Numeral
 int2words              - convert an integer to equivalent English words
 intc                   - ceiling conversion of float to int
-interleave             - interleave values from a bunch of iterators
+interleave             - interleave values from a bunch of sequences
 intersect              - find the intersection of a collection of containers
 intf                   - floor conversion of float to int
 intr                   - round a value to the nearest integer
@@ -191,7 +191,7 @@ sq                     - square of x
 sqrt, sqrtc, sqrtf     - the (positive) square root of a number
 static                 - decorator to simulate static variables
 subfactorial           - subfactorial function
-subsets, subseqs       - generate subsequences of an iterator
+subsets, subseqs       - generate subsequences of a sequence
 substitute             - substitute symbols for digits in text
 substituted_expression - a substituted expression (alphametic/cryptarithm) solver
 substituted_sum        - a solver for substituted sums
@@ -208,7 +208,7 @@ trirt                  - the (positive) triangular root of a number
 tuples                 - generate overlapping tuples from a sequence
 ulambda                - complex parameter unpacking
 union                  - construct the union of a bunch of containers
-uniq, uniq1            - unique elements of an iterator
+uniq, uniq1            - unique elements of a sequence
 unzip                  - inverse of zip
 unpack                 - return a function that unpacks its arguments
 update                 - create an updated version of a container object
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-01-13" # <year>-<month>-<number>
+__version__ = "2026-01-14" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -255,10 +255,10 @@ import re
 
 # (see also the "six" module)
 _pythonv = sys.version_info[0:2]  # Python version e.g. (2, 7) or (3, 11)
-if _pythonv[0] == 2:
+if _pythonv[0] < 3:
   # Python 2.x
   _python = 2
-  if _pythonv[1] < 7:
+  if _pythonv < (2, 7):
     print("[enigma.py] WARNING: Python {v} is very old. Things may not work.".format(v=sys.version.split(None, 1)[0]))
   xrange = xrange
   reduce = reduce
@@ -266,7 +266,7 @@ if _pythonv[0] == 2:
   raw_input = raw_input
   Sequence = collections.Sequence
   Iterable = collections.Iterable
-elif _pythonv[0] > 2:
+else:
   # Python 3.x
   _python = 3
   xrange = range
@@ -1003,7 +1003,7 @@ def concat(*args, **kw):
 # reverse a sequence or a map (maybe -> rev())
 # for a unicode string if will be considered as a sequence of codepoints
 # you might want to convert it to a sequence of graphemes instead
-def reverse(s, fn=None):
+def reverse(seq, fn=None):
   """
   return the reverse of a sequence (str, tuple, list) or map (dict).
 
@@ -1023,20 +1023,20 @@ def reverse(s, fn=None):
 
   """
   ## if it has a 'rev' attribute call that (note: list.reverse() modifies the list)
-  #if hasattr(s, 'rev'): return (s.rev() if fn is None else fn(s.rev()))
+  #if hasattr(seq, 'rev'): return (seq.rev() if fn is None else fn(seq.rev()))
   # if it is a dict, return a reverse map
-  if isinstance(s, dict): return type(s)((v, k) for (k, v) in s.items())
+  if isinstance(seq, dict): return type(seq)((v, k) for (k, v) in seq.items())
   # if it is not already a sequence, turn it into one
-  if not isinstance(s, Sequence): s = list(s)
+  if not isinstance(seq, Sequence): seq = list(seq)
   # if it is a string, return a string
   if fn is None:
-    if isinstance(s, basestring):
+    if isinstance(seq, basestring):
       fn = join
-    elif isinstance(s, tuple):
+    elif isinstance(seq, tuple):
       fn = tuple
     else:
       fn = list
-  return fn(reversed(s))
+  return fn(reversed(seq))
 
 rev = reverse
 
@@ -1366,7 +1366,7 @@ def split(x, fn=None):
   return list(map(fn, str(x))) if fn else list(str(x))
 
 # rotate a sequence (move k elements from the beginning to the end)
-def rotate(s, k=1):
+def rotate(seq, k=1):
   """
   rotate a sequence by moving <k> elements from the beginning to the end
 
@@ -1375,7 +1375,7 @@ def rotate(s, k=1):
   >>> rotate([1, 2, 3, 4], -1)
   [4, 1, 2, 3]
   """
-  return (s if k == 0 else s[k:] + s[:k])
+  return (seq if k == 0 else seq[k:] + seq[:k])
 
 # or you can use itertools.izip_longest(*[iter(l)]*n) for padded chunks
 def chunk(seq, n=2, pad=0, value=None, fn=tuple):
@@ -1528,12 +1528,12 @@ def intersect(ss, fn=set):
   raise ValueError("empty intersection")
 
 # return an element of a container
-def peek(s, k=0, **kw):
+def peek(seq, k=0, **kw):
   """
   return an element of a container.
 
   if k is specified the first k values chosen are discarded (so, for a
-  sequence, you will get s[k]).
+  sequence, you will get seq[k]).
 
   empty containers (or those with too few elements) return the
   specified 'default' value, or raise an IndexError.
@@ -1557,14 +1557,14 @@ def peek(s, k=0, **kw):
   if kw.pop('validate', None): k = as_int(k, include="0+")
   if kw and list(kw.keys()) != ['default']: raise TypeError(str.format("peek: unknown arguments {kw}", kw=seq2str(kw.keys())))
   if k >= 0:
-    if not isinstance(s, dict):
+    if not isinstance(seq, dict):
       # try to index into the container
       try:
-        return s[k]
+        return seq[k]
       except (KeyError, IndexError, TypeError):
         pass
     # try iterating through the container
-    for (i, x) in enumerate(s):
+    for (i, x) in enumerate(seq):
       if i == k:
         return x
   # return any default value
@@ -1574,16 +1574,16 @@ def peek(s, k=0, **kw):
     pass
   raise IndexError(str.format("invalid index {k}", k=k))
 
-def seq_get(s, k=None, default=None):
+def seq_get(seq, k=None, default=None):
   """
-  get the item at index <k> from sequence <s>, or return the
+  get the item at index <k> from sequence <seq>, or return the
   default value if the index is not valid (negative indices are not
   allowed).
 
-  (use peek(s, k) if you want to get an IndexError exception).
+  (use peek(seq, k) if you want to get an IndexError exception).
 
   if k is None, then a function is returned to get an item from the
-  specified sequence <s>.
+  specified sequence <seq>.
 
   >>> seq_get([1, 2, 3], 1)
   2
@@ -1595,9 +1595,9 @@ def seq_get(s, k=None, default=None):
   'b'
   """
   if k is None:
-    return partial(peek, s, default=default)
+    return partial(peek, seq, default=default)
   else:
-    return peek(s, k, default=default)
+    return peek(seq, k, default=default)
 
 def seq_items(seq, i=0):
   """
@@ -2336,7 +2336,7 @@ def subfactorial(n, validate=0):
 @static(select_fn=dict(), prepare_fn=dict())
 def subsets(s, size=None, min_size=0, max_size=None, select='C', prepare=None, fn=tuple):
   """
-  generate tuples representing the subsequences of a (finite) iterator.
+  generate tuples representing the subsequences of a (finite) sequence.
 
   'min_size' and 'max_size' can be used to limit the size of the
   subsequences or 'size' can be specified to produce subsequences of a
@@ -2708,7 +2708,7 @@ def ulambda(args, expr=None, env=None):
 def icount(seq, p=None, t=None):
   """
   count the number of elements in <seq> that satisfy predicate <p>,
-  the termination limit <t> controls how much of the iterator we visit,
+  the termination limit <t> controls how much of the sequence we visit,
   so we don't have to count all occurrences.
 
   So, to find if exactly <n> elements of <seq> satisfy <p> use:
@@ -2747,7 +2747,7 @@ def icount(seq, p=None, t=None):
   False
 
   If <p> is not specified a function that always returns True is used, so you
-  can use this function to count the number of items in a (finite) iterator:
+  can use this function to count the number of items in a (finite) sequence:
 
   >>> icount(primes.between(1, 1000))
   168
@@ -3043,9 +3043,9 @@ def choose(vs, fns, k=None, ss=None, distinct=0, increasing=0, gap=0, multi_vs=0
         for z in choose(vs, fns, k - 1, ss_, distinct, increasing, gap, multi_vs, multi_fns): yield z  #[Python 2]
 
 
-def first(s, count=1, skip=0, fn=list):
+def first(seq, count=1, skip=0, fn=list):
   """
-  return the first <count> items in iterator <s> (skipping the initial
+  return the first <count> items in sequence <seq> (skipping the initial
   <skip> items) as a list (or other object specified by <fn>).
 
   <count> can be a callable object, in which case items are collected
@@ -3068,20 +3068,20 @@ def first(s, count=1, skip=0, fn=list):
   # anything to skip?
   if callable(skip):
     # skip while <skip> is true
-    s = itertools.dropwhile(skip, s)
+    seq = itertools.dropwhile(skip, seq)
   elif skip > 0:
     # skip <count> elements [assume non-negative integer]
-    s = itertools.islice(s, skip, None)
+    seq = itertools.islice(seq, skip, None)
 
   if count == inf or count is None:
     # keep going to the end of the iterable
-    r = s
+    r = seq
   elif callable(count):
     # collect until <count> is false
-    r = itertools.takewhile(count, s)
+    r = itertools.takewhile(count, seq)
   else:
     # collect <count> elements [assume positive integer]
-    r = itertools.islice(s, count)
+    r = itertools.islice(seq, count)
 
   return (r if fn is None else fn(r))
 
@@ -4591,7 +4591,7 @@ def repdigit(n, d=1, base=10):
   >>> repdigit(6, 7, base=16) == 0x777777
   True
   """
-  if not (0 <= d < base): raise ValueError(str.format("repdigit: invalid digit: {d!r}", d=d))
+  if not (0 <= d < base): raise ValueError(str.format("repdigit: invalid digit: {d!r} for base {base!r}", d=d, base=base))
   return d * ((base**n) - 1) // (base - 1)
 
 # Python 3.6: ...(*vs, root=math.sqrt)
@@ -9934,7 +9934,7 @@ def output_sqrx(x, r=None, base=10, pre='', start=None, end=None):
       printf("{pre}   {s}", s=(('=' if z == 0 else '-') * ndigits(p, base=base)).rjust(w))
     w += 2
     r = r*base + d
-  if z: printf("{pre}   {z} (rem)", z=fmt(z, width=w).rjust(w))
+  if z: printf("{pre} {z} (rem)", z=fmt(z, width=w).rjust(w))
   if end is not None: printf("{end}")
 
 ###############################################################################
