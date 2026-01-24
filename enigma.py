@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jan 19 09:53:04 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jan 24 09:10:05 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-01-14" # <year>-<month>-<number>
+__version__ = "2026-01-24" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -6273,7 +6273,7 @@ class Output():
         vs = frame.f_locals
         d = dict()
         for k in ['printf']:
-          fn = vs[k]
+          fn = vs.get(k)
           if fn:
             d[k] = fn
             vs[k] = self.printf
