@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jan 24 09:10:05 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Feb  1 13:51:50 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-01-24" # <year>-<month>-<number>
+__version__ = "2026-02-01" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -3148,7 +3148,7 @@ def converge(fn, v, m=identity, cmp=is_equal):
     if cmp(m0, m1): return v
     m0 = m1
 
-def uniq(seq, fn=None, verbose=0):
+def uniq(seq, fn=None, seen=(), verbose=0):
   """
   generate unique values from <seq> (maintaining order).
 
@@ -3161,7 +3161,7 @@ def uniq(seq, fn=None, verbose=0):
   >>> list(uniq(irange(1, 9), fn=(lambda x: x // 3)))
   [1, 3, 6, 9]
   """
-  seen = set()
+  seen = set(seen)
   for x in seq:
     r = (x if fn is None else fn(x))
     if r not in seen:
@@ -5421,7 +5421,7 @@ def diop_linear(a, b, c, mX=0, fn=0):
   return ((X0, Y0), (Xd, Yd))
 
 # multiple GCD
-def mgcd(a, *rest):
+def _mgcd(a, *rest):
   """
   GCD of multiple (two or more) integers.
 
@@ -5436,10 +5436,14 @@ def mgcd(a, *rest):
   >>> mgcd(56, 65, 671)
   1
   """
+  rest = set(rest)
+  rest.discard(a)
   return reduce(gcd, rest, a)
 
+mgcd = (getattr(math, 'gcd', _mgcd) if _pythonv > (3, 8) else _mgcd)
+
 # multiple LCM
-def mlcm(a, *rest):
+def _mlcm(a, *rest):
   """
   LCM of multiple (two or more) integers.
 
@@ -5448,7 +5452,11 @@ def mlcm(a, *rest):
   >>> mlcm(2, 3, 5, 9)
   90
   """
+  rest = set(rest)
+  rest.discard(a)
   return reduce(lcm, rest, a)
+
+mlcm = (getattr(math, 'lcm', _mlcm) if _pythonv > (3, 8) else _mlcm)
 
 def mlcmq(*qs):
   """
@@ -6277,8 +6285,7 @@ class Output():
           if fn:
             d[k] = fn
             vs[k] = self.printf
-        if d:
-          self._saved = (vs, d)
+        if d: self._saved = (vs, d)
     if self.timer:
       kw = dict()
       if isinstance(self.timer, basestring): kw['timer'] = self.timer
@@ -6988,7 +6995,7 @@ def last(seq, count=1, fn=list):
     x = None
     for x in tuples(seq, count, fn=list): pass
     if x is None: return
-  return (x if fn == list else fn(x))
+  return fn(x)
 
 def contains(seq, subseq):
   """
