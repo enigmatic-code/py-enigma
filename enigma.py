@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Feb  1 13:51:50 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Feb 14 08:00:57 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-02-01" # <year>-<month>-<number>
+__version__ = "2026-02-10" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -3461,7 +3461,7 @@ def divisors(n, k=1, fn=prime_factor, validate=0):
 
 def divisors_pairs(n, k=1, fn=prime_factor, every=0, validate=0):
   """
-  generate divisors pairs (a, b) with a <= b, such that a * b = pow(n, k).
+  generate divisors pairs (a, b) with a <= b, such that a * b = n**k.
 
   pairs are generated in order, by determining the factors of n.
 
@@ -4287,7 +4287,7 @@ def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
 # generate powers from a range
 def powers(a, b, k=2, step=1, fn=None):
   """
-  generate powers pow(n, k) for n in irange(a, b)
+  generate powers n**k for n in irange(a, b)
 
   >>> list(powers(1, 10))
   [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
@@ -7947,6 +7947,21 @@ def polygon_area(ps, m=0.5, sum=math.fsum):
   """
   return m * sum(x1 * y2 - x2 * y1 for ((x1, y1), (x2, y2)) in tuples(ps, 2, circular=1))
 
+# cache the areas of unit 2-,3-,4-,6-,8-gons
+@static(cache={ 2: 0.0, 3: 0.4330127018922193, 4: 1.0, 6: 2.598076211353316, 8: 4.82842712474619 })
+def polygon_area_regular(n, x=1):
+  """
+  calculate the area of a regular <n>-gon with side <x>
+  """
+  cache = polygon_area_regular.cache
+  # calculate the area of a unit polygon
+  a = cache.get(n)
+  if a is None:
+    a = fdiv(0.25 * n, math.tan(fdiv(pi, n)))
+    cache[n] = a
+  if x == 1: return a
+  return a * x * x
+
 ###############################################################################
 
 # Roman Numerals
@@ -9249,14 +9264,14 @@ class _PrimeSieveE6(object):
 
   >>> _PrimeSieveE6(50).contents()
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
-  >>> primes = _PrimeSieveE6(1000000)
-  >>> primes.is_prime(10001)
+  >>> prms = _PrimeSieveE6(1000000)
+  >>> prms.is_prime(10001)
   False
-  >>> 10007 in primes
+  >>> 10007 in prms
   True
-  >>> sum(primes) == 37550402023
+  >>> sum(prms) == 37550402023
   True
-  >>> list(primes.irange(2, 47))
+  >>> list(prms.irange(2, 47))
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
 
   NOTE: if you make a large sieve it will use up lots of memory.
@@ -9403,11 +9418,7 @@ class _PrimeSieveE6(object):
     if n < 5: return (n == 2 or n == 3)  # 2, 3 -> T; 0, 1, 4 -> F
     r = n % 6
     if r != 1 and r != 5: return False  # (n % 6) != (1, 5) -> F
-    if self.expandable: self.expand(n)
     return bool(self.sieve[n // 3])
-
-  # allows use of "in"
-  __contains__ = contains
 
   # alternative "is_prime" test by searching the sieve for prime factors
   def is_prime(self, n, validate=0):
@@ -9415,7 +9426,10 @@ class _PrimeSieveE6(object):
     check if the number <n> is prime, either if it is contained in the sieve
     or by searching for prime factors that are contained in the sieve.
 
-    this can test numbers up to the square of the size of the sieve.
+    this can test numbers up to the square of the size of the sieve
+    (which will be expanded if necessary).
+
+    this is the function used to implement [[ n in prms ]].
     """
     if n is None: return None
     if validate: n = as_int(n, include="0+")
@@ -9432,6 +9446,9 @@ class _PrimeSieveE6(object):
     return True
 
   prime = is_prime
+
+  # allows use of "in"
+  __contains__ = is_prime
 
   def is_composite(self, n, validate=0):
     if n is None: return None
@@ -9461,7 +9478,9 @@ class _PrimeSieveE6(object):
     if n < 3: return 3
     i = (n + 1) // 3 + (n % 6 == 1)
     while True:
-      if self.expandable and not (i < len(self.sieve)): self.expand()
+      if self.expandable:
+        while i >= len(self.sieve):
+          self.expand()
       if self.sieve[i]: return (i * 3) + (i & 1) + 1
       i += 1
 
@@ -9548,28 +9567,27 @@ class _PrimeSieveE6X(_PrimeSieveE6):
 
   To find the 1000th prime,
   (actually a list of length 1 starting with the 1000th prime):
-  >>> primes = _PrimeSieveE6X(1000)
-  >>> first(primes, 1, 999)
+  >>> prms = _PrimeSieveE6X(1000)
+  >>> first(prms, 1, skip=999)
   [7919]
 
   We can then find the one millionth prime and the generator will
   expand as necessary:
-  >>> first(primes, 1, 999999)
+  >>> first(prms, 1, skip=999999)
   [15485863]
 
   We can see what the current maximum number considered is:
-  >>> primes.max
+  >>> prms.max
   16384000
 
-  And can test for primality up to this value:
-  >>> 1000003 in primes
+  And can quickly test for primality up to this value:
+  >>> 1000003 in prms
   True
 
-  The sieve will automatically expand as it is used:
-  >>> primes.contains(17000023)
+  But we can use the sieve to test for larger primes (and it will
+  be expanded as necessary):
+  >>> 17000023 in prms
   True
-  >>> primes.max
-  17000023
   """
   def __init__(self, n, array=_primes_array, fn=_primes_chunk, verbose=0):
     """
@@ -9646,20 +9664,20 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=
   If we are interested in a limited collection of primes, we can do
   this:
 
-  >>> primes = Primes(50)
-  >>> primes.contents()
+  >>> prms = Primes(50)
+  >>> prms.contents()
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
-  >>> sum(primes)
+  >>> sum(prms)
   328
-  >>> 39 in primes
+  >>> 39 in prms
   False
 
   The collection can be extended manually to a new upper limit:
 
-  >>> primes.expand(100)
-  >>> sum(primes)
+  >>> prms.expand(100)
+  >>> sum(prms)
   1060
-  >>> 97 in primes
+  >>> 97 in prms
   True
 
   but it doesn't automatically expand.
@@ -9667,17 +9685,17 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=
   If we want an automatically expanding version, we can set the
   'expandable' flag to True.
 
-  >>> primes = Primes(50, expandable=1)
+  >>> prms = Primes(50, expandable=1)
 
   We can find out the current size and contents of the sieve:
-  >>> primes.max
+  >>> prms.max
   50
-  >>> primes.contents()
+  >>> prms.contents()
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
 
   But if we use it as a generator it will expand indefinitely, so we
   can only sum a restricted range:
-  >>> sum(primes.range(0, 100))
+  >>> sum(prms.range(0, 100))
   1060
 
   If you don't know how many primes you'll need you can just use
@@ -9685,7 +9703,7 @@ def Primes(n=None, expandable=0, array=_primes_array, fn=_primes_chunk, verbose=
   limit will double each time the sieve is expanded.
 
   So, to sum the first 1000 primes:
-  >>> sum(first(primes, 1000))
+  >>> sum(first(prms, 1000))
   3682913
   """
   # if n is None then make it expandable by default
