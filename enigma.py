@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Feb 14 08:00:57 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Feb 23 08:21:28 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-02-10" # <year>-<month>-<number>
+__version__ = "2026-02-22" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -1949,6 +1949,17 @@ class multiset(dict):
     """
     s = sorted(dict.items(self), key=(lambda t: t[::-1]), reverse=1)
     return (s if n is None else s[:n])
+
+  def multiplicity(self, n):
+    """
+    return elements with multiplicity <n>
+
+    <n> may be specified as a callable, for example: eq(3), lt(4).
+    """
+    fn = (n if callable(n) else eq(n))
+    for (k, v) in dict.items(self):
+      if fn(v):
+        yield (k, v)
 
   # provide some useful operations on multisets
 
@@ -4873,6 +4884,14 @@ def intr(x):
   d = int(d)
   if r >= 0.5: d += 1
   return (-d if neg else d)
+
+def snapf(f, **kw):
+  """snap float <f> to an integer, with tolerance <t>"""
+  t = kw.get('t', 1e-6)
+  i = intr(f)
+  if abs(f - i) <= t: return i
+  if 'default' in kw: return kw['default']
+  raise ValueError(str.format("snapf: value out of range {f!r} (t={t!r})", f=f, t=t))
 
 def divf(a, b):
   """
@@ -7821,6 +7840,23 @@ def triangle_point(b, a, c, div=fdiv, sqrt=sqrt):
 
 def triangle_height(b, a, c, div=fdiv, sqrt=sqrt): return triangle_point(b, a, c, div=div, sqrt=sqrt).y
 
+@static(rtype=None)
+def triangle_circumcircle(A, B, C):
+  """
+  find the circumcentre and circumradius of the triangle with vertices at points A, B, C.
+
+  the returned value is a named tuple: (centre=(x, y), radius=r)
+  """
+  if triangle_circumcircle.rtype is None: triangle_circumcircle.rtype = namedtuple('Circumcircle', 'centre radius')
+  ((Ax, Ay), (Bx, By), (Cx, Cy)) = (A, B, C)
+  (A2, B2, C2) = (Ax*Ax + Ay*Ay, Bx*Bx + By*By, Cx*Cx + Cy*Cy)
+  D = 2 * (Ax*(By - Cy) + Bx*(Cy - Ay) + Cx*(Ay - By))
+  U = P2(
+    fdiv(A2*(By - Cy) + B2*(Cy - Ay) + C2*(Ay - By), D),
+    fdiv(A2*(Cx - Bx) + B2*(Ax - Cx) + C2*(Bx - Ax), D)
+  )
+  return triangle_circumcircle.rtype(U, point_distance(U, A))
+
 # 2D geometry: a point is represented by (x, y)
 
 # 2D cartesian point, has 'x' and 'y' components, is also tuple (x, y)
@@ -10504,6 +10540,7 @@ def _readlines(fh, strip=3, fn=None, st=bool):
       yield x
 
 # read lines from <fh>
+@static(WHITESPACE=1, COMMENTS=2) # strip flags
 def readlines(fh, strip=3, fn=None, st=bool, first=None):
   """
   read lines from file handle <fh>
