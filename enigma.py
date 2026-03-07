@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Feb 23 08:21:28 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Mar  5 15:21:14 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-02-22" # <year>-<month>-<number>
+__version__ = "2026-03-05" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -1194,6 +1194,16 @@ def ndigits(n, base=10, validate=0):
   return icount(nsplitter(n, base=base, validate=validate))
 
 # TODO: maybe: ndigit(n, i, j, k, ...) -> extract digits i, j, k from n
+
+def is_ndigits(n, k, base=10, validate=0):
+  """check if <n> has <k> digits in the specified base"""
+  if n == inf or n == -inf: return (k == inf)
+  if validate: n = as_int(n)
+  n = abs(int(n))
+  x = base**(k - 1)
+  if n < x: return False
+  return n < x * base
+
 
 # maybe -> nrev()
 def nreverse(n, k=None, base=10, validate=0):
@@ -4886,7 +4896,7 @@ def intr(x):
   return (-d if neg else d)
 
 def snapf(f, **kw):
-  """snap float <f> to an integer, with tolerance <t>"""
+  """snap float <f> to an integer, with tolerance <t> (default: 1e-6)"""
   t = kw.get('t', 1e-6)
   i = intr(f)
   if abs(f - i) <= t: return i
@@ -5387,7 +5397,7 @@ poly_roots_mod.sqrtmod = poly_roots_mod_sqrtmod
 # find square roots of <a> mod <m>
 # this is OK for relatively small m, but more efficient (and complex)
 # approaches are available (e.g. sympy.ntheory.sqrt_mod_iter)
-def sqrtmod(a, m):
+def sqrtmod(a, m, k=1):
   """
   find square roots of a mod m.
 
@@ -5400,6 +5410,7 @@ def sqrtmod(a, m):
   >>> sorted(sqrtmod(-1, 25))
   [7, 18]
   """
+  if k > 1: m **= k
   a %= m
   for x in irange(0, m // 2):
     if (x * x) % m == a:
@@ -7174,7 +7185,8 @@ def express_quantities(t, ds, qs, ss=[]):
     for q in qs:
       t_ = t - d * q
       if t_ < 0: break
-      for r in express_quantities(t_, ds[1:], qs, ss + [q]): yield r
+      #yield from express_quantities(t_, ds[1:], qs, ss + [q]) #[Python 3]
+      for r in express_quantities(t_, ds[1:], qs, ss + [q]): yield r #[Python 2]
 
 # express total <t> using (<denomination>, <max-quantity>) pairs <vs>
 # vs = ordered list of (<denomination>, <max-quantity>) pairs
@@ -9041,6 +9053,10 @@ def poly_cyclotomic(n, fs=None, div=rdiv, fn=prime_factor):
 
 # wrap the whole lot up in a class
 
+# TODO: consider allowing an "offset" (or "shift") parameter that multiplies each coefficient
+# by x^n, which would allow us to do some handling of polynomials with negative coefficients
+# e.g.: a.x^-2 + b.x^-1 + c + d.x + e.x^2 = (a + b.x + c.x^2 + d.x^3 + e.x^4) . x^-2
+
 class Polynomial(list):
   """
   A class for manipulating polynomials in one variable.
@@ -9988,7 +10004,7 @@ def output_sqrx(x, r=None, base=10, pre='', start=None, end=None):
   for (i, (xd, d)) in enumerate(zip(xds, rds)):
     z = z*base*base + xd
     if i > 0 and d > 0: printf("{pre}   {z}", z=fmt(z, width=w).rjust(w))
-    p = sqrx(r, d)
+    p = d * (2 * base * r + d) # = sqrx(r, d)
     z -= p
     if d > 0:
       printf("{pre}   {p}", p=fmt(p, width=w))
@@ -12329,7 +12345,7 @@ def sqrx(x, y=None, z=None):
 
   None is returned if x is not the next digit in the extraction.
 
-  the base can be set via: sqrx.base = <int>
+  the base can be set via: sqrx.base = <n>
   """
   # 1-argument form (same as: sqrx(0, y) = y*y
   if y is None: return x * x
@@ -12339,7 +12355,7 @@ def sqrx(x, y=None, z=None):
   # (obsolete) 3-argument form:
   (p, c, x) = (x, y, z)
   (y, y1) = (fn(p, x), fn(p, x + 1))
-  if y <= c < y1: return y
+  return (y if y <= c < y1 else None)
 
 ###############################################################################
 
