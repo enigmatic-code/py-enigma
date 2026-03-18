@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Mar  5 15:21:14 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 18 07:51:18 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-03-05" # <year>-<month>-<number>
+__version__ = "2026-03-15" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -3591,8 +3591,10 @@ def is_prime(n, validate=0):
 
   # faster to just check divisors % 6 = (1, 5)
   if n % 5 == 0: return False
-  for x in irange(7, isqrt(n), step=6):
-    if n % x == 0 or n % (x + 4) == 0: return False
+  if n > 48:
+    for x in irange(7, isqrt(n), step=6):
+      if n % x == 0 or n % (x + 4) == 0:
+        return False
   return True
 
   ## used to be:
@@ -4923,10 +4925,8 @@ def floor(x, m=1):
   """
   return largest multiple of <m>, not greater than <x>.
   """
-  # [[ m is 1 ]] gives a SyntaxWarning
-  if m == 1: return intf(x)
-  return m * int(x // m)
-
+  if m == 1: return intf(x)  # [[ m is 1 ]] gives a SyntaxWarning
+  return x - (x % m)  # was: [[ m * int(x // m) ]]
 
 def divc(a, b):
   """
@@ -8122,7 +8122,7 @@ def base_digits(*args):
   if args: base_digits.digits = (args[0] or (str_digit + str_upper))
   return base_digits.digits
 
-def int2base(i, base=10, width=None, pad=None, group=None, sep=",", neg='-', digits=None):
+def int2base(i, base=10, width=None, pad=None, group=None, sep=",", neg='-', digits=None, validate=0):
   """
   convert an integer <i> to a string representation in the specified
   base <base>.
@@ -8167,6 +8167,7 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", neg='-', dig
   """
   if base < 2: raise ValueError("invalid base {base!r}".format(base=base))
   if digits is None: digits = base_digits()
+  i = (as_int(i) if validate else int(i))
   (p, r) = ('', None)
   if i < 0: (p, i) = (neg, -i)
   # if there aren't enough digits switch to {<digit>:<digit>:...} format
@@ -8322,7 +8323,7 @@ def __int2words(n, scale='short', sep='', hyphen=' '):
     (g, p, k) = (6, 1000000, 1)
   else:
     raise ValueError('Unsupported scale type: ' + scale)
-  i = (len(str(n)) - 1) // g
+  i = (ndigits(n) - 1) // g
   (d, r) = divmod(n, p**i)
   w = _illions[i - k] + 'illion'
   x = _int2words(d, scale, sep, hyphen) + ' ' + w
