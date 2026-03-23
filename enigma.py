@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Mar 23 08:38:27 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Mar 23 08:57:53 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-03-22" # <year>-<month>-<number>
+__version__ = "2026-03-23" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -5908,8 +5908,8 @@ def M(n, k):
 
   "If each bag contains 122 sweets, and they come in 5 different flavours
   how many different packets can there be?"
-  >>> M(5, 122)
-  10009125
+  >>> int2words(M(5, 122))
+  'ten million nine thousand one hundred and twenty five'
   """
   return C(n + k - 1, k)
 
