@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 18 07:51:18 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Mar 23 08:38:27 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-03-15" # <year>-<month>-<number>
+__version__ = "2026-03-22" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -912,8 +912,14 @@ def is_sorted(seq, strict=0, fn=operator.lt):
 
   if <strict> is not set, then adjacent values may also be equal
   """
-  f = (fn if strict else lambda x, y: x == y or fn(x, y))
-  return all(f(x, y) for (x, y) in tuples(seq, 2))
+  # this is faster than: [[ return all(f(x, y) for (x, y) in tuples(seq, 2)) ]]
+  if strict:
+    for (x, y) in tuples(seq, 2):
+      if not fn(x, y): return False
+  else:
+    for (x, y) in tuples(seq, 2):
+      if not (x == y or fn(x, y)): return False
+  return True
 
 def is_increasing(seq, strict=0): "check if <seq> is increasing"; return is_sorted(seq, strict=strict, fn=operator.lt)
 def is_decreasing(seq, strict=0): "check if <seq> is decreasing"; return is_sorted(seq, strict=strict, fn=operator.gt)
@@ -5886,6 +5892,7 @@ def nCr(n, r):
 
 C = nCr
 
+# also known as: "stars and bars" (or "sheep and fences")
 # NOTE: this corresponds to [[ select='R' ]] in subsets(), not [[ select='M' ]]
 def M(n, k):
   """
@@ -5898,6 +5905,11 @@ def M(n, k):
 
   >>> M(10, 3)
   220
+
+  "If each bag contains 122 sweets, and they come in 5 different flavours
+  how many different packets can there be?"
+  >>> M(5, 122)
+  10009125
   """
   return C(n + k - 1, k)
 
