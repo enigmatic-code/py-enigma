@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Mar 23 08:57:53 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Mar 24 13:38:16 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-03-23" # <year>-<month>-<number>
+__version__ = "2026-03-24" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -873,7 +873,10 @@ def zip_eq(*ss, **kw):
   if reverse: ss = (reversed(s) for s in ss)
   z = (zip(*ss, strict=strict) if strict is not None else zip(*ss))
   if k is not None: z = first(z, count=k, fn=iter)
-  return all(seq_all_same(vs) for vs in z)
+  # was: [[ return all(seq_all_same(vs) for vs in z) ]]
+  for vs in z:
+    if not seq_all_same(vs): return False
+  return True
 
 def ordered(*args, **kw):
   """
@@ -912,7 +915,7 @@ def is_sorted(seq, strict=0, fn=operator.lt):
 
   if <strict> is not set, then adjacent values may also be equal
   """
-  # this is faster than: [[ return all(f(x, y) for (x, y) in tuples(seq, 2)) ]]
+  # was: [[ return all(f(x, y) for (x, y) in tuples(seq, 2)) ]]
   if strict:
     for (x, y) in tuples(seq, 2):
       if not fn(x, y): return False
@@ -1878,12 +1881,18 @@ class multiset(dict):
 
   def is_duplicate(self, n=1):
     "does this multiset contain elements with multiplicity greater than <n>?"
-    return any(v > n for v in dict.values(self))
+    # was: [[ return any(v > n for v in dict.values(self)) ]]
+    for v in dict.values(self):
+      if v > n: return True
+    return False
 
   def all_same(self, n=None):
     "does this multiset contain only values with the same multiplicity (<n> if specified)"
     if n is None: return seq_all_same(dict.values(self))
-    return all(v == n for v in dict.values(self))
+    # was: [[ return all(v == n for v in dict.values(self)) ]]
+    for v in dict.values(self):
+      if v != n: return False
+    return True
 
   # all elements of the multiset
   # (for unique elements use: [[ s.keys() ]])
@@ -2054,7 +2063,10 @@ class multiset(dict):
     r = compare(self.size(), m.size())
     if r == 1 or (strict and r == 0): return False
     # check items
-    return all(count <= m.get(item, 0) for (item, count) in self.items())
+    # was: [[ return all(count <= m.get(item, 0) for (item, count) in self.items()) ]]
+    for (item, count) in self.items():
+      if count > m.get(item, 0): return False
+    return True
 
   # is this multiset m a superset of self?
   def issuperset(self, m, strict=0):
@@ -2207,7 +2219,10 @@ class multiset(dict):
     """
     ps = sorted(dict.items(self))
     t = self.sum()
-    return all(any(express_pairs(v, ps, t, k)) for v in vs)
+    # was: [[ return all(any(express_pairs(v, ps, t, k)) for v in vs) ]]
+    for v in vs:
+      if not any(express_pairs(v, ps, t, k)): return False
+    return True
 
   def sorted(self, key=None, reverse=False):
     """generate elements of the multiset in order"""
@@ -3597,6 +3612,7 @@ def is_prime(n, validate=0):
 
   # faster to just check divisors % 6 = (1, 5)
   if n % 5 == 0: return False
+  # was: [[ return n < 49 or all(n % x != 0 and n % (x + 4) != 0 for x in irange(7, isqrt(n), step=6)) ]]
   if n > 48:
     for x in irange(7, isqrt(n), step=6):
       if n % x == 0 or n % (x + 4) == 0:
@@ -3685,9 +3701,9 @@ def is_prime_mr(n, r=0, validate=0):
     return (0 if _is_composite(336781006125 % n, d, n, s) or _is_composite(9639812373923155 % n, d, n, s) else 2)
 
   # test remaining numbers with the 7 base set
-  if any(_is_composite(a % n, d, n, s) for a in (2, 325, 9375, 28178, 450775, 9780504, 1795265022)):
+  for a in (2, 325, 9375, 28178, 450775, 9780504, 1795265022):
     # definitely composite
-    return 0
+    if _is_composite(a % n, d, n, s): return 0
 
   # the 7 base set is completely accurate for n < 2^64:
   if n < 0x10000000000000000:
@@ -3695,9 +3711,10 @@ def is_prime_mr(n, r=0, validate=0):
     return 2
 
   # for larger numbers run further prime tests as specified
-  if r > 0 and any(_is_composite(randrange(2, n - 1), d, n, s) for _ in range(r)):
-    # definitely composite
-    return 0
+  if r > 0:
+    for _ in range(r):
+      # definitely composite
+      if _is_composite(randrange(2, n - 1), d, n, s): return 0
 
   # otherwise, probably prime
   return 1
@@ -5046,9 +5063,9 @@ duplicate = is_duplicate
 # this avoids creating a reversed copy of the sequence
 # Note: for unicode strings this will be checking the sequence of codepoints
 # you might want to convert the string to a sequence of graphemes first
-def is_palindrome(s):
+def is_palindrome(seq):
   """
-  check to see if sequence <s> is palindromic.
+  check to see if sequence <seq> is palindromic.
 
   >>> is_palindrome([1, 2, 3, 2, 1])
   True
@@ -5057,18 +5074,19 @@ def is_palindrome(s):
   >>> first(n for n in irange(0, inf) if not is_palindrome(nsplit(11**n)))
   [5]
   """
-  j = len(s)
+  if not hasattr(seq, '__len__'): seq = list(seq)
+  j = len(seq)
   if j < 2: return True
-  # this is faster than: [[ return zip_eq(s, reversed(s), first=j // 2) ]]
+  # this is faster than: [[ return zip_eq(seq, reversed(seq), first=j // 2) ]]
   i = 0
   j -= 1
   while i < j:
-    if s[i] != s[j]: return False
+    if seq[i] != seq[j]: return False
     i += 1
     j -= 1
   return True
 
-# is a number palindromic in base b
+# is a number palindromic in base <base>
 def is_npalindrome(n, base=10):
   """
   check if integer <n> is palindromic in base <base>.
@@ -5090,6 +5108,19 @@ def is_npalindrome(n, base=10):
     if a == b: return True
     a = d
   return (a == b)
+
+# generate <n>-digit palindromes (in base <base>)
+def npalindromes(n, base=10):
+  """generate <n>-digit palindromes in base <base>."""
+  fn = identity
+  (k, r) = divmod(n, 2)
+  if r != 0:
+    k += 1
+    fn = (lambda ds: ds[:-1])
+  for ds in subsets(irange(base), size=k, select='M'):
+    if n < 2 or ds[0] != 0:
+      ds = fn(ds) + rev(ds)
+      yield nconcat(ds, base=base)
 
 # originally called product(), but renamed to avoid name confusion with itertools.product()
 def multiply(seq, r=1, mod=None):
@@ -5669,7 +5700,10 @@ def ratio_eq(r1, r2, **kw):
   except StopIteration:
     return True
   # and check the rest
-  return all(p * y == x * q for (x, y) in rs)
+  # was: [[ return all(p * y == x * q for (x, y) in rs) ]]
+  for (x, y) in rs:
+    if p * y != x * q: return False
+  return True
 
 fraction_eq = ratio_eq
 
