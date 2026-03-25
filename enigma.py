@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 25 11:26:08 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 25 14:35:51 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-03-26" # <year>-<month>-<number>
+__version__ = "2026-03-27" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -9973,7 +9973,7 @@ class MagicSquare(object):
 
 # output sums
 
-def output_mul(a, b, base=10, pre='', start=None, end=None):
+def output_mul(a, b, base=10, rev=0, pre='', start=None, end=None):
   """output <a> * <b> as a long multiplication sum"""
   (a, b) = (as_int(x, include='0+') for x in (a, b))
   c = a * b
@@ -9987,11 +9987,16 @@ def output_mul(a, b, base=10, pre='', start=None, end=None):
   printf("{pre}{a}", a=fmt(a))
   printf("{pre}{b} *", b=fmt(b))
   printf("{pre}{x}", x='-' * k)  # if b != 0: ...
+  # output the intermediates
+  xs = list()
   for (i, d) in enumerate(nsplit(b, base=base, reverse=1)):
     p = a * d
     if p == 0: continue  # skip 0 products
     #printf("{pre}{p}{x} = {d} * {a}", p=fmt(p, width=k - i), x=' ' * i)
-    printf("{pre}{p}", p=fmt(p, width=k - i))
+    xs.append(fmt(p, width=k - i))
+  if rev: xs.reverse()
+  for x in xs: printf("{pre}{x}")
+  # output the result
   printf("{pre}{x}", x='-' * k)
   printf("{pre}{c}", c=fmt(c))
   printf("{pre}{x}", x='=' * k)
@@ -11447,6 +11452,7 @@ class SubstitutedExpression(object):
     #   solve = ns[solver]
     if not env: env = dict()
     gs = update(globals(), env)
+    #gs['self'] = self
     try:
       code = compile(prog, '<string>', 'exec')
     except Exception:
@@ -11637,11 +11643,13 @@ class SubstitutedExpression(object):
   # integrate pretty-printers for output of various types of sum:
 
   # multiplication, set: answer=(term1, term2) to produce: term1 * term2
-  def output_mul(self, s, ans, pre='  ', start='', end=''):
-    output_mul(*ans, pre=pre, start=start, end=end)
+  def output_mul(self, s, ans=None, rev=0, pre='  ', start='', end=''):
+    fail(ans is None, "output_mul: set answer = (<term1>, <term2>) to output <term1> * <term2>")
+    output_mul(*ans, rev=rev, pre=pre, start=start, end=end)
 
   # square root extraction, set: answer=term to produce: sqrt(term)
-  def output_sqrx(self, s, ans, pre='  ', start='', end=''):
+  def output_sqrx(self, s, ans=None, pre='  ', start='', end=''):
+    fail(ans is None, "output_sqrx: set answer = <term> to output sqrt(<term>)")
     output_sqrx(ans, pre=pre, start=start, end=end)
 
   # !!! EXPERIMENTAL !!!
