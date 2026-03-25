@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Mar 24 13:38:16 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Mar 25 10:55:54 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-03-24" # <year>-<month>-<number>
+__version__ = "2026-03-25" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -1535,7 +1535,7 @@ def disjoint_cproduct(ss):
 distinct_cproduct = disjoint_cproduct
 
 # set intersection of a bunch of sequences
-def intersect(ss, fn=set):
+def intersect(ss, fn=set, **kw):
   """construct a set that is the intersection of the sequences in <ss>"""
   itr = iter(ss)
   try:
@@ -1544,6 +1544,7 @@ def intersect(ss, fn=set):
     pass
   else:
     return s.intersection(*itr)
+  if 'default' in kw: return kw['default']
   raise ValueError("empty intersection")
 
 # return an element of a container
@@ -11633,6 +11634,18 @@ class SubstitutedExpression(object):
     """
     return substitute(s, text, digits=digits)
 
+  # integrate pretty-printers for output of various types of sum:
+
+  # multiplication, set: answer=(term1, term2) to produce: term1 * term2
+  @classmethod
+  def output_mul(cls, p, s, ans, pre='  ', start='', end=''):
+    output_mul(*ans, pre=pre, start=start, end=end)
+
+  # square root extraction, set: answer=term to produce: sqrt(term)
+  @classmethod
+  def output_sqrx(cls, p, s, ans, pre='  ', start='', end=''):
+    output_sqrx(ans, pre=pre, start=start, end=end)
+
   # !!! EXPERIMENTAL !!!
   # it may be better to implement this as a subclass of SubstitutedExpression
   @classmethod
@@ -12975,6 +12988,11 @@ class SubstitutedDivision(SubstitutedExpression):
     """
     # this function is only here so we can set the docstring, so just call the parent class
     return super(SubstitutedDivision, cls).run_command_line(args)
+
+  # division
+  @classmethod
+  def output_div(cls, p, s, pre='  ', start='', end=''):
+    output_div(s.a, s.b, pre=pre, start=start, end=end)
 
 ###############################################################################
 
