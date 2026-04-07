@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr  7 15:09:37 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr  7 15:48:03 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-04-07" # <year>-<month>-<number>
+__version__ = "2026-04-08" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -1626,6 +1626,8 @@ def seq_items(seq, i=0, j=None):
   items are generated starting from index <i> (i.e. the first <i> items
   are skipped), and finish at index <j> (if specified, otherwise to the
   end of the sequence).
+
+  similar to: ((k, seq[k]) for k in irange(i, j))
 
   >>> list(seq_items("ABCDEFGHI", 3))
   [(3, 'D'), (4, 'E'), (5, 'F'), (6, 'G'), (7, 'H'), (8, 'I')]
