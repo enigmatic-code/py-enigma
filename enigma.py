@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Mar 25 14:35:51 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr  7 15:09:37 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-03-27" # <year>-<month>-<number>
+__version__ = "2026-04-07" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -1619,18 +1619,25 @@ def seq_get(seq, k=None, default=None):
   else:
     return peek(seq, k, default=default)
 
-def seq_items(seq, i=0):
+def seq_items(seq, i=0, j=None):
   """
   generate (<index>, <value>) pairs from sequence <seq>.
 
-  items are generated starting from index <i>
-  (i.e. the first <i> items are skipped).
+  items are generated starting from index <i> (i.e. the first <i> items
+  are skipped), and finish at index <j> (if specified, otherwise to the
+  end of the sequence).
 
-  >>> list(seq_items("ABCDEF", 3))
+  >>> list(seq_items("ABCDEFGHI", 3))
+  [(3, 'D'), (4, 'E'), (5, 'F'), (6, 'G'), (7, 'H'), (8, 'I')]
+  >>> list(seq_items("ABCDEF", 3, 5))
   [(3, 'D'), (4, 'E'), (5, 'F')]
   """
-  if i > 0: return enumerate(itertools.islice(seq, i, None), start=i)
-  if i == 0: return enumerate(seq)
+  if i > 0:
+    j = (None if j is None or j == inf else j + 1)
+    return enumerate(itertools.islice(seq, i, j), start=i)
+  if i == 0:
+    if not (j is None or j == inf): seq = itertools.islice(seq, j + 1)
+    return enumerate(seq)
   raise ValueError("seq_items: invalid start value: i={i}".format(i=i))
 
 # functions to create a selector for elements/attributes from an object
@@ -2587,6 +2594,31 @@ def collect(s, accept=None, reject=None, every=0, fn=list):
   except ValueError:
     return None
 
+def gfind(g, v, contains=operator.contains, fn=None):
+  """
+  find the keys in group <g> that contain the value <v>.
+
+  <g> should map keys to a collection of values <vs>, and
+  the default test is [[ v in vs ]], although this can be
+  changed by specifying the <contains> parameter.
+
+  by default a generator is returned, but this can be modified
+  by the <fn> parameter.
+
+  for instance to find the first value:
+
+  [[ gfind(g, v, fn=peek) ]] or [[ peek(gfind(g, v)) ]]
+
+  for all values as a set:
+
+  [[ gfind(g, v, fn=set) ]] or [[ set(gfind(g, v)) ]]
+
+  the function is also provided as: group.find().
+  """
+  ks = (k for (k, vs) in g.items() if contains(vs, v))
+  return (ks if fn is None else fn(ks))
+
+@static(find=gfind)
 def group(seq, by=identity, st=None, f=identity, fn=None):
   """
   group the items of sequence <seq> together using the <by> function.
