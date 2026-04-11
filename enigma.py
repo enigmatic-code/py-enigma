@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr  7 15:48:03 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Apr 11 08:51:03 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-04-08" # <year>-<month>-<number>
+__version__ = "2026-04-11" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -346,7 +346,8 @@ def exec_file(path, name=None, verbose=0):
   ns = run_path(path)
   return make_namespace(name, ns)
 
-# lazy importer
+# lazy importer:
+# [Python 3.15 has: "lazy import ..." and "lazy from X import Y"]
 class LazyImporter(object):
 
   def __init__(self, spec, **kw):
@@ -1631,7 +1632,7 @@ def seq_items(seq, i=0, j=None):
 
   >>> list(seq_items("ABCDEFGHI", 3))
   [(3, 'D'), (4, 'E'), (5, 'F'), (6, 'G'), (7, 'H'), (8, 'I')]
-  >>> list(seq_items("ABCDEF", 3, 5))
+  >>> list(seq_items("ABCDEFGHI", 3, 5))
   [(3, 'D'), (4, 'E'), (5, 'F')]
   """
   if i > 0:
@@ -6623,6 +6624,7 @@ def crange(a=0, fn=true, step=1):
     x += step
 
 # flatten a list of lists
+# [Python 3.15: has unpacking in comprehensions]
 def flatten(seq, skip=1, fn=list):
   """
   flatten a sequence of sequences.
