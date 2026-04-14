@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Apr 11 08:51:03 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Apr 14 08:32:28 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-04-11" # <year>-<month>-<number>
+__version__ = "2026-04-13" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -347,7 +347,7 @@ def exec_file(path, name=None, verbose=0):
   return make_namespace(name, ns)
 
 # lazy importer:
-# [Python 3.15 has: "lazy import ..." and "lazy from X import Y"]
+# [Python 3.15 has: "lazy import ..." and "lazy from X import Y", which can be the default: PYTHON_LAZY_IMPORTS=all]
 class LazyImporter(object):
 
   def __init__(self, spec, **kw):
@@ -878,6 +878,31 @@ def zip_eq(*ss, **kw):
   for vs in z:
     if not seq_all_same(vs): return False
   return True
+
+# NOTE: not sure these will remain in this form
+# find positions where sequences are correlated
+def zip_corr(*ss, **kw):
+  """
+  return indices where sequences have the same element values.
+
+  the 'strict' argument is passsed to zip (which is supported in some Python
+  versions, and throws an error if the inputs are not of equal length)
+
+  the 'first' parameter limits checks for the first <k> elements
+  """
+  strict = kw.pop('strict', None)
+  k = kw.pop('first', None)
+  if kw: raise TypeError(str.format("zip_correlate: unknown arguments {kw}", kw=seq2str(kw.keys())))
+  z = (zip(*ss, strict=strict) if strict is not None else zip(*ss))
+  if k is not None: z = first(z, count=k, fn=iter)
+  for (i, vs) in enumerate(z):
+    if seq_all_same(vs):
+      yield i
+
+# just count the number of correlations
+zip_ncorr = lambda *ss, **kw: icount(zip_corr(*ss, **kw))
+# special case the most usual scenario = count the correlations between two lists
+zip_ncorr2 = lambda xs, ys: sum(1 for (x, y) in zip(xs, ys) if x == y)
 
 def ordered(*args, **kw):
   """
@@ -2545,12 +2570,14 @@ def filter_unique(seq, f=identity, g=identity, st=None):
 
   alias: partition_unique()
 
+  >>> vs = [(1, 1), (1, 3), (2, 2), (3, 1), (3, 2), (3, 3)]
+
   "If I told you the first number you could deduce the second"
-  >>> filter_unique([(1, 1), (1, 3), (2, 2), (3, 1), (3, 2), (3, 3)], (lambda v: v[0])).unique
+  >>> filter_unique(vs, (lambda v: v[0])).unique
   [(2, 2)]
 
   "If I told you the first number you could not deduce if the second was odd or even"
-  >>> filter_unique([(1, 1), (1, 3), (2, 2), (3, 1), (3, 2), (3, 3)], (lambda v: v[0]), (lambda v: v[1] % 2)).non_unique
+  >>> filter_unique(vs, (lambda v: v[0]), (lambda v: v[1] % 2)).non_unique
   [(3, 1), (3, 2), (3, 3)]
 
   """
@@ -4477,6 +4504,7 @@ def rcompose(*fns):
   return fcompose(*(reversed(fns)))
 
 # see: operator.is_none, operator.is_not_none (Python 3.14+)
+is_not = operator.not_
 is_none = (lambda x: x is None)
 is_not_none = (lambda x: x is not None)
 is_square_p = (lambda x: is_square(x) is not None)  # = fcompose(is_square, is_not_none)
@@ -6643,7 +6671,7 @@ def flatten(seq, skip=1, fn=list):
 
   """
   if skip: seq = filter(None, seq)
-  r = (x for itr in seq for x in itr)
+  r = (x for itr in seq for x in itr)  # = (*itr for itr in seq) for Python 3.15+
   return (r if fn is None else fn(r))
   # similar to using:
   #return fn(itertools.chain.from_iterable(seq))
