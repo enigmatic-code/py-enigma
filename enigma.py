@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Apr 14 08:32:28 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Apr 23 10:29:31 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-04-13" # <year>-<month>-<number>
+__version__ = "2026-04-22" # <year>-<month>-<number>
 
 __credits__ = "contributors - Brian Gladman; Frits ter Veen"
 
@@ -7836,7 +7836,9 @@ def find_max(f, a, b, t=1e-9):
   >>> round(r.v, 6)
   2.0
   """
-  return find_min(f, a, b, t=t, m=neg)
+  r = find_min(f, a, b, t=t, m=neg)
+  r.fv = neg(r.fv)
+  return r
 
 # we can also use the minimiser to find roots
 # there are more rapidly converging root finding algorithms,
@@ -8763,12 +8765,14 @@ class Enumerator(object):
   iterate through a sequence, counting the number of items returned
 
   >>> ss = Enumerator(primes.between(10, 99))
-  >>> xs = list(ss.iter())
+  >>> list(ss.iter())
+  [11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]
   >>> ss.count
   21
 
-  >>> ss = Enumerator([])
-  >>> xs = list(ss)
+  >>> ss = Enumerator(empty)
+  >>> list(ss)
+  []
   >>> ss.count
   0
   """
