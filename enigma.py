@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Apr 24 10:40:36 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat May  2 11:24:07 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,9 +239,9 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-04-23" # <year>-<month>-<number>
+__version__ = "2026-04-24" # <year>-<month>-<number>
 
-__credits__ = "contributors - Brian Gladman; Frits ter Veen"
+__credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
 import sys
 import os
@@ -968,6 +968,21 @@ def encl(s, b="{}", fn=str):
   '|xyz|'
   """
   return b[0] + fn(s) + b[-1]
+
+# create a function to apply a specific format spec
+def fmts(*args):
+  """
+  >>> fmts(".4f")(pi)
+  '3.1416'
+  >>> fmts(".4f", pi)
+  '3.1416'
+  """
+  if len(args) == 1:
+    spec = args[0]
+    return (lambda x: format(x, spec))
+  elif len(args) == 2:
+    (spec, value) = args
+    return format(value, spec)
 
 # I would prefer join() to be a string constructor:
 #   str.from_seq(seq, sep='', enc=''), or just: str.join(seq, sep='', enc='')
@@ -7810,7 +7825,7 @@ def find_min(f, a, b, t=1e-9, m=None):
 
   the result is returned as a record with the following fields:
   v = the calculated value at which the function is minimised
-  fv = the value of the function at v
+  fv = the value of the function at v (= f(v))
   t = the tolerance used
 
   >>> r = find_min(lambda x: sq(x - 2), 0.0, 10.0)
@@ -7829,7 +7844,7 @@ def find_max(f, a, b, t=1e-9):
 
   the result is returned as a record with the following fields:
   v = the calculated value at which the function is maximised
-  fv = the value of the function at v
+  fv = the value of the function at v (= f(v))
   t = the tolerance used
 
   >>> r = find_max(lambda x: 9 - sq(x - 2), 0.0, 10.0)
@@ -7853,7 +7868,7 @@ def find_zero(f, a, b, t=1e-9, ft=1e-6):
 
   the result is returned as a record with the following fields:
   v = the calculated value at which the function is zero
-  fv = the value of the function at v
+  fv = the value of the function at v (= f(v))
   t = the tolerance used
 
   >>> r = find_zero(lambda x: sq(x) - 4, 0.0, 10.0)
@@ -7881,7 +7896,7 @@ def find_value(f, v, a, b, t=1e-9, ft=1e-6):
 
   the result is returned as a record with the following fields:
   v = the calculated value at which the function is the specified value
-  fv = the value of the function at v
+  fv = the value of the function at v (= f(v))
   t = the tolerance used
 
   >>> r = find_value(lambda x: sq(x) + 4, 8.0, 0.0, 10.0)
