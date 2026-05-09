@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat May  2 11:24:07 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat May  9 14:39:53 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -239,7 +239,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-04-24" # <year>-<month>-<number>
+__version__ = "2026-05-09" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -7960,6 +7960,13 @@ def is_triangle(a, b, c, fn=gt(0), validate=0):
 
 triangle_area = partial(is_triangle, fn=is_triangle.area)
 
+
+# 2D geometry:
+# a point (P2) is represented by (x: Real, y: Real)
+# circle (Circle) is represented by (centre: P2, radius: Real)
+P2 = namedtuple('P2', 'x y')
+Circle = namedtuple('Circle', 'centre radius')
+
 def triangle_point(b, a, c, div=fdiv, sqrt=sqrt):
   """
   find the position of the upper vertex of a triangle with base <b>
@@ -7980,14 +7987,12 @@ def triangle_point(b, a, c, div=fdiv, sqrt=sqrt):
 
 def triangle_height(b, a, c, div=fdiv, sqrt=sqrt): return triangle_point(b, a, c, div=div, sqrt=sqrt).y
 
-@static(rtype=None)
 def triangle_circumcircle(A, B, C):
   """
   find the circumcentre and circumradius of the triangle with vertices at points A, B, C.
 
   the returned value is a named tuple: (centre=(x, y), radius=r)
   """
-  if triangle_circumcircle.rtype is None: triangle_circumcircle.rtype = namedtuple('Circumcircle', 'centre radius')
   ((Ax, Ay), (Bx, By), (Cx, Cy)) = (A, B, C)
   (A2, B2, C2) = (Ax*Ax + Ay*Ay, Bx*Bx + By*By, Cx*Cx + Cy*Cy)
   D = 2 * (Ax*(By - Cy) + Bx*(Cy - Ay) + Cx*(Ay - By))
@@ -7995,12 +8000,7 @@ def triangle_circumcircle(A, B, C):
     fdiv(A2*(By - Cy) + B2*(Cy - Ay) + C2*(Ay - By), D),
     fdiv(A2*(Cx - Bx) + B2*(Ax - Cx) + C2*(Bx - Ax), D)
   )
-  return triangle_circumcircle.rtype(U, point_distance(U, A))
-
-# 2D geometry: a point is represented by (x, y)
-
-# 2D cartesian point, has 'x' and 'y' components, is also tuple (x, y)
-P2 = namedtuple('P2', 'x y')
+  return Circle(U, point_distance(U, A))
 
 def point_distance(p1, p2):
   """
@@ -8070,7 +8070,7 @@ def line_intersect(p1, p2, p3, p4, internal=0, div=fdiv):
   q2 = (div(x - x3, dx43) if abs(dx43) > abs(dy43) else div(y - y3, dy43))
   if internal & 2 and (q2 < 0 or q2 > 1): raise ValueError("external intersection on line 2")
   # return intersection point (pt) (also: x, y, q1, q2)
-  return Record(pt=(x, y), x=x, y=y, q1=q1, q2=q2)
+  return Record(pt=P2(x, y), x=x, y=y, q1=q1, q2=q2)
 
 # t=0 -> p1; t=1 -> p2
 def line_param(p1, p2, t=None):
@@ -8082,7 +8082,7 @@ def line_param(p1, p2, t=None):
   if t is specified then the function will be called with parameter t.
   """
   ((x1, y1), (x2, y2)) = (p1, p2)
-  f = lambda t, xd=x2 - x1, yd=y2 - y1: (x1 + t * xd, y1 + t * yd)
+  f = lambda t, xd=x2 - x1, yd=y2 - y1: P2(x1 + t * xd, y1 + t * yd)
   return (f if t is None else f(t))
 
 # return a line segment the same length as (p1, p2) that is its perpendicular bisector
@@ -8097,7 +8097,7 @@ def line_bisect(p1, p2, div=fdiv):
   """
   ((x1, y1), (x2, y2)) = (p1, p2)
   s = div(x1 + x2 + y1 + y2, 2)
-  return ((s - y1, s - x2), (s - y2, s - x1))
+  return (P2(s - y1, s - x2), P2(s - y2, s - x1))
 
 # return the closest distance between a line that passes through p1 and p2
 # and the point p0
@@ -8112,6 +8112,48 @@ def line_distance(p1, p2, p0=(0, 0)):
   ((x1, y1), (x2, y2), (x0, y0)) = (p1, p2, p0)
   (xd, yd) = (x2 - x1, y2 - y1)
   return fdiv(abs(xd * (y1 - y0) - yd * (x1 - x0)), hypot(xd, yd))
+
+# find intersection points of circle centre <c> radius <r>
+# with the line defined by points <p1>, <p2>
+def circle_intersect_line(c, p1, p2):
+  (((a, b), r), (x1, y1), (x2, y2)) = (c, p1, p2)
+  (xd, yd) = (x2 - x1, y2 - y1)
+  # construct a polynomial for the intersection
+  f = sq(Polynomial([x1 - a, xd])) + sq(Polynomial([y1 - b, yd]))
+  ts = f.roots(sq(r), domain='F')
+  return list(P2(x1 + t * xd, y1 + t * yd) for t in ts)
+
+# calculate the points where two circles intersect
+def circle_intersect_circle(c1, c2):
+  ((o1, r1), (o2, r2)) = (c1, c2)
+  # calculate the distance between the centres
+  d = point_dist(o1, o2)
+  if d == 0 or r1 <= 0 or r2 <= 0: raise ValueError("circle_intersect_circle: invalid circles")
+  # the fraction of the intersect points along the line joining the centres
+  fn = line_param(o1, o2)
+  t = 0.5 + fdiv(sq(r1) - sq(r2), 2.0 * sq(d))
+  # find the perpendicular bisector of the line at t
+  (p1, p2) = line_bisect(o1, fn(2*t))
+  # return the intersections with the first circle
+  return circle_intersect_line(c1, p1, p2)
+
+# parameterised circle t = -1 to +1 for a full circle
+# 0 = 3 o'clock
+# -> 1 = anticlockwise to 9 o'clock
+# -> -1 = clockwise to 9 o'clock
+def circle_param(c, t=None):
+  ((a, b), r) = c
+  f = lambda t, a=a, b=b, r=r: P2(a + r * math.cos(t * pi), b + r * math.sin(t * pi))
+  return (f if t is None else f(t))
+
+# find <t> parameter for point <p> on circle centre <c> radius <r>
+def circle_param_t(c, p, t=1e-9):
+  (o, r) = c
+  if not (abs(point_dist(o, p) - r) < t): return None
+  ((x0, y0), (x, y)) = (o, p)
+  t = math.acos(fdiv(x - x0, r)) / pi
+  return min(t, -t, key=(lambda t: abs(point_dist(circle_param(c, t), p))))
+
 
 def polygon_area(ps, m=0.5, sum=math.fsum):
   """
