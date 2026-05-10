@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat May  9 14:39:53 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May 10 14:12:13 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -137,10 +137,6 @@ is_triangular          - check a number is a triangular number
 isqrt                  - intf(sqrt(x))
 join, joinf            - concatenate objects into a string
 lcm                    - lowest common multiple
-line_bisect            - find the perpendicular bisector of a line
-line_distance          - minimum distance from a point to a line
-line_intersect         - find the intersection of two lines
-line_slope_intercept   - return (slope, intercept) for a line
 M                      - multichoose function (nMk)
 map2str                - format a map for output
 match                  - match a value against a template
@@ -214,6 +210,24 @@ unpack                 - return a function that unpacks its arguments
 update                 - create an updated version of a container object
 zip_eq                 - check sequences contain the same elements
 
+2D geometry functions:
+circle_intersect_circle - find where two circles intersect
+circle_intersect_line   - find where a circle and line intersect
+circle_param            - return a parametric form of a circle
+circle_param_t          - return the parameter for a point on a circle
+line_bisect             - find the perpendicular bisector of a line
+line_distance           - minimum distance from a point to a line
+line_intersect          - find the intersection of two lines
+line_param              - return a parametric form of a line
+line_slope_intercept    - return (slope, intercept) for a line
+point_distance          - straight line distance between two points
+polygon_area            - calculate the area of a simple polygon
+polygon_area_regular    - calculate the area of a regular polygon
+triangle_circumcircle   - find the circumcentre and circumradius of a triangle
+triangle_height         - find the altitude of a triangle
+triangle_point          - find the third vertex of a triangle
+
+
 Accumulator            - a class for accumulating values
 CrossFigure            - a class for solving cross figure puzzles
 Decompose              - return a decompose() function
@@ -239,7 +253,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-05-09" # <year>-<month>-<number>
+__version__ = "2026-05-10" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -8113,13 +8127,14 @@ def line_distance(p1, p2, p0=(0, 0)):
   (xd, yd) = (x2 - x1, y2 - y1)
   return fdiv(abs(xd * (y1 - y0) - yd * (x1 - x0)), hypot(xd, yd))
 
-# find intersection points of circle centre <c> radius <r>
+# find intersection points of circle <c>
 # with the line defined by points <p1>, <p2>
+# may return 0, 1, 2 points
 def circle_intersect_line(c, p1, p2):
-  (((a, b), r), (x1, y1), (x2, y2)) = (c, p1, p2)
+  (((x0, y0), r), (x1, y1), (x2, y2)) = (c, p1, p2)
   (xd, yd) = (x2 - x1, y2 - y1)
   # construct a polynomial for the intersection
-  f = sq(Polynomial([x1 - a, xd])) + sq(Polynomial([y1 - b, yd]))
+  f = sq(Polynomial([x1 - x0, xd])) + sq(Polynomial([y1 - y0, yd]))
   ts = f.roots(sq(r), domain='F')
   return list(P2(x1 + t * xd, y1 + t * yd) for t in ts)
 
