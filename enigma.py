@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 10 14:12:13 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat May 16 10:41:30 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -253,7 +253,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-05-10" # <year>-<month>-<number>
+__version__ = "2026-05-14" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -4387,6 +4387,7 @@ def is_square_q(n, F=None):
   if q is None: return None
   return F(p, q)
 
+# for k=2 can also use [[ pells.diop_quad(1, 1, n) ]]
 def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
   """
   return ordered k-sequences of non-negative integers (a, b, ...) such that:
@@ -4395,6 +4396,8 @@ def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
 
   min_v - specifies the minimum allowable value in the returned sequences
   sep - specified the minimum separation between values
+
+  note: for large n and k=2 you can use pells.diop_quad(1, 1, n).
 
   >>> list(sum_of_squares(50, 2))
   [[1, 7], [5, 5]]
@@ -5431,7 +5434,7 @@ def crt1(a, m, b, n):
   return ((b * u * x + a * v * y) % z, z)
 
 @static(rtype=None, fail=None)
-def crt(vs):
+def crt(vs, ms=None):
   """
   general Chinese Remainder Theorem
 
@@ -5448,7 +5451,7 @@ def crt(vs):
     crt.rtype = namedtuple('CRT', 'x mod')
     crt.fail = crt.rtype(None, None)
   x = mm = None
-  for (i, (r, m)) in enumerate(vs):
+  for (i, (r, m)) in enumerate(vs if ms is None else zip(vs, ms)):
     if i == 0:
       (x, mm) = (r, m)
     else:
@@ -5524,14 +5527,18 @@ def poly_roots_mod_sqrtmod(a, m, k=1, fn=prime_factor):
   return poly_roots_mod(sq, a)(m, k, fn)
 poly_roots_mod.sqrtmod = poly_roots_mod_sqrtmod
 
-# find square roots of <a> mod <m>
+# find square roots of <a> mod <m>^<k>
 # this is OK for relatively small m, but more efficient (and complex)
 # approaches are available (e.g. sympy.ntheory.sqrt_mod_iter)
-def sqrtmod(a, m, k=1):
+def sqrtmod(a, m, k=1, lower=0):
   """
   find square roots of a mod m.
 
   i.e. values x such that (x * x) is congurent to a (mod m).
+
+  if 'lower' is set then only values <= m/2 are returned.
+
+  see also: pells.sqrtmod() (or pells.sqrtmodp()) for a more efficient implementation.
 
   >>> sorted(sqrtmod(1, 16))
   [1, 7, 9, 15]
@@ -5542,12 +5549,18 @@ def sqrtmod(a, m, k=1):
   """
   if k > 1: m **= k
   a %= m
-  for x in irange(0, m // 2):
-    if (x * x) % m == a:
-      # x is a root
-      yield x
-      # -x (mod mk) is also a root
-      if x > 0 and m > 2 * x: yield m - x
+  if lower:
+    for x in irange(0, m // 2):
+      if (x * x) % m == a:
+        # x is a root
+        yield x
+  else:
+    for x in irange(0, m // 2):
+      if (x * x) % m == a:
+        # x is a root
+        yield x
+        # -x (mod m^k) is also a root
+        if x > 0 and m > 2 * x: yield m - x
 
 # solve linear diophantine equations in 2 variables:
 def diop_linear(a, b, c, mX=0, fn=0):
@@ -8153,12 +8166,10 @@ def circle_intersect_circle(c1, c2):
   return circle_intersect_line(c1, p1, p2)
 
 # parameterised circle t = -1 to +1 for a full circle
-# 0 = 3 o'clock
-# -> 1 = anticlockwise to 9 o'clock
-# -> -1 = clockwise to 9 o'clock
+# 0 = 3 o'clock; 0 -> 1 = anticlockwise to 9 o'clock; 0 -> -1 = clockwise to 9 o'clock
 def circle_param(c, t=None):
-  ((a, b), r) = c
-  f = lambda t, a=a, b=b, r=r: P2(a + r * math.cos(t * pi), b + r * math.sin(t * pi))
+  ((x, y), r) = c
+  f = lambda t, x=x, y=y, r=r: P2(x + r * math.cos(t * pi), y + r * math.sin(t * pi))
   return (f if t is None else f(t))
 
 # find <t> parameter for point <p> on circle centre <c> radius <r>
