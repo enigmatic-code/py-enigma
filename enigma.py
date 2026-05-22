@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat May 16 10:41:30 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri May 22 13:34:47 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -253,7 +253,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-05-14" # <year>-<month>-<number>
+__version__ = "2026-05-21" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -984,19 +984,26 @@ def encl(s, b="{}", fn=str):
   return b[0] + fn(s) + b[-1]
 
 # create a function to apply a specific format spec
-def fmts(*args):
+def fmts(spec, *rest):
   """
-  >>> fmts(".4f")(pi)
-  '3.1416'
+  fmts(spec, object) = format an object using the given format specifier.
+
+  fmts(spec) = returns a function that takes an object and formats the
+    object using the given format specifier.
+
+  this can be useful in the 'fn' parameter of join()/concat()/seq2str().
+
   >>> fmts(".4f", pi)
   '3.1416'
+  >>> fmts(".4f")(pi)
+  '3.1416'
   """
-  if len(args) == 1:
-    spec = args[0]
-    return (lambda x: format(x, spec))
-  elif len(args) == 2:
-    (spec, value) = args
-    return format(value, spec)
+  if not rest:
+    return (lambda obj: fmts(spec, obj))
+  elif len(rest) == 1:
+    obj = rest[0]
+    if '{' not in spec: return format(obj, spec)
+    return re.sub(r'{(.*?)}', (lambda x: format(obj, x.group(1))), spec)
 
 # I would prefer join() to be a string constructor:
 #   str.from_seq(seq, sep='', enc=''), or just: str.join(seq, sep='', enc='')
@@ -4411,8 +4418,7 @@ def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
     if not (r is None or r < min_v):
       yield ss + [r]
   elif k == 2:
-    i = isqrt(n)
-    j = 0
+    (i, j) = (isqrt(n), 0)
     while not (i < j):
       r = compare(i * i + j * j, n)
       if r == 0 and not (j < min_v or i - j < sep): yield (ss + [j, i] if ss else [j, i])
@@ -5438,9 +5444,11 @@ def crt(vs, ms=None):
   """
   general Chinese Remainder Theorem
 
-  solve: x mod m_i = r_i where vs = [(r_1, m_1), (r_2, m_2), ...]
+  solve: x mod mi = ri where vs = [(r1, m1), (r2, m2), ...]
 
   return: (x, m) where the solution is x + k.m for integers k
+
+  alternatively you can pass: vs = [r1, r2, ...], ms = [m1, m2, ...]
 
   >>> tuple(crt([(2, 3), (3, 5), (2, 7)]))
   (23, 105)
@@ -5529,12 +5537,12 @@ poly_roots_mod.sqrtmod = poly_roots_mod_sqrtmod
 
 # find square roots of <a> mod <m>^<k>
 # this is OK for relatively small m, but more efficient (and complex)
-# approaches are available (e.g. sympy.ntheory.sqrt_mod_iter)
+# approaches are available (e.g. pells.sqrtmod)
 def sqrtmod(a, m, k=1, lower=0):
   """
-  find square roots of a mod m.
+  find square roots of <a> mod <m>.
 
-  i.e. values x such that (x * x) is congurent to a (mod m).
+  i.e. values <x> such that (<x> * <x>) is congurent to <a> (mod <m>).
 
   if 'lower' is set then only values <= m/2 are returned.
 
