@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri May 22 13:34:47 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat May 23 10:46:05 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -29,8 +29,9 @@ all_same               - check arguments all have the same value
 arg                    - extract an argument from the command line
 args                   - extract a list of arguments from the command line
 as_int                 - check argument is an integer
-base2int, str2int      - convert a string in the specified base to an integer
+base                   - get/set default base (radix) used in base conversion
 base_digits            - get/set digits used in numerical base conversion
+base2int, str2int      - convert a string in the specified base to an integer
 bit_from_positions     - construct an integer by setting bits in specified positions
 bit_permutations       - generate bit permutations
 bit_positions          - return positions of bits set
@@ -253,7 +254,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-05-21" # <year>-<month>-<number>
+__version__ = "2026-05-22" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -995,15 +996,22 @@ def fmts(spec, *rest):
 
   >>> fmts(".4f", pi)
   '3.1416'
-  >>> fmts(".4f")(pi)
-  '3.1416'
+  >>> fmts("pi = {.4f}", pi)
+  'pi = 3.1416'
+  >>> fmts("pi = {.4f}")(pi)
+  'pi = 3.1416'
   """
-  if not rest:
-    return (lambda obj: fmts(spec, obj))
-  elif len(rest) == 1:
-    obj = rest[0]
-    if '{' not in spec: return format(obj, spec)
-    return re.sub(r'{(.*?)}', (lambda x: format(obj, x.group(1))), spec)
+  if '{' not in spec:
+    # standard spec
+    if not rest: return (lambda obj: format(obj, spec))
+    if len(rest) == 1:
+      return format(rest[0], spec)
+  else:
+    # embedded spec
+    if not rest: return (lambda obj: fmts(spec, obj))
+    if len(rest) == 1:
+      obj = rest[0]
+      return re.sub(r'{(.*?)}', (lambda x: format(obj, x.group(1))), spec)
 
 # I would prefer join() to be a string constructor:
 #   str.from_seq(seq, sep='', enc=''), or just: str.join(seq, sep='', enc='')
@@ -1148,6 +1156,9 @@ def translate(t, m, s="", embed=1):
   if (not embed) or ('{' not in t): return fn(t)
   return re.sub(r'{(.*?)}', (lambda x: fn(x.group(1))), t)
 
+# the default base for positional number systems (can be set via base())
+# used if 'base' parameter is not specified (or is specified as 0)
+radix = 10
 
 def nconcat(*digits, **kw):
   """
@@ -1169,7 +1180,8 @@ def nconcat(*digits, **kw):
   2130706433
   """
   # in Python 3 [[ def nconcat(*digits, base=10): ]] is allowed instead
-  base = kw.pop('base', 10)
+  base = kw.pop('base', 0)
+  if base == 0: base = radix
   if kw: raise TypeError(str.format("nconcat: unknown arguments {kw}", kw=seq2str(kw.keys())))
   # allow a sequence to be passed as a single argument
   if len(digits) == 1 and isinstance(digits[0], (Sequence, Iterable)): digits = digits[0]
@@ -1182,8 +1194,9 @@ def nconcat(*digits, **kw):
   # or: (slower, and only works with digits < base)
   #return int(concat(*digits), base=base)
 
-def nsplitter(n, k=None, base=10, validate=0):
+def nsplitter(n, k=None, base=0, validate=0):
   """split integer <n> into digits, starting with the least significant digit"""
+  if base == 0: base = radix
   if base < 2: raise ValueError(str.format("invalid base: {base!r}", base=base))
   if n == inf or n == -inf: raise ValueError(str.format("invalid number: {n!r}", n=n))
   if validate: (n, base) = (as_int(n), as_int(base, include='+'))
@@ -1200,7 +1213,7 @@ def nsplitter(n, k=None, base=10, validate=0):
       (n, r) = divmod(n, base)
       yield r
 
-def nsplit(n, k=None, base=10, fn=tuple, reverse=0, validate=0):
+def nsplit(n, k=None, base=0, fn=tuple, reverse=0, validate=0):
   """
   split an integer into digits (using base <base> representation)
 
@@ -1232,7 +1245,7 @@ def nsplit(n, k=None, base=10, fn=tuple, reverse=0, validate=0):
   if not reverse: ds = rev(ds)
   return fn(ds)
 
-def dsum(n, k=None, base=10, validate=0):
+def dsum(n, k=None, base=0, validate=0):
   """
   calculate the digit sum of an integer (when represented in the
   specified base).
@@ -1252,7 +1265,7 @@ if not dsum2:
   def dsum2(n): "fast alternative to dsum(n, base=2)"; return bin(abs(n)).count('1', 2)
 
 # equivalent to: len(nsplit(n)) (we could use logarithms for "smallish" numbers)
-def ndigits(n, base=10, validate=0):
+def ndigits(n, base=0, validate=0):
   """
   return the number of digits in a number, when represented in the specified base.
 
@@ -1266,8 +1279,9 @@ def ndigits(n, base=10, validate=0):
 
 # TODO: maybe: ndigit(n, i, j, k, ...) -> extract digits i, j, k from n
 
-def is_ndigits(n, k, base=10, validate=0):
+def is_ndigits(n, k, base=0, validate=0):
   """check if <n> has <k> digits in the specified base"""
+  if base == 0: base = radix
   if n == inf or n == -inf: return (k == inf)
   if validate: n = as_int(n)
   n = abs(int(n))
@@ -1275,9 +1289,32 @@ def is_ndigits(n, k, base=10, validate=0):
   if n < x: return False
   return n < x * base
 
+# return the smallest and largest k-digit numbers
+def ndigit_range(k, base=0, adj=None):
+  """
+  return the smallest and largest k-digit numbers (in base <base>).
+
+  the endpoints are calculated as base**(k - 1) and (base**k) - 1.
+
+  these can be adjusted by passing a pair of values to <adj>.
+  (e.g. pass adj=(0, 1) for to adjust the values to be suitable for
+  Python's builtin range() function).
+
+  >>> ndigit_range(4)
+  (1000, 9999)
+  >>> ndigit_range(4, base=16)
+  (4096, 65535)
+  """
+  if base == 0: base = radix
+  (lo, hi) = (base**(k - 1), (base**k) - 1)
+  if adj:
+    lo += adj[0]
+    hi += adj[-1]
+  return (lo, hi)
+
 
 # maybe -> nrev()
-def nreverse(n, k=None, base=10, validate=0):
+def nreverse(n, k=None, base=0, validate=0):
   """
   reverse an integer (as a <k> digit number using base <base> representation)
 
@@ -1338,7 +1375,7 @@ def match(v, t):
   return fnmatch(v, t)
 
 @static(special={'inf': inf, '+inf': inf, '-inf': -inf})
-def number(s, base=10):
+def number(s, base=0):
   """
   make an integer from a string, ignoring non-digit characters
 
@@ -1355,7 +1392,7 @@ def number(s, base=10):
   if v: return v
   return base2int(s, base=base, strip=1)
 
-def numbers(ss, base=10, csep=',', crange='-', cneg='!', strip=1, enc='', fn=list):
+def numbers(ss, base=0, csep=',', crange='-', cneg='!', strip=1, enc='', fn=list):
   """
   generate numbers (non-negative integers) according to the
   clauses specified in <ss>.
@@ -2367,6 +2404,7 @@ class multiset(dict):
   # - = difference
   # & = intersection
   # | = union
+  # ^ = symmetric_difference
   # * = multiply
   # < = subset
   # > = superset
@@ -2376,6 +2414,7 @@ class multiset(dict):
   __or__ = union
   __iadd__ = update
   __ior__ = union_update
+  __xor__ = symmetric_difference
   __mul__ = multiply
   __le__ = issubset
   __ge__ = issuperset
@@ -4642,14 +4681,15 @@ def is_power_of(n, k, validate=0):
   return (i if m == 1 else None)
 
 # alias (but see also ndigits())
-def ilog(x, k=10, validate=0):
+def ilog(x, base=0, validate=0):
   """
-  return the largest positive integer <n> such that: pow(<k>, <n>) <= <x>.
+  return the largest positive integer <n> such that: pow(<base>, <n>) <= <x>.
   """
-  if validate: k = as_int(k, include="+")
+  if base == 0: base == radix
+  if validate: base = as_int(base, include="+")
   if x == inf or x is None: return x
   if x < 1: raise ValueError("ilog: value must be 1+")
-  return ndigits(int(x), base=k) - 1
+  return ndigits(int(x), base=base) - 1
 
 def tri(n):
   """
@@ -4705,7 +4745,7 @@ def is_triangular(n):
 
 is_triangular_p = (lambda x: is_triangular(x) is not None)
 
-def digrt(n, base=10):
+def digrt(n, base=0):
   """
   return the (additive) digital root of positive integer <n>.
 
@@ -4720,10 +4760,11 @@ def digrt(n, base=10):
   >>> digrt(factorial(100))
   9
   """
+  if base == 0: base = radix
   return (0 if n == 0 else int(1 + (n - 1) % (base - 1)))
 
 
-def repdigit(n, d=1, base=10):
+def repdigit(n, d=1, base=0):
   """
   return a number consisting of the digit <d> repeated <n> times, in base <base>
 
@@ -4739,6 +4780,7 @@ def repdigit(n, d=1, base=10):
   >>> repdigit(6, 7, base=16) == 0x777777
   True
   """
+  if base == 0: base = radix
   if not (0 <= d < base): raise ValueError(str.format("repdigit: invalid digit: {d!r} for base {base!r}", d=d, base=base))
   return d * ((base**n) - 1) // (base - 1)
 
@@ -5189,7 +5231,7 @@ def is_palindrome(seq):
   return True
 
 # is a number palindromic in base <base>
-def is_npalindrome(n, base=10):
+def is_npalindrome(n, base=0):
   """
   check if integer <n> is palindromic in base <base>.
 
@@ -5200,6 +5242,7 @@ def is_npalindrome(n, base=10):
   >>> is_npalindrome(57005, base=9)
   True
   """
+  if base == 0: base = radix
   n = abs(n)
   if n % base == 0: return (n == 0)
   (a, b) = (n, 0)
@@ -5212,8 +5255,9 @@ def is_npalindrome(n, base=10):
   return (a == b)
 
 # generate <n>-digit palindromes (in base <base>)
-def npalindromes(n, base=10):
+def npalindromes(n, base=0):
   """generate <n>-digit palindromes in base <base>."""
+  if base == 0: base = radix
   fn = identity
   (k, r) = divmod(n, 2)
   if r != 0:
@@ -5770,7 +5814,7 @@ def Fraction(*args):
   if Fraction.rtype is None: Fraction.rtype = namedtuple('Fraction', 'num den')
   return Fraction.rtype(a, b)
 
-def format_fraction(n, d, base=10):
+def format_fraction(n, d, base=0):
   s = int2base(n, base=base)
   if d == 1: return s
   return s + "/" + int2base(d, base=base)
@@ -6061,11 +6105,12 @@ def M(n, k):
   """
   return C(n + k - 1, k)
 
-def recurring_digits(a, b, recur=0, base=10):
+def recurring_digits(a, b, recur=0, base=0):
   """
   find the non-recurring/recurring digits in the base <base> expansion
   of the proper fraction <a> / <b>.
   """
+  if base == 0: base = radix
   if b == 0 or (recur and a == 0):
     raise ValueError("invalid input fraction: {a} / {b} [recur={recur}]".format(a=a, b=b, recur=bool(recur)))
   r = dict()
@@ -6083,7 +6128,7 @@ def recurring_digits(a, b, recur=0, base=10):
     if not (d == a == 0): s.append(d)
 
 @static(rtype=None)
-def recurring(a, b, recur=0, base=10, digits=None):
+def recurring(a, b, recur=0, base=0, digits=None):
   """
   find recurring representation of the fraction <a>/<b> in the specified base.
 
@@ -6103,6 +6148,7 @@ def recurring(a, b, recur=0, base=10, digits=None):
   >>> tuple(recurring(5, 17, base=16))
   ('0', '', '4B')
   """
+  if base == 0: base = radix
   # check input fraction
   if b == 0 or (recur and a == 0):
     raise ValueError("invalid input fraction: {a} / {b} [recur={recur}]".format(a=a, b=b, recur=bool(recur)))
@@ -6144,7 +6190,7 @@ def format_recurring(*args, **kw):
   return (i + dp + nr + rr if nr or rr else i)
 
 # recurring -> fraction
-def recurring2fraction(i, nr, rr, base=10, digits=None):
+def recurring2fraction(i, nr, rr, base=0, digits=None):
   """
   turn the decimal representation <i>.<nr>(<rr>)...
   into a fraction in its lowest terms.
@@ -6158,6 +6204,7 @@ def recurring2fraction(i, nr, rr, base=10, digits=None):
   >>> recurring2fraction('0', '', '4B', base=16)
   (5, 17)
   """
+  if base == 0: base = radix
   (p, q) = (len(nr), len(rr))
   i = base2int(i, base=base, digits=digits)
   if q:
@@ -8307,6 +8354,15 @@ def is_roman(r):
   return catch(roman2int, r, strict=1) or 0
 
 
+# set the default base (radix)
+def base(*args):
+  if len(args) > 1: raise TypeError(str.format("base: invalid base: {args!r}", args=args))
+  if args:
+    n = as_int((args[0] or 10), include="+")
+    if n < 2: raise ValueError(str.format("base: invalid base: {n}", n=n))
+    enigma.radix = (args[0] or 10)
+  return enigma.radix
+
 # digits = (default) digits for use in converting bases
 @static(digits=str_digit + str_upper)
 def base_digits(*args):
@@ -8322,11 +8378,11 @@ def base_digits(*args):
   NOTE: this is a global setting and will affect all subsequent
   base conversions.
   """
-  if len(args) > 1: raise TypeError(str.format("invalid base digits: {args!r}", args=args))
+  if len(args) > 1: raise TypeError(str.format("base_digits: invalid base digits: {args!r}", args=args))
   if args: base_digits.digits = (args[0] or (str_digit + str_upper))
   return base_digits.digits
 
-def int2base(i, base=10, width=None, pad=None, group=None, sep=",", neg='-', digits=None, validate=0):
+def int2base(i, base=0, width=None, pad=None, group=None, sep=",", neg='-', digits=None, validate=0):
   """
   convert an integer <i> to a string representation in the specified
   base <base>.
@@ -8369,6 +8425,7 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", neg='-', dig
   >>> int2base(84, base=2, width=9, group=3, sep=" ")
   '001 010 100'
   """
+  if base == 0: base = radix
   if base < 2: raise ValueError("invalid base {base!r}".format(base=base))
   if digits is None: digits = base_digits()
   i = (as_int(i) if validate else int(i))
@@ -8402,7 +8459,7 @@ def int2base(i, base=10, width=None, pad=None, group=None, sep=",", neg='-', dig
 
 int2str = int2base
 
-def base2int(s, base=10, strip=0, neg="-~", digits=None):
+def base2int(s, base=0, strip=0, neg="-~", digits=None):
   """
   convert a string representation of an integer in the specified base
   to an integer.
@@ -8418,6 +8475,7 @@ def base2int(s, base=10, strip=0, neg="-~", digits=None):
   >>> base2int('HELLO', base=36)
   29234652
   """
+  if base == 0: base = radix
   if base < 2: raise ValueError("invalid base {base!r}".format(base=base))
   if digits is None: digits = base_digits()
   if len(digits) > base: digits = digits[:base]
@@ -8564,7 +8622,7 @@ def int2words(n, scale='short', sep='', hyphen=' ', lang='en'):
 
 # convert an integer to BCD (binary coded decimal)
 # same as: nconcat(nsplit(n, base=10), base=16)
-def int2bcd(n, base=10, bits_per_digit=4):
+def int2bcd(n, base=0, bits_per_digit=4):
   """
   convert integer n into BCD (Binary Coded Decimal)
 
@@ -8575,6 +8633,7 @@ def int2bcd(n, base=10, bits_per_digit=4):
   >>> int2bcd(123456) == 0x123456
   True
   """
+  if base == 0: base = radix
   s = 1
   if n < 0: (s, n) = (-1, -n)
   r = k = 0
@@ -10132,8 +10191,9 @@ class MagicSquare(object):
 
 # output sums
 
-def output_mul(a, b, base=10, rev=0, pre='', start=None, end=None):
+def output_mul(a, b, base=0, rev=0, pre='', start=None, end=None):
   """output <a> * <b> as a long multiplication sum"""
+  if base == 0: base = radix
   (a, b) = (as_int(x, include='0+') for x in (a, b))
   c = a * b
   #printf("{a} * {b} = {c}")
@@ -10161,13 +10221,14 @@ def output_mul(a, b, base=10, rev=0, pre='', start=None, end=None):
   printf("{pre}{x}", x='=' * k)
   if end is not None: printf("{end}")
 
-def output_div(a, b, rem=0, base=10, pre='', start=None, end=None):
+def output_div(a, b, rem=0, base=0, pre='', start=None, end=None):
   """
   output <a> / <b> as a long division sum
 
   if <rem> is set then the remainder will always be printed
   (even if it is zero).
   """
+  if base == 0: base = radix
   (c, r) = divmod(a, b)
   #printf("{a} / {b} = {c} (rem {r})")
   (ka, kb, kc) = (ndigits(x, base=base) for x in (a, b, c))
@@ -10198,8 +10259,9 @@ def output_div(a, b, rem=0, base=10, pre='', start=None, end=None):
   printf("{pre}{s}", s=s.replace('-', '='))
   if end is not None: printf("{end}")
 
-def output_sqrx(x, r=None, base=10, pre='', start=None, end=None):
+def output_sqrx(x, r=None, base=0, pre='', start=None, end=None):
   """output the extraction of the square root of <x>"""
+  if base == 0: base = radix
   if start is not None: printf("{start}")
   if r is None: r = isqrt(x)
   n = ndigits(x, base=base)
@@ -10296,7 +10358,7 @@ def substitute(s2d, text, digits=None):
   return translate(text, (lambda x: digits[s2d[x]] if x in s2d else x))
 
 # friendly interface to the substituted sum solver
-def substituted_sum(terms, result, digits=None, l2d=None, d2i=None, base=10):
+def substituted_sum(terms, result, digits=None, l2d=None, d2i=None, base=0):
   """
   a substituted addition sum solver - encapsulated by the SubstitutedSum class.
 
@@ -10307,6 +10369,7 @@ def substituted_sum(terms, result, digits=None, l2d=None, d2i=None, base=10):
   d2i - invalid allocations (default: leading digits cannot be 0)
   base - base we're working in (default: 10)
   """
+  if base == 0: base = radix
   # check there aren't too many letters (we could issue a warning)
   words = list(terms)
   words.append(result)
@@ -10351,7 +10414,7 @@ class SubstitutedSum(object):
   8308440 + 8333218 + 8302040 + 8333260 = 33276958 / B=3 E=2 G=5 K=7 L=8 M=9 Q=4 R=0 S=1 V=6
   """
 
-  def __init__(self, terms, result, base=10, digits=None, l2d=None, d2i=None):
+  def __init__(self, terms, result, base=0, digits=None, l2d=None, d2i=None):
     """
     create a substituted addition sum puzzle.
 
@@ -10370,7 +10433,7 @@ class SubstitutedSum(object):
     text = join(terms, sep=' + ') + ' = ' + result
 
     self.terms = terms
-    self.base = base
+    self.base = (radix if base == 0 else base)
     self.result = result
     self.digits = digits
     self.l2d = l2d
@@ -10424,13 +10487,14 @@ class SubstitutedSum(object):
 
   # class method to chain multiple sums together
   @classmethod
-  def chain(cls, sums, base=10, digits=None, l2d=None, d2i=None):
+  def chain(cls, sums, base=0, digits=None, l2d=None, d2i=None):
     """
     solve a sequence of substituted sum problems.
 
     sums are specified as a sequence of: (<term>, <term>, ..., <result>)
     """
     # are we done?
+    if base == 0: base = radix
     if not sums:
       yield l2d
     else:
@@ -10441,7 +10505,8 @@ class SubstitutedSum(object):
         for x in cls.chain(sums[1:], base=base, digits=digits, l2d=r, d2i=d2i): yield x
 
   @classmethod
-  def chain_run(cls, sums, base=10, digits=None, l2d=None, d2i=None):
+  def chain_run(cls, sums, base=0, digits=None, l2d=None, d2i=None):
+    if base == 0: base = radix
     template = join(('(' + join(s[:-1], sep=' + ') + ' = ' + s[-1] + ')' for s in sums), sep=' ')
     printf("{template}")
     for s in cls.chain(sums, base=base, digits=digits, l2d=l2d, d2i=d2i):
@@ -10587,7 +10652,8 @@ class SubstitutedSum(object):
   # <ss> is a list of the indices of suspect terms
   # (see: Puzzle 56 [ https://enigmaticcode.wordpress.com/2018/01/24/puzzle-56-addition/ ])
   @classmethod
-  def bungled_sum(cls, ts, ss=None, base=10):
+  def bungled_sum(cls, ts, ss=None, base=0):
+    if base == 0: base = radix
 
     # sort out the arguments
     n = len(ts)
@@ -10872,7 +10938,7 @@ class SubstitutedExpression(object):
   # but you still need to document them in __init__
   defaults = dict(
     # parameters that have a default value
-    base=10, distinct=1, process=1, reorder=1, first=0, denest=0, sane=1, warn=0, opt='', verbose=1,
+    base=0, distinct=1, process=1, reorder=1, first=0, denest=0, sane=1, warn=0, opt='', verbose=1,
     # other parameters
     exprs=None, symbols=None, digits=None, s2d=None, d2i=None, answer=None, accumulate=None,
     literal=None, template=None, solution=None, header=None, output=None,
@@ -11030,6 +11096,9 @@ class SubstitutedExpression(object):
           printf("WARNING: enabling experimental options: {xs}", xs=join(xs, sep=", "))
       if sane == 0 :
         printf("WARNING: sanity checks disabled - good luck!")
+
+    # base (use default radix if specified as 0)
+    if base == 0: base = radix
 
     # the symbols to replace (for implicit expressions)
     if symbols is None: symbols = str_upper
@@ -11201,6 +11270,7 @@ class SubstitutedExpression(object):
 
     # update the processed values
     self.exprs = exprs
+    self.base = base
     self.symbols = symbols
     self.digits = digits
     self.s2d = s2d
@@ -11305,7 +11375,7 @@ class SubstitutedExpression(object):
             word = expr[1:-1]
             if all(x in symbols for x in word):
               if verbose & self.vW: printf("[SubstitutedExpression: replacing ({t}) -> ({val} = {{{word}}})]", t=ts[i])
-              exprs[i] = (int2base(val, base=10), word, 3)
+              exprs[i] = (int2base(val, base=radix), word, 3)
               (xs[i], vs[i]) = (vs[i], xs[i])
 
     # reorder the expressions into a more appropriate evaluation order
@@ -11702,8 +11772,7 @@ class SubstitutedExpression(object):
     if template:
       ss.append(_replace_words(template, (lambda w: substitute(d, w))))
     if solution:
-      # or: (k, int2base(d[k], base=10))
-      ss.append(map2str(((k, d[k]) for k in solution), sep=" ", enc=""))
+      ss.append(map2str(((k, int2base(d[k], base=radix)) for k in solution), sep=" ", enc=""))
     if ss: print(join(ss, sep=' / '))
 
 
@@ -11878,7 +11947,7 @@ class SubstitutedExpression(object):
       run - a function to run the solver (ditto)
     """
     # defaults
-    if base is None: base = cls.defaults.get('base', 10)
+    if base is None: base = cls.defaults.get('base', None)
     if carries is None: carries = str_lower + rev(str_upper) + str_digit
     if extra is None: extra = ()
     if s2d is None: s2d = cls.defaults.get('s2d', None)
@@ -11893,6 +11962,8 @@ class SubstitutedExpression(object):
     if sane is None: sane = cls.defaults.get('sane', 1)
     if warn is None: warn = cls.defaults.get('warn', 0)
     if verbose is None: verbose = cls.defaults.get('verbose', None)
+
+    if base == 0: base = radix
 
     # the symbols to replace (for implicit expressions)
     if symbols is None: symbols = str_upper
@@ -12549,7 +12620,7 @@ def substituted_expression(*args, **kw):
 
 # useful in square root extractions (see: sphinx05.run, sphinx10.run, sphinx12.run)
 # [ https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Decimal_(base_10) ]
-@static(base=10)
+@static(base=radix)
 def sqrx(x, y=None, z=None):
   """
   perform a step in the extraction of a square root:
