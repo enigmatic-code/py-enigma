@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat May 23 10:46:05 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue May 26 12:19:18 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -28,7 +28,7 @@ all_different          - check arguments are pairwise distinct
 all_same               - check arguments all have the same value
 arg                    - extract an argument from the command line
 args                   - extract a list of arguments from the command line
-as_int                 - check argument is an integer
+as_int                 - treat argument as an integer (where possible)
 base                   - get/set default base (radix) used in base conversion
 base_digits            - get/set digits used in numerical base conversion
 base2int, str2int      - convert a string in the specified base to an integer
@@ -78,9 +78,11 @@ dsum                   - digit sum of a number
 ediv                   - exact division (or raise an error)
 egcd                   - extended gcd
 exact_cover            - find exact covers from a collection of subsets
+exec_file              - execute a file containing Python code
 express                - express an amount using specific denominations
 factor                 - the prime factorisation of a number
 factorial              - factorial function
+false                  - a function that always returns false
 farey                  - generate Farey sequences of coprime pairs
 fcompose               - forward functional composition
 fdiv                   - float division
@@ -104,6 +106,7 @@ grid_adjacency         - adjacency matrix for an n x m grid
 group                  - collect values of a sequences into groups
 hypot, ihypot          - calculate hypotenuse
 icount, icount_*       - count the number of elements of a sequence that satisfy a predicate
+identity               - the identity function
 implies                - logical implication (p -> q)
 int2base, int2str      - convert an integer to a string in the specified base
 int2bcd                - convert an integer to binary coded decimal
@@ -202,6 +205,7 @@ translate              - substitute values in text
 tri, T                 - tri(n) is the nth triangular number
 trim                   - remove elements from the start/end of a sequence
 trirt                  - the (positive) triangular root of a number
+true                   - a function that always returns True
 tuples                 - generate overlapping tuples from a sequence
 ulambda                - complex parameter unpacking
 union                  - construct the union of a bunch of containers
@@ -209,6 +213,7 @@ uniq, uniq1            - unique elements of a sequence
 unzip                  - inverse of zip
 unpack                 - return a function that unpacks its arguments
 update                 - create an updated version of a container object
+wrap                   - a decorator to wrap a function in another function
 zip_eq                 - check sequences contain the same elements
 
 2D geometry functions:
@@ -254,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-05-22" # <year>-<month>-<number>
+__version__ = "2026-05-24" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -6659,10 +6664,18 @@ def irange_round(a, b, step=1, rnd='i'):
     kb = ('C' if step > 0 else 'F')
   return irange(fn[ka](a), fn[kb](b), step=step)
 
+# calculate the sum of an arithmetic sequence
+# (for large ranges this is faster than calling sum() on it)
+def aseq_sum(seq):
+  n = catch(len, seq)
+  if n is None: return None
+  return (0 if n == 0 else n * (seq[0] + seq[-1]) // 2)
+
 # inclusive range iterator
 # irange(a, b) -> [a, a + 1, ..., b]
 # irange(n) -> irange(0, n - 1) -> [0, ..., n - 1]
-@static(inf=inf, round=irange_round)  # so irange.<name> can be used
+@static(inf=inf, round=irange_round, sum=(lambda *args, **kw: aseq_sum(irange(*args, **kw))))
+# so irange.<name> can be used
 def irange(a, b=None, step=1):
   """
   irange(a, b) =
