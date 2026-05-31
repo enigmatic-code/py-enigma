@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue May 26 12:19:18 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun May 31 09:36:49 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-05-24" # <year>-<month>-<number>
+__version__ = "2026-05-26" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -1810,7 +1810,8 @@ def diff(a, b, *rest, **kw):
   """
   fn = kw.pop('fn', tuple)
   if kw: raise TypeError(str.format("diff: unknown arguments {kw}", kw=seq2str(kw.keys())))
-  if rest: b = set(b).union(*rest)
+  b = set(b)
+  if rest: b.update(*rest)
   return fn(x for x in a if x not in b)
 
 # or: excl(ude) / incl(ude)
