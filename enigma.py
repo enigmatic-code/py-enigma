@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun  8 22:12:26 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun  8 22:22:56 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -7362,7 +7362,7 @@ def express(t, ds, qs=None, min_q=0, max_q=inf):
   ds = list(ds)
   if not (ds and ds[0] > 0): raise ValueError(str.format("invalid denominations {ds!r}", ds=ds))
   if qs: return express_quantities(t, ds, qs)
-  if min_q > 0: return express_denominations_min(t, ds, min_q, max_q)
+  if min_q != 0: return express_denominations_min(t, ds, min_q, max_q)
   return express_denominations(t, ds, max_q=max_q)
 
 # express total <t> using denominations <ds>
