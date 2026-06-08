@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun May 31 09:36:49 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun  8 22:12:26 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-05-26" # <year>-<month>-<number>
+__version__ = "2026-06-08" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -7362,7 +7362,7 @@ def express(t, ds, qs=None, min_q=0, max_q=inf):
   ds = list(ds)
   if not (ds and ds[0] > 0): raise ValueError(str.format("invalid denominations {ds!r}", ds=ds))
   if qs: return express_quantities(t, ds, qs)
-  if min_q != 0: return express_denominations_min(t, ds, min_q, max_q)
+  if min_q > 0: return express_denominations_min(t, ds, min_q, max_q)
   return express_denominations(t, ds, max_q=max_q)
 
 # express total <t> using denominations <ds>
@@ -7396,7 +7396,7 @@ def express_denominations_min(t, ds, min_q, max_q):
       yield list(q + min_q for q in ss)
 
 # express total <t> using denominations <ds>, quantities chosen from <qs>
-def express_quantities(t, ds, qs, ss=[]):
+def _express_quantities(t, ds, qs, ss=[]):
   if t == 0:
     if not ds:
       yield ss
@@ -7408,7 +7408,23 @@ def express_quantities(t, ds, qs, ss=[]):
       t_ = t - d * q
       if t_ < 0: break
       #yield from express_quantities(t_, ds[1:], qs, ss + [q]) #[Python 3]
-      for r in express_quantities(t_, ds[1:], qs, ss + [q]): yield r #[Python 2]
+      for r in _express_quantities(t_, ds[1:], qs, ss + [q]): yield r #[Python 2]
+
+# deal with non-zero min quantity
+def express_quantities(t, ds, qs):
+  min_q = qs[0]
+  if min_q == 0:
+    #yield from _express_quantities(t, ds, qs)  #[Python 3]
+    for r in _express_quantities(t, ds, qs): yield r  #[Python 2]
+    return
+  # allocate the minimum quantities
+  t -= min_q * sum(ds)
+  if t == 0:
+    yield [min_q] * len(ds)
+  elif t > 0:
+    # solve for the remaining amount
+    for ss in _express_quantities(t, ds, list(q - min_q for q in qs)):
+      yield list(q + min_q for q in ss)
 
 # express total <t> using (<denomination>, <max-quantity>) pairs <vs>
 # vs = ordered list of (<denomination>, <max-quantity>) pairs
