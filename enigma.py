@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun  8 22:22:56 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jun 10 11:50:27 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-06-08" # <year>-<month>-<number>
+__version__ = "2026-06-09" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -7334,7 +7334,7 @@ def bit_positions(x):
 # for "coin puzzles", see also: Denominations()
 
 # simple express:
-def express(t, ds, qs=None, min_q=0, max_q=inf):
+def express(t, ds, qs=None, min_q=0, max_q=inf, validate=0):
   """
   express total <t> using denominations <ds>.
 
@@ -7360,6 +7360,10 @@ def express(t, ds, qs=None, min_q=0, max_q=inf):
   4562
   """
   ds = list(ds)
+  if validate:
+    # check ds (and qs) for strictly increasing sequences
+    if not is_increasing(ds, strict=1): raise ValueError(str.format("express: invalid denominiations {ds!r}", ds=ds))
+    if qs and not is_increasing(qs, strict=1): raise ValueError(str.format("express: invalid quantities {qs!r}", qs=qs))
   if not (ds and ds[0] > 0): raise ValueError(str.format("invalid denominations {ds!r}", ds=ds))
   if qs: return express_quantities(t, ds, qs)
   if min_q != 0: return express_denominations_min(t, ds, min_q, max_q)
