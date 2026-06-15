@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jun 10 11:50:27 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun 15 10:45:42 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-06-09" # <year>-<month>-<number>
+__version__ = "2026-06-14" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -6665,6 +6665,10 @@ def irange_round(a, b, step=1, rnd='i'):
     kb = ('C' if step > 0 else 'F')
   return irange(fn[ka](a), fn[kb](b), step=step)
 
+# find the common difference of an arithmetic sequence (or None)
+def aseq_diff(seq):
+  return seq_all_same_r(y - x for (x, y) in tuples(seq, 2)).value
+
 # calculate the sum of an arithmetic sequence
 # (for large ranges this is faster than calling sum() on it)
 def aseq_sum(seq):
@@ -7338,11 +7342,13 @@ def express(t, ds, qs=None, min_q=0, max_q=inf, validate=0):
   """
   express total <t> using denominations <ds>.
 
-  optional: using quantities chosen from <qs>
-  or: minimum quantity <min_q> (integer),
-  maximum quantity <max_q> (integer, or inf).
+  optional: using minimum quantity <min_q> (integer),
+  and maximum quantity <max_q> (integer, or inf);
+  or: quantities chosen from <qs> (if <qs> is specified
+  the <min_q> and <max_q> arguments are ignored).
 
   <ds> and <qs> should be increasing sequences.
+  (this can be checked with 'validate=1').
 
   generated values are the quantities for each denomination in <ds>.
 
@@ -7362,8 +7368,8 @@ def express(t, ds, qs=None, min_q=0, max_q=inf, validate=0):
   ds = list(ds)
   if validate:
     # check ds (and qs) for strictly increasing sequences
-    if not is_increasing(ds, strict=1): raise ValueError(str.format("express: invalid denominiations {ds!r}", ds=ds))
-    if qs and not is_increasing(qs, strict=1): raise ValueError(str.format("express: invalid quantities {qs!r}", qs=qs))
+    if not is_increasing(ds, strict=1): raise ValueError(str.format("express: invalid denominations {ds!r}", ds=ds))
+    if qs is not None and ((not qs) or (not is_increasing(qs, strict=1))): raise ValueError(str.format("express: invalid quantities {qs!r}", qs=qs))
   if not (ds and ds[0] > 0): raise ValueError(str.format("invalid denominations {ds!r}", ds=ds))
   if qs: return express_quantities(t, ds, qs)
   if min_q != 0: return express_denominations_min(t, ds, min_q, max_q)
@@ -7385,7 +7391,8 @@ def express_denominations(t, ds, max_q=inf, ss=[]):
     else:
       qs = irange(0, min(k, max_q))
     for q in qs:
-      for r in express_denominations(t - d * q, ds[1:], max_q, ss + [q]): yield r
+      #yield from express_denominations(t - d * q, ds[1:], max_q, ss + [q])  #[Python 3]
+      for r in express_denominations(t - d * q, ds[1:], max_q, ss + [q]): yield r  #[Python 2]
 
 # express total <t> using denominations <ds>, min quantity <min_q>
 def express_denominations_min(t, ds, min_q, max_q):
@@ -7411,8 +7418,8 @@ def _express_quantities(t, ds, qs, ss=[]):
     for q in qs:
       t_ = t - d * q
       if t_ < 0: break
-      #yield from express_quantities(t_, ds[1:], qs, ss + [q]) #[Python 3]
-      for r in _express_quantities(t_, ds[1:], qs, ss + [q]): yield r #[Python 2]
+      #yield from express_quantities(t_, ds[1:], qs, ss + [q])  #[Python 3]
+      for r in _express_quantities(t_, ds[1:], qs, ss + [q]): yield r  #[Python 2]
 
 # deal with non-zero min quantity
 def express_quantities(t, ds, qs):
@@ -7458,9 +7465,11 @@ def express_pairs(t, vs, tv, k=None, xs=[]):
       if x > t: break
       max_n = min(q, t // x)
       if k is not None and k < max_n: max_n = k
+      if tv < inf: tv -= x * q
       for n in irange(1, max_n):
-        nx = n * x
-        for r in express_pairs(t - nx, vs[i + 1:], tv - nx, (None if k is None else k - n), xs + [(x, n)]): yield r
+        k_ = (None if k is None else k - n)
+        #yield from express_pairs(t - n * x, vs[i + 1:], tv, k_, xs + [(x, n)])  # [Python 3]
+        for r in express_pairs(t - n * x, vs[i + 1:], tv, k_, xs + [(x, n)]): yield r  # [Python 2]
 
 # An implementation of the Boecker-Liptak Money Changing algorithm from:
 #
@@ -7605,8 +7614,8 @@ def _decompose(t, k, min_v, max_v, d, R, M, r, fn, ns=()):
   else:
     k_ = k - 1
     for n in irange(min_v, min(max_v, R(t, k, k_, min_v))):
-      #yield from _decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,)) #[Python 3]
-      for z in _decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,)): yield z #[Python 2]
+      #yield from _decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,))  #[Python 3]
+      for z in _decompose(t - n, k_, M(n, d), max_v, d, R, M, r, fn, ns + (n,)): yield z  #[Python 2]
 
 # return a function to generate k-sequences of positive integers with a particular total
 def Decompose(k=None, increasing=1, sep=1, min_v=1, max_v=inf, fn=identity):
@@ -13399,6 +13408,15 @@ class CrossFigure(object):
 
 # Football League Table Utility
 
+# check the Landau condition for the score sequence of a tournament of <n> teams
+# ss = ordered score sequence (low to high) 0 <= ss[i] <= n - 1
+def landau(n, ss):
+  if not (len(ss) == n and n > 1): raise ValueError("landau: invalid arguments")
+  for (i, s) in enumerate(csum(ss), start=1):
+    r = compare(s, C(i, 2))
+    if r == -1: return False
+  return (r == 0)
+
 class Football(object):
   """
   Utility routines for solving Football League Table puzzles.
@@ -15691,7 +15709,7 @@ enigma.py has the following command-line usage:
       --run:verbose   (or -rv)
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.14.2',
+  version=__version__, python='2.7.18', python3='3.14.6',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
