@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 21 10:43:05 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 21 17:37:50 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-06-20" # <year>-<month>-<number>
+__version__ = "2026-06-21" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -1652,7 +1652,7 @@ def intersect(ss, fn=set, **kw):
   raise ValueError("empty intersection")
 
 # return an element of a container
-def peek(seq, k=0, **kw):
+def peek(seq, k=0, p=None, **kw):
   """
   return an element of a container.
 
@@ -1661,6 +1661,9 @@ def peek(seq, k=0, **kw):
 
   empty containers (or those with too few elements) return the
   specified 'default' value, or raise an IndexError.
+
+  if p is specified, then only items satisfying predicate p will be
+  considered. (i.e. other elements will be discarded).
 
   note that if the container is an iterator, items will be consumed.
 
@@ -1680,6 +1683,7 @@ def peek(seq, k=0, **kw):
   """
   if kw.pop('validate', None): k = as_int(k, include="0+")
   if kw and list(kw.keys()) != ['default']: raise TypeError(str.format("peek: unknown arguments {kw}", kw=seq2str(kw.keys())))
+  if p is not None: seq = filter(p, seq)
   if k >= 0:
     if not isinstance(seq, dict):
       # try to index into the container
@@ -3276,7 +3280,7 @@ ifirst = partial(first, fn=iter)
 
 # return the single value if s contains only a single value (else None)
 # NOTE: similar to the Python expression : [[ [x] = s ]]
-def singleton(s, skip=0, default=None):
+def singleton(seq, skip=0, default=None):
   """
   if the container <s> contains only a single value return it,
   otherwise return None (or the <default> parameter)
@@ -3288,7 +3292,7 @@ def singleton(s, skip=0, default=None):
   >>> singleton([1, 2, 3], default=0)
   0
   """
-  r = first(s, 2, skip)
+  r = first(seq, 2, skip)
   return (r[0] if len(r) == 1 else default)
 
 # check container <s> contains only a single value
@@ -10249,7 +10253,7 @@ def output_mul(a, b, base=0, rev=0, pre='', start=None, end=None, sep=''):
   # output the multiplication
   if start is not None: printf("{start}")
   printf("{pre}{fa}")
-  printf("{pre}{fb} *")
+  printf("{pre}{fb} {sep}*")
   printf("{pre}{x}", x='-' * w)  # if b != 0: ...
   # output the intermediates
   xs = list()
