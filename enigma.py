@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun 15 10:45:42 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 21 10:43:05 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-06-14" # <year>-<month>-<number>
+__version__ = "2026-06-20" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -8433,7 +8433,7 @@ def int2base(i, base=0, width=None, pad=None, group=None, sep=",", neg='-', digi
   if the <width> parameter is specified the number of digits will be
   padded to value of <width> using the <pad> character. if <width> is
   positive pad characters will be added on the left, if negative they
-  are added on the right. The default pad character is the digit 0.
+  are added on the right. The default pad character is the digit '0'.
 
   if the <group> parameter is specified the digits are grouped into
   blocks of <group> digits and separated by the string <sep> (this
@@ -10234,7 +10234,7 @@ class MagicSquare(object):
 
 # output sums
 
-def output_mul(a, b, base=0, rev=0, pre='', start=None, end=None):
+def output_mul(a, b, base=0, rev=0, pre='', start=None, end=None, sep=''):
   """output <a> * <b> as a long multiplication sum"""
   if base == 0: base = radix
   (a, b) = (as_int(x, include='0+') for x in (a, b))
@@ -10243,12 +10243,14 @@ def output_mul(a, b, base=0, rev=0, pre='', start=None, end=None):
   (ka, kb, kc) = (ndigits(x, base=base) for x in (a, b, c))
   k = max(ka, kb, kc)
   # format a number
-  fmt = lambda n, base=base, pad=' ', width=k: int2base(n, base=base, pad=pad, width=width)
+  fmt = lambda n, base=base, pad=' ', width=k: int2base(n, base=base, pad=pad, width=width, group=1, sep=sep)
+  (fa, fb, fc) = (fmt(a), fmt(b), fmt(c))
+  w = max(len(fa), len(fb), len(fc))
   # output the multiplication
   if start is not None: printf("{start}")
-  printf("{pre}{a}", a=fmt(a))
-  printf("{pre}{b} *", b=fmt(b))
-  printf("{pre}{x}", x='-' * k)  # if b != 0: ...
+  printf("{pre}{fa}")
+  printf("{pre}{fb} *")
+  printf("{pre}{x}", x='-' * w)  # if b != 0: ...
   # output the intermediates
   xs = list()
   for (i, d) in enumerate(nsplit(b, base=base, reverse=1)):
@@ -10259,9 +10261,9 @@ def output_mul(a, b, base=0, rev=0, pre='', start=None, end=None):
   if rev: xs.reverse()
   for x in xs: printf("{pre}{x}")
   # output the result
-  printf("{pre}{x}", x='-' * k)
-  printf("{pre}{c}", c=fmt(c))
-  printf("{pre}{x}", x='=' * k)
+  printf("{pre}{x}", x='-' * w)
+  printf("{pre}{fc}")
+  printf("{pre}{x}", x='=' * w)
   if end is not None: printf("{end}")
 
 def output_div(a, b, rem=0, base=0, pre='', start=None, end=None):
@@ -11914,9 +11916,10 @@ class SubstitutedExpression(object):
   # integrate pretty-printers for output of various types of sum:
 
   # multiplication, set: answer=(term1, term2) to produce: term1 * term2
-  def output_mul(self, s, ans=None, rev=0, pre='  ', start='', end=''):
+  # TODO: sep=' ' will become the default
+  def output_mul(self, s, ans=None, rev=0, pre='  ', start='', end='', sep=''):
     fail(ans is None, "output_mul: set answer = (<term1>, <term2>) to output <term1> * <term2>")
-    output_mul(*ans, rev=rev, pre=pre, start=start, end=end)
+    output_mul(*ans, rev=rev, pre=pre, start=start, end=end, sep=sep)
 
   # square root extraction, set: answer=term to produce: sqrt(term)
   def output_sqrx(self, s, ans=None, pre='  ', start='', end=''):
@@ -14935,7 +14938,7 @@ class Matrix(list):
 
 
   # create a function that creates (row, const) pairs suitable for construction
-  # matrix A in a call to linear
+  # matrix A in a call to linear()
   # symbols = sequence of symbols used in the system of equations
   # k = default constant (if none is specified)
   @classmethod
