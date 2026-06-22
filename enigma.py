@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 21 17:37:50 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jun 22 16:46:57 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-06-21" # <year>-<month>-<number>
+__version__ = "2026-06-22" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -10270,7 +10270,26 @@ def output_mul(a, b, base=0, rev=0, pre='', start=None, end=None, sep=''):
   printf("{pre}{x}", x='=' * w)
   if end is not None: printf("{end}")
 
-def output_div(a, b, rem=0, base=0, pre='', start=None, end=None):
+# generate an underline string for strings in <ss>
+def underline(ss, ul='-', spc=' '):
+  # all strings should be the same length
+  n = xl = xr = None
+  for s in ss:
+    if s is None: continue  # skip None
+    if n is None:
+      n = len(s)
+      (xl, xr) = (n - 1, 0)
+    try:
+      xl = peek(i for i in irange(0, xl - 1) if s[i] != spc)
+    except IndexError:
+      pass
+    try:
+      xr = peek(i for i in irange(n - 1, xr + 1, step=-1) if s[i] != spc)
+    except IndexError:
+      pass
+  return (spc * xl) + (ul * (xr - xl + 1)) + (spc * (n - xr - 1))
+
+def output_div(a, b, rem=0, base=0, pre='', start=None, end=None, sep=''):
   """
   output <a> / <b> as a long division sum
 
@@ -10282,59 +10301,66 @@ def output_div(a, b, rem=0, base=0, pre='', start=None, end=None):
   #printf("{a} / {b} = {c} (rem {r})")
   (ka, kb, kc) = (ndigits(x, base=base) for x in (a, b, c))
   # format a number
-  fmt = lambda n, base=base, pad=' ', width=ka + kb + 3: int2base(n, base=base, pad=pad, width=width)
+  fmt = partial(int2base, base=base, pad=' ', group=1, sep=sep)
+  (fa, fb, fc) = (fmt(a), fmt(b), fmt(c))
   # output the division
   if start is not None: printf("{start}")
-  printf("{pre}{c}", c=fmt(c))
-  printf("{pre}{x} --{y}", x=' ' * kb, y='-' * ka)
-  printf("{pre}{b} ) {a}", b=fmt(b, width=kb), a=fmt(a, width=ka))
-  (ds, p, w, s) = (nsplit(a, base=base, fn=list), 0, kb + 3, None)
+  printf("{pre}{z}{fc}", z=' ' * (len(fb) + len(fa) - len(fc) + 5))
+  printf("{pre}{z}  ---{zz}", z=' ' * len(fb), zz='-' * len(fa))
+  printf("{pre}{fb}  )  {fa}")
+  (ds, p, w, s, z) = (nsplit(a, base=base, fn=list), 0, 0, None, ' ' * (len(fb) + 5))
   while ds:
     p = base * p + ds.pop(0)
     q = floor(p, b)
     w += 1
     if q > 0:
-      r = p - q
+      (fp, fq) = (fmt(p, width=w), fmt(q, width=w))
       if s:
-        printf("{pre}{s}")
-        printf("{pre}{p}", p=fmt(p, width=w))
-      printf("{pre}{q}", q=fmt(q, width=w))
-      s = ('-' * ndigits(max(p, q), base=base)).rjust(w)
-      p = r
+        printf("{pre}{z}{s}")
+        printf("{pre}{z}{fp}")
+      printf("{pre}{z}{fq}")
+      (s, p) = (underline([fp, fq]), p - q)
   if p or rem:
-    if s: printf("{pre}{s}")
-    printf("{pre}{p} (rem)", p=fmt(p, width=w))
-    s = ('-' * ndigits(max(p, q), base=base)).rjust(w)
-  printf("{pre}{s}", s=s.replace('-', '='))
+    if s: printf("{pre}{z}{s}")
+    printf("{pre}{z}{p}  (rem)", p=fmt(p, width=w))
+    s = underline([fp, fq])
+  printf("{pre}{z}{s}", s=s.replace('-', '='))
   if end is not None: printf("{end}")
 
-def output_sqrx(x, r=None, base=0, pre='', start=None, end=None):
+def output_sqrx(x, r=None, base=0, pre='', start=None, end=None, sep=''):
   """output the extraction of the square root of <x>"""
   if base == 0: base = radix
   if start is not None: printf("{start}")
   if r is None: r = isqrt(x)
   n = ndigits(x, base=base)
-  fmt = partial(int2base, base=base, pad=' ')
-  printf("{pre}   {x}{r}", r=fmt(r, group=1, sep=' '), x=' ' * (n + 1 - 2*ndigits(r, base=base)))
-  printf("{pre}  -{x}", x='-' * n)
-  printf("{pre}\\/ {x}", x=fmt(x))
+  fmt = partial(int2base, base=base, pad=' ', group=1, sep=sep)
+  fx = fmt(x)
+  fr = fmt(r, sep=sep * 2 + ' ')
+  printf("{pre}   {z}{fr}", z=' ' * (len(fx) - len(fr)))
+  printf("{pre}  -{z}", z='-' * len(fx))
+  printf("{pre}\\/ {fx}")
   # chop digits of x in pairs
   xds = nsplit(x, base=base*base)
   rds = nsplit(r, base=base)
   w = (1 if xds[0] < base else 2)
   r = z = 0
+  fz = None
   sqrx.base = base
   for (i, (xd, d)) in enumerate(zip(xds, rds)):
     z = z*base*base + xd
-    if i > 0 and d > 0: printf("{pre}   {z}", z=fmt(z, width=w).rjust(w))
+    if i > 0 and d > 0:
+      fz = fmt(z, width=w)
+      printf("{pre}   {fz}")
     p = d * (2 * base * r + d) # = sqrx(r, d)
     z -= p
     if d > 0:
-      printf("{pre}   {p}", p=fmt(p, width=w))
-      printf("{pre}   {s}", s=(('=' if z == 0 else '-') * ndigits(p, base=base)).rjust(w))
+      fp = fmt(p, width=w)
+      printf("{pre}   {fp}")
+      s = underline([fz, fp], ('=' if (z == 0 and i + 1 == len(rds)) else '-'))
+      printf("{pre}   {s}")
     w += 2
     r = r*base + d
-  if z: printf("{pre} {z} (rem)", z=fmt(z, width=w).rjust(w))
+  if z: printf("{pre} {z} (rem)", z=fmt(z, width=w))
   if end is not None: printf("{end}")
 
 ###############################################################################
@@ -11921,14 +11947,14 @@ class SubstitutedExpression(object):
 
   # multiplication, set: answer=(term1, term2) to produce: term1 * term2
   # TODO: sep=' ' will become the default
-  def output_mul(self, s, ans=None, rev=0, pre='  ', start='', end='', sep=''):
+  def output_mul(self, s, ans=None, rev=0, pre='  ', start='', end='', sep=' '):
     fail(ans is None, "output_mul: set answer = (<term1>, <term2>) to output <term1> * <term2>")
     output_mul(*ans, rev=rev, pre=pre, start=start, end=end, sep=sep)
 
   # square root extraction, set: answer=term to produce: sqrt(term)
-  def output_sqrx(self, s, ans=None, pre='  ', start='', end=''):
+  def output_sqrx(self, s, ans=None, pre='  ', start='', end='', sep=' '):
     fail(ans is None, "output_sqrx: set answer = <term> to output sqrt(<term>)")
-    output_sqrx(ans, pre=pre, start=start, end=end)
+    output_sqrx(ans, pre=pre, start=start, end=end, sep=sep)
 
   # !!! EXPERIMENTAL !!!
   # it may be better to implement this as a subclass of SubstitutedExpression
@@ -13276,8 +13302,8 @@ class SubstitutedDivision(SubstitutedExpression):
     return super(SubstitutedDivision, cls).run_command_line(args)
 
   # pretty-printer for long division
-  def output_div(self, s, pre='  ', start='', end=''):
-    output_div(s.a, s.b, pre=pre, start=start, end=end)
+  def output_div(self, s, pre='  ', start='', end='', sep=' '):
+    output_div(s.a, s.b, pre=pre, start=start, end=end, sep=sep)
 
 ###############################################################################
 
