@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 28 09:46:30 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 28 13:34:38 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-06-26" # <year>-<month>-<number>
+__version__ = "2026-06-27" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -3646,7 +3646,8 @@ def divisors(n, k=1, fn=prime_factor, validate=0):
   """
   if validate: n = as_int(n, include="0+")
   if n == 0 and k > 0: return [0]
-  return multiples(fn(n), k=k)
+  fs = (fn(n) if callable(fn) else fn)
+  return multiples(fs, k=k)
 
 
 def divisors_pairs(n, k=1, fn=prime_factor, every=0, validate=0):
@@ -4014,7 +4015,8 @@ def tau(n, fn=prime_factor, validate=0):
   4
   """
   if validate: n = as_int(n, include="0+")
-  return multiply(e + 1 for (_, e) in fn(n))
+  fs = (fn(n) if callable(fn) else fn)
+  return multiply(e + 1 for (_, e) in fs)
 
 
 def is_square_free(n, fn=prime_factor):
@@ -4027,7 +4029,8 @@ def is_square_free(n, fn=prime_factor):
   >>> is_square_free(8970)
   True
   """
-  return n > 0 and all(e == 1 for (_, e) in fn(n))
+  fs = (fn(n) if callable(fn) else fn)
+  return n > 0 and all(e == 1 for (_, e) in fs)
 
 def mobius(n, fn=prime_factor):
   """
@@ -4039,7 +4042,8 @@ def mobius(n, fn=prime_factor):
   """
   if n < 1: return None
   r = 1
-  for (p, e) in fn(n):
+  fs = (fn(n) if callable(fn) else fn)
+  for (p, e) in fs:
     if e > 1: return 0
     r = -r
   return r
@@ -4533,9 +4537,13 @@ def ipowers(exps=None):
       maxe = next(exps)
       heappush(pows, (2**maxe, 2, maxe))
 
-def is_ipower(n, validate=0):
+def is_ipower(n, fn=prime_factor, validate=0):
   """
   check non-negative integer <n> is a (non-trivial) perfect power.
+
+  <fn> can be specified as a function to determine (<prime>, <exponent>)
+  pairs in the factorisation of <n> (alternatively the factorisation can
+  be passed directly, in which case <n> will be ignored).
 
   >>> is_ipower(64)
   True
@@ -4546,7 +4554,8 @@ def is_ipower(n, validate=0):
   if n is None or n < 0: return None
   if n < 2: return True
   m = 0
-  for (_, e) in prime_factor(n):
+  fs = (fn(n) if callable(fn) else fn)
+  for (_, e) in fs:
     m = (e if m == 0 else gcd(m, e))
     if m == 1: return False
   return True
