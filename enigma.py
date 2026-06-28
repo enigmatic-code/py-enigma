@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jun 22 16:46:57 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 28 09:46:30 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-06-22" # <year>-<month>-<number>
+__version__ = "2026-06-26" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -3396,7 +3396,7 @@ def uniq1(seq, fn=None):
     pass
 
 
-# root: calculate the (positive) nth root of a (positive) number
+# root: calculate the (positive) nth root of a (positive) real number
 # we use math.pow rather than **/pow() to avoid generating complex numbers
 root = lambda x, n: (None if x is None else math.pow(x, n**-1))
 
@@ -4545,7 +4545,11 @@ def is_ipower(n, validate=0):
   if validate: n = as_int(n, include="0+")
   if n is None or n < 0: return None
   if n < 2: return True
-  return call(mgcd, (e for (_, e) in prime_factor(n))) > 1
+  m = 0
+  for (_, e) in prime_factor(n):
+    m = (e if m == 0 else gcd(m, e))
+    if m == 1: return False
+  return True
 
 # compose functions in order (forward functional composition, "and then")
 # so: fcompose(f, g, h)(x) == h(g(f(x)))
@@ -4647,6 +4651,36 @@ def is_cube_z(n, validate=0):
 power = is_power
 cube = is_cube
 square = is_square
+
+
+# trigonometric functions that work in "half-turns", currently these are approximations
+# but may be replaced by more accurate versions in the future (Python 3.16)
+half_turn = 1
+# = 1 for angles in half-turns
+# = 180 for angles in degrees
+# = pi for angles in radians
+# convert an angle from "half-turns" to radians
+def ht2rad(x, ht=None):
+  if ht is None: ht = half_turn
+  if ht != pi:
+    x *= pi
+    if ht != 1: x /= float(ht)
+  return x
+
+def rad2ht(x, ht=None):
+  if ht is None: ht = half_turn
+  if ht != pi:
+    if ht != 1: x *= ht
+    x /= pi
+  return x
+
+# provide trig functions
+def sin_ht(x, ht=None): return math.sin(ht2rad(x, ht=ht))
+def cos_ht(x, ht=None): return math.cos(ht2rad(x, ht=ht))
+def tan_ht(x, ht=None): return math.tan(ht2rad(x, ht=ht))
+def asin_ht(x, ht=None): return rad2ht(math.asin(x), ht=ht)
+def acos_ht(x, ht=None): return rad2ht(math.acos(x), ht=ht)
+def atan2_ht(y, x, ht=None): return rad2ht(math.atan2(y, x), ht=ht)
 
 
 def drop_factors(n, k, validate=0):
@@ -5075,7 +5109,12 @@ def intr(x):
   return (-d if neg else d)
 
 def snapf(f, **kw):
-  """snap float <f> to an integer, with tolerance <t> (default: 1e-6)"""
+  """
+  snap float <f> to an integer, with tolerance <t> (default: 1e-6)
+
+  if the value cannot be snapped to an integer the value of the <default> parameter
+  is returned, or a ValueError if not <default> has been set.
+  """
   t = kw.get('t', 1e-6)
   i = intr(f)
   if abs(f - i) <= t: return i
@@ -5333,7 +5372,7 @@ iavg = partial(avg, div=div)
 iavg.__doc__ = "as avg(), but return an integer value, or None."
 
 # vector dot product: dot(xs, ys, strict=0, fnp=multiply, fns=sum)
-def dot(*vs, **kw):
+def vec_dot(*vs, **kw):
   """
   this function takes a sequence of vectors provided as arguments,
   and calculates the product of the elements in the same position
@@ -5341,7 +5380,7 @@ def dot(*vs, **kw):
 
   for two vectors this is the same as the vector dot product:
 
-    dot((a1, a2, a3, ...), (b1, b2, b3, ...))
+    vec_dot((a1, a2, a3, ...), (b1, b2, b3, ...))
       = a1 * b1 + a2 * b2 + a3 * b3 + ...)
 
   if the 'strict' argument is present it will be passed to zip()
@@ -5355,19 +5394,38 @@ def dot(*vs, **kw):
 
   see also: math.sumprod() (Python 3.12+)
 
-  >>> dot((1, 3, -5), (4, -2, -1))
+  >>> vec_dot((1, 3, -5), (4, -2, -1))
   3
-  >>> call(dot, [(1, 3, -5)] * 2)
+  >>> call(vec_dot, [(1, 3, -5)] * 2)
   35
-  >>> call(dot, [(1, 3, -5)] * 3)
+  >>> call(vec_dot, [(1, 3, -5)] * 3)
   -97
   """
   strict = kw.pop('strict', None)
   fns = kw.pop('fns', sum)
   fnp = kw.pop('fnp', multiply)
-  if kw: raise TypeError(str.format("dot: unknown arguments {kw}", kw=seq2str(kw.keys())))
+  if kw: raise TypeError(str.format("vec_dot: unknown arguments {kw}", kw=seq2str(kw.keys())))
   z = (zip(*vs, strict=strict) if strict is not None else zip(*vs))
   return fns(map(fnp, z))
+
+dot = vec_dot
+
+# calculate <a[i] + k(b[i] + c[i] + ...)>
+def vec_add(*vs, **kw):
+  k = kw.pop('k', 1)
+  strict = kw.pop('strict', None)
+  fn = kw.pop('fn', None)
+  if kw: raise TypeError(str.format("vec_add: unknown arguments {kw}", kw=seq2str(kw.keys())))
+  r = list()
+  if k == 1:
+    for xs in (zip(*vs, strict=strict) if strict is not None else zip(*vs)):
+      r.append(sum(xs))
+  else:
+    for xs in (zip(*vs, strict=strict) if strict is not None else zip(*vs)):
+      x0 = xs[0]
+      r.append(x0 + k * (sum(xs) - x0))
+  return (fn(r) if fn else r)
+
 
 # multiple argument versions of basic operations
 def add(*vs): "add(a, b, c, ...) = a + b + c + ..."; return sum(vs)
@@ -8271,7 +8329,7 @@ def circle_intersect_circle(c1, c2):
 # 0 = 3 o'clock; 0 -> 1 = anticlockwise to 9 o'clock; 0 -> -1 = clockwise to 9 o'clock
 def circle_param(c, t=None):
   ((x, y), r) = c
-  f = lambda t, x=x, y=y, r=r: P2(x + r * math.cos(t * pi), y + r * math.sin(t * pi))
+  f = lambda t, x=x, y=y, r=r: P2(x + r * cos_ht(t, 1), y + r * sin_ht(t, 1))
   return (f if t is None else f(t))
 
 # find <t> parameter for point <p> on circle centre <c> radius <r>
@@ -8279,7 +8337,7 @@ def circle_param_t(c, p, t=1e-9):
   (o, r) = c
   if not (abs(point_dist(o, p) - r) < t): return None
   ((x0, y0), (x, y)) = (o, p)
-  t = math.acos(fdiv(x - x0, r)) / pi
+  t = acos_ht(fdiv(x - x0, r), 1)
   return min(t, -t, key=(lambda t: abs(point_dist(circle_param(c, t), p))))
 
 
@@ -10279,14 +10337,8 @@ def underline(ss, ul='-', spc=' '):
     if n is None:
       n = len(s)
       (xl, xr) = (n - 1, 0)
-    try:
-      xl = peek(i for i in irange(0, xl - 1) if s[i] != spc)
-    except IndexError:
-      pass
-    try:
-      xr = peek(i for i in irange(n - 1, xr + 1, step=-1) if s[i] != spc)
-    except IndexError:
-      pass
+    xl = peek((i for i in irange(0, xl - 1) if s[i] != spc), default=xl)
+    xr = peek((i for i in irange(n - 1, xr + 1, step=-1) if s[i] != spc), default=xr)
   return (spc * xl) + (ul * (xr - xl + 1)) + (spc * (n - xr - 1))
 
 def output_div(a, b, rem=0, base=0, pre='', start=None, end=None, sep=''):
@@ -11946,7 +11998,6 @@ class SubstitutedExpression(object):
   # integrate pretty-printers for output of various types of sum:
 
   # multiplication, set: answer=(term1, term2) to produce: term1 * term2
-  # TODO: sep=' ' will become the default
   def output_mul(self, s, ans=None, rev=0, pre='  ', start='', end='', sep=' '):
     fail(ans is None, "output_mul: set answer = (<term1>, <term2>) to output <term1> * <term2>")
     output_mul(*ans, rev=rev, pre=pre, start=start, end=end, sep=sep)
@@ -14298,6 +14349,12 @@ def make_namespace(name, vs):
   #r = type(enigma)("enigma." + name)
   #r.__dict__.update(**vs)
   #return r
+
+# vector operations
+def __vec():
+  return dict(dot=vec_dot, add=vec_add)
+
+vec = make_namespace("vec", __vec())
 
 ###############################################################################
 
