@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 28 13:34:38 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jun 28 15:50:40 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-06-27" # <year>-<month>-<number>
+__version__ = "2026-06-28" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -4537,13 +4537,11 @@ def ipowers(exps=None):
       maxe = next(exps)
       heappush(pows, (2**maxe, 2, maxe))
 
-def is_ipower(n, fn=prime_factor, validate=0):
+
+# search exponents to find perfect powers (this avoids factorisation)
+def is_ipower(n, max_e=inf, exps=None, validate=0):
   """
   check non-negative integer <n> is a (non-trivial) perfect power.
-
-  <fn> can be specified as a function to determine (<prime>, <exponent>)
-  pairs in the factorisation of <n> (alternatively the factorisation can
-  be passed directly, in which case <n> will be ignored).
 
   >>> is_ipower(64)
   True
@@ -4553,12 +4551,14 @@ def is_ipower(n, fn=prime_factor, validate=0):
   if validate: n = as_int(n, include="0+")
   if n is None or n < 0: return None
   if n < 2: return True
-  m = 0
-  fs = (fn(n) if callable(fn) else fn)
-  for (_, e) in fs:
-    m = (e if m == 0 else gcd(m, e))
-    if m == 1: return False
-  return True
+  if exps is None: exps = enigma.primes.generate(2)
+  max_e = min(n.bit_length() - 1, max_e)
+  # consider increasing exponents
+  for e in exps:
+    if e > max_e: break
+    if is_power(n, e) is not None: return True
+  return False
+
 
 # compose functions in order (forward functional composition, "and then")
 # so: fcompose(f, g, h)(x) == h(g(f(x)))
