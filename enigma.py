@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul  5 10:07:28 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul  5 11:06:59 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-04" # <year>-<month>-<number>
+__version__ = "2026-07-05" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -7467,10 +7467,10 @@ def express_denominations(t, ds, max_q=inf):
 
 # express total <t> using denominations <ss> with results in <ss>
 # working backwards from index <i>
-def _express_denominations(t, ds, ss, i, max_q=inf):
+def _express_denominations(t, ds, ss, i, max_q=inf, fn=tuple):
   if t == 0:
     if i >= 0: ss[:i + 1] = [0] * (i + 1)
-    yield tuple(ss)
+    yield (fn(ss) if fn else ss)
   else:
     d = ds[i]
     (k, r) = divmod(t, d)
@@ -7481,8 +7481,8 @@ def _express_denominations(t, ds, ss, i, max_q=inf):
       qs = irange(0, min(k, max_q))
     for q in qs:
       ss[i] = q
-      #yield from _express_denominations(t - d * q, ds, ss, i - 1, max_q)  #[Python 3]
-      for z in _express_denominations(t - d * q, ds, ss, i - 1, max_q): yield z  #[Python 2]
+      #yield from _express_denominations(t - d * q, ds, ss, i - 1, max_q, fn)  #[Python 3]
+      for z in _express_denominations(t - d * q, ds, ss, i - 1, max_q, fn): yield z  #[Python 2]
 
 # express total <t> using denominations <ds>, min quantity <min_q>
 def express_denominations_min(t, ds, min_q, max_q):
@@ -7493,40 +7493,45 @@ def express_denominations_min(t, ds, min_q, max_q):
     yield (min_q,) * n
   elif t > 0:
     # solve for the remaining amount
-    for ss in _express_denominations(t, ds, [0] * n, n - 1, max_q=max_q - min_q):
+    for ss in _express_denominations(t, ds, [0] * n, n - 1, max_q=max_q - min_q, fn=None):
       # add in the initial quantities
       yield tuple(q + min_q for q in ss)
 
 # express total <t> using denominations <ds>, quantities chosen from <qs>
-def _express_quantities(t, ds, qs, ss=[]):
+def _express_quantities(t, ds, qs, ss, i, fn=tuple):
   if t == 0:
-    if not ds:
-      yield tuple(ss)
-    elif 0 in qs:
-      yield tuple(ss + [0] * len(ds))
-  elif ds:
-    d = ds[0]
-    for q in qs:
+    if i >= 0:
+      if 0 not in qs: return
+      ss[:i + 1] = [0] * (i + 1)
+    yield (fn(ss) if fn else ss)
+  else:
+    (d, qs_) = (ds[i], qs)
+    if i == 0:
+      (k, r) = divmod(t, d)
+      if r or k not in qs: return
+      qs_ = [k]
+    for q in qs_:
       t_ = t - d * q
       if t_ < 0: break
-      #yield from express_quantities(t_, ds[1:], qs, ss + [q])  #[Python 3]
-      for r in _express_quantities(t_, ds[1:], qs, ss + [q]): yield r  #[Python 2]
+      ss[i] = q
+      #yield from _express_quantities(t_, ds, qs, ss, i - 1, fn)  #[Python 3]
+      for z in _express_quantities(t_, ds, qs, ss, i - 1, fn): yield z  #[Python 2]
 
 # deal with non-zero min quantity
 def express_quantities(t, ds, qs):
-  min_q = qs[0]
+  (min_q, n) = (qs[0], len(ds))
   if min_q == 0:
-    #yield from _express_quantities(t, ds, qs)  #[Python 3]
-    for r in _express_quantities(t, ds, qs): yield r  #[Python 2]
+    #yield from _express_quantities(t, ds, qs, [0] * n, n - 1)  #[Python 3]
+    for r in _express_quantities(t, ds, qs, [0] * n, n - 1): yield r  #[Python 2]
     return
   # allocate the minimum quantities
   t -= min_q * sum(ds)
   if t == 0:
-    yield [min_q] * len(ds)
+    yield (min_q,) * n
   elif t > 0:
     # solve for the remaining amount
-    for ss in _express_quantities(t, ds, list(q - min_q for q in qs)):
-      yield list(q + min_q for q in ss)
+    for ss in _express_quantities(t, ds, tuple(q - min_q for q in qs), [0] * n, n - 1, None):
+      yield tuple(q + min_q for q in ss)
 
 # express total <t> using (<denomination>, <max-quantity>) pairs <vs>
 # vs = ordered list of (<denomination>, <max-quantity>) pairs
@@ -7560,7 +7565,7 @@ def express_pairs(t, vs, tv, k=None, xs=[]):
       for n in irange(1, max_n):
         k_ = (None if k is None else k - n)
         #yield from express_pairs(t - n * x, vs[i + 1:], tv, k_, xs + [(x, n)])  # [Python 3]
-        for r in express_pairs(t - n * x, vs[i + 1:], tv, k_, xs + [(x, n)]): yield r  # [Python 2]
+        for z in express_pairs(t - n * x, vs[i + 1:], tv, k_, xs + [(x, n)]): yield z  # [Python 2]
 
 # An implementation of the Boecker-Liptak Money Changing algorithm from:
 #
