@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jun 28 15:50:40 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul  5 10:07:28 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-06-28" # <year>-<month>-<number>
+__version__ = "2026-07-04" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -340,13 +340,16 @@ _PY_ENIGMA = os.getenv("PY_ENIGMA") or ''
 
 version = lambda: __version__
 
-# import a value from a qualified spec, e.g.:
-#   Q = import_fn('fractions.Fraction')
-#   Q = import_fn('gmpy2.mpq')
-#   Q = import_fn('mpmath.rational.mpq')
-#   urlopen = import_fn('urllib2.urlopen')  # Python 2
-#   urlopen = import_fn('urllib.request.urlopen')  # Python 3
 def import_fn(spec, verbose=0):
+  """
+  import a value via a qualified spec, for example:
+
+    Q = import_fn('fractions.Fraction')
+    Q = import_fn('gmpy2.mpq')
+    Q = import_fn('mpmath.rational.mpq')
+    urlopen = import_fn('urllib2.urlopen')  # Python 2
+    urlopen = import_fn('urllib.request.urlopen')  # Python 3
+  """
   # we could use importlib.import_module() here
   importer = lambda x: __import__(x, fromlist=[''])
   if '.' not in spec:
@@ -613,17 +616,17 @@ def fdiv(a, b, fn=float):
   return fn(a) / fn(b)
 
 # less than/greater than (or equal) to a target; useful for filter() etc.
-def eq(t): return (lambda x: x == t)
-def lt(t): return (lambda x: x < t)
-def le(t): return (lambda x: x <= t)
-def gt(t): return (lambda x: x > t)
-def ge(t): return (lambda x: x >= t)
-def between(a, b): return (lambda x: a < x < b)  # exclusive between
-def betweene(a, b): return (lambda x: a <= x <= b)  # inclusive between
+def eq(t): "return a function f(x) = (x == t)"; return (lambda x: x == t)
+def lt(t): "return a function f(x) = (x < t)"; return (lambda x: x < t)
+def le(t): "return a function f(x) = (x <= t)"; return (lambda x: x <= t)
+def gt(t): "return a function f(x) = (x > t)"; return (lambda x: x > t)
+def ge(t): "return a function f(x) = (x >= t)"; return (lambda x: x >= t)
+def between(a, b): "return a function f(x) = (a < x < b)"; return (lambda x: a < x < b)  # exclusive between
+def betweene(a, b): "return a function f(x) = (a <= x <= b)"; return (lambda x: a <= x <= b)  # inclusive between
 
 # membership/non-membership of a collection
-def is_in(s): return (lambda x: x in s)
-def is_not_in(s): return (lambda x: x not in s)
+def is_in(s): "return a function f(x) = (x in s)"; return (lambda x: x in s)
+def is_not_in(s): "return a function f(x) = (x not in s)"; return (lambda x: x not in s)
 
 def inc(i=1):
   """return a function that increments by a fixed amount"""
@@ -3776,6 +3779,7 @@ def is_prime(n, validate=0):
 prime = is_prime
 
 def is_composite(n, validate=0):
+  "check the non-negative integer <n> is the product of more than 2 primes"
   if n is None: return None
   if validate: n = as_int(n, include="0+")
   if n < 4: return False
@@ -3785,7 +3789,7 @@ def is_composite(n, validate=0):
 
 randrange = lazy_import('random.randrange')
 
-def _is_composite(a, d, n, s):
+def _mr_is_composite(a, d, n, s):
   if a == 0: return 0
   x = pow(a, d, n)
   if x == 1: return 0
@@ -3843,16 +3847,16 @@ def is_prime_mr(n, r=0, validate=0):
 
   # 1 base is completely accurate for n < 341531
   if n < 341531:
-    return (0 if _is_composite(9345883071009581737 % n, d, n, s) else 2)
+    return (0 if _mr_is_composite(9345883071009581737 % n, d, n, s) else 2)
 
   # 2 bases are completely accurate for n < 1050535501
   if n < 1050535501:
-    return (0 if _is_composite(336781006125 % n, d, n, s) or _is_composite(9639812373923155 % n, d, n, s) else 2)
+    return (0 if _mr_is_composite(336781006125 % n, d, n, s) or _mr_is_composite(9639812373923155 % n, d, n, s) else 2)
 
   # test remaining numbers with the 7 base set
   for a in (2, 325, 9375, 28178, 450775, 9780504, 1795265022):
     # definitely composite
-    if _is_composite(a % n, d, n, s): return 0
+    if _mr_is_composite(a % n, d, n, s): return 0
 
   # the 7 base set is completely accurate for n < 2^64:
   if n < 0x10000000000000000:
@@ -3863,7 +3867,7 @@ def is_prime_mr(n, r=0, validate=0):
   if r > 0:
     for _ in range(r):
       # definitely composite
-      if _is_composite(randrange(2, n - 1), d, n, s): return 0
+      if _mr_is_composite(randrange(2, n - 1), d, n, s): return 0
 
   # otherwise, probably prime
   return 1
@@ -4534,14 +4538,24 @@ def ipowers(exps=None):
     heappush(pows, ((b + 1)**e, b + 1, e))
     # do we need to add in a new exponent?
     if b == 2:
-      maxe = next(exps)
-      heappush(pows, (2**maxe, 2, maxe))
+      max_e = next(exps)
+      heappush(pows, (2**max_e, 2, max_e))
 
 
 # search exponents to find perfect powers (this avoids factorisation)
 def is_ipower(n, max_e=inf, exps=None, validate=0):
   """
   check non-negative integer <n> is a (non-trivial) perfect power.
+
+  <max_e> can specify the maximum exponent considered.
+
+  <exps> can provide a sequence of exponents to consider.
+
+  Note: if you have the decomposition of <n> into prime factors (perhaps
+  from the result of calling prime_factor(n)), say in the list <fs> then
+  the following expression will tell you if <n> is a perfect power:
+
+    call(mgcd, (e for (_, e) in fs)) > 1
 
   >>> is_ipower(64)
   True
@@ -7423,14 +7437,14 @@ def express(t, ds, qs=None, min_q=0, max_q=inf, validate=0):
 
   generated values are the quantities for each denomination in <ds>.
 
-  >>> list(express(20, [3, 5, 7]))
-  [[0, 4, 0], [1, 2, 1], [2, 0, 2], [5, 1, 0]]
+  >>> sorted(express(20, [3, 5, 7]))
+  [(0, 4, 0), (1, 2, 1), (2, 0, 2), (5, 1, 0)]
 
-  >>> list(express(20, [3, 5, 7], min_q=1))
-  [[1, 2, 1]]
+  >>> sorted(express(20, [3, 5, 7], min_q=1))
+  [(1, 2, 1)]
 
-  >>> list(express(20, [3, 5, 7], qs=[0, 1, 2]))
-  [[1, 2, 1], [2, 0, 2]]
+  >>> sorted(express(20, [3, 5, 7], qs=[0, 1, 2]))
+  [(1, 2, 1), (2, 0, 2)]
 
   the number of ways to change 1 pound into smaller coins
   >>> icount(express(100, [1, 2, 5, 10, 20, 50]))
@@ -7447,43 +7461,49 @@ def express(t, ds, qs=None, min_q=0, max_q=inf, validate=0):
   return express_denominations(t, ds, max_q=max_q)
 
 # express total <t> using denominations <ds>
-def express_denominations(t, ds, max_q=inf, ss=[]):
+def express_denominations(t, ds, max_q=inf):
+  n = len(ds)
+  return _express_denominations(t, ds, [0] * n, n - 1, max_q=max_q)
+
+# express total <t> using denominations <ss> with results in <ss>
+# working backwards from index <i>
+def _express_denominations(t, ds, ss, i, max_q=inf):
   if t == 0:
-    if not ds:
-      yield ss
-    else:
-      yield ss + [0] * len(ds)
-  elif ds:
-    d = ds[0]
+    if i >= 0: ss[:i + 1] = [0] * (i + 1)
+    yield tuple(ss)
+  else:
+    d = ds[i]
     (k, r) = divmod(t, d)
-    if len(ds) == 1:
+    if i == 0:
       if r or k > max_q: return
       qs = [k]
     else:
       qs = irange(0, min(k, max_q))
     for q in qs:
-      #yield from express_denominations(t - d * q, ds[1:], max_q, ss + [q])  #[Python 3]
-      for r in express_denominations(t - d * q, ds[1:], max_q, ss + [q]): yield r  #[Python 2]
+      ss[i] = q
+      #yield from _express_denominations(t - d * q, ds, ss, i - 1, max_q)  #[Python 3]
+      for z in _express_denominations(t - d * q, ds, ss, i - 1, max_q): yield z  #[Python 2]
 
 # express total <t> using denominations <ds>, min quantity <min_q>
 def express_denominations_min(t, ds, min_q, max_q):
   # allocate the minimum quantities
   t -= min_q * sum(ds)
+  n = len(ds)
   if t == 0:
-    yield [min_q] * len(ds)
+    yield (min_q,) * n
   elif t > 0:
     # solve for the remaining amount
-    for ss in express_denominations(t, ds, max_q=max_q - min_q):
+    for ss in _express_denominations(t, ds, [0] * n, n - 1, max_q=max_q - min_q):
       # add in the initial quantities
-      yield list(q + min_q for q in ss)
+      yield tuple(q + min_q for q in ss)
 
 # express total <t> using denominations <ds>, quantities chosen from <qs>
 def _express_quantities(t, ds, qs, ss=[]):
   if t == 0:
     if not ds:
-      yield ss
+      yield tuple(ss)
     elif 0 in qs:
-      yield ss + [0] * len(ds)
+      yield tuple(ss + [0] * len(ds))
   elif ds:
     d = ds[0]
     for q in qs:
@@ -13501,9 +13521,13 @@ class CrossFigure(object):
 
 # Football League Table Utility
 
-# check the Landau condition for the score sequence of a tournament of <n> teams
-# ss = ordered score sequence (low to high) 0 <= ss[i] <= n - 1
 def landau(n, ss):
+  """
+  check the Landau condition for the score sequence of a tournament of <n> teams.
+  where 1 point is divided between the 2 teams in each match.
+
+  <ss> is an ordered sequence (low to high) of total scores in [0 .. n - 1].
+  """
   if not (len(ss) == n and n > 1): raise ValueError("landau: invalid arguments")
   for (i, s) in enumerate(csum(ss), start=1):
     r = compare(s, C(i, 2))
