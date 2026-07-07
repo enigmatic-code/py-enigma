@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul  5 11:06:59 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jul  6 23:16:41 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-05" # <year>-<month>-<number>
+__version__ = "2026-07-06" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -5394,7 +5394,7 @@ def avg(seq, div=fdiv):
 iavg = partial(avg, div=div)
 iavg.__doc__ = "as avg(), but return an integer value, or None."
 
-# vector dot product: dot(xs, ys, strict=0, fnp=multiply, fns=sum)
+# vector dot product: vec_dot(xs, ys, strict=0, fnp=multiply, fns=sum)
 def vec_dot(*vs, **kw):
   """
   this function takes a sequence of vectors provided as arguments,
@@ -7460,29 +7460,30 @@ def express(t, ds, qs=None, min_q=0, max_q=inf, validate=0):
   if min_q != 0: return express_denominations_min(t, ds, min_q, max_q)
   return express_denominations(t, ds, max_q=max_q)
 
-# express total <t> using denominations <ds>
-def express_denominations(t, ds, max_q=inf):
-  n = len(ds)
-  return _express_denominations(t, ds, [0] * n, n - 1, max_q=max_q)
-
 # express total <t> using denominations <ss> with results in <ss>
 # working backwards from index <i>
-def _express_denominations(t, ds, ss, i, max_q=inf, fn=tuple):
+def _express_denominations(t, ds, ss, i, max_q=inf):
   if t == 0:
     if i >= 0: ss[:i + 1] = [0] * (i + 1)
-    yield (fn(ss) if fn else ss)
+    yield ss
   else:
     d = ds[i]
     (k, r) = divmod(t, d)
     if i == 0:
-      if r or k > max_q: return
-      qs = [k]
+      if r > 0 or k > max_q: return
+      ss[0] = k
+      yield ss
     else:
-      qs = irange(0, min(k, max_q))
-    for q in qs:
-      ss[i] = q
-      #yield from _express_denominations(t - d * q, ds, ss, i - 1, max_q, fn)  #[Python 3]
-      for z in _express_denominations(t - d * q, ds, ss, i - 1, max_q, fn): yield z  #[Python 2]
+      for q in irange(0, min(k, max_q)):
+        ss[i] = q
+        #yield from _express_denominations(t - d * q, ds, ss, i - 1, max_q)  #[Python 3]
+        for z in _express_denominations(t - d * q, ds, ss, i - 1, max_q): yield z  #[Python 2]
+
+# express total <t> using denominations <ds>
+def express_denominations(t, ds, max_q=inf):
+  n = len(ds)
+  for ss in _express_denominations(t, ds, [0] * n, n - 1, max_q):
+    yield tuple(ss)
 
 # express total <t> using denominations <ds>, min quantity <min_q>
 def express_denominations_min(t, ds, min_q, max_q):
@@ -7493,17 +7494,17 @@ def express_denominations_min(t, ds, min_q, max_q):
     yield (min_q,) * n
   elif t > 0:
     # solve for the remaining amount
-    for ss in _express_denominations(t, ds, [0] * n, n - 1, max_q=max_q - min_q, fn=None):
+    for ss in _express_denominations(t, ds, [0] * n, n - 1, max_q=max_q - min_q):
       # add in the initial quantities
       yield tuple(q + min_q for q in ss)
 
 # express total <t> using denominations <ds>, quantities chosen from <qs>
-def _express_quantities(t, ds, qs, ss, i, fn=tuple):
+def _express_quantities(t, ds, qs, ss, i):
   if t == 0:
     if i >= 0:
       if 0 not in qs: return
       ss[:i + 1] = [0] * (i + 1)
-    yield (fn(ss) if fn else ss)
+    yield ss
   else:
     (d, qs_) = (ds[i], qs)
     if i == 0:
@@ -7514,24 +7515,25 @@ def _express_quantities(t, ds, qs, ss, i, fn=tuple):
       t_ = t - d * q
       if t_ < 0: break
       ss[i] = q
-      #yield from _express_quantities(t_, ds, qs, ss, i - 1, fn)  #[Python 3]
-      for z in _express_quantities(t_, ds, qs, ss, i - 1, fn): yield z  #[Python 2]
+      #yield from _express_quantities(t_, ds, qs, ss, i - 1)  #[Python 3]
+      for z in _express_quantities(t_, ds, qs, ss, i - 1): yield z  #[Python 2]
 
 # deal with non-zero min quantity
 def express_quantities(t, ds, qs):
   (min_q, n) = (qs[0], len(ds))
   if min_q == 0:
-    #yield from _express_quantities(t, ds, qs, [0] * n, n - 1)  #[Python 3]
-    for r in _express_quantities(t, ds, qs, [0] * n, n - 1): yield r  #[Python 2]
-    return
-  # allocate the minimum quantities
-  t -= min_q * sum(ds)
-  if t == 0:
-    yield (min_q,) * n
-  elif t > 0:
-    # solve for the remaining amount
-    for ss in _express_quantities(t, ds, tuple(q - min_q for q in qs), [0] * n, n - 1, None):
-      yield tuple(q + min_q for q in ss)
+    for ss in _express_quantities(t, ds, qs, [0] * n, n - 1):
+      yield tuple(ss)
+  else:
+    # allocate the minimum quantities
+    t -= min_q * sum(ds)
+    if t == 0:
+      yield (min_q,) * n
+    elif t > 0:
+      # solve for the remaining amount
+      for ss in _express_quantities(t, ds, tuple(q - min_q for q in qs), [0] * n, n - 1):
+        yield tuple(q + min_q for q in ss)
+
 
 # express total <t> using (<denomination>, <max-quantity>) pairs <vs>
 # vs = ordered list of (<denomination>, <max-quantity>) pairs
