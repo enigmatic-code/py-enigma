@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Jul  6 23:16:41 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Jul  7 13:16:15 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-06" # <year>-<month>-<number>
+__version__ = "2026-07-07" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -7534,40 +7534,52 @@ def express_quantities(t, ds, qs):
       for ss in _express_quantities(t, ds, tuple(q - min_q for q in qs), [0] * n, n - 1):
         yield tuple(q + min_q for q in ss)
 
-
-# express total <t> using (<denomination>, <max-quantity>) pairs <vs>
-# vs = ordered list of (<denomination>, <max-quantity>) pairs
-# tv = total sum of values in <vs>
-# k = express using <k> values (not <k> _different_ denominations)
-# note that quantities and <tv> can be inf.
-# returns an ordered list of (<denomination>, <quantity>) pairs
-def express_pairs(t, vs, tv, k=None, xs=[]):
-  # are we done?
+# express using (<denomination>, <max-quantity>) pairs (see: multiset.express())
+def _express_pairs(t, vs, tv, k, ss, i):
   if t == 0:
     if not k:
-      yield xs
-  elif t > tv or not vs:
+      if i >= 0: ss[:i + 1] = [0] * (i + 1)
+      yield ss
+  elif t > tv or i < 0:
     return
-  elif len(vs) == 1:
+  elif i == 0:
     (x, q) = vs[0]
     if k is None:
-      n = div(t, x)
-      if not (n is None or n > q):
-        yield xs + [(x, n)]
+      (n, r) = divmod(t, x)
+      if not (r != 0 or n > q):
+        ss[0] = n
+        yield ss
     else:
       if (not k > q) and t == k * x:
-        yield xs + [(x, k)]
+        ss[0] = k
+        yield ss
   elif k is None or k > 0:
-    # choose the next value
-    for (i, (x, q)) in enumerate(vs):
-      if x > t: break
+    (x, q) = vs[i]
+    if x > t:
+      if tv < inf: tv -= x * q
+      ss[i] = 0
+      #yield from _express_pairs(t, vs, tv, k, ss, i - 1)  # [Python 3]
+      for z in _express_pairs(t, vs, tv, k, ss, i - 1): yield z  # [Python 2]
+    else:
       max_n = min(q, t // x)
       if k is not None and k < max_n: max_n = k
       if tv < inf: tv -= x * q
-      for n in irange(1, max_n):
+      for n in irange(0, max_n):
         k_ = (None if k is None else k - n)
-        #yield from express_pairs(t - n * x, vs[i + 1:], tv, k_, xs + [(x, n)])  # [Python 3]
-        for z in express_pairs(t - n * x, vs[i + 1:], tv, k_, xs + [(x, n)]): yield z  # [Python 2]
+        ss[i] = n
+        #yield from _express_pairs(t - n * x, vs, tv, k_, ss, i - 1)  # [Python 3]
+        for z in _express_pairs(t - n * x, vs, tv, k_, ss, i - 1): yield z  # [Python 2]
+
+# express total <t> using (<denomination>, <max-quantity>) pairs <vs>
+# vs = ordered list of (<denomination>, <max-quantity>) pairs
+# tv = total sum of values in <vs> (= inf if any <max-quantity> is inf)
+# k = express using <k> values (not <k> _different_ denominations)
+# note that quantities and <tv> can be inf.
+# returns an ordered list of (<denomination>, <quantity>) pairs
+def express_pairs(t, vs, tv, k=None):
+  n = len(vs)
+  for ss in _express_pairs(t, vs, tv, k, [0] * n, n - 1):
+    yield tuple((d, q) for ((d, _), q) in zip(vs, ss) if q > 0)
 
 # An implementation of the Boecker-Liptak Money Changing algorithm from:
 #
