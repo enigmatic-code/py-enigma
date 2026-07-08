@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jul  7 13:16:15 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul  8 06:34:31 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-07" # <year>-<month>-<number>
+__version__ = "2026-07-08" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -7562,7 +7562,9 @@ def _express_pairs(t, vs, tv, k, ss, i):
       for z in _express_pairs(t, vs, tv, k, ss, i - 1): yield z  # [Python 2]
     else:
       max_n = min(q, t // x)
-      if k is not None and k < max_n: max_n = k
+      if k is not None:
+        if k * x < t: return  # target cannot be achieved in k coins [suggested by Frits]
+        if k < max_n: max_n = k
       if tv < inf: tv -= x * q
       for n in irange(0, max_n):
         k_ = (None if k is None else k - n)
@@ -7570,13 +7572,17 @@ def _express_pairs(t, vs, tv, k, ss, i):
         #yield from _express_pairs(t - n * x, vs, tv, k_, ss, i - 1)  # [Python 3]
         for z in _express_pairs(t - n * x, vs, tv, k_, ss, i - 1): yield z  # [Python 2]
 
-# express total <t> using (<denomination>, <max-quantity>) pairs <vs>
-# vs = ordered list of (<denomination>, <max-quantity>) pairs
-# tv = total sum of values in <vs> (= inf if any <max-quantity> is inf)
-# k = express using <k> values (not <k> _different_ denominations)
-# note that quantities and <tv> can be inf.
-# returns an ordered list of (<denomination>, <quantity>) pairs
 def express_pairs(t, vs, tv, k=None):
+  """
+  express total <t> using (<denomination>, <max-quantity>) pairs <vs>
+
+    vs = ordered list of (<denomination>, <max-quantity>) pairs
+    tv = total sum of values in <vs> (= inf if any <max-quantity> is inf)
+    k = express using <k> values (not <k> _different_ denominations)
+    note that <max-quantity> values and <tv> can be inf.
+
+  returns an ordered list of (<denomination>, <quantity>) pairs
+  """
   n = len(vs)
   for ss in _express_pairs(t, vs, tv, k, [0] * n, n - 1):
     yield tuple((d, q) for ((d, _), q) in zip(vs, ss) if q > 0)
