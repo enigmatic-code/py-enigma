@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul  8 06:34:31 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jul  9 11:36:24 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-08" # <year>-<month>-<number>
+__version__ = "2026-07-09" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -366,7 +366,7 @@ def exec_file(path, name=None, verbose=0):
   # execute the file
   if verbose or 'v' in _PY_ENIGMA: print(str.format("[exec_file] executing \"{path}\" ...", path=path))
   run_path = import_fn('runpy.run_path')
-  ns = run_path(path)
+  ns = run_path(path, run_name='<exec_file>')
   return make_namespace(name, ns)
 
 # lazy importer:
@@ -7581,11 +7581,11 @@ def express_pairs(t, vs, tv, k=None):
     k = express using <k> values (not <k> _different_ denominations)
     note that <max-quantity> values and <tv> can be inf.
 
-  returns an ordered list of (<denomination>, <quantity>) pairs
+  returns a list of (<denomination>, <quantity>) pairs
   """
   n = len(vs)
   for ss in _express_pairs(t, vs, tv, k, [0] * n, n - 1):
-    yield tuple((d, q) for ((d, _), q) in zip(vs, ss) if q > 0)
+    yield list((d, q) for ((d, _), q) in zip(vs, ss) if q > 0)
 
 # An implementation of the Boecker-Liptak Money Changing algorithm from:
 #
@@ -15917,9 +15917,11 @@ def _enigma_main(args=None):
   if 'C' in args:
     return _enigma_configure(args['C'])
 
-def _namecheck(name, verbose=0):
+@static(names={"__main__", "<run_path>"})  # also consider: "<exec_file>"
+def _namecheck(name, names=None, verbose=0):
   if verbose or ('v' in _PY_ENIGMA): printf("[_namecheck] checking \"{name}\"")
-  return name == "__main__" or name == "<run_path>"
+  if names is None: names = _namecheck.names
+  return (name in names)
 
 if _namecheck(__name__):
   rc =  _enigma_main()
