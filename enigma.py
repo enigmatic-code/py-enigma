@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jul  9 11:36:24 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jul 10 15:13:26 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-09" # <year>-<month>-<number>
+__version__ = "2026-07-10" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -2330,7 +2330,7 @@ class multiset(dict):
     return subsets of the original multiset, optionally processed by <fn>.
     """
     ps = sorted(dict.items(self))
-    for rs in express_pairs(v, ps, self.sum(), k=k):
+    for rs in express_pairs(v, ps, tv=self.sum(), k=k):
       yield fn(multiset.from_pairs(rs))
 
   def expressible(self, vs, k=None):
@@ -2343,7 +2343,7 @@ class multiset(dict):
     t = self.sum()
     # was: [[ return all(any(express_pairs(v, ps, t, k)) for v in vs) ]]
     for v in vs:
-      if not any(express_pairs(v, ps, t, k)): return False
+      if not any(express_pairs(v, ps, tv=t, k=k)): return False
     return True
 
   def sorted(self, key=None, reverse=False):
@@ -6686,7 +6686,7 @@ def fail(expr=True, msg=''):
   if expr: raise Failure(msg)
   return expr
 
-def catch(fn, *args, **kw):
+def catch(*args, **kw):
   """
   evaluate the function with the given arguments,
   but if it throws an exception return None instead.
@@ -6694,6 +6694,7 @@ def catch(fn, *args, **kw):
   >>> catch(divmod, 7, 0) is None
   True
   """
+  (fn, args) = (args[0], args[1:])
   try:
     return fn(*args, **kw)
   except Exception:
@@ -7535,44 +7536,91 @@ def express_quantities(t, ds, qs):
         yield tuple(q + min_q for q in ss)
 
 # express using (<denomination>, <max-quantity>) pairs (see: multiset.express())
-def _express_pairs(t, vs, tv, k, ss, i):
+def _express_pairs(t, vs, tv, ss, i):
   if t == 0:
-    if not k:
-      if i >= 0: ss[:i + 1] = [0] * (i + 1)
-      yield ss
+    if i >= 0: ss[:i + 1] = [0] * (i + 1)
+    yield ss
   elif t > tv or i < 0:
     return
+  # if i == 1, we could use diop_linear() to determine n0 and n1 (but it is generally slower)
   elif i == 0:
+    # 1 denomination remaining
     (x, q) = vs[0]
-    if k is None:
-      (n, r) = divmod(t, x)
-      if not (r != 0 or n > q):
-        ss[0] = n
-        yield ss
-    else:
-      if (not k > q) and t == k * x:
-        ss[0] = k
-        yield ss
-  elif k is None or k > 0:
+    (n, r) = divmod(t, x)
+    if not (r != 0 or n > q):
+      ss[0] = n
+      yield ss
+  else:
     (x, q) = vs[i]
     if x > t:
       if tv < inf: tv -= x * q
       ss[i] = 0
-      #yield from _express_pairs(t, vs, tv, k, ss, i - 1)  # [Python 3]
-      for z in _express_pairs(t, vs, tv, k, ss, i - 1): yield z  # [Python 2]
+      #yield from _express_pairs(t, vs, tv, ss, i - 1)  # [Python 3]
+      for z in _express_pairs(t, vs, tv, ss, i - 1): yield z  # [Python 2]
     else:
       max_n = min(q, t // x)
-      if k is not None:
-        if k * x < t: return  # target cannot be achieved in k coins [suggested by Frits]
-        if k < max_n: max_n = k
       if tv < inf: tv -= x * q
       for n in irange(0, max_n):
-        k_ = (None if k is None else k - n)
         ss[i] = n
-        #yield from _express_pairs(t - n * x, vs, tv, k_, ss, i - 1)  # [Python 3]
-        for z in _express_pairs(t - n * x, vs, tv, k_, ss, i - 1): yield z  # [Python 2]
+        #yield from _express_pairs(t - n * x, vs, tv, ss, i - 1)  # [Python 3]
+        for z in _express_pairs(t - n * x, vs, tv, ss, i - 1): yield z  # [Python 2]
 
-def express_pairs(t, vs, tv, k=None):
+# express using (<denomination>, <max-quantity>) pairs in exactly <k> coins
+def _express_pairs_k(t, vs, tv, k, ss, i, d0, q0):
+  if t == 0 or k == 0:
+    if t == 0 and k == 0:
+      if i >= 0: ss[:i + 1] = [0] * (i + 1)
+      yield ss
+  elif t > tv or i < 0 or t < k * d0:
+    return
+  elif i < 2:
+    if i == 1:
+      # 2 denominations remaining: n0 * d0 + n1 * d1 = t; n0 + n1 = k
+      (d1, q1) = vs[1]
+      (n0, r) = divmod(k * d1 - t, d1 - d0)
+      if r == 0 and not (n0 < 0 or n0 > k or n0 > q0):
+        n1 = k - n0
+        if not (n1 > q1):
+          ss[0] = n0
+          ss[1] = n1
+          yield ss
+    else:  # i == 0
+      # 1 denomination remaining
+      if (not k > q0) and t == k * d0:
+        ss[0] = k
+        yield ss
+  elif k == 1:
+    # 1 coin remaining, just search for it
+    for j in irange(i, 0, step=-1):
+      (d, _) = vs[j]
+      if d == t:
+        ss[j] = 1
+        if j > 0: ss[:j] = [0] * j
+        yield ss
+        break
+      if d < t: break
+  else:
+    (d, q) = vs[i]
+    if k <= q and t == k * d:
+      ss[i] = k
+      if i > 1: ss[:i] = [0] * i
+      yield ss
+    elif d > t:
+      if tv < inf: tv -= d * q
+      ss[i] = 0
+      #yield from _express_pairs_k(t, vs, tv, k, ss, i - 1, d0, q0)  # [Python 3]
+      for z in _express_pairs_k(t, vs, tv, k, ss, i - 1, d0, q0): yield z  # [Python 2]
+    else:
+      max_n = min(q, t // d)
+      if k * d < t: return  # target cannot be achieved in k coins [suggested by Frits]
+      if k < max_n: max_n = k
+      if tv < inf: tv -= d * q
+      for n in irange(0, max_n):
+        ss[i] = n
+        #yield from _express_pairs_k(t - n * d, vs, tv, k - n, ss, i - 1, d0, q0)  # [Python 3]
+        for z in _express_pairs_k(t - n * d, vs, tv, k - n, ss, i - 1, d0, q0): yield z  # [Python 2]
+
+def express_pairs(t, vs, tv=inf, k=None):
   """
   express total <t> using (<denomination>, <max-quantity>) pairs <vs>
 
@@ -7584,7 +7632,12 @@ def express_pairs(t, vs, tv, k=None):
   returns a list of (<denomination>, <quantity>) pairs
   """
   n = len(vs)
-  for ss in _express_pairs(t, vs, tv, k, [0] * n, n - 1):
+  if k is None:
+    sss = _express_pairs(t, vs, tv, [0] * n, n - 1)
+  else:
+    (d0, q0) = vs[0]
+    sss = _express_pairs_k(t, vs, tv, k, [0] * n, n - 1, d0, q0)
+  for ss in sss:
     yield list((d, q) for ((d, _), q) in zip(vs, ss) if q > 0)
 
 # An implementation of the Boecker-Liptak Money Changing algorithm from:
