@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jul 10 15:13:26 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul 11 10:10:54 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-10" # <year>-<month>-<number>
+__version__ = "2026-07-11" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -10507,9 +10507,9 @@ def output_sqrx(x, r=None, base=0, pre='', start=None, end=None, sep=''):
   sqrx.base = base
   for (i, (xd, d)) in enumerate(zip(xds, rds)):
     z = z*base*base + xd
-    if i > 0 and d > 0:
+    if d > 0:
       fz = fmt(z, width=w)
-      printf("{pre}   {fz}")
+      if i > 0: printf("{pre}   {fz}")
     p = d * (2 * base * r + d) # = sqrx(r, d)
     z -= p
     if d > 0:
