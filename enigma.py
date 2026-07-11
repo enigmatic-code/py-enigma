@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul 11 10:10:54 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul 11 12:02:41 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -676,7 +676,7 @@ sign = lambda x: (0 < x) - (x < 0)  # = compare(x, 0)
 # negation
 neg = operator.neg
 
-# logical implication: p -> q
+# logical implication: p -> q, "if p then q"
 def implies(p, q):
   """
   logical implication: (p -> q) = ((not p) or q)
@@ -7594,8 +7594,8 @@ def _express_pairs_k(t, vs, tv, k, ss, i, d0, q0):
     for j in irange(i, 0, step=-1):
       (d, _) = vs[j]
       if d == t:
+        ss[:i + 1] = [0] * (i + 1)
         ss[j] = 1
-        if j > 0: ss[:j] = [0] * j
         yield ss
         break
       if d < t: break
@@ -7620,17 +7620,26 @@ def _express_pairs_k(t, vs, tv, k, ss, i, d0, q0):
         #yield from _express_pairs_k(t - n * d, vs, tv, k - n, ss, i - 1, d0, q0)  # [Python 3]
         for z in _express_pairs_k(t - n * d, vs, tv, k - n, ss, i - 1, d0, q0): yield z  # [Python 2]
 
-def express_pairs(t, vs, tv=inf, k=None):
+def express_pairs(t, vs, tv=inf, k=None, validate=0):
   """
   express total <t> using (<denomination>, <max-quantity>) pairs <vs>
 
     vs = ordered list of (<denomination>, <max-quantity>) pairs
     tv = total sum of values in <vs> (= inf if any <max-quantity> is inf)
     k = express using <k> values (not <k> _different_ denominations)
-    note that <max-quantity> values and <tv> can be inf.
+    validate = run sanity checks on parameters
+
+  note that <max-quantity> values and <tv> can be inf.
 
   returns a list of (<denomination>, <quantity>) pairs
   """
+  if validate:
+    # sanity check parameters
+    vs = sorted((d, q) for (d, q) in vs if q > 0 and d <= t)
+    if not is_increasing(vs, strict=1): raise ValueError("express_pairs: invalid <vs> parameter")
+    if tv < sum(d * q for (d, q) in vs): raise ValueError("express_pairs: invalid <tv> parameter")
+    if t < 0: raise ValueError("express_pairs: invalid <t> parameter")
+    if k is not None and k < 0: raise ValueError("express_pairs: invalid <k> parameter")
   n = len(vs)
   if k is None:
     sss = _express_pairs(t, vs, tv, [0] * n, n - 1)
