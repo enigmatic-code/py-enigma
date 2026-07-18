@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul 11 12:02:41 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sat Jul 18 15:53:15 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-11" # <year>-<month>-<number>
+__version__ = "2026-07-17" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -5705,11 +5705,11 @@ def sqrtmod(a, m, k=1, lower=0):
         # -x (mod m^k) is also a root
         if x > 0 and m > 2 * x: yield m - x
 
-# solve linear diophantine equations in 2 variables:
-def diop_linear(a, b, c, mX=0, fn=0):
+# solve linear diophantine equations in 2 variables: a.X + b.Y = v
+def diop_linear(a, b, v=0, mX=0, fn=0):
   """
-  solve the linear Diophantine equation a.X + b.Y = c for integers X, Y
-  (where a, b are non-zero, and gcd(a, b) divides c).
+  solve the linear Diophantine equation a.X + b.Y = k for integers X, Y
+  (where a, b are non-zero, and gcd(a, b) divides k).
 
   return ((X0, Y0), (Xd, Yd)) to give solutions of the form:
 
@@ -5723,10 +5723,10 @@ def diop_linear(a, b, c, mX=0, fn=0):
   if a == 0 or b == 0: raise ValueError("diop_linear: invalid equation")
   (X, Y, g) = egcd(a, b)
   if g > 1:
-    (a, b, c) = (a // g, b // g, div(c, g))
-    if c is None: raise ValueError("diop_linear: no solutions")
+    (a, b, v) = (a // g, b // g, div(v, g))
+    if v is None: raise ValueError("diop_linear: no solutions")
   # calculate particular solution (X0, Y0) and deltas (Xd, Yd)
-  (X0, Y0) = (c * X, c * Y)
+  (X0, Y0) = (v * X, v * Y)
   (Xd, Yd) = ((-b, a) if b < 0 else (b, -a))
   # adjust X0 to be the smallest value
   t = divc(mX - X0, Xd)
@@ -5735,6 +5735,27 @@ def diop_linear(a, b, c, mX=0, fn=0):
   #assert all(a * (X0 + t * Xd) + b * (Y0 + t * Yd) == c for t in irange(-50, 50))
   if fn: return (lambda t, X0=X0, Y0=Y0, Xd=Xd, Yd=Yd : (X0 + t * Xd, Y0 + t * Yd))
   return ((X0, Y0), (Xd, Yd))
+
+# solve linear diophantine equation in 3 variables: a.X + b.Y + c.Z = v
+def diop_linear3(a, b, c, v=0, rX=(0, inf), rY=(0, inf), rZ=(0, inf)):
+  ((min_X, max_X), (min_Y, max_Y), (min_Z, max_Z)) = (rX, rY, rZ)
+  g = gcd(a, b)
+  (a_, b_) = (a // g, b // g)
+  # solve: g.U + c.Z = v
+  min_U = a_ * (min_X if a_ > 0 else max_X) + b_ * (min_Y if b_ > 0 else max_Y)
+  max_U = a_ * (max_X if a_ > 0 else min_X) + b_ * (max_Y if b_ > 0 else min_Y)
+  f1 = diop_linear(g, c, v, mX=min_U, fn=1)
+  for i in irange(0, inf):
+    (U, Z) = f1(i)
+    if U > max_U: break
+    if Z < min_Z or Z > max_Z: continue
+    # solve: a_.X + b_.Y = U
+    f2 = diop_linear(a_, b_, U, mX=min_X, fn=1)
+    for j in irange(0, inf):
+      (X, Y) = f2(j)
+      if X > max_X: break
+      if Y < min_Y or Y > max_Y: continue
+      yield (X, Y, Z)
 
 # multiple GCD
 def _mgcd(a, *rest):
@@ -11924,7 +11945,7 @@ class SubstitutedExpression(object):
     #   solve = ns[solver]
     if not env: env = dict()
     gs = update(globals(), env)
-    #gs['self'] = self
+    gs.update(dict(self=self, cls=self.__class__))
     try:
       code = compile(prog, '<string>', 'exec')
     except Exception:
