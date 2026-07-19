@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sat Jul 18 15:53:15 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Jul 19 09:31:48 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-17" # <year>-<month>-<number>
+__version__ = "2026-07-18" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -8283,6 +8283,7 @@ def is_triangle(a, b, c, fn=gt(0), validate=0):
   return fn(v)
 
 triangle_area = partial(is_triangle, fn=is_triangle.area)
+triangle_iarea = partial(is_triangle, fn=is_triangle.iarea)
 
 
 # 2D geometry:
