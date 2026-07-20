@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Jul 19 09:31:48 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Jul 20 08:26:49 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-18" # <year>-<month>-<number>
+__version__ = "2026-07-19" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -6920,7 +6920,7 @@ def chain(*ss, **kw):
 # generate permutations of the items of a sequence
 def permute(ss, size=len, select='P'):
   for s in ss:
-    #yield from subsets(s, size=len, select=select) #[Python 3]
+    #yield from subsets(s, size=size, select=select) #[Python 3]
     for z in subsets(s, size=size, select=select): yield z #[Python 2]
 
 # flatten(zip(*ss), fn=iter) works if arguments are the same length
@@ -8311,6 +8311,7 @@ def triangle_point(b, a, c, div=fdiv, sqrt=sqrt):
   return P2(x, y)
 
 def triangle_height(b, a, c, div=fdiv, sqrt=sqrt): return triangle_point(b, a, c, div=div, sqrt=sqrt).y
+def triangle_iheight(b, a, c, div=div, sqrt=is_square): return triangle_point(b, a, c, div=div, sqrt=sqrt).y
 
 def triangle_circumcircle(A, B, C):
   """
@@ -10517,7 +10518,7 @@ def output_div(a, b, rem=0, base=0, pre='', start=None, end=None, sep=''):
   printf("{pre}{z}{s}", s=s.replace('-', '='))
   if end is not None: printf("{end}")
 
-def output_sqrx(x, r=None, base=0, pre='', start=None, end=None, sep=''):
+def output_sqrx(x, r=None, rem=0, base=0, pre='', start=None, end=None, sep=''):
   """output the extraction of the square root of <x>"""
   if base == 0: base = radix
   if start is not None: printf("{start}")
@@ -10546,11 +10547,13 @@ def output_sqrx(x, r=None, base=0, pre='', start=None, end=None, sep=''):
     if d > 0:
       fp = fmt(p, width=w)
       printf("{pre}   {fp}")
-      s = underline([fz, fp], ('=' if (z == 0 and i + 1 == len(rds)) else '-'))
+      s = underline([fz, fp], ('=' if (z == 0 and i + 1 == len(rds) and not rem) else '-'))
       printf("{pre}   {s}")
     w += 2
     r = r*base + d
-  if z: printf("{pre} {z} (rem)", z=fmt(z, width=w))
+  if z or rem:
+    printf("{pre} {z} (rem)", z=fmt(z, width=w - 1))
+    printf("{pre}   {s}", s=underline([fz], '='))
   if end is not None: printf("{end}")
 
 ###############################################################################
@@ -12141,9 +12144,9 @@ class SubstitutedExpression(object):
     output_mul(*ans, rev=rev, pre=pre, start=start, end=end, sep=sep)
 
   # square root extraction, set: answer=term to produce: sqrt(term)
-  def output_sqrx(self, s, ans=None, pre='  ', start='', end='', sep=' '):
+  def output_sqrx(self, s, ans=None, rem=0, pre='  ', start='', end='', sep=' '):
     fail(ans is None, "output_sqrx: set answer = <term> to output sqrt(<term>)")
-    output_sqrx(ans, pre=pre, start=start, end=end, sep=sep)
+    output_sqrx(ans, rem=rem, pre=pre, start=start, end=end, sep=sep)
 
   # !!! EXPERIMENTAL !!!
   # it may be better to implement this as a subclass of SubstitutedExpression
