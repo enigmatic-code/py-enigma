@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Jul 21 10:34:21 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Jul 22 06:38:59 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-20" # <year>-<month>-<number>
+__version__ = "2026-07-21" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -10529,7 +10529,7 @@ def output_sqrx(x, r=None, rem=0, base=0, pre='', start=None, end=None, sep=''):
   n = ndigits(x, base=base)
   fmt = partial(int2base, base=base, pad=' ', group=1, sep=sep)
   fx = fmt(x)
-  fr = fmt(r, sep=sep * 2 + ' ')
+  fr = fmt(r, sep=sep + ' ' + sep)
   printf("{pre}   {z}{fr}", z=' ' * (len(fx) - len(fr)))
   printf("{pre}  -{z}", z='-' * len(fx))
   printf("{pre}\\/ {fx}")
@@ -10555,7 +10555,7 @@ def output_sqrx(x, r=None, rem=0, base=0, pre='', start=None, end=None, sep=''):
     w += 2
     r = r*base + d
   if z or rem:
-    printf("{pre} {z} (rem)", z=fmt(z, width=w - 1))
+    printf("{pre}   {z} (rem)", z=fmt(z, width=w - 2))
     printf("{pre}   {s}", s=underline([fz], '='))
   if end is not None: printf("{end}")
 
