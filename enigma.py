@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Jul 22 06:38:59 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Jul 23 12:21:39 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-21" # <year>-<month>-<number>
+__version__ = "2026-07-22" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -4477,10 +4477,12 @@ def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
     if not (r is None or r < min_v):
       yield ss + [r]
   elif k == 2:
-    (i, j) = (isqrt(n), 0)
+    max_i2 = ((n - min_v * min_v) if min_v > 0 else n)
+    (i, j) = (isqrt(max_i2), min_v)
+    if i is None: return
     while not (i < j):
       r = compare(i * i + j * j, n)
-      if r == 0 and not (j < min_v or i - j < sep): yield (ss + [j, i] if ss else [j, i])
+      if r == 0 and not (i - j < sep): yield (ss + [j, i] if ss else [j, i])
       if r != -1: i -= 1
       if r != 1: j += 1
   else:
