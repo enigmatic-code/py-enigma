@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Jul 23 12:21:39 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jul 31 14:14:12 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-22" # <year>-<month>-<number>
+__version__ = "2026-07-31" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -4453,7 +4453,7 @@ def is_square_q(n, F=None):
   if q is None: return None
   return F(p, q)
 
-# for k=2 can also use [[ pells.diop_quad(1, 1, n) ]]
+# for k=2 and large n can also use [[ pells.diop_quad(1, 1, n) ]]
 def sum_of_squares(n, k=2, min_v=0, sep=0, ss=[]):
   """
   return ordered k-sequences of non-negative integers (a, b, ...) such that:
@@ -6687,6 +6687,7 @@ output = Output(prefix='')
 
 class Failure(Exception): pass
 
+# fatal error
 def fail(expr=True, msg=''):
   """
   if <expr> is true then a Failure exception is raised
@@ -6709,6 +6710,11 @@ def fail(expr=True, msg=''):
   it will return the value of <expr2>
   """
   if expr: raise Failure(msg)
+  return expr
+
+# non-fatal warning
+def warn(expr=True, msg=''):
+  if expr: printf("WARNING: {msg}")
   return expr
 
 def catch(*args, **kw):
@@ -8327,11 +8333,20 @@ def triangle_circumcircle(A, B, C):
   ((Ax, Ay), (Bx, By), (Cx, Cy)) = (A, B, C)
   (A2, B2, C2) = (Ax*Ax + Ay*Ay, Bx*Bx + By*By, Cx*Cx + Cy*Cy)
   D = 2 * (Ax*(By - Cy) + Bx*(Cy - Ay) + Cx*(Ay - By))
+  # circumcentre
   U = P2(
     fdiv(A2*(By - Cy) + B2*(Cy - Ay) + C2*(Ay - By), D),
     fdiv(A2*(Cx - Bx) + B2*(Ax - Cx) + C2*(Bx - Ax), D)
   )
   return Circle(U, point_distance(U, A))
+
+def triangle_incircle(A, B, C):
+  ((Ax, Ay), (Bx, By), (Cx, Cy)) = (A, B, C)
+  (a, b, c) = (point_distance(B, C), point_distance(A, C), point_distance(A, B))
+  p = a + b + c
+  # incentre
+  I = P2(fdiv(a*Ax + b*Bx + c*Cx, p), fdiv(a*Ay + b*By + c*Cy, p))
+  return Circle(I, point_distance(I, A))
 
 def point_distance(p1, p2):
   """
