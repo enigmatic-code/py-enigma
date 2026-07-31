@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jul 31 14:14:12 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Jul 31 14:15:49 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -6714,7 +6714,7 @@ def fail(expr=True, msg=''):
 
 # non-fatal warning
 def warn(expr=True, msg=''):
-  if expr: printf("WARNING: {msg}")
+  if expr: print("WARNING:", msg)
   return expr
 
 def catch(*args, **kw):
