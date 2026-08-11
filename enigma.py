@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Jul 31 14:15:49 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Aug 10 13:34:04 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-07-31" # <year>-<month>-<number>
+__version__ = "2026-08-10" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -286,6 +286,7 @@ if _pythonv[0] < 3:
   raw_input = raw_input
   Sequence = collections.Sequence
   Iterable = collections.Iterable
+  Mapping = collections.Mapping
 else:
   # Python 3.x
   _python = 3
@@ -296,10 +297,11 @@ else:
   if _pythonv > (3, 6):
     # Python 3.7 onwards
     # not: [[ Sequence = collections.abc.Sequence ]]
-    from collections.abc import (Sequence, Iterable)
+    from collections.abc import (Sequence, Iterable, Mapping)
   else:
     Sequence = collections.Sequence
     Iterable = collections.Iterable
+    Mapping = collections.Mapping
 
 _builtin_min = min
 _builtin_max = max
@@ -1114,7 +1116,7 @@ def reverse(seq, fn=None):
   ## if it has a 'rev' attribute call that (note: list.reverse() modifies the list)
   #if hasattr(seq, 'rev'): return (seq.rev() if fn is None else fn(seq.rev()))
   # if it is a dict, return a reverse map
-  if isinstance(seq, dict): return type(seq)((v, k) for (k, v) in seq.items())
+  if isinstance(seq, Mapping): return type(seq)((v, k) for (k, v) in seq.items())
   # if it is not already a sequence, turn it into one
   if not isinstance(seq, Sequence): seq = list(seq)
   # if it is a string, return a string
@@ -1160,7 +1162,7 @@ def translate(t, m, s="", embed=1):
   if callable(m):
     f = m
   else:
-    if not isinstance(m, dict): m = dict(zip(m, s))
+    if not isinstance(m, Mapping): m = dict(zip(m, s))
     f = (lambda x: m.get(x, x))
   fn = (lambda t: join(map(f, t)))
   if (not embed) or ('{' not in t): return fn(t)
@@ -1690,7 +1692,7 @@ def peek(seq, k=0, p=None, **kw):
   if kw and list(kw.keys()) != ['default']: raise TypeError(str.format("peek: unknown arguments {kw}", kw=seq2str(kw.keys())))
   if p is not None: seq = filter(p, seq)
   if k >= 0:
-    if not isinstance(seq, dict):
+    if not isinstance(seq, Mapping):
       # try to index into the container
       try:
         return seq[k]
@@ -1897,7 +1899,7 @@ class multiset(dict):
     dict.__init__(self)
     # deal with any initialisation objects
     for v in vs:
-      if isinstance(v, dict):
+      if isinstance(v, Mapping):
         # from a dict
         self.update_from_dict(v, validate=1)
       else:
@@ -2123,7 +2125,7 @@ class multiset(dict):
     validate = kw.pop('validate', 0)
     if kw: raise TypeError(str.format("multiset.update: unknown arguments {kw}", kw=seq2str(kw.keys())))
     for m in rest:
-      if not isinstance(m, dict): m = self.__class__(m)
+      if not isinstance(m, Mapping): m = self.__class__(m)
       self.update_from_dict(m, validate=validate)
     return self
 
@@ -2149,7 +2151,7 @@ class multiset(dict):
     maximal item counts are retained.
     """
     for m in rest:
-      if not isinstance(m, dict): m = self.__class__(m)
+      if not isinstance(m, Mapping): m = self.__class__(m)
       for (item, count) in m.items(): self[item] = max(count, self.get(item, 0))
     return self
 
@@ -2175,14 +2177,14 @@ class multiset(dict):
     """
     r = self.copy()
     for m in rest:
-      if not isinstance(m, dict): m = self.__class__(m)
+      if not isinstance(m, Mapping): m = self.__class__(m)
       r = multiset.from_pairs((item, min(count, r.get(item, 0))) for (item, count) in m.items())
     return r
 
   # is this multiset a subset of m?
   def issubset(self, m, strict=0):
     """test if the multiset is contained in multiset <m>"""
-    if not isinstance(m, dict): m = self.__class__(m)
+    if not isinstance(m, Mapping): m = self.__class__(m)
     # check sizes
     r = compare(self.size(), m.size())
     if r == 1 or (strict and r == 0): return False
@@ -2195,7 +2197,7 @@ class multiset(dict):
   # is this multiset m a superset of self?
   def issuperset(self, m, strict=0):
     """test if the multiset contains multiset <m>"""
-    if not isinstance(m, dict): m = multiset(m)
+    if not isinstance(m, Mapping): m = multiset(m)
     return m.issubset(self, strict=strict)
 
   # differences between self and m
@@ -2206,7 +2208,7 @@ class multiset(dict):
 
     returns (self - m, m - self)
     """
-    if not isinstance(m, dict): m = self.__class__(m)
+    if not isinstance(m, Mapping): m = self.__class__(m)
     (d1, d2) = (self.__class__(), self.__class__())
     for item in set(self.keys()).union(m.keys()):
       count = self.get(item, 0) - m.get(item, 0)
@@ -2235,7 +2237,7 @@ class multiset(dict):
   def is_disjoint(self, *rest):
     """test if the multiset is disjoint from a bunch of other multisets"""
     for m in rest:
-      if not isinstance(m, dict): m = self.__class__(m)
+      if not isinstance(m, Mapping): m = self.__class__(m)
       if any(x in self for x in m): return False
     return True
 
@@ -3000,7 +3002,7 @@ def find(seq, v):
     return -1
   except AttributeError:
     pass
-  if isinstance(seq, dict):
+  if isinstance(seq, Mapping):
     # search the keys
     # (or we could use find() in the values, and return the correspond index in keys)
     for (k, x) in seq.items():
@@ -4391,6 +4393,11 @@ def isqrt(n):
     d = c >> s
     a = (a << d - e - 1) + (n >> (c << 1) - e - d + 1) // a
   return a - (a * a > n)
+
+# returns (isqrt(n), n - sq(isqrt(n)))
+def isqrtrem(n):
+  r = isqrt(n)
+  return (r, n - r*r)
 
 # square root floor and ceiling functions
 sqrtf = isqrt
@@ -7170,7 +7177,7 @@ def swap(s, i, j, *ks, **kw):
   create a container the same as <s> but with keys <i> and <j> swapped.
   """
   fn = kw.get('fn', None)
-  if isinstance(s, dict):
+  if isinstance(s, Mapping):
     r = type(s)(s)
   elif isinstance(s, (list, tuple, basestring)):
     r = list(s)
@@ -7196,7 +7203,7 @@ def restrict(s, ks, strict=0):
   >>> restrict("abracadabra", [0, 3, 5, 7, 10])
   'aaaaa'
   """
-  if isinstance(s, dict):
+  if isinstance(s, Mapping):
     r = type(s)()
     for k in ks:
       try:
@@ -8943,7 +8950,7 @@ def map2str(m, sort=1, enc="()", sep=", ", arr="="):
   """
   fn = (sorted if sort else identity)
   # is it a dict?
-  if isinstance(m, dict):
+  if isinstance(m, Mapping):
     return join((concat(k, arr, m[k]) for k in fn(m.keys())), sep=sep, enc=enc)
   # (k, v) pairs
   return join((concat(k, arr, v) for (k, v) in fn(m)), sep=sep, enc=enc)
@@ -10084,7 +10091,7 @@ class _PrimeSieveE6(object):
   # generate prime factors of <n> using the sieve
   # (try setting mr=100 if checking large numbers)
   # (or mr=inf to perform all heuristic tests after the sieve is exhausted)
-  def prime_factor(self, n, end=None, mr=0, mrr=0):
+  def prime_factor(self, n, end=None, mr=0, mrr=0, expand=0):
     """
     generate (<prime>, <exponent>) pairs in the prime factorisation of
     positive integer <n>, for primes in the sieve (less than <end>).
@@ -10099,19 +10106,23 @@ class _PrimeSieveE6(object):
     the sieve, so may not be a complete factorisation of <n>. However
     when <mr> is set it will also attempt to look for larger
     probabalistic prime factors.
+
+    However, if 'expand' is set, then the sieve will be expanded to
+    include primes up to isqrt(n) before factorisation is performed.
     """
     if n == 1: return ()
+    if expand: self.expand(isqrt(n))
     return prime_factor_h(n, self, end=end, nf=mr, mr=mr, mrr=mrr)
 
-  def prime_factors(self, n, end=None, mr=0, mrr=0):
-    for (p, e) in self.prime_factor(n, end, mr, mrr):
+  def prime_factors(self, n, end=None, mr=0, mrr=0, expand=0):
+    for (p, e) in self.prime_factor(n, end=end, mr=mr, mrr=mrr, expand=expand):
       for _ in range(e):
         yield p
 
   # functions that can use self.prime_factor() instead of simple prime_factor()
 
   # return a list of the factors of n
-  def factor(self, n, end=None, mr=0, mrr=0):
+  def factor(self, n, end=None, mr=0, mrr=0, expand=0):
     """
     return a list of the prime factors of positive integer <n>.
 
@@ -10119,22 +10130,22 @@ class _PrimeSieveE6(object):
     this is a complete factorisation for <n> up to the square of the
     limit of the sieve.
     """
-    return factor(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
+    return factor(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr, expand=expand))
 
-  def divisors(self, n, end=None, mr=0, mrr=0):
-    return divisors(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
+  def divisors(self, n, end=None, mr=0, mrr=0, expand=0):
+    return divisors(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr, expand=expand))
 
-  def divisors_pairs(self, n, end=None, mr=0, mrr=0):
-    return divisors_pairs(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
+  def divisors_pairs(self, n, end=None, mr=0, mrr=0, expand=0):
+    return divisors_pairs(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr, expand=expand))
 
-  def tau(self, n, end=None, mr=0, mrr=0):
-    return tau(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
+  def tau(self, n, end=None, mr=0, mrr=0, expand=0):
+    return tau(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr, expand=expand))
 
-  def is_square_free(self, n, end=None, mr=0, mrr=0):
-    return is_square_free(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr))
+  def is_square_free(self, n, end=None, mr=0, mrr=0, expand=0):
+    return is_square_free(n, fn=partial(self.prime_factor, end=end, mr=mr, mrr=mrr, expand=expand))
 
-  def factorisations(self, n, end=None, mr=0, mrr=0):
-    return factorisations(n, fn=partial(self.divisors, end=end, mr=mr, mrr=mrr))
+  def factorisations(self, n, end=None, mr=0, mrr=0, expand=0):
+    return factorisations(n, fn=partial(self.divisors, end=end, mr=mr, mrr=mrr, expand=expand))
 
 # an expandable version of the sieve
 
@@ -11716,7 +11727,7 @@ class SubstitutedExpression(object):
       printf("[strategy: {ss}]", ss=join(ss, sep=' -> '))
 
     # turn distinct into a dict mapping <symbol> -> <excluded symbols>
-    if not isinstance(distinct, dict):
+    if not isinstance(distinct, Mapping):
       d = dict()
       for ss in distinct:
         if sane > 0:
@@ -12315,7 +12326,7 @@ class SubstitutedExpression(object):
     # no leading zeros by default
     if d2i is None:
       d2i = set((0, w[0]) for w in words if len(w) > 1)
-    elif isinstance(d2i, dict):
+    elif isinstance(d2i, Mapping):
       d2i = set((d, s) for (d, ss) in d2i.items() for s in ss)
 
     # prepare return values
@@ -12425,6 +12436,7 @@ class SubstitutedExpression(object):
       solve=(lambda *args, **kw: solver.value.solve(*args, **kw)),
       answers=(lambda *args, **kw: solver.value.answers(*args, **kw)),
       run=(lambda *args, **kw: solver.value.run(*args, **kw)),
+      substitute=(lambda *args, **kw: solver.value.substitute(*args, **kw)),
     )
 
   # generate appropriate command line arguments to reconstruct this instance
@@ -14903,7 +14915,7 @@ def _matrix_linear(A, B, n, m, valid):
 def _matrix_equation(sym, n, coeffs, k, z):
   row = [z] * n
   # if coeffs is a dictionary
-  if isinstance(coeffs, dict):
+  if isinstance(coeffs, Mapping):
     for (c, v) in coeffs.items():
       row[sym[c]] += v
   else:
