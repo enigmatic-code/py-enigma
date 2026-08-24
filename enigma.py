@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Aug 24 15:39:00 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Aug 24 16:40:59 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-08-24" # <year>-<month>-<number>
+__version__ = "2026-08-25" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -4119,13 +4119,14 @@ def coprime_pairs(n=None, order=0):
 
 # Pythagorean Triples:
 # see: https://en.wikipedia.org/wiki/Formulas_for_generating_Pythagorean_triples
+# now uses Euclid's formula (suggested by Frits)
 
 # generate primitive pythagorean triples (x, y, z) with hypotenuse not exceeding Z
 # if Z is None, then triples will be generated indefinitely
 # if order is true, then triples will be returned in order
 def _pythagorean_primitive(Z=None, order=0):
   if order:
-    # use the original formulation, and a heap
+    # use the original formulation [Barning-Hall tertiary tree?], and a heap
     from heapq import (heapify, heappush, heappop)
     ts = list()
     heapify(ts)
@@ -4152,10 +4153,8 @@ def _pythagorean_primitive(Z=None, order=0):
       #for (z, y, x) in ((u + c, u + b, u - a), (v + c, v - b, v - a), (w + c, w - b, w + a)):
       #  if fn(z): _push(ts, ((z, x, y) if y < x else (z, y, x)))
   else:
-    # we can use a faster formulation (Euclid's formula, suggested by Frits via:
-    # [ https://stackoverflow.com/questions/49113289/generating-pythagorean-triples-using-gaussian-complex-integers ])
-    m = 2
-    while True:
+    # if we don't care about order we can use a faster formulation (Euclid's formula)
+    for m in irange(2, (inf if Z is None else isqrt(Z))):
       m2 = m * m
       # "... not both odd..."
       for n in irange(1 + m % 2, m - 1, step=2):
@@ -4163,14 +4162,11 @@ def _pythagorean_primitive(Z=None, order=0):
         if gcd(m, n) == 1:
           n2 = n * n
           c = m2 + n2
-          if c > Z: break
+          if Z is not None and c > Z: break
           a = m2 - n2
           b = 2 * m * n
           if b < a: (a, b) = (b, a)
           yield (a, b, c)
-      m += 1
-      if Z is not None and m * m > Z: break
-    return
 
 # generate pythagorean triples (x, y, z) with hypotenuse not exceeding Z
 def _pythagorean_all(Z, order=0):
