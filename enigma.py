@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Aug 24 14:32:13 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Mon Aug 24 15:24:59 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-08-24" # <year>-<month>-<number>
+__version__ = "2026-08-10" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -4118,30 +4118,59 @@ def coprime_pairs(n=None, order=0):
       if fn(p): _push(ps, p)
 
 # Pythagorean Triples:
+# see: https://en.wikipedia.org/wiki/Formulas_for_generating_Pythagorean_triples
 
 # generate primitive pythagorean triples (x, y, z) with hypotenuse not exceeding Z
 # if Z is None, then triples will be generated indefinitely
 # if order is true, then triples will be returned in order
 def _pythagorean_primitive(Z=None, order=0):
-  # see [ https://stackoverflow.com/questions/49113289/generating-pythagorean-triples-using-gaussian-complex-integers ]
-  # (suggested by Frits)
-  # this generates triples in order anyway (so the 'order' parameter is ignored)
-  m = 2
-  while True:
-    m2 = m * m
-    # "... not both odd..."
-    for n in irange(1 + m % 2, m - 1, step=2):
-      # "... with m and n coprime ..."
-      if gcd(m, n) == 1:
-        n2 = n * n
-        c = m2 + n2
-        if c > Z: break
-        a = m2 - n2
-        b = 2 * m * n
-        if b < a: (a, b) = (b, a)
-        yield (a, b, c)
-    m += 1
-    if Z is not None and m * m > Z: break
+  if order:
+    # use the original formulation, and a heap
+    from heapq import (heapify, heappush, heappop)
+    ts = list()
+    heapify(ts)
+    _push = heappush
+    _pop = heappop
+    fn = (true if Z is None else le(Z))
+    # initial triple
+    if fn(5): _push(ts, (5, 4, 3))
+    while ts:
+      (c, b, a) = _pop(ts)
+      yield (a, b, c)
+      # my original formulation (using only addition/subtraction)
+      (a2, b2, c2) = (a + a, b + b, c + c)
+      c3 = c2 + c
+      for (z, y, x) in (
+          (c3 - b2 + a2, c2 - b + a2, c2 - b2 + a),
+          (c3 + b2 - a2, c2 + b - a2, c2 + b2 - a),
+          (c3 + b2 + a2, c2 + b + a2, c2 + b2 + a),
+      ):
+        if fn(z): _push(ts, ((z, x, y) if y < x else (z, y, x)))
+      ## alternatively: Brian's (more compact, but slower) formulation
+      #t = 2 * (a + b + c)
+      #(u, v, w) = (t - 4 * b, t, t - 4 * a)
+      #for (z, y, x) in ((u + c, u + b, u - a), (v + c, v - b, v - a), (w + c, w - b, w + a)):
+      #  if fn(z): _push(ts, ((z, x, y) if y < x else (z, y, x)))
+  else:
+    # we can use a faster formulation (Euclid's formula, suggested by Frits via:
+    # [ https://stackoverflow.com/questions/49113289/generating-pythagorean-triples-using-gaussian-complex-integers ])
+    m = 2
+    while True:
+      m2 = m * m
+      # "... not both odd..."
+      for n in irange(1 + m % 2, m - 1, step=2):
+        # "... with m and n coprime ..."
+        if gcd(m, n) == 1:
+          n2 = n * n
+          c = m2 + n2
+          if c > Z: break
+          a = m2 - n2
+          b = 2 * m * n
+          if b < a: (a, b) = (b, a)
+          yield (a, b, c)
+      m += 1
+      if Z is not None and m * m > Z: break
+    return
 
 # generate pythagorean triples (x, y, z) with hypotenuse not exceeding Z
 def _pythagorean_all(Z, order=0):
@@ -4202,10 +4231,10 @@ def pythagorean_triples(n=None, primitive=0, order=0):
   12471
   """
   # primitive only triples?
-  if primitive: return _pythagorean_primitive(n, order)
+  if primitive: return _pythagorean_primitive(n, order=order)
   # include non-primitive
   if n is None: raise ValueError("max hypotenuse not specified")
-  return _pythagorean_all(n, order)
+  return _pythagorean_all(n, order=order)
 
 
 def fib(*s, **kw):
