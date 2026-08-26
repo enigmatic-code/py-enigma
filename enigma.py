@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Aug 24 16:40:59 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Aug 26 13:09:41 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-08-25" # <year>-<month>-<number>
+__version__ = "2026-08-26" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -1858,6 +1858,7 @@ def ucombinations(s, k=None):
   return uC(s, k)
 
 # the multiset is implemented as a dict mapping <item> -> <count>
+# TODO: consider adding support for freeze()
 class multiset(dict):
   """
   an implementation of multisets (sometimes known as: bags)
@@ -1868,6 +1869,9 @@ class multiset(dict):
     len() counts the number of elements (not the number of distinct elements)
 
     iterating through a multiset provides all elements (not just distinct elements)
+
+    if you call freeze() on a multiset it becomes hashable, but once a multiset is
+    frozen you should not change it (although this is not (currently) enforced)
   """
 
   def __init__(self, *vs, **kw):
@@ -1897,6 +1901,9 @@ class multiset(dict):
     update_from_seq() object methods.
     """
     dict.__init__(self)
+    # start off unfrozen
+    self.frozen = 0
+    self._hash = None
     # deal with any initialisation objects
     for v in vs:
       if isinstance(v, Mapping):
@@ -2062,6 +2069,14 @@ class multiset(dict):
     """return the number of times <item> occurs in the multiset"""
     return dict.get(self, item, 0)
 
+  # freeze a multiset: after freezing a multiset it may be hashed,
+  # but you should not change the multiset once frozen (not enforced)
+  # it cannot be unfrozen, but copy() will create an unfrozen copy
+  def freeze(self):
+    # we could call [[ dict.freeze(self) ]] if dict() supported freeze()
+    self.frozen = 1
+    return self
+
   # add an item
   def add(self, item, count=1, validate=0):
     """
@@ -2069,6 +2084,7 @@ class multiset(dict):
 
     count can be negative to remove items.
     """
+    #if self.frozen: raise TypeError("attempt to modify frozen multiset")
     if validate: count = as_int(count)
     try:
       count += self[item]
@@ -2089,6 +2105,7 @@ class multiset(dict):
   # delete an item (no error is raised if the item does not exist)
   def delete(self, item):
     """delete all occurrences of an item from the multiset"""
+    #if self.frozen: raise TypeError("attempt to modify frozen multiset")
     return self.pop(item, 0)
 
   # like self.items(), but in value order
@@ -2150,6 +2167,7 @@ class multiset(dict):
 
     maximal item counts are retained.
     """
+    #if self.frozen: raise TypeError("attempt to modify frozen multiset")
     for m in rest:
       if not isinstance(m, Mapping): m = self.__class__(m)
       for (item, count) in m.items(): self[item] = max(count, self.get(item, 0))
@@ -2268,6 +2286,7 @@ class multiset(dict):
 
   def copy(self):
     """return a copy of the multiset"""
+    # NOTE: copies are not frozen
     #return self.__class__.from_dict(self)
     r = self.__class__()
     for (k, v) in self.items(): r[k] = v
@@ -2372,7 +2391,7 @@ class multiset(dict):
     """
     format a multiset as a string.
 
-    the first flag control the formatting:
+    the first flag controls the formatting:
 
       d = dictionary formatting
       l = list formatting
@@ -2407,10 +2426,13 @@ class multiset(dict):
 
   # generate item pairs
   def to_pairs(self):
-    return tuple(sorted(dict.items(self)))
+    return tuple(dict.items(self))
 
+  # hash a frozen multiset
   def __hash__(self):
-    return hash(self.to_pairs())
+    if not self.frozen: raise TypeError("attempt to hash an unfrozen multiset")
+    if self._hash is None: self._hash = hash(frozenset(self.to_pairs()))
+    return self._hash
 
   def to_dict(self):
     return dict(self)
