@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Aug 27 09:16:55 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Aug 27 14:03:06 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-08-27" # <year>-<month>-<number>
+__version__ = "2026-08-28" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -1875,6 +1875,7 @@ class multiset(dict):
   """
 
   # set for enforced frozen multisets (0 = faster; 1 = enforced immutability)
+  # (useful during development to catch "accidental" modifications)
   enforce_freeze = 0
 
   def __init__(self, *vs, **kw):
@@ -2458,7 +2459,7 @@ class multiset(dict):
   __lt__ = lambda self, m: self.issubset(m, strict=1)
   __gt__ = lambda self, m: self.issuperset(m, strict=1)
 
-# strict frozen multiset
+# enforced frozen multiset
 class fmultiset(multiset):
 
   # can only be initialised from an existing multiset
@@ -4155,57 +4156,54 @@ def coprime_pairs(n=None, order=0):
       if fn(p): _push(ps, p)
 
 # Pythagorean Triples:
-# see: https://en.wikipedia.org/wiki/Formulas_for_generating_Pythagorean_triples
+# formerly used the Barning-Hall tree
+# [ https://en.wikipedia.org/wiki/Tree_of_primitive_Pythagorean_triples ]
 # now uses Euclid's formula (suggested by Frits)
+# [ https://en.wikipedia.org/wiki/Formulas_for_generating_Pythagorean_triples ]
 
 # generate primitive pythagorean triples (x, y, z) with hypotenuse not exceeding Z
-# if Z is None (or inf), then triples will be generated indefinitely
+# if Z is inf (or None), then triples will be generated indefinitely
 # if order is true, then triples will be returned in order
-def _pythagorean_primitive(Z=None, order=0):
-  if Z is None: Z = inf
+def _pythagorean_primitive(Z=inf, order=0):
   if order:
     # use a heap to merge steams of per-m values (increasing) from Euclid's formula
     from heapq import (heapify, heappush, heappop)
     ts = list()
     heapify(ts)
 
-    # determine next n (n' in (m, n) -> (m, n'))
+    # determine next n for a given m (n' in (m, n) -> (m, n'))
     def nxt_n(m, n):
-      n += 2
-      while n < m:
-        if gcd(m, n) == 1: return n
+      while True:
         n += 2
-      return None
+        if n >= m: return None
+        if gcd(m, n) == 1: return n
 
-    # make (c, b, a, m, n) tuple from (m, n)
-    def make_t(m, n):
-      (m2, n2) = (m*m, n*n)
-      (a, b, c) = (m2 - n2, 2*m*n, m2 + n2)
+    # make (c, b, a, m, n) tuple from (m, n), with c <= Z
+    def make_t(m, n, Z):
+      (m2, n2) = (m * m, n * n)
+      c = m2 + n2
+      if c > Z: return
+      (a, b) = (m2 - n2, 2 * m * n)
       return ((c, a, b, m, n) if b < a else (c, b, a, m, n))
 
-    (nxt_m, mv) = (2, 5)
+    (nxt_m, mv) = (2, 5)  # mv = sq(nxt_n) + 1
     while True:
-      # bring in any stream that could be the current top
+      # bring in any stream that could beat the current top
       while (not ts) or (mv <= ts[0][0]):
-        if mv > Z and (not ts): return
-        n0 = 1 + nxt_m % 2
-        if gcd(nxt_m, n0) != 1: n0 = nxt_n(nxt_m, n0)
-        if n0 is not None:
-          t = make_t(nxt_m, n0)
-          if t[0] <= Z: heappush(ts, t)
-        nxt_m += 1
-        mv = nxt_m * nxt_m + 1
         if mv > Z: break
+        n0 = 1 + nxt_m % 2
+        heappush(ts, make_t(nxt_m, n0, Z))
+        nxt_m += 1
+        mv += 2 * nxt_m - 1
       if not ts: return
 
       # process the top of the heap
       (c, b, a, m, n) = heappop(ts)
-      if c > Z: continue
       yield (a, b, c)
-      nn = nxt_n(m, n)
-      if nn is not None:
-        t = make_t(m, nn)
-        if t[0] <= Z: heappush(ts, t)
+      n1 = nxt_n(m, n)
+      if n1 is not None:
+        t = make_t(m, n1, Z)
+        if t is not None: heappush(ts, t)
 
   else:
     # if we don't care about order we can use a faster formulation of Euclid's formula
@@ -4224,6 +4222,7 @@ def _pythagorean_primitive(Z=None, order=0):
 
 # generate pythagorean triples (x, y, z) with hypotenuse not exceeding Z
 def _pythagorean_all(Z, order=0):
+  if Z is inf: order=1
   if order:
     # use a heap to save the multiples
     from heapq import (heapify, heappush, heappop)
@@ -4232,15 +4231,19 @@ def _pythagorean_all(Z, order=0):
     for (x, y, z) in _pythagorean_primitive(Z, order=1):
       # return any saved multiples less than (x, y, z)
       while ms and ms[0] < (z, y, x):
-        yield heappop(ms)[::-1]
+        (c, b, a, c0, b0, a0) = heappop(ms)
+        yield (a, b, c)
+        c1 = c + c0
+        if c1 <= Z: heappush(ms, (c1, b + b0, a + a0, c0, b0, a0))
       # return (x, y, z)
       yield (x, y, z)
-      # add in any new multiples
-      for k in irange(2, Z // z):
-        heappush(ms, (k * z, k * y, k * x))
+      # add in the next multiple
+      z1 = z + z
+      if z1 <= Z: heappush(ms, (z1, y + y, x + x, z, y, x))
     # return any remaining multiples
     while ms:
-      yield heappop(ms)[::-1]
+      (c, b, a, c0, b0, a0) = heappop(ms)
+      yield (a, b, c)
   else:
     # return the multiples with the primitives
     for (x, y, z) in _pythagorean_primitive(Z, order=0):
@@ -4250,7 +4253,8 @@ def _pythagorean_all(Z, order=0):
 
 # return a complete sorted finite list (faster than generating in order)
 def pythagorean_triples_sorted(n, primitive=0):
-  assert (n is not None) and (n < inf)
+  if n is None: n = inf
+  assert (n < inf)
   ts = list(pythagorean_triples(n, primitive=primitive, order=0))
   ts.sort(key=lambda t: t[::-1])
   return ts
@@ -4261,7 +4265,7 @@ def pythagorean_triples_sorted(n, primitive=0):
 # order - if set triples are generated in order
 # if primitive is false, then a value for n must be specified
 @static(sorted=pythagorean_triples_sorted)
-def pythagorean_triples(n=None, primitive=0, order=0):
+def pythagorean_triples(n=inf, primitive=0, order=0):
   """
   generate pythagorean triples (x, y, z) where x < y < z and x^2 + y^2 = z^2.
 
@@ -4272,9 +4276,8 @@ def pythagorean_triples(n=None, primitive=0, order=0):
   order is by shortest z, then shortest y, then shortest x
   (i.e. reverse lexicographic)
 
-  if 'primitive' is set, then n can be None, and primitive triples
-  will be generated indefinitely (although it will eventually run out
-  of memory)
+  n can be inf, and triples will be generated indefinitely
+  (although it will eventually exhaust memory)
 
   >>> list(pythagorean_triples(20, primitive=0, order=1))
   [(3, 4, 5), (6, 8, 10), (5, 12, 13), (9, 12, 15), (8, 15, 17), (12, 16, 20)]
@@ -4288,10 +4291,10 @@ def pythagorean_triples(n=None, primitive=0, order=0):
   >>> icount(pythagorean_triples(10000, primitive=0))
   12471
   """
-  # primitive only triples?
+  if n is None: n = inf
+  # do we want only primitive triples?
   if primitive: return _pythagorean_primitive(n, order=order)
-  # include non-primitive
-  if n is None: raise ValueError("max hypotenuse not specified")
+  # otherwise also include non-primitive
   return _pythagorean_all(n, order=order)
 
 def fib(*s, **kw):
