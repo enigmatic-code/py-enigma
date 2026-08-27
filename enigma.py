@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Aug 26 13:09:41 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Aug 27 09:16:55 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-08-26" # <year>-<month>-<number>
+__version__ = "2026-08-27" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -1858,7 +1858,6 @@ def ucombinations(s, k=None):
   return uC(s, k)
 
 # the multiset is implemented as a dict mapping <item> -> <count>
-# TODO: consider adding support for freeze()
 class multiset(dict):
   """
   an implementation of multisets (sometimes known as: bags)
@@ -1871,8 +1870,12 @@ class multiset(dict):
     iterating through a multiset provides all elements (not just distinct elements)
 
     if you call freeze() on a multiset it becomes hashable, but once a multiset is
-    frozen you should not change it (although this is not (currently) enforced)
+    frozen you should not change it (although this is not enforced, unless you set
+    [[ multiset.enforce_freeze = 1 ]]).
   """
+
+  # set for enforced frozen multisets (0 = faster; 1 = enforced immutability)
+  enforce_freeze = 0
 
   def __init__(self, *vs, **kw):
     """
@@ -1901,7 +1904,6 @@ class multiset(dict):
     update_from_seq() object methods.
     """
     dict.__init__(self)
-    # start off unfrozen
     self.frozen = 0
     self._hash = None
     # deal with any initialisation objects
@@ -2073,9 +2075,18 @@ class multiset(dict):
   # but you should not change the multiset once frozen (not enforced)
   # it cannot be unfrozen, but copy() will create an unfrozen copy
   def freeze(self):
-    # we could call [[ dict.freeze(self) ]] if dict() supported freeze()
+    # if we are being strict we return a new frozen multiset that cannot be modified
+    if multiset.enforce_freeze: return fmultiset(self)
+    # otherwise, we just mark this as frozen (which enables hashing)
+    # (if an equivalent dict.freeze() existed, we could call it here)
     self.frozen = 1
     return self
+
+  # hash a frozen multiset
+  def __hash__(self):
+    if not self.frozen: raise TypeError("attempt to hash an unfrozen multiset")
+    if self._hash is None: self._hash = hash(fset(self.to_pairs()))
+    return self._hash
 
   # add an item
   def add(self, item, count=1, validate=0):
@@ -2084,7 +2095,6 @@ class multiset(dict):
 
     count can be negative to remove items.
     """
-    #if self.frozen: raise TypeError("attempt to modify frozen multiset")
     if validate: count = as_int(count)
     try:
       count += self[item]
@@ -2105,7 +2115,6 @@ class multiset(dict):
   # delete an item (no error is raised if the item does not exist)
   def delete(self, item):
     """delete all occurrences of an item from the multiset"""
-    #if self.frozen: raise TypeError("attempt to modify frozen multiset")
     return self.pop(item, 0)
 
   # like self.items(), but in value order
@@ -2142,7 +2151,7 @@ class multiset(dict):
     validate = kw.pop('validate', 0)
     if kw: raise TypeError(str.format("multiset.update: unknown arguments {kw}", kw=seq2str(kw.keys())))
     for m in rest:
-      if not isinstance(m, Mapping): m = self.__class__(m)
+      if not isinstance(m, Mapping): m = multiset(m)
       self.update_from_dict(m, validate=validate)
     return self
 
@@ -2167,9 +2176,8 @@ class multiset(dict):
 
     maximal item counts are retained.
     """
-    #if self.frozen: raise TypeError("attempt to modify frozen multiset")
     for m in rest:
-      if not isinstance(m, Mapping): m = self.__class__(m)
+      if not isinstance(m, Mapping): m = multiset(m)
       for (item, count) in m.items(): self[item] = max(count, self.get(item, 0))
     return self
 
@@ -2195,14 +2203,14 @@ class multiset(dict):
     """
     r = self.copy()
     for m in rest:
-      if not isinstance(m, Mapping): m = self.__class__(m)
+      if not isinstance(m, Mapping): m = multiset(m)
       r = multiset.from_pairs((item, min(count, r.get(item, 0))) for (item, count) in m.items())
     return r
 
   # is this multiset a subset of m?
   def issubset(self, m, strict=0):
     """test if the multiset is contained in multiset <m>"""
-    if not isinstance(m, Mapping): m = self.__class__(m)
+    if not isinstance(m, Mapping): m = multiset(m)
     # check sizes
     r = compare(self.size(), m.size())
     if r == 1 or (strict and r == 0): return False
@@ -2226,8 +2234,8 @@ class multiset(dict):
 
     returns (self - m, m - self)
     """
-    if not isinstance(m, Mapping): m = self.__class__(m)
-    (d1, d2) = (self.__class__(), self.__class__())
+    if not isinstance(m, Mapping): m = multiset(m)
+    (d1, d2) = (multiset(), multiset())
     for item in set(self.keys()).union(m.keys()):
       count = self.get(item, 0) - m.get(item, 0)
       if count > 0:
@@ -2255,7 +2263,7 @@ class multiset(dict):
   def is_disjoint(self, *rest):
     """test if the multiset is disjoint from a bunch of other multisets"""
     for m in rest:
-      if not isinstance(m, Mapping): m = self.__class__(m)
+      if not isinstance(m, Mapping): m = multiset(m)
       if any(x in self for x in m): return False
     return True
 
@@ -2286,11 +2294,7 @@ class multiset(dict):
 
   def copy(self):
     """return a copy of the multiset"""
-    # NOTE: copies are not frozen
-    #return self.__class__.from_dict(self)
-    r = self.__class__()
-    for (k, v) in self.items(): r[k] = v
-    return r
+    return multiset.from_dict(self)
 
   def min(self, **kw):
     """
@@ -2428,12 +2432,6 @@ class multiset(dict):
   def to_pairs(self):
     return tuple(dict.items(self))
 
-  # hash a frozen multiset
-  def __hash__(self):
-    if not self.frozen: raise TypeError("attempt to hash an unfrozen multiset")
-    if self._hash is None: self._hash = hash(frozenset(self.to_pairs()))
-    return self._hash
-
   def to_dict(self):
     return dict(self)
 
@@ -2459,6 +2457,23 @@ class multiset(dict):
   __ge__ = issuperset
   __lt__ = lambda self, m: self.issubset(m, strict=1)
   __gt__ = lambda self, m: self.issuperset(m, strict=1)
+
+# strict frozen multiset
+class fmultiset(multiset):
+
+  # can only be initialised from an existing multiset
+  def __init__(self, m=None):
+    multiset.__init__(self)
+    if m: dict.update(self, m)
+    self.frozen = 1
+
+  def _frozen_error(self, *args, **kw):
+    raise TypeError("attempt to modify frozen multiset")
+
+  # override multiset methods that might change the multiset
+  add = delete = union_update = _frozen_error
+  # also override dict methods
+  __setitem__ = __delitem__ = clear = pop = popitem = setdefault = update = _frozen_error
 
 # alias
 mset = multiset  # "mset" is a shortcut for "multiset"
@@ -4144,39 +4159,57 @@ def coprime_pairs(n=None, order=0):
 # now uses Euclid's formula (suggested by Frits)
 
 # generate primitive pythagorean triples (x, y, z) with hypotenuse not exceeding Z
-# if Z is None, then triples will be generated indefinitely
+# if Z is None (or inf), then triples will be generated indefinitely
 # if order is true, then triples will be returned in order
 def _pythagorean_primitive(Z=None, order=0):
+  if Z is None: Z = inf
   if order:
-    # use the original formulation [Barning-Hall tertiary tree?], and a heap
+    # use a heap to merge steams of per-m values (increasing) from Euclid's formula
     from heapq import (heapify, heappush, heappop)
     ts = list()
     heapify(ts)
-    _push = heappush
-    _pop = heappop
-    fn = (true if Z is None else le(Z))
-    # initial triple
-    if fn(5): _push(ts, (5, 4, 3))
-    while ts:
-      (c, b, a) = _pop(ts)
+
+    # determine next n (n' in (m, n) -> (m, n'))
+    def nxt_n(m, n):
+      n += 2
+      while n < m:
+        if gcd(m, n) == 1: return n
+        n += 2
+      return None
+
+    # make (c, b, a, m, n) tuple from (m, n)
+    def make_t(m, n):
+      (m2, n2) = (m*m, n*n)
+      (a, b, c) = (m2 - n2, 2*m*n, m2 + n2)
+      return ((c, a, b, m, n) if b < a else (c, b, a, m, n))
+
+    (nxt_m, mv) = (2, 5)
+    while True:
+      # bring in any stream that could be the current top
+      while (not ts) or (mv <= ts[0][0]):
+        if mv > Z and (not ts): return
+        n0 = 1 + nxt_m % 2
+        if gcd(nxt_m, n0) != 1: n0 = nxt_n(nxt_m, n0)
+        if n0 is not None:
+          t = make_t(nxt_m, n0)
+          if t[0] <= Z: heappush(ts, t)
+        nxt_m += 1
+        mv = nxt_m * nxt_m + 1
+        if mv > Z: break
+      if not ts: return
+
+      # process the top of the heap
+      (c, b, a, m, n) = heappop(ts)
+      if c > Z: continue
       yield (a, b, c)
-      # my original formulation (using only addition/subtraction)
-      (a2, b2, c2) = (a + a, b + b, c + c)
-      c3 = c2 + c
-      for (z, y, x) in (
-          (c3 - b2 + a2, c2 - b + a2, c2 - b2 + a),
-          (c3 + b2 - a2, c2 + b - a2, c2 + b2 - a),
-          (c3 + b2 + a2, c2 + b + a2, c2 + b2 + a),
-      ):
-        if fn(z): _push(ts, ((z, x, y) if y < x else (z, y, x)))
-      ## alternatively: Brian's (more compact, but slower) formulation
-      #t = 2 * (a + b + c)
-      #(u, v, w) = (t - 4 * b, t, t - 4 * a)
-      #for (z, y, x) in ((u + c, u + b, u - a), (v + c, v - b, v - a), (w + c, w - b, w + a)):
-      #  if fn(z): _push(ts, ((z, x, y) if y < x else (z, y, x)))
+      nn = nxt_n(m, n)
+      if nn is not None:
+        t = make_t(m, nn)
+        if t[0] <= Z: heappush(ts, t)
+
   else:
-    # if we don't care about order we can use a faster formulation (Euclid's formula)
-    for m in irange(2, (inf if Z is None else isqrt(Z))):
+    # if we don't care about order we can use a faster formulation of Euclid's formula
+    for m in irange(2, (inf if Z is inf else isqrt(Z))):
       m2 = m * m
       # "... not both odd..."
       for n in irange(1 + m % 2, m - 1, step=2):
@@ -4184,11 +4217,10 @@ def _pythagorean_primitive(Z=None, order=0):
         if gcd(m, n) == 1:
           n2 = n * n
           c = m2 + n2
-          if Z is not None and c > Z: break
+          if c > Z: break
           a = m2 - n2
           b = 2 * m * n
-          if b < a: (a, b) = (b, a)
-          yield (a, b, c)
+          yield ((b, a, c) if b < a else (a, b, c))
 
 # generate pythagorean triples (x, y, z) with hypotenuse not exceeding Z
 def _pythagorean_all(Z, order=0):
@@ -4216,11 +4248,19 @@ def _pythagorean_all(Z, order=0):
       for k in irange(2, Z // z):
         yield (k * x, k * y, k * z)
 
+# return a complete sorted finite list (faster than generating in order)
+def pythagorean_triples_sorted(n, primitive=0):
+  assert (n is not None) and (n < inf)
+  ts = list(pythagorean_triples(n, primitive=primitive, order=0))
+  ts.sort(key=lambda t: t[::-1])
+  return ts
+
 # generate pythagorean triples
 # n - specifies the maximum hypotenuse allowed
 # primitive - if set only primitive triples are generated
 # order - if set triples are generated in order
 # if primitive is false, then a value for n must be specified
+@static(sorted=pythagorean_triples_sorted)
 def pythagorean_triples(n=None, primitive=0, order=0):
   """
   generate pythagorean triples (x, y, z) where x < y < z and x^2 + y^2 = z^2.
@@ -4253,7 +4293,6 @@ def pythagorean_triples(n=None, primitive=0, order=0):
   # include non-primitive
   if n is None: raise ValueError("max hypotenuse not specified")
   return _pythagorean_all(n, order=order)
-
 
 def fib(*s, **kw):
   """
