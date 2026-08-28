@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug 28 08:41:18 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug 28 13:59:34 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-08-30" # <year>-<month>-<number>
+__version__ = "2026-08-31" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -4171,40 +4171,33 @@ def _pythagorean_primitive(Z=inf, order=0):
     ts = list()
     heapify(ts)
 
-    # determine next n for a given m (n' in (m, n) -> (m, n'))
-    def nxt_n(m, n):
-      while True:
-        n += 2
-        if n >= m: return None
-        if gcd(m, n) == 1: return n
-
-    # make (c, b, a, m, n) tuple from (m, n), with c <= Z
-    def make_t(m, n, Z):
+    # push a (c, b, a, m, n) tuple from (m, n), with c <= Z
+    def push(ts, m, n, Z):
       (m2, n2) = (m * m, n * n)
       c = m2 + n2
       if c > Z: return
       (a, b) = (m2 - n2, 2 * m * n)
-      return ((c, a, b, m, n) if b < a else (c, b, a, m, n))
+      heappush(ts, ((c, a, b, m, n) if b < a else (c, b, a, m, n)))
 
-    (nxt_m, mv) = (2, 5)  # mv = sq(nxt_n) + 1
+    (m0, mv) = (2, 5)  # mv = sq(m0) + 1
     while True:
       # bring in any stream that could beat the current top
       while (not ts) or (mv <= ts[0][0]):
         if mv > Z: break
-        n0 = 1 + nxt_m % 2
-        t = make_t(nxt_m, n0, Z)
-        if t is not None: heappush(ts, t)
-        nxt_m += 1
-        mv += 2 * nxt_m - 1
+        n0 = 1 + m0 % 2
+        push(ts, m0, n0, Z)
+        m0 += 1
+        mv += 2 * m0 - 1
       if not ts: return
 
       # process the top of the heap
       (c, b, a, m, n) = heappop(ts)
       yield (a, b, c)
-      n1 = nxt_n(m, n)
-      if n1 is not None:
-        t = make_t(m, n1, Z)
-        if t is not None: heappush(ts, t)
+      # advance this m-stream
+      for n1 in irange(n + 2, m - 1, step=2):
+        if gcd(m, n1) == 1:
+          push(ts, m, n1, Z)
+          break
 
   else:
     # if we don't care about order we can use a faster formulation of Euclid's formula
@@ -6207,16 +6200,12 @@ def rational(*args, **kw):
 
 def factorial(a, *bs, **kw):
   """
-  return a! / b!.
+  return a! (or a! / b! if b is specified).
 
   >>> factorial(6)
   720
   >>> factorial(10, 7)
   720
-
-  number of anagrams of "mississippi" (len = 11; 4x i, 4x s, 2x p)
-  >>> factorial(11, 4, 4, 2)
-  34650
   """
   validate = kw.pop('validate', 0)
   if kw: raise TypeError(str.format("factorial: unknown arguments {kw}", kw=seq2str(kw.keys())))
