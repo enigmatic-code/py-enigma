@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Aug 27 14:03:06 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug 28 08:01:05 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-08-28" # <year>-<month>-<number>
+__version__ = "2026-08-29" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -4237,13 +4237,15 @@ def _pythagorean_all(Z, order=0):
         if c1 <= Z: heappush(ms, (c1, b + b0, a + a0, c0, b0, a0))
       # return (x, y, z)
       yield (x, y, z)
-      # add in the next multiple
+      # add in the next multiple of (x, y, z)
       z1 = z + z
       if z1 <= Z: heappush(ms, (z1, y + y, x + x, z, y, x))
     # return any remaining multiples
     while ms:
       (c, b, a, c0, b0, a0) = heappop(ms)
       yield (a, b, c)
+      c1 = c + c0
+      if c1 <= Z: heappush(ms, (c1, b + b0, a + a0, c0, b0, a0))
   else:
     # return the multiples with the primitives
     for (x, y, z) in _pythagorean_primitive(Z, order=0):
