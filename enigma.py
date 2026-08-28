@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug 28 08:01:05 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Aug 28 08:41:18 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-08-29" # <year>-<month>-<number>
+__version__ = "2026-08-30" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -4192,7 +4192,8 @@ def _pythagorean_primitive(Z=inf, order=0):
       while (not ts) or (mv <= ts[0][0]):
         if mv > Z: break
         n0 = 1 + nxt_m % 2
-        heappush(ts, make_t(nxt_m, n0, Z))
+        t = make_t(nxt_m, n0, Z)
+        if t is not None: heappush(ts, t)
         nxt_m += 1
         mv += 2 * nxt_m - 1
       if not ts: return
