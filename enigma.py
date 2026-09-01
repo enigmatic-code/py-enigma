@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Aug 28 13:59:34 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Sep  1 08:50:52 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-08-31" # <year>-<month>-<number>
+__version__ = "2026-09-01" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -2051,31 +2051,35 @@ class multiset(dict):
 
   __iter__ = elements
 
-  # the distinct elements
-  # alias for keys()
+  # the distinct elements (alias for keys())
   distinct_elements = dict.keys
 
   # the number of the distinct elements
-  def __distinct_size(self):
-    """the number of distinct elements in the multiset"""
-    return len(dict.keys(self))
+  def __distinct_size(self): return len(dict.keys(self))
 
   # specialised version for PyPy3
-  def __distinct_size_pypy3(self):
-    """the number of distinct elements in the multiset"""
-    return len(dict(self))
+  def __distinct_size_pypy3(self): return len(dict(self))
 
   distinct_size = (__distinct_size_pypy3 if (_pypy and _python > 2) else __distinct_size)
+  distinct_size.__doc__ = "return the number of distinct elements in the multiset"
 
   # return the count of an item
   def count(self, item):
     """return the number of times <item> occurs in the multiset"""
     return dict.get(self, item, 0)
 
-  # freeze a multiset: after freezing a multiset it may be hashed,
-  # but you should not change the multiset once frozen (not enforced)
-  # it cannot be unfrozen, but copy() will create an unfrozen copy
+  # freeze a multiset
   def freeze(self):
+    """
+    freeze a multiset.
+
+    after it is frozen it may be hashed, which allows it to be inserted
+    into a set or used as the key of a dict. but once frozen the multiset
+    must not be changed. (to help spot accidental attempts to change a
+    multiset after freezing set [[ multiset.enforce_freeze = 1 ]].
+
+    multiset.copy() can be used to create an unfrozen copy of a frozen multiset.
+    """
     # if we are being strict we return a new frozen multiset that cannot be modified
     if multiset.enforce_freeze: return fmultiset(self)
     # otherwise, we just mark this as frozen (which enables hashing)
@@ -8347,7 +8351,7 @@ def find_values(f, v, a, b, t=1e-9, ft=1e-6, rt=1e-3):
 )
 def is_triangle(a, b, c, fn=gt(0), validate=0):
   """
-  check it possible to make a triangle with sides of length <a>, <b>, <c>.
+  check it is possible to make a triangle with sides of length <a>, <b>, <c>.
 
   by default the lengths are allowed to be 0 or negative, and the triangle
   formed uses the absolute value of the lengths.
@@ -8356,7 +8360,7 @@ def is_triangle(a, b, c, fn=gt(0), validate=0):
 
   the area of the triangle can be returned by setting: 'fn=is_triangle.area'
   when the area of the triangle will be returned, or None for impossible
-  configurations.
+  configurations. (degenerate triangles will return a zero area).
 
   for integer only areas: 'fn=is_triangle.iarea' can be used, when None will
   also be returned for non-integer areas.
@@ -8366,8 +8370,8 @@ def is_triangle(a, b, c, fn=gt(0), validate=0):
   v = (a + b + c) * (a + b - c) * (a + c - b) * (b + c - a)
   return fn(v)
 
-triangle_area = partial(is_triangle, fn=is_triangle.area)
-triangle_iarea = partial(is_triangle, fn=is_triangle.iarea)
+triangle_area = partial(is_triangle, fn=is_triangle.area)  # return area as float (approximation)
+triangle_iarea = partial(is_triangle, fn=is_triangle.iarea)  # return exact integer only areas
 
 
 # 2D geometry:
