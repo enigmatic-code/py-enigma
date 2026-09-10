@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Sep  1 08:50:52 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep  9 22:33:34 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -259,7 +259,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-09-01" # <year>-<month>-<number>
+__version__ = "2026-09-09" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -3865,7 +3865,7 @@ def is_prime_mr(n, r=0, validate=0):
 
   >>> is_prime_mr(288230376151711813)
   2
-  >>> is_prime_mr(316912650057057350374175801351)
+  >>> is_prime_mr(1000000000000066600000000000001)
   1
   >>> is_prime_mr(332306998946228968225951765070086171)
   0
@@ -4898,7 +4898,7 @@ def is_triangular(n):
 
 is_triangular_p = (lambda x: is_triangular(x) is not None)
 
-def digrt(n, base=0):
+def digrt(n, base=0, validate=0):
   """
   return the (additive) digital root of positive integer <n>.
 
@@ -4914,6 +4914,7 @@ def digrt(n, base=0):
   9
   """
   if base == 0: base = radix
+  n = (as_int(n, include="0+") if validate else int(n))
   return (0 if n == 0 else int(1 + (n - 1) % (base - 1)))
 
 
@@ -9294,6 +9295,51 @@ class Enumerator(object):
 
 ###############################################################################
 
+# closed intervals of integers:
+
+# represent an interval by it's min and max values
+class Interval(object):
+
+  def __init__(self, mn=None, mx=None):
+    self.mn = 0 # lower limit
+    self.mx = inf # upper limit
+    self.update(mn, mx)
+
+  def __repr__(self):
+    if self.mn == self.mx: return sprintf("<{self.mn}>")  # singleton
+    return sprintf("<{self.mn},{self.mx}>")
+
+  # update the min/max values
+  def update(self, mn=None, mx=None):
+    if mn is not None and mn > self.mn: self.mn = mn
+    if mx is not None and mx < self.mx: self.mx = mx
+    if self.mn > self.mx: raise ValueError(sprintf("Bad Interval {self}"))
+    return self
+
+  # size of an interval
+  def size(self): return self.mx - self.mn + 1
+
+  # iterate through the values in an interval
+  def __iter__(self):
+    for i in irange(self.mn, self.mx):
+      yield i
+
+  # does an interval contain a value?
+  def contains(self, x): return self.mn <= x <= self.mx
+
+  # return a copy of this interval
+  def copy(self): return Interval(mn=self.mn, mx=self.mx)
+
+  # an interval that is the sum of this interval and another
+  def sum(self, *others):
+    return Interval(mn=self.mn + sum(i.mn for i in others), mx=self.mx + sum(i.mx for i in others))
+
+  # an interval that is the intersection of this interval and another
+  def intersect(self, other):
+    return Interval(mn=max(self.mn, other.mn), mx=min(self.mx, other.mx))
+
+###############################################################################
+
 # Routines for dealing with polynomials
 
 # represent polynomial a + b.x + c.x^2 + d.x^3 + ... as:
@@ -11593,7 +11639,7 @@ class SubstitutedExpression(object):
           printf("WARNING: SubstitutedExpression: non-valid invalid digit {d} specified", d=repr(d))
         invalid.update((s, d) for s in ss)
     else:
-      # disallow leading zeros
+      # disallow leading zeros on words with multiple symbols
       if 0 in digits:
         for w in words:
           if len(w) > 1:
@@ -12212,7 +12258,7 @@ class SubstitutedExpression(object):
           # if we've been passed a sequence (of callables)
           acc = tuple(f(ans) for f in acc)
           if verbose & self.vA:
-            printf("{acc_t}({answer}) = {acc} [from {n} value{s}]", vs=join(acc, sep=", ", enc="()"))
+            printf("{acc_t}({answer}) = {vs} [from {n} value{s}]", vs=join(acc, sep=", ", enc="()"))
 
         else:
           # single callable
