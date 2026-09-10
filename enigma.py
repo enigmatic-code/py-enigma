@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep  9 22:33:34 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Sep 10 08:16:05 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -243,6 +243,7 @@ DominoGrid             - a class for solving domino grid puzzles
 Enumerator             - a class for iterating through a sequence and counting the items
 Football               - a class for solving football league table puzzles
 MagicSquare            - a class for solving magic squares
+Interval               - an implementation of closed integer intervals
 Matrix                 - a class for manipulation 2d matrices
 multiset               - an implementation of multisets (bags)
 Output                 - format blocks of output
@@ -259,7 +260,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-09-09" # <year>-<month>-<number>
+__version__ = "2026-09-10" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
