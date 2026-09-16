@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Sep 10 08:16:05 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep 16 10:55:30 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -260,7 +260,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-09-10" # <year>-<month>-<number>
+__version__ = "2026-09-15" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -4337,7 +4337,7 @@ def fib(*s, **kw):
 #   def is_power(n, m):
 #     i = intr(n**(1.0 / m))
 #     return (i if i**m == n else None)
-# but here we use a binary search, which should work on arbitrary large integers
+# but here we use Newton's method, which should work on arbitrary large integers
 #
 # NOTE: that this will return 0 if n = 0 and None if n is not a perfect k-th power,
 # so [[ power(n, k) ]] will evaluate to True only for positive n
@@ -4351,26 +4351,17 @@ def iroot(n, k):
   it is the exact root if: pow(x, k) == n
   (which is what is_power() does)
   """
-  # binary search
-  if n < 0 or k < 1: return
-  if n >> k == 0: return int(n > 0)
-  a = 1 << ((n.bit_length() - 1) // k)
-  b = a << 1
-  #assert (a**k <= n and b**k > n)
-  # if this assertion fails we need:
-  #while not (b**k > n): (a, b) = (b, b << 1)
+  if n is None or n < 0 or k < 1: return None
+  if n == inf: return inf
+  if n >> k == 0: return (0 if n < 1 else 1)
+  n = int(n)  # just the integer part
+  # use Newton's method
+  x = 1 << divc(n.bit_length(), k)  # initial guess
+  k1 = k - 1
   while True:
-    d = b - a
-    if d < 2: break
-    r = a + (d // 2)
-    x = r**k
-    if x < n:
-      a = r
-    elif x > n:
-      b = r
-    else:
-      return r
-  return a
+    y = (k1 * x + n // (x**k1)) // k
+    if y >= x: return x
+    x = y
 
 
 def is_power(n, k):
@@ -4473,7 +4464,7 @@ def isqrt(n):
 # returns (isqrt(n), n - sq(isqrt(n)))
 def isqrtrem(n):
   r = isqrt(n)
-  return (r, n - r*r)
+  return (r, n - r * r)
 
 # square root floor and ceiling functions
 sqrtf = isqrt
@@ -4709,6 +4700,10 @@ is_not = operator.not_
 is_none = (lambda x: x is None)
 is_not_none = (lambda x: x is not None)
 is_square_p = (lambda x: is_square(x) is not None)  # = fcompose(is_square, is_not_none)
+
+def icbrtrem(n):
+  r = iroot(n, 3)
+  return (r, n - r * r * r)
 
 # 819 rejects 95% (other good values: 63 (86%), 117 (87%), 189 (89%), 351 (90%), 504 (91%), 819 (95%))
 @static(mod=819, residues=None, cache_enabled=0, cache=dict())
@@ -6018,6 +6013,14 @@ def format_fraction(n, d, base=0):
   s = int2base(n, base=base)
   if d == 1: return s
   return s + "/" + int2base(d, base=base)
+
+def str2fraction(s, base=0):
+  if base == 0: base = radix
+  (ns, _, ds) = map(str.strip, str.partition(s, "/"))
+  n = base2int(ns, base=base)
+  if not ds: return (n, 1)
+  d = base2int(ds, base=base)
+  return fraction(n, d)
 
 def ratio(*ns):
   """
@@ -9296,7 +9299,7 @@ class Enumerator(object):
 
 ###############################################################################
 
-# closed intervals of integers:
+# non-empty closed intervals of integers:
 
 # represent an interval by it's min and max values
 class Interval(object):
