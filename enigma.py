@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep 16 10:55:30 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Wed Sep 16 11:01:53 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -260,7 +260,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-09-15" # <year>-<month>-<number>
+__version__ = "2026-09-16" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -4461,7 +4461,7 @@ def isqrt(n):
     a = (a << d - e - 1) + (n >> (c << 1) - e - d + 1) // a
   return a - (a * a > n)
 
-# returns (isqrt(n), n - sq(isqrt(n)))
+# returns (isqrt(n), remainder)
 def isqrtrem(n):
   r = isqrt(n)
   return (r, n - r * r)
@@ -4700,6 +4700,8 @@ is_not = operator.not_
 is_none = (lambda x: x is None)
 is_not_none = (lambda x: x is not None)
 is_square_p = (lambda x: is_square(x) is not None)  # = fcompose(is_square, is_not_none)
+
+icbrt = partial(iroot, k=3)
 
 def icbrtrem(n):
   r = iroot(n, 3)
