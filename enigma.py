@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Wed Sep 16 11:01:53 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Sun Oct 11 21:02:59 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -185,10 +185,13 @@ seq_all_same           - check elements of a sequence are all the same
 seq_get                - get an item from a sequence
 seq_ordered            - return an ordered tuple from the specified sequence
 singleton              - return the value from a single valued container
+snapf                  - snap a float to an integer
 split                  - split a value into characters
 sprintf                - interpolate variables into a string
 sq                     - square of x
 sqrt, sqrtc, sqrtf     - the (positive) square root of a number
+sqrtmod                - find modular square roots
+sqrx                   - perform a step in the extraction of a square root
 static                 - decorator to simulate static variables
 subfactorial           - subfactorial function
 subsets, subseqs       - generate subsequences of a sequence
@@ -260,7 +263,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-09-16" # <year>-<month>-<number>
+__version__ = "2026-10-05" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -317,6 +320,7 @@ namedtuple = collections.namedtuple
 product = itertools.product  # cartesian product, but see also: cproduct()
 module = sys.modules.get
 partial = functools.partial
+fsum = math.fsum
 
 # detect if running under PyPy
 _pypy = getattr(sys, 'pypy_version_info', None)
@@ -2122,6 +2126,8 @@ class multiset(dict):
   def delete(self, item):
     """delete all occurrences of an item from the multiset"""
     return self.pop(item, 0)
+
+  discard = delete
 
   # like self.items(), but in value order
   def most_common(self, n=None):
@@ -4221,7 +4227,7 @@ def _pythagorean_primitive(Z=inf, order=0):
 
 # generate pythagorean triples (x, y, z) with hypotenuse not exceeding Z
 def _pythagorean_all(Z, order=0):
-  if Z is inf: order=1
+  if Z is inf: order = 1
   if order:
     # use a heap to save the multiples
     from heapq import (heapify, heappush, heappop)
@@ -4362,6 +4368,10 @@ def iroot(n, k):
     y = (k1 * x + n // (x**k1)) // k
     if y >= x: return x
     x = y
+
+def irootrem(n, k):
+  r = iroot(n, k)
+  return (r, n - r ** k)
 
 
 def is_power(n, k):
@@ -4779,6 +4789,20 @@ def rad2ht(x, ht=None):
   if ht != pi:
     if ht != 1: x *= ht
     x /= pi
+  return x
+
+def ht2deg(x, ht=None):
+  if ht is None: ht = half_turn
+  if ht != 180:
+    x *= 180
+    if ht != 1: x /= float(ht)
+  return x
+
+def deg2ht(x, ht=None):
+  if ht is None: ht = half_turn
+  if ht != 180:
+    if ht != 1: x *= ht
+    x /= 180.0
   return x
 
 # provide trig functions
@@ -5534,7 +5558,6 @@ def vec_add(*vs, **kw):
       r.append(x0 + k * (sum(xs) - x0))
   return (fn(r) if fn else r)
 
-
 # multiple argument versions of basic operations
 def add(*vs): "add(a, b, c, ...) = a + b + c + ..."; return sum(vs)
 def mul(*vs): "mul(a, b, c, ...) = a * b * c * ..."; return multiply(vs)
@@ -6012,11 +6035,13 @@ def Fraction(*args):
   return Fraction.rtype(a, b)
 
 def format_fraction(n, d, base=0):
+  """format fraction as a string"""
   s = int2base(n, base=base)
   if d == 1: return s
   return s + "/" + int2base(d, base=base)
 
 def str2fraction(s, base=0):
+  """parse a fraction from a string"""
   if base == 0: base = radix
   (ns, _, ds) = map(str.strip, str.partition(s, "/"))
   n = base2int(ns, base=base)
@@ -6773,6 +6798,7 @@ output = Output(prefix='')
 class Failure(Exception): pass
 
 # fatal error
+@static(Failure=Failure)
 def fail(expr=True, msg=''):
   """
   if <expr> is true then a Failure exception is raised
@@ -6867,6 +6893,16 @@ def irange_round(a, b, step=1, rnd='i'):
     kb = ('C' if step > 0 else 'F')
   return irange(fn[ka](a), fn[kb](b), step=step)
 
+# irange_ndigits(4) = (1000, 1001, ..., 9999)
+# irange_ndigits(2, 3) = (10, 11, ..., 999)
+def irange_ndigits(a, b=None, step=1, base=0):
+  if base == 0: base = radix
+  if b is None: b = a
+  # smallest number with <a> digits, largest number with <b> digits
+  (a, b) = ((0 if a == 1 else base**(a - 1)), (base**b) - 1)
+  if step < 0: (a, b) = (b, a)
+  return irange(a, b, step=step)
+
 # find the common difference of an arithmetic sequence (or None)
 def aseq_diff(seq):
   return seq_all_same_r(y - x for (x, y) in tuples(seq, 2)).value
@@ -6881,7 +6917,7 @@ def aseq_sum(seq):
 # inclusive range iterator
 # irange(a, b) -> [a, a + 1, ..., b]
 # irange(n) -> irange(0, n - 1) -> [0, ..., n - 1]
-@static(inf=inf, round=irange_round, sum=(lambda *args, **kw: aseq_sum(irange(*args, **kw))))
+@static(inf=inf, round=irange_round, ndigits=irange_ndigits, sum=(lambda *args, **kw: aseq_sum(irange(*args, **kw))))
 # so irange.<name> can be used
 def irange(a, b=None, step=1):
   """
@@ -7248,6 +7284,27 @@ def remove(s, *vs, **kw):
     if strict and not s.issuperset(vs): raise ValueError(str.format("elements not in *set"))
     return s.difference(vs)
   raise ValueError(str.format("remove() can't handle container of type {x}", x=type(s)))
+
+# remove all (possibly none) values in <vs> from a container
+def discard(s, *vs):
+  if isinstance(s, (list, tuple)):
+    fn = type(s)
+    if len(vs) == 1:
+      v = vs[0]
+      return fn(x for x in s if x != v)
+    else:
+      vs = set(vs)
+      return fn(x for x in s if x not in vs)
+  if isinstance(s, (set, multiset, fmultiset)):
+    r = s.copy()
+    for v in vs: r.discard(v)
+    return r
+  if isinstance(s, basestring):
+    r = s
+    for v in vs:
+      r = r.replace(v, '')
+    return r
+  raise ValueError(str.format("discard() can't handle container of type {x}", x=type(s)))
 
 # swap items in container <s> at keys <i> and <j>
 def swap(s, i, j, *ks, **kw):
@@ -16096,7 +16153,7 @@ enigma.py has the following command-line usage:
       --run:verbose   (or -rv)
 
 """.format(
-  version=__version__, python='2.7.18', python3='3.14.6',
+  version=__version__, python='2.7.18', python3='3.15.0',
   pip_version=_enigma_pip.ver, pip_req=_enigma_pip.req,
 )
 
