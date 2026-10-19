@@ -6,8 +6,8 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Sun Oct 11 21:02:59 2026 (Jim Randell) jim.randell@gmail.com
-# Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.15)
+# Modified:     Mon Oct 19 08:49:09 2026 (Jim Randell) jim.randell@gmail.com
+# Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.16)
 # Package:      N/A
 # Status:       Free for non-commercial use
 # URI:          http://www.magwag.plus.com/jim/enigma.html
@@ -263,7 +263,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-10-05" # <year>-<month>-<number>
+__version__ = "2026-10-17" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -1929,6 +1929,12 @@ class multiset(dict):
     if kw:
       for (x, n) in kw.items():
         self.add(x, count=n, validate=1)
+
+  def __str__(self):
+    return dict.__repr__(self)
+
+  def __repr__(self):
+    return str.format("{cls}({m})", cls=self.__class__.__name__, m=dict.__repr__(self))
 
   def update_from_seq(self, vs, count=1, validate=0):
     """update a multiset from a sequence of items"""
@@ -9789,8 +9795,11 @@ class Polynomial(list):
     if isinstance(obj, basestring): obj = poly_from_str(obj, var=kw.get('var', 'x'))
     list.__init__(self, obj)
 
-  def __repr__(self, var='x'):
-    return self.__class__.__name__ + "[" + poly_print(self, var=var) + "]"
+  def __str__(self, var='x'):
+    return str.format("{cls}[{p}]", cls=self.__class__.__name__, p=poly_print(self, var=var))
+
+  def __repr__(self):
+    return str.format("{cls}({p})", cls=self.__class__.__name__, p=repr(list(self)))
 
   def print(self, var='x'):
     return poly_print(self, var=var)
