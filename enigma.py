@@ -6,11 +6,11 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Mon Oct 19 08:49:09 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Oct 27 14:41:05 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.16)
 # Package:      N/A
 # Status:       Free for non-commercial use
-# URI:          http://www.magwag.plus.com/jim/enigma.html
+# URI:          https://enigmatic-code.github.io/jim/enigma.html
 #
 # (c) Copyright 2009-2026, Jim Randell, all rights reserved.
 #
@@ -263,7 +263,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-10-17" # <year>-<month>-<number>
+__version__ = "2026-10-19" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -333,6 +333,8 @@ two_pi = pi + pi
 inf = float('+inf')
 fset = frozenset  # "fset" is a shortcut for "frozenset"
 empty = fset()  # the empty set
+# fdict is frozendict (if available) or just plain dict
+fdict = getattr(module('builtins'), 'frozendict', dict)
 
 str_upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  # upper case letters
 str_lower = "abcdefghijklmnopqrstuvwxyz"  # lower case letters
@@ -532,6 +534,40 @@ def wrap(_fn, *args, **kw):
     def __inner(*fargs, **fkw): return _fn(_f(*fargs, **fkw), *args, **kw)
     return __inner
   return _inner
+
+# needed to normalise Python 3 identifiers
+unicodedata = lazy_import('unicodedata')
+
+# find the value of <name> in the calling scope (or <env>)
+# return Record(name=..., value=..., status=...); <value> is <fail> for errors
+def resolve(name, env=None, fail=None, validate=0):
+  if validate:
+    if not isinstance(name, basestring): raise TypeError("resolve: 'name' parameter must be a string")
+    if env is not None and ((not isinstance(env, (tuple, list))) or len(env) not in {1, 2}):
+      raise ValueError("resolve: 'env' parameter should be (<globals>, <locals>)")
+  # check for a valid name
+  if not (str.isidentifier(name) if _python > 2 else re.match(r"[_a-zA-Z][_a-zA-Z0-9]*\Z", name)):
+    return Record(name=name, value=fail, status='invalid-name')
+  # default environment is the calling scope
+  if env is None:
+    frame = sys._getframe(1)
+    env = (frame.f_globals, frame.f_locals)
+    # NOTE: eval will not throw an UnboundLocalError
+    # but we can check to see if the name is an unbound local, and return an error
+    # in Python 3 we need to normalise the name first
+    n = (name if _python < 3 else unicodedata.normalize('NFKC', name))
+    if n not in env[-1]:
+      # name is not in locals
+      code = frame.f_code
+      if n in code.co_varnames or n in code.co_cellvars or n in code.co_freevars:
+        return Record(name=name, value=fail, status='undefined')
+  # we can do without eval(), but it involves checking keyword.iskeyword (and unicodedata.normalize in Python 3)
+  try:
+    return Record(name=name, value=eval(name, env[0], env[-1]), status='defined')
+  except NameError:
+    return Record(name=name, value=fail, status='undefined')  # name is not defined
+  except SyntaxError:
+    return Record(name=name, value=fail, status='syntax-error')  # could be a reserved name
 
 # the identity function
 def identity(x):
@@ -2954,7 +2990,7 @@ def ulambda(args, expr=None, env=None):
     # evaluate in the parent scope
     frame = sys._getframe(1)
     env = (frame.f_globals, frame.f_locals)
-  return eval(expr, env[0], env[1])
+  return eval(expr, env[0], env[-1])
 
 # count the number of occurrences of a predicate in an iterator
 def icount(seq, p=None, t=None):
@@ -6913,12 +6949,24 @@ def irange_ndigits(a, b=None, step=1, base=0):
 def aseq_diff(seq):
   return seq_all_same_r(y - x for (x, y) in tuples(seq, 2)).value
 
-# calculate the sum of an arithmetic sequence
+# calculate the sum of an arithmetic sequence (finite)
 # (for large ranges this is faster than calling sum() on it)
 def aseq_sum(seq):
   n = catch(len, seq)
   if n is None: return None
   return (0 if n == 0 else n * (seq[0] + seq[-1]) // 2)
+
+# calculate the convergent sum of a geometric sequence (possibly infinite)
+# with first term <a>, and common ratio <r>
+# i.e. a + a.r + a.r^2 + a.r^3 + ... + a.r^n
+def gseq_sum(a, r, n=inf, div=rdiv):
+  if n == inf:
+    # infinite sum
+    if not (abs(r) < 1): raise ValueError("gseq_sum: series is not convergent")
+    return div(a, 1 - r)
+  else:
+    # finite sum
+    return div(a * (1 - r**(n + 1)), 1 - r)
 
 # inclusive range iterator
 # irange(a, b) -> [a, a + 1, ..., b]
@@ -8255,7 +8303,7 @@ class Record(object):
     return map2str((k, v) for (k, v) in self)
 
   def __repr__(self):
-    return self.__class__.__name__ + map2str((k, repr(v)) for (k, v) in self)
+    return str.format("{cls}{m}", cls=self.__class__.__name__, m=map2str((k, repr(v)) for (k, v) in self))
 
   # best called as Record.map(self, ...)
   def map(self):
@@ -9140,8 +9188,8 @@ class Delay(object):
     self.evaluated = False
     if self.immediate: self.evaluate()
 
-  def __repr__(self):
-    return self.__class__.__name__ + '(value=' + (repr(self.value) if self.evaluated else '<delayed>') + ')'
+  def __str__(self):
+    return str.format("{cls}(value={v})", cls=self.__class__.__name__, v=(repr(self.value) if self.evaluated else '<delayed>'))
 
   def evaluate(self):
     self.value = call(self.fn, self.args, self.kw)
@@ -9211,8 +9259,8 @@ class Accumulator(object):
     self.count = count
 
 
-  def __repr__(self):
-    return self.__class__.__name__ + '(value=' + repr(self.value) + ', data=' + repr(self.data) + ', count=' + str(self.count) + ')'
+  def __str__(self):
+    return str.format("{cls}(value={v!r}, data={d!r}, count={c})", cls=self.__class__.__name__, v=self.value, d=self.data, c=self.count)
 
   def accumulate(self, v=1):
     """
@@ -9295,8 +9343,8 @@ class MultiAccumulator(object):
   def __init__(self, fns, *args, **kw):
     self.multi = list(Accumulator(fn, *args, **kw) for fn in fns)
 
-  def __repr__(self):
-    return self.__class__.__name__ + '(' + repr(self.multi) + ')'
+  def __str__(self):
+    return str.format("{cls}({m!r})", cls=self.__class__.__name__, m=self.multi)
 
   def perform(self, fn, *args, **kw):
     for x in self.multi:
@@ -9374,9 +9422,12 @@ class Interval(object):
     self.mx = inf # upper limit
     self.update(mn, mx)
 
+  def __str__(self):
+    if self.mn == self.mx: return str.format("<{mn}>", mn=self.mn)  # singleton
+    return str.format("<{mn},{mx}>", mn=self.mn, mx=self.mx)
+
   def __repr__(self):
-    if self.mn == self.mx: return sprintf("<{self.mn}>")  # singleton
-    return sprintf("<{self.mn},{self.mx}>")
+    return str.format("{cls}({mn}, {mx})", cls=self.__class__.__name__, mn=self.mn, mx=self.mx)
 
   # update the min/max values
   def update(self, mn=None, mx=None):
@@ -10087,8 +10138,8 @@ class _PrimeSieveE6(object):
     # now expand the sieve to the required size
     self.expand(n)
 
-  def __repr__(self):
-    return self.__class__.__name__ + '(max=' + repr(self.max) + ')'
+  def __str__(self):
+    return str.format("{cls}(max={m})", cls=self.__class__.__name__, m=self.max)
 
   def expand(self, n):
     """
@@ -12351,10 +12402,26 @@ class SubstitutedExpression(object):
 
   def substitute(self, s, text, digits=None):
     """
-    given a solution to the substituted expression sum and some text,
-    return the text with the letters substituted for digits.
+    given a solution to the substituted expression sum, and some text,
+    return the text with the symbols substituted for digits.
     """
     return substitute(s, text, digits=digits)
+
+  def rsubstitute(self, s, text, symbols=None):
+    """
+    given a solution to the substituted expression sum, and some text
+    containing digits in the solution, return the text with digits
+    substituted for symbols.
+
+    the symbols should have distinct values in the solution, and if
+    there is only one set of distinct symbols defined in the recipe,
+    then the 'symbols' parameter can be omitted, and that set will be
+    used instead.
+    """
+    # symbols can be omitted if there is only one set of distinct symbols
+    if symbols is None: symbols = singleton(self.distinct)
+    r = dict((int2base(s[k], base=radix), k) for k in symbols)
+    return translate(text, r)
 
   # integrate pretty-printers for output of various types of sum:
 
@@ -14705,8 +14772,8 @@ class namespace(object):
     self.__name = name
     self.__dict__.update(**vs)
 
-  def __repr__(self):
-    return '<' + self.__class__.__name__ + ' ' + repr(self.__name) + '>'
+  def __str__(self):
+    return str.format("<{cls} {n!r}>", cls=self.__class__.__name__, n=self.__name)
 
 def make_namespace(name, vs):
   return namespace(name, vs)
