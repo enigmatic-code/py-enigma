@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Oct 27 14:41:05 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Thu Oct 29 08:30:40 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.16)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -263,7 +263,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-10-19" # <year>-<month>-<number>
+__version__ = "2026-10-28" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -2166,10 +2166,17 @@ class multiset(dict):
 
   # delete an item (no error is raised if the item does not exist)
   def delete(self, item):
-    """delete all occurrences of an item from the multiset"""
+    """
+    delete all occurrences of an item from the multiset
+    return the number of items removed (may be 0)
+    """
     return self.pop(item, 0)
 
-  discard = delete
+  # like delete, but the multiset is returned instead of the item count
+  def discard(self, item):
+    """delete all occurrences of an item from the multiset"""
+    self.pop(item, 0)
+    return self
 
   # like self.items(), but in value order
   def most_common(self, n=None):
