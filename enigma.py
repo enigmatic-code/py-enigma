@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Thu Oct 29 08:30:40 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Fri Nov  6 11:29:38 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.16)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -263,7 +263,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-10-28" # <year>-<month>-<number>
+__version__ = "2026-11-05" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -5607,6 +5607,9 @@ def vec_add(*vs, **kw):
       r.append(x0 + k * (sum(xs) - x0))
   return (fn(r) if fn else r)
 
+def vec_neg(xs):
+  return tuple(-x for x in xs)
+
 # multiple argument versions of basic operations
 def add(*vs): "add(a, b, c, ...) = a + b + c + ..."; return sum(vs)
 def mul(*vs): "mul(a, b, c, ...) = a * b * c * ..."; return multiply(vs)
@@ -9204,8 +9207,8 @@ class Delay(object):
     return self.value
 
   def __call__(self):
-    if not self.evaluated: self.evaluate()
-    return self.value
+    if self.evaluated: return self.value
+    return self.evaluate()
 
   def reset(self):
     del self.value
@@ -10713,7 +10716,7 @@ class MagicSquare(object):
 
 # output sums
 
-def output_mul(a, b, base=0, rev=0, pre='', start=None, end=None, sep=''):
+def output_mul(a, b, base=0, rev=0, skip0=1, pre='', start=None, end=None, sep=''):
   """output <a> * <b> as a long multiplication sum"""
   if base == 0: base = radix
   (a, b) = (as_int(x, include='0+') for x in (a, b))
@@ -10734,7 +10737,7 @@ def output_mul(a, b, base=0, rev=0, pre='', start=None, end=None, sep=''):
   xs = list()
   for (i, d) in enumerate(nsplit(b, base=base, reverse=1)):
     p = a * d
-    if p == 0: continue  # skip 0 products
+    if p == 0 and skip0: continue  # skip 0 products
     #printf("{pre}{p}{x} = {d} * {a}", p=fmt(p, width=k - i), x=' ' * i)
     xs.append(fmt(p, width=k - i))
   if rev: xs.reverse()
@@ -12433,9 +12436,14 @@ class SubstitutedExpression(object):
   # integrate pretty-printers for output of various types of sum:
 
   # multiplication, set: answer=(term1, term2) to produce: term1 * term2
-  def output_mul(self, s, ans=None, rev=0, pre='  ', start='', end='', sep=' '):
+  def output_mul(self, s, ans=None, rev=0, skip0=1, pre='  ', start='', end='', sep=' '):
     fail(ans is None, "output_mul: set answer = (<term1>, <term2>) to output <term1> * <term2>")
-    output_mul(*ans, rev=rev, pre=pre, start=start, end=end, sep=sep)
+    output_mul(*ans, rev=rev, skip0=skip0, pre=pre, start=start, end=end, sep=sep)
+
+  # division, set: answer = (a, b) for long division of a / b
+  def output_div(self, s, ans=None, pre='  ', start='', end='', sep=' '):
+    fail(ans is None, "output_div: set answer = (<term1>, <term2>) to output <term1> / <term2>")
+    output_div(*ans, pre=pre, start=start, end=end, sep=sep)
 
   # square root extraction, set: answer=term to produce: sqrt(term)
   def output_sqrx(self, s, ans=None, rem=0, pre='  ', start='', end='', sep=' '):
@@ -14791,7 +14799,7 @@ def make_namespace(name, vs):
   #return r
 
 # vector operations
-vec = make_namespace("vec", dict(dot=vec_dot, add=vec_add))
+vec = make_namespace("vec", dict(dot=vec_dot, add=vec_add, neg=vec_neg))
 
 ###############################################################################
 
