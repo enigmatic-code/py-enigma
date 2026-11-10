@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Fri Nov  6 11:29:38 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Nov 10 09:29:46 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.16)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -263,7 +263,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-11-05" # <year>-<month>-<number>
+__version__ = "2026-11-09" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
@@ -1829,7 +1829,7 @@ def make_range(i, n):
   a = (0 if a is None else (a + n if a < 0 else a))
   b = (n if b is None else (b + n if b < 0 else b))
   c = (1 if c is None else c)
-  return range(a, b, c)
+  return xrange(a, b, c)
 
 # a circular list, where indices are calculated mod length
 class CircularList(list):
@@ -2578,7 +2578,7 @@ def mpermutations(s, k=None):
 def derangements(s, k=None):
   s = list(s)
   if k is None: k = len(s)
-  for p in itertools.permutations(range(len(s)), k):
+  for p in itertools.permutations(xrange(len(s)), k):
     if not any(i == x for (i, x) in enumerate(p)):
       yield tuple(s[x] for x in p)
 
@@ -3967,7 +3967,7 @@ def is_prime_mr(n, r=0, validate=0):
 
   # for larger numbers run further prime tests as specified
   if r > 0:
-    for _ in range(r):
+    for _ in xrange(r):
       # definitely composite
       if _mr_is_composite(randrange(2, n - 1), d, n, s): return 0
 
@@ -8612,7 +8612,7 @@ def line_intersect(p1, p2, p3, p4, internal=0, div=fdiv):
   (dx21, dx43, dx31) = (x2 - x1, x4 - x3, x3 - x1)
   (dy21, dy43, dy31) = (y2 - y1, y4 - y3, y3 - y1)
   z = dx21 * dy43 - dy21 * dx43
-  if z == 0: raise ValueError("invalid lines")
+  if z == 0: raise ValueError("invalid lines")  # lines are parallel/collinear
   # calculate parameter for line 1 = (x1 + r1(x2 - x1), y1 + r1(y2 - y1))
   q1 = div(dx31 * dy43 - dy31 * dx43, z)
   if internal & 1 and (q1 < 0 or q1 > 1): raise ValueError("external intersection on line 1")
@@ -8957,7 +8957,7 @@ def base2int(s, base=0, strip=0, neg="-~", digits=None):
     fneg ^= 1
     i += 1
   n = f = 0
-  for k in range(i, len(s)):
+  for k in xrange(i, len(s)):
     d = s[k]
     try:
       v = digits.index(d)
@@ -9811,7 +9811,7 @@ def poly_cyclotomic(n, fs=None, div=rdiv, fn=prime_factor):
     elif fs[0] == (2, 1):
       # 2n, invert the odd positions in cyclotomic[n]
       r = list(poly_cyclotomic(n // 2, fs=fs[1:], div=div, fn=fn))
-      for i in range(1, len(r), 2):
+      for i in xrange(1, len(r), 2):
         r[i] = -r[i]
     else:
       # C[n] = multiply((x^d - 1) ^ mobius(n // d) for d in divisors(n))
@@ -10366,7 +10366,7 @@ class _PrimeSieveE6(object):
 
   def prime_factors(self, n, end=None, mr=0, mrr=0, expand=0):
     for (p, e) in self.prime_factor(n, end=end, mr=mr, mrr=mrr, expand=expand):
-      for _ in range(e):
+      for _ in xrange(e):
         yield p
 
   # functions that can use self.prime_factor() instead of simple prime_factor()
@@ -11207,7 +11207,7 @@ class SubstitutedSum(object):
     # sort out the arguments
     n = len(ts)
     if ss is None:
-      ss = list(range(n))
+      ss = list(xrange(n))
     else:
       if not all(s < n for s in ss): raise ValueError("invalid suspect index")
 
