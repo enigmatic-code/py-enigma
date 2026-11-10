@@ -6,7 +6,7 @@
 # Description:  Useful routines for solving Enigma Puzzles
 # Author:       Jim Randell
 # Created:      Mon Jul 27 14:15:02 2009
-# Modified:     Tue Nov 10 09:29:46 2026 (Jim Randell) jim.randell@gmail.com
+# Modified:     Tue Nov 10 14:18:33 2026 (Jim Randell) jim.randell@gmail.com
 # Language:     Python (Python 2.7), Python3 (Python 3.6 - 3.16)
 # Package:      N/A
 # Status:       Free for non-commercial use
@@ -20,7 +20,7 @@
 """
 A collection of useful code for solving New Scientist Enigma (and similar) puzzles.
 
-The latest version is available at <http://www.magwag.plus.com/jim/enigma.html>.
+The latest version is available at <https://enigmatic-code.github.io/jim/enigma.html>.
 
 Currently this module provides the following functions and classes:
 
@@ -263,7 +263,7 @@ Timer                  - a class for measuring elapsed timings
 from __future__ import (print_function, division)
 
 __author__ = "Jim Randell <jim.randell@gmail.com>"
-__version__ = "2026-11-09" # <year>-<month>-<number>
+__version__ = "2026-11-10" # <year>-<month>-<number>
 
 __credits__ = "contributors = Brian Gladman; Frits ter Veen"
 
